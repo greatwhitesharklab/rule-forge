@@ -1,14 +1,14 @@
 server:
-  port: 8081
+  port: ${CONSOLE_PORT:8081}
 
 spring:
   application:
     name: ruleforge-console
   datasource:
     app:
-      jdbcUrl:
-      username:
-      password:
+      jdbcUrl: ${APP_DB_URL:jdbc:mysql://localhost:3306/app_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true}
+      username: ${APP_DB_USERNAME:root}
+      password: ${APP_DB_PASSWORD:}
       driver-class-name: com.mysql.cj.jdbc.Driver
       hikari:
         maximum-pool-size: 10
@@ -21,9 +21,9 @@ spring:
         connection-test-query: SELECT 1
         pool-name: AppCloudSqlCP
     ruleforge:
-      jdbcUrl:
-      username:
-      password:
+      jdbcUrl: ${RF_DB_URL:jdbc:mysql://localhost:3306/ruleforge_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true}
+      username: ${RF_DB_USERNAME:root}
+      password: ${RF_DB_PASSWORD:}
       driver-class-name: com.mysql.cj.jdbc.Driver
       hikari:
         maximum-pool-size: 10
@@ -44,12 +44,12 @@ ruleforge:
   knowledgeUpdateCycleV2: 300
   isKnowledgeUpdateRemoteV2: false
   repository:
-    dir: ./ruleforge-prod-console/data/riskruleforge
+    dir: ${RF_REPO_DIR:./data/riskruleforge}
   exec:
-    url: http://localhost:8082
+    url: ${EXECUTOR_URL:http://localhost:8082}
 
 # 延迟加载配置
 lazy-load:
-  enabled: true  # 是否启用延迟加载
-  base-url:  # 数据源API基础URL
-  timeout: 5000  # 请求超时时间（毫秒）
+  enabled: true
+  base-url: ${LAZY_LOAD_BASE_URL:}
+  timeout: 5000

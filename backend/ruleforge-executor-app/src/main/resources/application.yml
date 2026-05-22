@@ -1,5 +1,5 @@
 server:
-  port: 8082
+  port: ${EXECUTOR_PORT:8082}
 
 spring:
   application:
@@ -9,4 +9,4 @@ ruleforge:
   knowledgeUpdateCycleV2: 300
   isKnowledgeUpdateRemoteV2: true
   console:
-    url: http://localhost:8081
+    url: ${CONSOLE_URL:http://localhost:8081}
