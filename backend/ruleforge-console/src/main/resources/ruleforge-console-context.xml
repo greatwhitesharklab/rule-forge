@@ -2,20 +2,9 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
-    <bean id="ruleforge.consoleDebugWriter" class="com.ruleforge.console.servlet.console.ConsoleDebugWriter">
-        <property name="debugMessageHolder" ref="ruleforge.debugMessageHolder"/>
-    </bean>
-
-    <bean id="ruleforge.debugMessageHolder" class="com.ruleforge.console.servlet.console.DebugMessageHolder"/>
 
     <bean id="ruleforge.httpSessionKnowledgeCache"
           class="com.ruleforge.console.servlet.respackage.HttpSessionKnowledgeCache"/>
-
-    <bean id="ruleforge.permissionConfigServletHandler"
-          class="com.ruleforge.console.servlet.permission.PermissionConfigServletHandler">
-        <property name="repositoryService" ref="ruleforge.repositoryService"/>
-        <property name="permissionStore" ref="ruleforge.permissionService"/>
-    </bean>
 
     <bean id="ruleforge.permissionService" class="com.ruleforge.console.repository.permission.PermissionServiceImpl">
         <property name="repositoryService" ref="ruleforge.repositoryService"/>
@@ -51,38 +40,6 @@
           class="com.ruleforge.console.repository.refactor.field.ScriptRulesetContentRefactor"/>
     <bean id="ruleforge.crossTableContentRefactor"
           class="com.ruleforge.console.repository.refactor.field.CrossTableContentRefactor"/>
-
-    <bean id="ruleforge.resourceLoaderServletHandler" class="com.ruleforge.console.servlet.ResourceLoaderServletHandler"/>
-
-    <bean id="ruleforge.loadKnowledgeServletHandler"
-          class="com.ruleforge.console.servlet.knowledge.LoadKnowledgeServletHandler">
-    </bean>
-
-    <bean id="ruleforge.packageServletHandler" class="com.ruleforge.console.servlet.respackage.PackageServletHandler">
-        <property name="repositoryService" ref="ruleforge.repositoryService"/>
-        <property name="knowledgeBuilder" ref="ruleforge.knowledgeBuilder"/>
-        <property name="httpSessionKnowledgeCache" ref="ruleforge.httpSessionKnowledgeCache"/>
-    </bean>
-
-    <bean id="ruleforge.reteDiagramServletHandler"
-          class="com.ruleforge.console.servlet.diagram.ReteDiagramServletHandler">
-        <property name="knowledgeBuilder" ref="ruleforge.knowledgeBuilder"/>
-        <property name="httpSessionKnowledgeCache" ref="ruleforge.httpSessionKnowledgeCache"/>
-    </bean>
-
-    <bean id="ruleforge.variableEditorServletHandler"
-          class="com.ruleforge.console.servlet.variable.VariableEditorServletHandler"/>
-    <bean id="ruleforge.actionServletHandler" class="com.ruleforge.console.servlet.action.ActionServletHandler"/>
-    <bean id="ruleforge.ruleFlowDesignerServletHandler"
-          class="com.ruleforge.console.servlet.flow.RuleFlowDesignerServletHandler">
-        <property name="repositoryService" ref="ruleforge.repositoryService"/>
-    </bean>
-
-    <bean id="ruleforge.commonServletHandler" class="com.ruleforge.console.servlet.common.CommonServletHandler"/>
-    <bean id="ruleforge.clientConfigServletHandler"
-          class="com.ruleforge.console.servlet.client.ClientConfigServletHandler">
-        <property name="repositoryService" ref="ruleforge.repositoryService"/>
-    </bean>
 
     <bean id="ruleforge.console.propertyPlaceholderConfigurer"
           class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
