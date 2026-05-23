@@ -21,6 +21,11 @@ import java.util.*;
 @RequiredArgsConstructor
 public class CrosstabEditorController {
 
+    private static class CellSpan {
+        int row;
+        int col;
+    }
+
     @PostMapping("/importExcel")
     public Map<String, Object> importExcel(@RequestParam("excel_file") MultipartFile file) throws Exception {
         Map<String, Object> result = new HashMap<>();
@@ -111,7 +116,7 @@ public class CrosstabEditorController {
                 if (i != 0 || j != 0) {
                     XSSFCell cell = row.getCell(j);
                     if (cell != null) {
-                        Span span = getCellSpan(i, j, sheet);
+                        CellSpan span = getCellSpan(i, j, sheet);
                         if (span != null) {
                             String cellData = getCellData(cell);
                             CellContent cc = new CellContent();
@@ -120,11 +125,11 @@ public class CrosstabEditorController {
                             cc.setContent(cellData);
                             if (i < header.getRowSpan()) {
                                 cc.setType("condition");
-                                cc.setSpan(span.getCol());
+                                cc.setSpan(span.col);
                             }
                             if (j < header.getColSpan()) {
                                 cc.setType("condition");
-                                cc.setSpan(span.getRow());
+                                cc.setSpan(span.row);
                             }
                             cells.add(cc);
                         }
@@ -143,29 +148,29 @@ public class CrosstabEditorController {
     }
 
     private CrossHeader buildHeader(XSSFSheet sheet) {
-        Span span = getCellSpan(0, 0, sheet);
+        CellSpan span = getCellSpan(0, 0, sheet);
         if (span == null) {
             throw new RuleException("导入的Excel不合法!");
         }
         CrossHeader header = new CrossHeader();
-        header.setRowSpan(span.getRow());
-        header.setColSpan(span.getCol());
+        header.setRowSpan(span.row);
+        header.setColSpan(span.col);
         XSSFRow row = sheet.getRow(0);
         XSSFCell cell = row.getCell(0);
         header.setContent(getCellData(cell));
         return header;
     }
 
-    private Span getCellSpan(int row, int col, XSSFSheet sheet) {
+    private CellSpan getCellSpan(int row, int col, XSSFSheet sheet) {
         for (CellRangeAddress range : sheet.getMergedRegions()) {
             if (range.getFirstColumn() == col && range.getFirstRow() == row) {
                 int rowSpan = range.getLastRow() - range.getFirstRow();
                 if (rowSpan > 0) ++rowSpan;
                 int colSpan = range.getLastColumn() - range.getFirstColumn();
                 if (colSpan > 0) ++colSpan;
-                Span s = new Span();
-                s.setRow(rowSpan);
-                s.setCol(colSpan);
+                CellSpan s = new CellSpan();
+                s.row = rowSpan;
+                s.col = colSpan;
                 return s;
             }
             if (col >= range.getFirstColumn() && col <= range.getLastColumn()
@@ -173,9 +178,9 @@ public class CrosstabEditorController {
                 return null;
             }
         }
-        Span s = new Span();
-        s.setRow(1);
-        s.setCol(1);
+        CellSpan s = new CellSpan();
+        s.row = 1;
+        s.col = 1;
         return s;
     }
 
