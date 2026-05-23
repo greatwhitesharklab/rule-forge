@@ -1,0 +1,21 @@
+.col-resize-trigger {
+    cursor: col-resize;
+    width: 2px;
+    float: right;
+}
+
+.cell {
+    text-align: center;
+    border: 1px solid #c6c4c4 !important;
+    min-width: 90px;
+}
+
+.top-condition-cell {
+    background-color: #f3f8ff;
+    padding: 5px !important;
+}
+
+.left-condition-cell {
+    background-color: #f5fdf1;
+    padding: 5px !important;
+}

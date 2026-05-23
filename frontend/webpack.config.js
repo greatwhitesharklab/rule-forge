@@ -24,6 +24,8 @@ module.exports = {
         scoreCardTable: './src/scorecard/index.jsx',
         permissionConfigEditor: './src/permission/index.jsx',
         resourceEditor: './src/resource/index.jsx',
+        crosstabEditor: './src/editor/crosstab/index.jsx',
+        complexScoreCardEditor: './src/editor/complexscorecard/index.jsx',
         login: './src/login/index.jsx'
     },
     output: {
@@ -36,8 +38,6 @@ module.exports = {
             patterns: [
                 { from: path.resolve(__dirname, 'lib'), to: 'lib' },
                 { from: path.resolve(__dirname, 'fonts'), to: 'fonts' },
-                { from: path.resolve(__dirname, 'html/complexscorecard-editor.html'), to: 'html/complexscorecard-editor.html' },
-                { from: path.resolve(__dirname, 'html/crosstab-editor.html'), to: 'html/crosstab-editor.html' }
             ]
         }),
         new HtmlWebpackPlugin({ filename: 'index.html', template: 'html/frame.html', chunks: ["frame"] }),
@@ -56,6 +56,8 @@ module.exports = {
         new HtmlWebpackPlugin({ filename: 'html/permission-config-editor.html', template: 'html/permission-config-editor.html', chunks: ["permissionConfigEditor"] }),
         new HtmlWebpackPlugin({ filename: 'html/client-config-editor.html', template: 'html/client-config-editor.html', chunks: ["clientConfigEditor"] }),
         new HtmlWebpackPlugin({ filename: 'html/resource-editor.html', template: 'html/resource-editor.html', chunks: ["resourceEditor"] }),
+        new HtmlWebpackPlugin({ filename: 'html/crosstab-editor.html', template: 'html/crosstab-editor.html', chunks: ["crosstabEditor"] }),
+        new HtmlWebpackPlugin({ filename: 'html/complexscorecard-editor.html', template: 'html/complexscorecard-editor.html', chunks: ["complexScoreCardEditor"] }),
         new HtmlWebpackPlugin({ filename: 'html/login.html', template: 'html/login.html', chunks: ["login"] }),
     ],
     module: {
