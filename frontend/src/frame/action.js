@@ -705,7 +705,7 @@ function buildData() {
             data._icon = Styles.frameStyle.getFlowIcon();
             data._style = Styles.frameStyle.getFlowIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/rule-flow-designer.html";
+            data.editorPath = "/html/flow-bpmn-editor.html";
             break;
         case "scorecard":
             data._icon = Styles.frameStyle.getScorecardIcon();
