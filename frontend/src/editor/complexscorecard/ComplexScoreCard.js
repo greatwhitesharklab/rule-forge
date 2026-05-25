@@ -15,7 +15,7 @@ import ContentRow from './ScoreCardRow.js';
 import ConditionColumn from './ScoreCardColumn.js';
 import {ActionColumn} from './ScoreCardColumn.js';
 import TableAction from './TableAction.js';
-import {getParameter, ajaxSave} from '../../Utils.js';
+import {getParameter, ajaxSave, handleResponseError} from '../../Utils.js';
 import {MsgBox} from 'flowdesigner';
 
 export default class ComplexScoreCard {
@@ -195,15 +195,7 @@ export default class ComplexScoreCard {
                     bootbox.alert("<span style='color: red'>服务端出错</span>");
                 }
             }).catch(function (response) {
-                if (response && response.status === 401) {
-                    bootbox.alert("权限不足，不能进行此操作.");
-                } else if (response && response.text) {
-                    response.text().then(function(text) {
-                        bootbox.alert("<span style='color: red'>服务端错误：" + text + "</span>");
-                    });
-                } else {
-                    bootbox.alert("<span style='color: red'>服务端出错</span>");
-                }
+                handleResponseError(response, '服务端错误：');
             });
         } else {
             ajaxSave(saveUrl, postData, function () {
@@ -452,20 +444,7 @@ export default class ComplexScoreCard {
             if (callback) callback(data);
         }).catch(function (error) {
             document.body.innerHTML = '';
-            if (error && error.status === 401) {
-                bootbox.alert('权限不足，不能进行此操作.');
-            } else if (error && error.text) {
-                error.text().then(function(text) {
-                    try {
-                        const result = JSON.parse(text);
-                        bootbox.alert("<span style='color: red'>服务端错误：" + result.errorMsg + '</span>');
-                    } catch (e) {
-                        bootbox.alert("<span style='color: red'>服务端错误：" + text + '</span>');
-                    }
-                });
-            } else {
-                bootbox.alert("<span style='color: red'>服务端出错</span>");
-            }
+            handleResponseError(error, '服务端错误：');
         });
     }
 

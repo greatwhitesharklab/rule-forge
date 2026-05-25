@@ -1,3 +1,5 @@
+import {handleResponseError} from '../Utils.js';
+
 export const ADD='add';
 export const DEL='del';
 export const LOADED_DATA='loaded_data';
@@ -13,15 +15,7 @@ export function loadData(project) {
         }).then(function (data) {
             dispatch({type:LOADED_DATA,data});
         }).catch(function (response) {
-            if (response && response.status === 401) {
-                bootbox.alert("权限不足，不能进行此操作.");
-            } else if (response && response.text) {
-                response.text().then(function(text) {
-                    bootbox.alert("<span style='color: red'>服务端错误：" + text + "</span>");
-                });
-            } else {
-                bootbox.alert("<span style='color: red'>服务端出错</span>");
-            }
+            handleResponseError(response, '服务端错误：');
         });
     };
 };
@@ -54,15 +48,7 @@ export function save(data,project) {
     }).then(function () {
         bootbox.alert('保存成功!');
     }).catch(function (response) {
-        if (response && response.status === 401) {
-            bootbox.alert("权限不足，不能进行此操作.");
-        } else if (response && response.text) {
-            response.text().then(function(text) {
-                bootbox.alert("<span style='color: red'>保存失败，服务端错误：" + text + "</span>");
-            });
-        } else {
-            bootbox.alert("<span style='color: red'>保存失败，服务端出错</span>");
-        }
+        handleResponseError(response, '保存失败，服务端错误：');
     });
 };
 export function del(index) {

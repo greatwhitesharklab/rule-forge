@@ -45,7 +45,7 @@ import ResourceListDialogComponent from '../common/ResourceListDialogComponent.j
 import ConfigLibraryDialog from '../../components/dialog/component/ConfigLibraryDialog.jsx';
 import EditorToolbar from '../../components/editor-toolbar/EditorToolbar.jsx';
 import { createRoot } from 'react-dom/client';
-import {getParameter, ajaxSave, saveNewVersion, buildProjectNameFromFile, loadEditorData} from "../../Utils.js";
+import {getParameter, ajaxSave, saveNewVersion, buildProjectNameFromFile, loadEditorData, handleResponseError} from "../../Utils.js";
 import * as event from '../../components/componentEvent.js';
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -90,15 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
             decisionTree.loadData(editorData);
             toolbarApi.clearDirty();
         }).catch(function (response) {
-            if (response && response.status === 401) {
-                bootbox.alert("权限不足，不能进行此操作.");
-            } else if (response && response.text) {
-                response.text().then(function(text) {
-                    bootbox.alert("<span style='color: red'>加载文件失败：" + text + "</span>");
-                });
-            } else {
-                alert("加载文件失败！");
-            }
+            handleResponseError(response, '加载文件失败：');
         });
     }
 

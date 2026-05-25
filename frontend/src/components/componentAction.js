@@ -1,5 +1,6 @@
 import { version } from 'react';
 import Styles from '../Styles.js';
+import {handleResponseError} from '../Utils.js';
 
 let __ui_id = 1;
 
@@ -20,15 +21,7 @@ export function refactorContent(file, callback) {
     }).then(function () {
         callback.call(this)
     }).catch(function (response) {
-        if (response && response.status === 401) {
-            bootbox.alert("权限不足，不能进行此操作.");
-        } else if (response && response.text) {
-            response.text().then(function(text) {
-                bootbox.alert("<span style='color: red'>服务端错误：" + text + "</span>");
-            });
-        } else {
-            bootbox.alert("<span style='color: red'>服务端出错</span>");
-        }
+        handleResponseError(response, '服务端错误：');
     });
 }
 

@@ -20,15 +20,16 @@ export function buildProjectNameFromFile(file) {
     }
 }
 
-function handleResponseError(response) {
+export function handleResponseError(response, prefix) {
     if (response.status === 401) {
         bootbox.alert("权限不足，不能进行此操作.");
-    } else {
+    } else if (response.text) {
         return response.text().then(function (text) {
-            bootbox.alert(text
-                ? "<span style='color: red'>服务端错误：" + text + "</span>"
-                : "<span style='color: red'>服务端出错</span>");
+            var msg = text ? (prefix || "服务端错误：") + text : (prefix || "服务端出错");
+            bootbox.alert("<span style='color: red'>" + msg + "</span>");
         });
+    } else {
+        bootbox.alert("<span style='color: red'>" + (prefix || "服务端出错") + "</span>");
     }
 }
 

@@ -17,7 +17,7 @@ import KnowledgeTreeDialog from '../../components/dialog/component/KnowledgeTree
 import ConfigLibraryDialog from '../../components/dialog/component/ConfigLibraryDialog.jsx';
 import QuickTestDialog from '../../components/dialog/component/QuickTestDialog.jsx';
 import EditorToolbar from '../../components/editor-toolbar/EditorToolbar.jsx';
-import {ajaxSave, buildProjectNameFromFile, getParameter, saveNewVersion} from '../../Utils.js';
+import {ajaxSave, buildProjectNameFromFile, getParameter, saveNewVersion, handleResponseError} from '../../Utils.js';
 import * as event from '../../components/componentEvent.js';
 import * as componentEvent from '../../components/componentEvent.js';
 
@@ -108,15 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }).then(function (data) {
             codeMirror._library = data;
         }).catch(function (response) {
-            if (response && response.status === 401) {
-                bootbox.alert("权限不足，不能进行此操作.");
-            } else if (response && response.text) {
-                response.text().then(function(text) {
-                    bootbox.alert("<span style='color: red'>资源库加载失败：" + text + "</span>");
-                });
-            } else {
-                bootbox.alert("<span style='color: red'>资源库加载失败,服务端出错</span>");
-            }
+            handleResponseError(response, '资源库加载失败：');
         });
     }
 
@@ -177,15 +169,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         loadResLib();
     }).catch(function (response) {
-        if (response && response.status === 401) {
-            bootbox.alert("权限不足，不能进行此操作.");
-        } else if (response && response.text) {
-            response.text().then(function(text) {
-                bootbox.alert("<span style='color: red'>文件加载失败：" + text + "</span>");
-            });
-        } else {
-            bootbox.alert("<span style='color: red'>文件加载失败,服务端出错</span>");
-        }
+        handleResponseError(response, '文件加载失败：');
     });
 });
 
@@ -214,15 +198,7 @@ function buildScriptLintFunction(type) {
                 updateLinting(editor, []);
             }
         }).catch(function (response) {
-            if (response && response.status === 401) {
-                bootbox.alert("权限不足，不能进行此操作.");
-            } else if (response && response.text) {
-                response.text().then(function(text) {
-                    bootbox.alert("<span style='color: red'>语法检查操作失败：" + text + "</span>");
-                });
-            } else {
-                bootbox.alert("<span style='color: red'>语法检查操作失败,服务端出错</span>");
-            }
+            handleResponseError(response, '语法检查操作失败：');
         });
     };
 }

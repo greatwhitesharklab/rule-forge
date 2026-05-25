@@ -1,3 +1,5 @@
+import {handleResponseError} from '../../Utils.js';
+
 DecisionTree = function (container) {
     this.container = container;
     this.topNode = new VariableTreeNode();
@@ -130,13 +132,7 @@ DecisionTree.prototype.initToolbar = function () {
             dialog.remove();
         }).catch(function (response) {
             dialog.remove();
-            if (response && response.text) {
-                response.text().then(function(text) {
-                    bootbox.alert("<span style='color: red'>保存失败：" + text + "</span>");
-                });
-            } else {
-                bootbox.alert("<span style='color: red'>保存失败,服务端出错</span>");
-            }
+            handleResponseError(response, '保存失败：');
         });
     };
 
@@ -181,15 +177,7 @@ DecisionTree.prototype.initToolbar = function () {
                 cancelDirty();
             }
         }).catch(function (response) {
-            if (response && response.status === 401) {
-                bootbox.alert("权限不足，不能进行此操作.");
-            } else if (response && response.text) {
-                response.text().then(function(text) {
-                    bootbox.alert("<span style='color: red'>加载文件失败：" + text + "</span>");
-                });
-            } else {
-                bootbox.alert("<span style='color: red'>加载文件失败,服务端出错</span>");
-            }
+            handleResponseError(response, '加载文件失败：');
         });
     };
 

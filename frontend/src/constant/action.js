@@ -1,4 +1,4 @@
-import {ajaxSave} from '../Utils.js';
+import {ajaxSave, handleResponseError} from '../Utils.js';
 export const LOAD_MASTER_COMPLETED='load_master_completed';
 export const LOAD_SLAVE_COMPLETE='load_slave_completed';
 export const ADD_MASTER='add_master';
@@ -104,15 +104,7 @@ export function loadMasterData(files) {
         }).then(function (data) {
             dispatch({type:LOAD_MASTER_COMPLETED,masterData:data[0].categories});
         }).catch(function (response) {
-            if (response && response.status === 401) {
-                bootbox.alert("权限不足，不能进行此操作.");
-            } else if (response && response.text) {
-                response.text().then(function(text) {
-                    bootbox.alert("<span style='color: red'>服务端错误：" + text + "</span>");
-                });
-            } else {
-                bootbox.alert("<span style='color: red'>服务端出错</span>");
-            }
+            handleResponseError(response, '服务端错误：');
         });
     }
 };

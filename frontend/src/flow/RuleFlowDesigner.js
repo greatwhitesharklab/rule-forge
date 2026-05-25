@@ -1,4 +1,5 @@
 import {Event, FlowDesigner, MsgBox, Node} from 'flowdesigner';
+import {handleResponseError} from '../Utils.js';
 import BaseNode from './BaseNode.js';
 import * as event from '../components/componentEvent.js';
 import * as action from '../frame/action.js';
@@ -618,15 +619,7 @@ export default class RuleFlowDesigner extends FlowDesigner {
         }).then(function (data) {
             callback(data);
         }).catch(function (response) {
-            if (response && response.status === 401) {
-                bootbox.alert("权限不足，不能进行此操作.");
-            } else if (response && response.text) {
-                response.text().then(function(text) {
-                    bootbox.alert("<span style='color: red'>加载库文件失败，服务端错误：" + text + "</span>");
-                });
-            } else {
-                bootbox.alert("<span style='color: red'>加载库文件失败,服务端出错</span>");
-            }
+            handleResponseError(response, '加载库文件失败，服务端错误：');
         });
     };
 }

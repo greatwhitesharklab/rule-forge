@@ -54,7 +54,7 @@ import ReferenceDialog from '../../reference/ReferenceDialog.jsx';
 import * as refEvent from '../../reference/event.js';
 import * as componentEvent from '../../components/componentEvent.js';
 import {createRoot} from 'react-dom/client';
-import {getParameter, ajaxSave, saveNewVersion, buildProjectNameFromFile, loadEditorData} from "../../Utils.js";
+import {getParameter, ajaxSave, saveNewVersion, buildProjectNameFromFile, loadEditorData, handleResponseError} from "../../Utils.js";
 
 document.addEventListener('DOMContentLoaded', function () {
     const file = getParameter('file');
@@ -168,12 +168,6 @@ document.addEventListener('DOMContentLoaded', function () {
         factory.loadData(editorData);
         toolbarApi.clearDirty();
     }).catch(function (response) {
-        if (response && response.text) {
-            response.text().then(function(text) {
-                bootbox.alert("<span style='color: red'>加载文件失败，服务端错误：" + text + "</span>");
-            });
-        } else {
-            bootbox.alert("<span style='color: red'>加载文件失败,服务端出错</span>");
-        }
+        handleResponseError(response, '加载文件失败，服务端错误：');
     });
 });
