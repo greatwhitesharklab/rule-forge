@@ -12,12 +12,7 @@ import com.ruleforge.console.repository.model.ResourcePackage;
 import com.ruleforge.console.servlet.common.RefFile;
 import com.ruleforge.console.servlet.respackage.HttpSessionKnowledgeCache;
 import com.ruleforge.exception.RuleException;
-import com.ruleforge.model.flow.FlowDefinition;
-import com.ruleforge.model.flow.FlowNode;
-import com.ruleforge.model.flow.FlowNodeType;
-import com.ruleforge.model.flow.RuleNode;
 import com.ruleforge.model.library.variable.VariableCategory;
-import com.ruleforge.parse.flow.FlowDefinitionParser;
 import com.ruleforge.console.entity.ProjectEntity;
 import com.ruleforge.console.entity.ProjectRuntimeConfigEntity;
 import com.ruleforge.console.entity.ProjectRuntimeFlowEntity;
@@ -77,7 +72,6 @@ public class PackageController extends BaseController {
     private final ProjectVersionMapper projectVersionMapper;
     @Value("${ruleforgeV2.git.base:/opt/data}")
     private String gitBase;
-    private final FlowDefinitionParser flowDefinitionParser;
 
     @PostMapping("/loadPackages")
     public List<ResourcePackage> loadPackages(@RequestParam("project") String project,
@@ -158,16 +152,8 @@ public class PackageController extends BaseController {
             Map<String, String> pathNodeNameMap = new HashMap<>();
 
             if (path.endsWith(FileType.RuleFlow.toString())) {
-                InputStream inputStream = this.ruleforgeRepositoryService.readFile(path);
-                Element element = parseXml(inputStream);
-
-                FlowDefinition flowDefinition = flowDefinitionParser.parse(element);
-                for (FlowNode flowNode : flowDefinition.getNodes()) {
-                    if (flowNode.getType() == FlowNodeType.Rule) {
-                        pathList.add(((RuleNode) flowNode).getFile());
-                        pathNodeNameMap.put(((RuleNode) flowNode).getFile(), flowNode.getName());
-                    }
-                }
+                // Flow files are now BPMN XML, no old-style flow definition parsing
+                pathList.add(path);
             } else {
                 pathList.add(path);
             }
@@ -335,8 +321,8 @@ public class PackageController extends BaseController {
 
     @PostMapping(value = "/loadFlows", produces = "text/json;charset=UTF-8")
     public String loadFlows(HttpServletRequest req) throws Exception {
-        KnowledgeBase knowledgeBase = (KnowledgeBase) httpSessionKnowledgeCache.get(req, KB_KEY);
-        return writeObjectToJson(knowledgeBase.getFlowMap().values());
+        // Flow definitions are now managed by Flowable BPMN engine
+        return "[]";
     }
 
     private KnowledgeBase buildKnowledgeBase(HttpServletRequest req, String files) throws RuleException {

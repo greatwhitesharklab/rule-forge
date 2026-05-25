@@ -5,8 +5,6 @@ import com.ruleforge.action.ConsolePrintAction;
 import com.ruleforge.action.ExecuteMethodAction;
 import com.ruleforge.action.VariableAssignAction;
 import com.ruleforge.exception.RuleException;
-import com.ruleforge.model.flow.Connection;
-import com.ruleforge.model.flow.DecisionItem;
 import com.ruleforge.model.library.Datatype;
 import com.ruleforge.model.library.ResourceLibrary;
 import com.ruleforge.model.library.action.ActionLibrary;
@@ -253,10 +251,10 @@ public class RulesRebuilder {
                     throw new RuleException("变量字段名为空");
                 }
 
-                if (variableLabel.equals(Connection.RETURN_VALUE_KEY)) {
+                if (variableLabel.equals("return_value__")) {
                     varAction.setVariableName(variableLabel);
                     varAction.setDatatype(Datatype.Boolean);
-                } else if (variableLabel.equals(DecisionItem.RETURN_VALUE_KEY)) {
+                } else if (variableLabel.equals("return_to__")) {
                     varAction.setVariableName(variableLabel);
                     varAction.setDatatype(Datatype.String);
                 } else {

@@ -1,6 +1,6 @@
 import {Component} from 'react';
 import * as componentEvent from '../../componentEvent.js';
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 
 const CONFIGS = {
     variable: {
@@ -78,7 +78,7 @@ export default class ConfigLibraryDialog extends Component {
                 }
                 const libs = config.getLibraries();
                 if (libs.indexOf(path) !== -1) {
-                    MsgBox.alert(config.existsMsg);
+                    window.bootbox.alert(config.existsMsg);
                     return;
                 }
                 libs.push(path);

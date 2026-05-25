@@ -38,7 +38,7 @@ class SelectMethodDialog extends Component{
                     style:{fontSize:'18px',color:'#337ab7',padding:'0px 4px',cursor:'pointer'},
                     click:function(rowIndex,rowData){
                         dispatch(action.addSlave(rowData));
-                        bootbox.alert('添加成功.');
+                        window.bootbox.alert('添加成功.');
                     }
                 }
             ]

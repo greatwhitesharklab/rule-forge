@@ -19,6 +19,8 @@ import com.ruleforge.console.app.lazy.LazyGeneralEntity;
 import com.ruleforge.console.app.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 
 import java.io.PrintWriter;
@@ -41,6 +43,7 @@ public class LoanDecisionServiceImpl implements ILoanDecisionService {
     private final IDecisionLogService decisionLogService;
     private final IShadowConfigService shadowConfigService;
     private final IShadowExecutionService shadowExecutionService;
+    private final RuntimeService flowableRuntimeService;
 
     @Override
     public LoanEvaluateResponse evaluate(LoanEvaluateRequest request) {
@@ -173,7 +176,9 @@ public class LoanDecisionServiceImpl implements ILoanDecisionService {
         log.info("决策流执行前参数: {}", ctx.inputParams);
 
         long stepStartTime = System.currentTimeMillis();
-        ctx.response = (ExecutionResponseImpl) ctx.session.startProcess(ctx.request.getFlowId(), params);
+        ProcessInstance processInstance = flowableRuntimeService.startProcessInstanceByKey(ctx.request.getFlowId(), params);
+        Map<String, Object> resultVars = flowableRuntimeService.getVariables(processInstance.getId());
+        ctx.response = new ExecutionResponseImpl();
         ctx.flowExecutionTime = System.currentTimeMillis() - stepStartTime;
 
         ctx.execMessageItems = ctx.session.getExecMessageItems();

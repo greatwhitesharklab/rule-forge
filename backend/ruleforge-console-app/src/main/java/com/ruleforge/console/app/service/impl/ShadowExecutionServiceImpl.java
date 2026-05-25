@@ -17,6 +17,8 @@ import com.ruleforge.console.app.service.IShadowDecisionLogService;
 import com.ruleforge.console.app.service.IShadowExecutionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +40,7 @@ public class ShadowExecutionServiceImpl implements IShadowExecutionService {
     private final LazyEntityFactory lazyEntityFactory;
     private final IRuleVariableDefService ruleVariableDefService;
     private final IShadowDecisionLogService shadowDecisionLogService;
+    private final RuntimeService flowableRuntimeService;
 
     @Override
     @Async("shadowExecutor")
@@ -108,7 +111,9 @@ public class ShadowExecutionServiceImpl implements IShadowExecutionService {
             inputParams = session.getParameters();
 
             stepStartTime = System.currentTimeMillis();
-            response = (ExecutionResponseImpl) session.startProcess(shadowFlowId);
+            ProcessInstance processInstance = flowableRuntimeService.startProcessInstanceByKey(shadowFlowId);
+            Map<String, Object> resultVars = flowableRuntimeService.getVariables(processInstance.getId());
+            response = new ExecutionResponseImpl();
             flowExecutionTime = System.currentTimeMillis() - stepStartTime;
 
             // 8. 获取执行后参数

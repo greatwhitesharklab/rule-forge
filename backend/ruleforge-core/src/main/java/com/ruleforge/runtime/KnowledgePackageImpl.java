@@ -2,7 +2,6 @@ package com.ruleforge.runtime;
 
 import com.ruleforge.model.Node;
 import com.ruleforge.model.RuleJsonDeserializer;
-import com.ruleforge.model.flow.FlowDefinition;
 import com.ruleforge.model.rete.*;
 import com.ruleforge.model.rule.Other;
 import com.ruleforge.model.rule.Rhs;
@@ -21,9 +20,6 @@ public class KnowledgePackageImpl implements KnowledgePackage {
     private Rete rete;
     @Setter
     private Map<String, String> variableCategoryMap = new HashMap<>();
-    @Setter
-    @Getter
-    private Map<String, FlowDefinition> flowMap;
     @Setter
     private Map<String, String> parameters;
     @JsonDeserialize(using = RuleJsonDeserializer.class)

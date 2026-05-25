@@ -27,7 +27,7 @@ function master(state = {}, action) {
                 }
             });
             if (error) {
-                bootbox.alert(error);
+                window.bootbox.alert(error);
                 return state;
             }
             newPackage.resourceItems = [];

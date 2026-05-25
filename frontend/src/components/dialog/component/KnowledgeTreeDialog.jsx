@@ -78,7 +78,7 @@ export default class KnowledgeTreeDialog extends Component {
                         this.callback(this.currentNodeData.fullPath, 'LATEST');
                         event.eventEmitter.emit(event.HIDE_KNOWLEDGE_TREE_DIALOG);
                     } else {
-                        bootbox.alert("请先选择一个文件");
+                        window.bootbox.alert("请先选择一个文件");
                     }
                 }.bind(this)
             }
@@ -94,7 +94,7 @@ export default class KnowledgeTreeDialog extends Component {
                         callback: this.callback
                     });
                 } else {
-                    bootbox.alert("请先选择一个文件");
+                    window.bootbox.alert("请先选择一个文件");
                 }
             }.bind(this)
         });

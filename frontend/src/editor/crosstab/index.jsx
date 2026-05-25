@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             xml = crossTable.toXml();
         } catch (e) {
-            bootbox.alert(e.message || e);
+            window.bootbox.alert(e.message || e);
             return;
         }
         if (!xml) return;
@@ -145,18 +145,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }).catch(function (error) {
         document.body.innerHTML = '';
         if (error && error.status === 401) {
-            bootbox.alert('权限不足，不能进行此操作.');
+            window.bootbox.alert('权限不足，不能进行此操作.');
         } else if (error && error.text) {
             error.text().then(function(text) {
                 try {
                     const result = JSON.parse(text);
-                    bootbox.alert("<span style='color: red'>服务端错误：" + result.errorMsg + '</span>');
+                    window.bootbox.alert("<span style='color: red'>服务端错误：" + result.errorMsg + '</span>');
                 } catch (e) {
-                    bootbox.alert("<span style='color: red'>服务端错误：" + text + '</span>');
+                    window.bootbox.alert("<span style='color: red'>服务端错误：" + text + '</span>');
                 }
             });
         } else {
-            bootbox.alert("<span style='color: red'>服务端出错</span>");
+            window.bootbox.alert("<span style='color: red'>服务端出错</span>");
         }
     });
 });

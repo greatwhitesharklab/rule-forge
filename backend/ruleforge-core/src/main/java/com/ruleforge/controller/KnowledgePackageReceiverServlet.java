@@ -1,7 +1,6 @@
 package com.ruleforge.controller;
 
 import com.ruleforge.Configure;
-import com.ruleforge.model.flow.FlowDefinition;
 import com.ruleforge.runtime.KnowledgePackage;
 import com.ruleforge.runtime.KnowledgePackageWrapper;
 import com.ruleforge.runtime.cache.CacheUtils;
@@ -44,12 +43,6 @@ public class KnowledgePackageReceiverServlet extends HttpServlet {
         KnowledgePackageWrapper wrapper = mapper.readValue(content, KnowledgePackageWrapper.class);
         wrapper.buildDeserialize();
         KnowledgePackage knowledgePackage = wrapper.getKnowledgePackage();
-        Map<String, FlowDefinition> flowMap = knowledgePackage.getFlowMap();
-        if (flowMap != null && !flowMap.isEmpty()) {
-            for (FlowDefinition fd : flowMap.values()) {
-                fd.buildConnectionToNode();
-            }
-        }
         CacheUtils.getKnowledgeCache().putKnowledge(packageId, knowledgePackage);
         log.info("Successfully receive the server side to pushed package: {}", packageId);
         resp.setContentType("text/plain");

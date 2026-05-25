@@ -1,4 +1,4 @@
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 import Sortable from 'sortablejs';
 
 ruleforge.LoopRule=function(parent,container,data){

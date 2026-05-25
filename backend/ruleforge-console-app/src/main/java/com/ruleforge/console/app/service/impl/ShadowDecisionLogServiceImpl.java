@@ -12,7 +12,6 @@ import com.ruleforge.model.rule.lhs.Criterion;
 import com.ruleforge.model.rule.lhs.Junction;
 import com.ruleforge.model.rule.lhs.Lhs;
 import com.ruleforge.runtime.response.ExecutionResponseImpl;
-import com.ruleforge.runtime.response.NodeExecutionResponse;
 import com.ruleforge.runtime.response.RuleExecutionResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -136,27 +135,6 @@ public class ShadowDecisionLogServiceImpl implements IShadowDecisionLogService {
 
         if (response == null) {
             return;
-        }
-
-        // 2. 保存节点明细
-        List<NodeExecutionResponse> nodeResponses = response.getNodeExecutionResponseList();
-        if (nodeResponses != null && !nodeResponses.isEmpty()) {
-            for (NodeExecutionResponse nodeResp : nodeResponses) {
-                ShadowNodeLog nodeLog = new ShadowNodeLog();
-                nodeLog.setFlowLogId(flowLogId);
-                nodeLog.setUserId(userId);
-                nodeLog.setSort(nodeResp.getSort());
-                nodeLog.setDecisionNodeName(nodeResp.getDecisionNodeName());
-                nodeLog.setDecisionNodeResult(nodeResp.getDecisionNodeResult() != null ?
-                        nodeResp.getDecisionNodeResult().toString() : null);
-                nodeLog.setRuleNodeName(nodeResp.getRuleNodeName());
-                nodeLog.setMatchedRuleKey(nodeResp.getMatchedRuleKey());
-                nodeLog.setMatchedRuleName(nodeResp.getMatchedRuleName());
-                nodeLog.setMatchedRuleAction(nodeResp.getMatchedRuleAction());
-                nodeLog.setCreatedAt(now);
-
-                nodeLogMapper.insert(nodeLog);
-            }
         }
 
         // 3. 保存规则执行明细

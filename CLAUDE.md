@@ -36,7 +36,7 @@ core ← executor ← executor-app
 
 ### ruleforge-core (`com.ruleforge.*`)
 Pure engine, no Spring Boot dependency:
-- `model/` — rule models (rule, table, tree, scorecard, flow, library)
+- `model/` — rule models (rule, table, tree, scorecard, library)
 - `model.rete/` — RETE algorithm implementation
 - `runtime/` — knowledge session, execution, caching
 - `parse/` — XML/DSL rule parsers (ANTLR4)
@@ -44,7 +44,8 @@ Pure engine, no Spring Boot dependency:
 
 ### ruleforge-console (`com.ruleforge.console.*`)
 Web editor backend:
-- `controller/` — REST controllers (frame, common, package, flow)
+- `controller/` — REST controllers (frame, common, package)
+- `flow/` — Flowable 8 integration (delegates, controller, converter)
 - `service/` — repository, permission, test services
 - `storage/` — project storage (DB-backed)
 - `mapper/` — MyBatis-Plus mappers
@@ -69,7 +70,18 @@ Deployable executor with RestTemplate config for console communication.
 - Java 17, Spring Boot 4.0.6, Spring Framework 7
 - MyBatis-Plus 3.5.9, MySQL, Flyway
 - ANTLR4, Jackson, fastjson2, HikariCP
-- Frontend: React
+- Flowable 8 BPM engine for decision flow execution
+- Frontend: React, bpmn-js for flow designer
+
+## Development Principles
+
+### BDD/TDD
+
+- Follow Behavior Driven Development practices for test writing:
+  1. Before writing test code, create an empty test file with Gherkin-style behavior annotations (Given/When/Then) and function names only
+  2. Use `AskUserQuestion` to confirm with the user before proceeding to write actual test code
+  3. Never write test code before completing the behavior annotations
+- Follow Test Driven Development: never write business/implementation code before writing tests
 
 ## Rule Types
 

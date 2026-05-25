@@ -1,7 +1,6 @@
 package com.ruleforge.runtime;
 
 import com.ruleforge.exception.RuleException;
-import com.ruleforge.model.flow.FlowDefinition;
 import com.ruleforge.model.rete.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -66,13 +65,6 @@ public class KnowledgePackageWrapper {
             rebuildLine(lines, allNodes);
         }
         ((KnowledgePackageImpl) knowledgePackage).buildWithElseRules();
-
-        Map<String, FlowDefinition> flowMap = knowledgePackage.getFlowMap();
-        if (flowMap != null && !flowMap.isEmpty()) {
-            for (FlowDefinition fd : flowMap.values()) {
-                fd.buildConnectionToNode();
-            }
-        }
     }
 
     private void rebuildLine(List<Line> lines, List<ReteNode> reteNodes) {

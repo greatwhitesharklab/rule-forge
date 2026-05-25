@@ -154,7 +154,7 @@ export default class QuickTestDialog extends Component {
                     }} onClick={e=>{
                         const logContent = this.state.logData.map(item => `<p>》》》规则（RuleSet：${decodeURIComponent(item.fileName)}，${item.version}），已被添加到执行队列；</p>`);
                         console.log('logContent', logContent)
-                        bootbox.alert({title: '日志', message: logContent.join('')})
+                        window.bootbox.alert({title: '日志', message: logContent.join('')})
                     }}>查看详细日志</button>
                 </div>
                 {(this.state.resultData || []).map((item, key) => (
@@ -225,7 +225,7 @@ export default class QuickTestDialog extends Component {
                             try {
                                 params.data = JSON.parse(this.editor.getValue());
                             } catch (error) {
-                                bootbox.alert('JSON格式错误，请检查输入内容');
+                                window.bootbox.alert('JSON格式错误，请检查输入内容');
                                 return;
                             }
                         }

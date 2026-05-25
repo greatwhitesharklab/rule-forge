@@ -44,31 +44,6 @@ public class KnowledgeEventManagerImpl implements KnowledgeEventManager {
                     }
                 }
             }
-        } else if (event instanceof ProcessEvent) {
-            for (KnowledgeEventListener listener : this.listeners) {
-                if (listener instanceof ProcessEventListener) {
-                    ProcessEventListener lis = (ProcessEventListener) listener;
-                    if (event instanceof ProcessAfterCompletedEvent) {
-                        ProcessAfterCompletedEvent e = (ProcessAfterCompletedEvent) event;
-                        lis.afterProcessCompleted(e);
-                    } else if (event instanceof ProcessAfterStartedEvent) {
-                        ProcessAfterStartedEvent e = (ProcessAfterStartedEvent) event;
-                        lis.afterProcessStarted(e);
-                    } else if (event instanceof ProcessBeforeCompletedEvent) {
-                        ProcessBeforeCompletedEvent e = (ProcessBeforeCompletedEvent) event;
-                        lis.beforeProcessCompleted(e);
-                    } else if (event instanceof ProcessBeforeStartedEvent) {
-                        ProcessBeforeStartedEvent e = (ProcessBeforeStartedEvent) event;
-                        lis.beforeProcessStarted(e);
-                    } else if (event instanceof ProcessAfterNodeTriggeredEvent) {
-                        ProcessAfterNodeTriggeredEvent e = (ProcessAfterNodeTriggeredEvent) event;
-                        lis.afterNodeTriggered(e);
-                    } else if (event instanceof ProcessBeforeNodeTriggeredEvent) {
-                        ProcessBeforeNodeTriggeredEvent e = (ProcessBeforeNodeTriggeredEvent) event;
-                        lis.beforeNodeTriggered(e);
-                    }
-                }
-            }
         }
     }
 }

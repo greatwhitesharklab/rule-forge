@@ -46,6 +46,13 @@
             <version>3.5.3-SNAPSHOT</version>
         </dependency>
 
+        <!-- Flowable BPMN 引擎 -->
+        <dependency>
+            <groupId>org.flowable</groupId>
+            <artifactId>flowable-spring-boot-starter-process</artifactId>
+            <version>8.0.0</version>
+        </dependency>
+
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>

@@ -38,7 +38,7 @@ export default class ImportXmlDialog extends Component {
                         dispatch(action.importFields(this.state.rowIndex, jsonResult));
                         this.setState({visible: false});
                     } catch (error) {
-                        bootbox.alert('上传文件不合法');
+                        window.bootbox.alert('上传文件不合法');
                     }
                 }}/>
             </div>

@@ -9,7 +9,7 @@
  */
 
 import BaseCell from './BaseCell.js';
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 import {copyCellData, pasteCellData} from './cellDataUtils.js';
 
 export default class ConditionCell extends BaseCell {
@@ -254,7 +254,7 @@ export default class ConditionCell extends BaseCell {
                         self.cellCondition = new ruleforge.CellCondition('<div/>');
                     }
                     self.cellCondition.renderTo(dialog);
-                    MsgBox.showDialog('配置条件', dialog, [], [{
+                    window.bootbox.dialog('配置条件', dialog, [], [{
                         name: 'hide.bs.modal',
                         callback: function () {
                             self.conditionContainer.innerHTML = '';
@@ -318,7 +318,7 @@ export default class ConditionCell extends BaseCell {
                     if (xml && xml !== '') {
                         copyCellData('condition', xml);
                     } else {
-                        bootbox.alert('当前没有内容可供复制!');
+                        window.bootbox.alert('当前没有内容可供复制!');
                     }
                 }
             }, {
@@ -361,7 +361,7 @@ export default class ConditionCell extends BaseCell {
                         self.cellCondition = new ruleforge.CellCondition('<div/>');
                     }
                     self.cellCondition.renderTo(dialog);
-                    MsgBox.showDialog('配置条件', dialog, [], [{
+                    window.bootbox.dialog('配置条件', dialog, [], [{
                         name: 'hide.bs.modal',
                         callback: function () {
                             self.conditionContainer.innerHTML = '';
@@ -425,7 +425,7 @@ export default class ConditionCell extends BaseCell {
                     if (xml && xml !== '') {
                         copyCellData('condition', xml);
                     } else {
-                        bootbox.alert('当前没有内容可供复制!');
+                        window.bootbox.alert('当前没有内容可供复制!');
                     }
                 }
             }, {
@@ -479,7 +479,7 @@ export default class ConditionCell extends BaseCell {
             const removeCount = endIdx - startIdx;
             rows.splice(startIdx, removeCount);
         } else {
-            bootbox.alert('当前行至少要保留一行，不能被删除！');
+            window.bootbox.alert('当前行至少要保留一行，不能被删除！');
         }
     }
 
@@ -504,7 +504,7 @@ export default class ConditionCell extends BaseCell {
             const removeCount = endIdx - startIdx;
             columns.splice(startIdx, removeCount);
         } else {
-            bootbox.alert('当前列至少要保留一列，不能被删除！');
+            window.bootbox.alert('当前列至少要保留一列，不能被删除！');
         }
     }
 

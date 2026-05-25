@@ -1,5 +1,5 @@
 import {ajaxSave, getParameter} from '../../Utils.js';
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 import {saveNewVersion} from "../../Utils";
 import * as event from '../../components/componentEvent.js';
 
@@ -205,12 +205,12 @@ var Handsontable = require('handsontable');
             if (newVersion) {
                 saveNewVersion(url, postData, function () {
                     self.resetState();
-                    bootbox.alert('保存成功!');
+                    window.bootbox.alert('保存成功!');
                 });
             } else {
                 ajaxSave(url, postData, function () {
                     self.resetState();
-                    bootbox.alert('保存成功!');
+                    window.bootbox.alert('保存成功!');
                 })
             }
         }
@@ -1241,7 +1241,7 @@ var Handsontable = require('handsontable');
                 onClick: function () {
                     const colData = self.getCurrentColData();
                     if (!colData.variableCategory) {
-                        MsgBox.alert('当前条件列未定义对应的参数或变量，不能进行[配置条件]操作.');
+                        window.bootbox.alert('当前条件列未定义对应的参数或变量，不能进行[配置条件]操作.');
                         return;
                     }
                     const dialogContent = document.createElement("div");
@@ -1249,7 +1249,7 @@ var Handsontable = require('handsontable');
                     content.renderTo(dialogContent);
                     const category = colData.variableCategory === "parameter" ? "参数" : colData.variableCategory;
                     const caption = category + "." + colData.variableLabel;
-                    MsgBox.showDialog(caption, dialogContent, [], [{
+                    window.bootbox.dialog(caption, dialogContent, [], [{
                         name: 'hide.bs.modal',
                         callback: function () {
                             self.renderSelection();
@@ -1281,7 +1281,7 @@ var Handsontable = require('handsontable');
 					name:"paste",
 					onClick:function(){
 						if(!window._tableCellContent){
-							MsgBox.alert("请先复制目标单元格内容！");
+							window.bootbox.alert("请先复制目标单元格内容！");
 							return;
 						}
 

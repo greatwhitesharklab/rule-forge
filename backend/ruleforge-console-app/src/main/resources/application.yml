@@ -50,6 +50,11 @@ ruleforge:
   exec:
     url: ${EXECUTOR_URL:http://localhost:8082}
 
+flowable:
+  datasource: ruleforge
+  database-schema-update: true
+  async-executor-activate: false
+
 # 延迟加载配置
 lazy-load:
   enabled: true

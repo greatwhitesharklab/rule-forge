@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import * as componentEvent from '../componentEvent.js';
 import {formatDate} from '../../../Utils.js';
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 
 export default class Cell extends Component {
     constructor(props) {
@@ -69,10 +69,10 @@ export default class Cell extends Component {
             emptyOption.value = '';
             emptyOption.selected = true;
             categorySelect.appendChild(emptyOption);
-            MsgBox.dialog('选择子对象类型', categorySelect, function () {
+            window.bootbox.dialog('选择子对象类型', categorySelect, function () {
                 targetType = categorySelect.value;
                 if (!targetType || targetType === '') {
-                    MsgBox.alert('请先选择子对象类型!');
+                    window.bootbox.alert('请先选择子对象类型!');
                     return;
                 }
                 let categoryTarget = null;

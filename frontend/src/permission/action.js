@@ -57,7 +57,7 @@ export function save(data) {
         if (!response.ok) throw response;
         return response.json();
     }).then(function () {
-        bootbox.alert('保存成功');
+        window.bootbox.alert('保存成功');
     }).catch(function (response) {
         handleResponseError(response, '服务端错误：');
     });

@@ -33,7 +33,7 @@ export function save(data,project) {
         xml+=`<item name="${item.name}" client="${item.client}"/>`;
     }
     if(error){
-        bootbox.alert(error);
+        window.bootbox.alert(error);
         return;
     }
     xml+="</client-config>";
@@ -46,7 +46,7 @@ export function save(data,project) {
         if (!response.ok) throw response;
         return response.json();
     }).then(function () {
-        bootbox.alert('保存成功!');
+        window.bootbox.alert('保存成功!');
     }).catch(function (response) {
         handleResponseError(response, '保存失败，服务端错误：');
     });

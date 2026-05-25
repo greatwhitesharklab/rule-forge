@@ -194,7 +194,7 @@ export function refreshKnowledgeCache(project,packageConfig, currentPackage) {
                 }
             }
         };
-        bootbox.dialog(options);
+        window.bootbox.dialog(options);
         setTimeout(function () {
             document.getElementById('test-pass-version').onblur = function () {
                 changeTestPassVersion(project)
@@ -205,13 +205,13 @@ export function refreshKnowledgeCache(project,packageConfig, currentPackage) {
         }, 1000)
     }).catch(function (response) {
         if (response && response.status === 401) {
-            bootbox.alert("权限不足，不能进行此操作.");
+            window.bootbox.alert("权限不足，不能进行此操作.");
         } else if (response && response.text) {
             response.text().then(function(text) {
-                bootbox.alert("<span style='color: red'>服务端错误：" + text + "</span>");
+                window.bootbox.alert("<span style='color: red'>服务端错误：" + text + "</span>");
             });
         } else {
-            bootbox.alert("<span style='color: red'>服务端出错</span>");
+            window.bootbox.alert("<span style='color: red'>服务端出错</span>");
         }
     });
 }
@@ -263,7 +263,7 @@ function pushTest(project, rate, targetVersion, originVersion, startTime, endTim
         if (!response.ok) throw response;
         return response.json();
     }).then(function (data) {
-        bootbox.alert(data);
+        window.bootbox.alert(data);
     }).catch(function () {
         alert('发布知识包失败！');
     });
@@ -509,7 +509,7 @@ export function applyNewVersion(data, project, packageConfig, currentPackage) {
                 }
             }
         };
-        bootbox.dialog(options);
+        window.bootbox.dialog(options);
         setTimeout(function () {
             document.getElementById('pass-version').onblur = function () {
                 console.log(this.value)
@@ -522,13 +522,13 @@ export function applyNewVersion(data, project, packageConfig, currentPackage) {
         }, 1000)
     }).catch(function (response) {
         if (response && response.status === 401) {
-            bootbox.alert("权限不足，不能进行此操作.");
+            window.bootbox.alert("权限不足，不能进行此操作.");
         } else if (response && response.text) {
             response.text().then(function(text) {
-                bootbox.alert("<span style='color: red'>服务端错误：" + text + "</span>");
+                window.bootbox.alert("<span style='color: red'>服务端错误：" + text + "</span>");
             });
         } else {
-            bootbox.alert("<span style='color: red'>服务端出错</span>");
+            window.bootbox.alert("<span style='color: red'>服务端出错</span>");
         }
     });
     return {type: APPLY_COMPLETED};
@@ -577,7 +577,7 @@ function pushNewVersion(formData) {
     ce.eventEmitter.emit(ce.SHOW_LOADING);
     startApprovalProcess(formData, function (result) {
         ce.eventEmitter.emit(ce.HIDE_LOADING);
-        bootbox.alert('发起审批成功');
+        window.bootbox.alert('发起审批成功');
     });
 }
 
@@ -612,7 +612,7 @@ export function saveData(data, newVersion, project, associatedFiles, versionComm
         if (!response.ok) throw response;
         return response.json();
     }).then(function () {
-        bootbox.alert('保存成功!')
+        window.bootbox.alert('保存成功!')
         if(callback){
             callback()
         }
@@ -702,11 +702,11 @@ export function startApprovalProcess(formData, callback) {
             callback(result);
         } else {
             ce.eventEmitter.emit(ce.HIDE_LOADING);
-            bootbox.alert(result.message);
+            window.bootbox.alert(result.message);
         }
     }).catch(function () {
         ce.eventEmitter.emit(ce.HIDE_LOADING);
-        bootbox.alert('发起审批流程失败!');
+        window.bootbox.alert('发起审批流程失败!');
     });
 }
 
@@ -729,13 +729,13 @@ export function loadSimulatorCategoryData(files, callback) {
             response.text().then(function(text) {
                 try {
                     const jsonResp = JSON.parse(text);
-                    bootbox.alert("加载文件[" + files + "]失败原因:" + jsonResp.message);
+                    window.bootbox.alert("加载文件[" + files + "]失败原因:" + jsonResp.message);
                 } catch(e) {
-                    bootbox.alert("加载文件[" + files + "]失败.");
+                    window.bootbox.alert("加载文件[" + files + "]失败.");
                 }
             });
         } else {
-            bootbox.alert("加载文件[" + files + "]失败.");
+            window.bootbox.alert("加载文件[" + files + "]失败.");
         }
     });
 }
@@ -778,10 +778,10 @@ export function doTest(data, callback) {
         ce.eventEmitter.emit(ce.HIDE_LOADING);
         if (response && response.text) {
             response.text().then(function(text) {
-                bootbox.alert("<span style='color: red'>服务端错误：" + text + "</span>");
+                window.bootbox.alert("<span style='color: red'>服务端错误：" + text + "</span>");
             });
         } else {
-            bootbox.alert("<span style='color: red'>服务端出错</span>");
+            window.bootbox.alert("<span style='color: red'>服务端出错</span>");
         }
     });
 }
@@ -897,7 +897,7 @@ export function getFileDiff(data) {
                     </form>
                 `
             };
-            bootbox.dialog(options);
+            window.bootbox.dialog(options);
         }
     }).catch(function (response) {
         if (response && response.status === 401) {

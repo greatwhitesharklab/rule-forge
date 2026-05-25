@@ -91,5 +91,12 @@
             <artifactId>guava</artifactId>
             <version>33.4.0-jre</version>
         </dependency>
+
+        <!-- Flowable BPMN 引擎 -->
+        <dependency>
+            <groupId>org.flowable</groupId>
+            <artifactId>flowable-spring-boot-starter-process</artifactId>
+            <version>${flowable.version}</version>
+        </dependency>
     </dependencies>
 </project>

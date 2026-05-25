@@ -1,4 +1,4 @@
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 import Sortable from 'sortablejs';
 
 ruleforge.Rule = function (parent, container, data) {
@@ -185,7 +185,7 @@ ruleforge.Rule.prototype.initHeader = function () {
     this.nameEditor.addEventListener('blur', function () {
         var value = self.nameEditor.value;
         if (!value || value.length < 2) {
-            bootbox.alert("规则名不合法");
+            window.bootbox.alert("规则名不合法");
             return;
         }
         self.name = value;

@@ -5,7 +5,7 @@ import com.ruleforge.runtime.KnowledgeSession;
 import com.ruleforge.runtime.KnowledgeSessionFactory;
 import com.ruleforge.runtime.cache.CacheUtils;
 import com.ruleforge.runtime.cache.KnowledgeCache;
-import com.ruleforge.runtime.response.FlowExecutionResponse;
+import com.ruleforge.runtime.response.RuleExecutionResponse;
 import com.ruleforge.runtime.service.KnowledgeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,11 +22,19 @@ public class TestController {
     private final KnowledgeService knowledgeService;
 
     @RequestMapping("/do")
-    public String doTest(@RequestParam("path") String path, @RequestParam("flow") String flow) throws Exception {
+    public String doTest(@RequestParam("path") String path,
+                         @RequestParam(value = "flow", required = false) String flow) throws Exception {
         KnowledgePackage knowledgePackage = knowledgeService.getKnowledge(path);
         KnowledgeSession session = KnowledgeSessionFactory.newKnowledgeSession(knowledgePackage);
-        FlowExecutionResponse response = session.startProcess(flow);
-        return response.getFlowExecutionResponses().toString();
+
+        if (flow != null && !flow.isEmpty()) {
+            // Flow execution is now handled by Flowable BPMN engine in console app.
+            // Delegate to console's REST endpoint.
+            return "Flow execution requires Flowable engine. Use console /flow/deploy and Flowable RuntimeService.";
+        }
+
+        RuleExecutionResponse response = session.fireRules();
+        return response.toString();
     }
 
     @PostMapping("/knowledge")

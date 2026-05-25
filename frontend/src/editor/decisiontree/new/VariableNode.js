@@ -1,4 +1,4 @@
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 import BaseNode from './BaseNode.js';
 export default class VariableNode extends BaseNode{
     constructor(context,parentNode,disabledDel){

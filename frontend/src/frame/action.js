@@ -705,7 +705,7 @@ function buildData() {
             data._icon = Styles.frameStyle.getFlowIcon();
             data._style = Styles.frameStyle.getFlowIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/rule-flow-designer.html";
+            data.editorPath = "/html/flow-bpmn-editor.html";
             break;
         case "scorecard":
             data._icon = Styles.frameStyle.getScorecardIcon();
@@ -964,13 +964,13 @@ function buildPasteMenuItem() {
                 copy = true;
             }
             if (!sourceFileData) {
-                bootbox.alert("没有文件可供粘贴！");
+                window.bootbox.alert("没有文件可供粘贴！");
                 return;
             }
             const newDir = data.fullPath;
             const newFullPath = newDir + "/" + sourceFileData.name, oldFullPath = sourceFileData.fullPath;
             if (oldFullPath === newFullPath) {
-                bootbox.alert("目录未改变，不能进行此操作！");
+                window.bootbox.alert("目录未改变，不能进行此操作！");
                 return;
             }
             let info = "真的要移动文件【" + sourceFileData.name + "】到【" + newDir + "】目录吗？";
@@ -1090,7 +1090,7 @@ export function lockFile(file, dispatch) {
         buildData(rootFile, 1);
         dispatch({data: rootFile, type: LOAD_END});
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        bootbox.alert('锁定成功!');
+        window.bootbox.alert('锁定成功!');
     }).catch(function (response) {
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
         handleResponseError(response, '服务端错误：');
@@ -1112,7 +1112,7 @@ export function unlockFile(file, dispatch) {
         buildData(rootFile, 1);
         dispatch({data: rootFile, type: LOAD_END});
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        bootbox.alert('解锁成功!');
+        window.bootbox.alert('解锁成功!');
     }).catch(function (response) {
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
         handleResponseError(response, '服务端错误：');
@@ -1130,7 +1130,7 @@ export function saveFileSource(file, content) {
         if (!response.ok) throw response;
         return response.json();
     }).then(function () {
-        bootbox.alert('保存成功!');
+        window.bootbox.alert('保存成功!');
     }).catch(function (response) {
         handleResponseError(response, '服务端错误：');
     });

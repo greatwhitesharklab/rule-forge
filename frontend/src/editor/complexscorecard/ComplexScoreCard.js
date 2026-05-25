@@ -16,7 +16,7 @@ import ConditionColumn from './ScoreCardColumn.js';
 import {ActionColumn} from './ScoreCardColumn.js';
 import TableAction from './TableAction.js';
 import {getParameter, ajaxSave, handleResponseError} from '../../Utils.js';
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 
 export default class ComplexScoreCard {
     /**
@@ -146,7 +146,7 @@ export default class ComplexScoreCard {
         try {
             xml = self.toXml();
         } catch (e) {
-            bootbox.alert(e);
+            window.bootbox.alert(e);
             return;
         }
 
@@ -179,27 +179,27 @@ export default class ComplexScoreCard {
                             if (confirmed) {
                                 ajaxSave(saveUrl, postData, function (res) {
                                     if (res.status) {
-                                        bootbox.alert('保存成功!', function () {
+                                        window.bootbox.alert('保存成功!', function () {
                                             self.resetState();
                                         });
                                     } else {
-                                        bootbox.alert(res.message || '保存失败');
+                                        window.bootbox.alert(res.message || '保存失败');
                                     }
                                 });
                             }
                         });
                     } else {
-                        bootbox.alert('与最新版本无差异，无需生成新版本');
+                        window.bootbox.alert('与最新版本无差异，无需生成新版本');
                     }
                 } else {
-                    bootbox.alert("<span style='color: red'>服务端出错</span>");
+                    window.bootbox.alert("<span style='color: red'>服务端出错</span>");
                 }
             }).catch(function (response) {
                 handleResponseError(response, '服务端错误：');
             });
         } else {
             ajaxSave(saveUrl, postData, function () {
-                bootbox.alert('保存成功!', function () {
+                window.bootbox.alert('保存成功!', function () {
                     self.resetState();
                 });
             });
@@ -220,7 +220,7 @@ export default class ComplexScoreCard {
      */
     deleteCriteriaRow() {
         if (!window._currentConditionCell) {
-            bootbox.alert('请先选中目标行的一个条件单元格');
+            window.bootbox.alert('请先选中目标行的一个条件单元格');
             return;
         }
         MsgBox.confirm('真的要删除当前单元格所在的所有行？', () => {

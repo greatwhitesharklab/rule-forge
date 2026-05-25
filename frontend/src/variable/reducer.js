@@ -15,7 +15,7 @@ function master(state = {}, action) {
             var newData = [...state.data];
             for (let masterItem of newData) {
                 if (masterName === masterItem['name']) {
-                    bootbox.alert("[" + masterName + "]已经存在，添加失败")
+                    window.bootbox.alert("[" + masterName + "]已经存在，添加失败")
                     return state;
                 }
             }

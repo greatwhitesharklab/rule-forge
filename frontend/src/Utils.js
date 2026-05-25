@@ -22,14 +22,14 @@ export function buildProjectNameFromFile(file) {
 
 export function handleResponseError(response, prefix) {
     if (response.status === 401) {
-        bootbox.alert("权限不足，不能进行此操作.");
+        window.bootbox.alert("权限不足，不能进行此操作.");
     } else if (response.text) {
         return response.text().then(function (text) {
             var msg = text ? (prefix || "服务端错误：") + text : (prefix || "服务端出错");
-            bootbox.alert("<span style='color: red'>" + msg + "</span>");
+            window.bootbox.alert("<span style='color: red'>" + msg + "</span>");
         });
     } else {
-        bootbox.alert("<span style='color: red'>" + (prefix || "服务端出错") + "</span>");
+        window.bootbox.alert("<span style='color: red'>" + (prefix || "服务端出错") + "</span>");
     }
 }
 
@@ -49,10 +49,10 @@ export function ajaxSave(url, parameters, callback) {
         if (result.status) {
             callback(result);
         } else {
-            bootbox.alert(result.message || '保存失败');
+            window.bootbox.alert(result.message || '保存失败');
         }
     }).catch(function (err) {
-        bootbox.alert("<span style='color: red'>服务端出错</span>");
+        window.bootbox.alert("<span style='color: red'>服务端出错</span>");
     });
 }
 
@@ -108,13 +108,13 @@ export function saveNewVersion(url, postData, cb) {
                     }
                 })
             } else {
-                bootbox.alert("与最新版本无差异，无需生成新版本.");
+                window.bootbox.alert("与最新版本无差异，无需生成新版本.");
             }
         } else {
-            bootbox.alert("<span style='color: red'>服务端出错</span>");
+            window.bootbox.alert("<span style='color: red'>服务端出错</span>");
         }
     }).catch(function () {
-        bootbox.alert("<span style='color: red'>服务端出错</span>");
+        window.bootbox.alert("<span style='color: red'>服务端出错</span>");
     });
 }
 

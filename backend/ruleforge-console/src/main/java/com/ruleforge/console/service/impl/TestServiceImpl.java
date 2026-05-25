@@ -9,8 +9,6 @@ import com.ruleforge.model.rule.RuleInfo;
 import com.ruleforge.runtime.KnowledgePackage;
 import com.ruleforge.runtime.KnowledgeSession;
 import com.ruleforge.runtime.KnowledgeSessionFactory;
-import com.ruleforge.runtime.response.FlowExecutionResponse;
-import com.ruleforge.runtime.response.NodeExecutionResponse;
 import com.ruleforge.runtime.response.RuleExecutionResponse;
 import com.ruleforge.console.model.ApplicationAllVariableCategoryMap;
 import com.ruleforge.console.model.BatchTestFlowMap;
@@ -19,6 +17,8 @@ import com.ruleforge.console.model.TestRuntimeErrorDto;
 import com.ruleforge.console.service.TestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -34,6 +34,7 @@ import java.util.Map;
 public class TestServiceImpl implements TestService {
 
     private final ExternalRepository externalRepository;
+    private final RuntimeService flowableRuntimeService;
 
     @Override
     public SaveProcessItemDto doFlowTest(KnowledgePackage knowledgePackage, String flowId, ApplicationAllVariableCategoryMap row, BatchTestFlowMap flowMap) throws Exception {
@@ -61,61 +62,32 @@ public class TestServiceImpl implements TestService {
         if (StringUtils.hasText(flowId)) {
             saveProcessItemModel.setFlowId(flowId);
 
-            FlowExecutionResponse flowExecutionResponse;
-            if (parameterMap != null) {
-                flowExecutionResponse = session.startProcess(flowId, parameterMap);
-                row.put(VariableCategory.PARAM_CATEGORY, session.getParameters());
-            } else {
-                flowExecutionResponse = session.startProcess(flowId);
+            // Execute flow via Flowable
+            Map<String, Object> flowVariables = new HashMap<>();
+            for (String name : row.keySet()) {
+                Object fact = row.get(name);
+                if (fact instanceof GeneralEntity) {
+                    flowVariables.put(((GeneralEntity) fact).getTargetClass(), fact);
+                } else if (fact instanceof Map) {
+                    flowVariables.putAll((Map<String, Object>) fact);
+                }
             }
+            ProcessInstance processInstance = flowableRuntimeService.startProcessInstanceByKey(flowId, flowVariables);
+            Map<String, Object> resultVars = flowableRuntimeService.getVariables(processInstance.getId());
+            session.getParameters().putAll(resultVars);
+            row.put(VariableCategory.PARAM_CATEGORY, session.getParameters());
 
             Map<String, Object> result = new HashMap<>();
-            // 记录执行节点
-            for (NodeExecutionResponse nodeExecutionResponse : flowExecutionResponse.getNodeExecutionResponseList()) {
-                String nodeName = nodeExecutionResponse.getDecisionNodeName();
-                if (!org.springframework.util.StringUtils.isEmpty(nodeName)) {
-                    result.put(nodeName, nodeExecutionResponse.getDecisionNodeResult());
-                } else {
-                    nodeName = nodeExecutionResponse.getRuleNodeName();
-                    result.put(nodeName, 1);
-                }
-
-                // 汇总流程图数据
-                flowMap.putIfAbsent(nodeName, 0);
-                flowMap.put(nodeName, flowMap.get(nodeName) + 1);
+            // Record fired rules from process variables
+            Object firedRules = resultVars.get("_firedRules");
+            if (firedRules != null) {
+                result.put("触发规则数", firedRules);
             }
             long end = System.currentTimeMillis();
             long elapse = end - start;
 
             result.put("耗时", elapse);
             row.put("测试结果", result);
-
-            // 记录命中规则
-            try {
-                List<RuleExecutionResponse> ruleExecutionResponseList = flowExecutionResponse.getRuleExecutionResponses();
-                GeneralEntity outputModel = (GeneralEntity) row.get("输出信息");
-                for (RuleExecutionResponse ruleExecutionResponse : ruleExecutionResponseList) {
-                    List<RuleInfo> ruleInfoList = ruleExecutionResponse.getMatchedRules();
-                    if (ruleInfoList != null && !ruleInfoList.isEmpty()) {
-                        List<String> ruleNameList = new LinkedList<>();
-                        for (RuleInfo ruleInfo : ruleInfoList) {
-                            Rule rule = (Rule) ruleInfo;
-                            String remark = rule.getRemark();
-                            if (remark != null) {
-                                outputModel.put("ruleRemark", remark);
-                                ruleNameList.add(rule.getName());
-                            }
-                        }
-                        if (!ruleNameList.isEmpty()) {
-                            outputModel.put("ruleName", ruleNameList.toString());
-                        }
-                    }
-                }
-
-                row.put("输出信息", outputModel);
-            } catch (Exception e) {
-                log.error("记录命中规则 error", e);
-            }
         }
 
         // 返回决策流水

@@ -88,7 +88,7 @@ export default class ExcelImportDialog {
             if (responseText && responseText.length >= 5) {
                 const result = JSON.parse(responseText);
                 if (result.fail) {
-                    bootbox.alert('Excel导入失败：<span style="color: #d30e00;">' + result.msg + '</span>');
+                    window.bootbox.alert('Excel导入失败：<span style="color: #d30e00;">' + result.msg + '</span>');
                 } else {
                     const file = getParameter('file');
                     const reloadUrl = window._server + '/crosstabeditor?file=' + file + '&doImport=true';

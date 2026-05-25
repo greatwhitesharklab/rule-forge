@@ -10,7 +10,7 @@
 
 import HighlightCell from './HighlightCell.js';
 import RowContext from './RowContext.js';
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 import {copyCellData, pasteCellData} from '../crosstab/cellDataUtils.js';
 
 export default class ConditionCell extends HighlightCell {
@@ -95,7 +95,7 @@ export default class ConditionCell extends HighlightCell {
                     if (xml && xml !== '') {
                         copyCellData('condition', xml);
                     } else {
-                        bootbox.alert('当前没有内容可供复制!');
+                        window.bootbox.alert('当前没有内容可供复制!');
                     }
                 }
             }, {
@@ -201,7 +201,7 @@ export default class ConditionCell extends HighlightCell {
         }
         const self = this;
         this.cellCondition.renderTo(dialog);
-        MsgBox.showDialog('配置条件', dialog, [], [{
+        window.bootbox.dialog('配置条件', dialog, [], [{
             name: 'hide.bs.modal',
             callback: function () {
                 container.innerHTML = '';
@@ -242,7 +242,7 @@ export default class ConditionCell extends HighlightCell {
         const spanCount = rowspan;
 
         if (rowspan === complexTable.contentRows.length) {
-            bootbox.alert('条件行至少要保留一行!');
+            window.bootbox.alert('条件行至少要保留一行!');
             return;
         }
 
@@ -395,7 +395,7 @@ export class ActionCell extends HighlightCell {
                     if (xml && xml !== '') {
                         copyCellData('value', xml);
                     } else {
-                        bootbox.alert('当前没有内容可供复制!');
+                        window.bootbox.alert('当前没有内容可供复制!');
                     }
                 }
             }, {

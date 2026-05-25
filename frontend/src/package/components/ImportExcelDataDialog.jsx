@@ -37,13 +37,13 @@ export default class ImportExcelDataDialog extends Component {
                     try {
                         let jsonData = JSON.parse(e.target.contentDocument.body.textContent);
                         if(jsonData.status) {
-                            bootbox.alert('导入Excel成功');
+                            window.bootbox.alert('导入Excel成功');
                             this.setState({visible: false});
                         } else {
                             event.eventEmitter.emit(event.OPEN_IMPORT_EXCEL_ERROR_DIALOG, jsonData.data);
                         }
                     } catch (error) {
-                        bootbox.alert('导入Excel失败');
+                        window.bootbox.alert('导入Excel失败');
                     }
                     
                 }}/>

@@ -59,7 +59,7 @@ import {getParameter, ajaxSave, saveNewVersion, buildProjectNameFromFile, loadEd
 document.addEventListener('DOMContentLoaded', function () {
     const file = getParameter('file');
     if (!file || file.length < 1) {
-        bootbox.alert("当前编辑器未指定具体规则文件！");
+        window.bootbox.alert("当前编辑器未指定具体规则文件！");
         return;
     }
 
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             xml = factory.toXml();
         } catch (error) {
-            MsgBox.alert(error);
+            window.bootbox.alert(error);
             return;
         }
         xml = encodeURIComponent(xml);
@@ -85,12 +85,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isNewVersion) {
             saveNewVersion(url, postData, function () {
                 toolbarApi.clearDirty();
-                bootbox.alert('保存成功!');
+                window.bootbox.alert('保存成功!');
             });
         } else {
             ajaxSave(url, postData, function () {
                 toolbarApi.clearDirty();
-                bootbox.alert('保存成功!');
+                window.bootbox.alert('保存成功!');
             });
         }
     }

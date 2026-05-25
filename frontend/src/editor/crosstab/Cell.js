@@ -11,7 +11,7 @@
  */
 
 import BaseCell from './BaseCell.js';
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 import {copyCellData, pasteCellData} from './cellDataUtils.js';
 
 export default class Cell extends BaseCell {
@@ -131,7 +131,7 @@ export default class Cell extends BaseCell {
                     if (xml && xml !== '') {
                         copyCellData('value', xml);
                     } else {
-                        bootbox.alert('当前没有内容可供复制!');
+                        window.bootbox.alert('当前没有内容可供复制!');
                     }
                 }
             }, {

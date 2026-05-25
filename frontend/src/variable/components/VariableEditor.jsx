@@ -43,7 +43,7 @@ class VariableEditor extends Component {
                     click: function (rowIndex, rowData) {
                         let clazz = rowData.clazz;
                         if (!clazz || clazz.length < 1) {
-                            bootbox.alert('请先指定类路径');
+                            window.bootbox.alert('请先指定类路径');
                             return;
                         }
                         bootbox.confirm("真的生成类[" + clazz + "]中所有字段吗？", function (result) {
@@ -122,7 +122,7 @@ class VariableEditor extends Component {
                             {/* <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
                                 <button className="btn btn-info" type="button" onClick={(e) => {
                                     if (!this.currentData) {
-                                        bootbox.alert('请先选择一条具体的变量');
+                                        window.bootbox.alert('请先选择一条具体的变量');
                                         return;
                                     }
                                     const text = `var-category="${this.masterData.name}" var="${this.currentData.name}"`;

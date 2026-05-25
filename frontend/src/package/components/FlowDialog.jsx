@@ -3,47 +3,6 @@ import * as event from '../event.js';
 import * as action from '../action.js';
 import Grid from '../../components/grid/component/Grid.jsx';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
-import RuleFlowDesigner from "../../flow/RuleFlowDesigner";
-import StartTool from "../../flow/StartTool";
-import RuleTool from "../../flow/RuleTool";
-import PackageTool from "../../flow/PackageTool";
-import ActionTool from "../../flow/ActionTool";
-import ScriptTool from "../../flow/ScriptTool";
-import DecisionTool from "../../flow/DecisionTool";
-import ForkTool from "../../flow/ForkTool";
-import JoinTool from "../../flow/JoinTool";
-import RulesPackageTool from "../../flow/RulesPackageTool";
-
-function downloadSvg(div, prefix) {
-    var divEl = document.querySelector(div);
-    var svgXml = divEl.innerHTML;
-
-    var image = new Image();
-    // 给图片对象写入base64编码的svg流
-    image.src = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svgXml)));
-
-    image.onload = function () {
-        // 准备空画布
-        var canvas = document.createElement('canvas');
-        var svgEl = divEl.querySelector('svg');
-        canvas.width = svgEl.clientWidth;
-        canvas.height = svgEl.clientHeight;
-
-        // 取得画布的2d绘图上下文
-        var context = canvas.getContext('2d');
-        context.fillStyle = '#fff';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        context.drawImage(image, 0, 0);
-
-        var a = document.createElement('a');
-        // 将画布内的信息导出为png图片数据
-        a.href = canvas.toDataURL('image/png');
-        // 设定下载名称
-        a.download = prefix + "flowpic";
-        // 点击触发下载
-        a.click();
-    }
-}
 
 export default class FlowDialog extends Component {
     constructor(props) {
@@ -79,7 +38,6 @@ export default class FlowDialog extends Component {
     }
 
     render() {
-        const containerId = 'div-flow';
         const formId = 'export-test-excel-form';
 
         const headers = [
@@ -106,7 +64,7 @@ export default class FlowDialog extends Component {
                         }, function (result) {
                             event.eventEmitter.emit(event.REFRESH_SIMULATOR_DATA, result);
                             ce.eventEmitter.emit(ce.HIDE_LOADING);
-                            bootbox.alert("决策流[" + flowId + "]执行完成，" + result.info);
+                            window.bootbox.alert("决策流[" + flowId + "]执行完成，" + result.info);
                         });
                     }
                 },
@@ -125,58 +83,14 @@ export default class FlowDialog extends Component {
                             'flowId': flowId
                         }, function (testResult) {
                             ce.eventEmitter.emit(ce.HIDE_LOADING);
-                            // bootbox.alert("决策流[" + flowId + "]执行完成，" + result.info);
-                            const errorList = testResult['errorList']
-                            bootbox.alert(JSON.stringify(errorList));
+                            const errorList = testResult['errorList'];
+                            window.bootbox.alert(JSON.stringify(errorList));
 
-                            // 展示流程图
-                            fetch(window._server + '/ruleflowdesigner/loadFlowDefinition', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                                body: new URLSearchParams({file: files.split(':')[1].split(',')[0]}).toString()
-                            }).then(function(response) {
-                                if (!response.ok) throw response;
-                                return response.json();
-                            }).then(function (flowJson) {
-                                document.getElementById(containerId).innerHTML = '';
-
-                                const designer = new RuleFlowDesigner(containerId);
-                                delete flowJson.libraries;
-                                designer.addTool(new StartTool());
-                                designer.addTool(new RuleTool());
-                                designer.addTool(new PackageTool());
-                                designer.addTool(new ActionTool());
-                                designer.addTool(new ScriptTool());
-                                designer.addTool(new DecisionTool());
-                                designer.addTool(new ForkTool());
-                                designer.addTool(new JoinTool());
-                                designer.addTool(new RulesPackageTool());
-                                designer.buildDesigner();
-
-                                document.querySelector('.fd-toolbar').style.display = 'none';
-                                var propPanel = document.querySelector('.fd-property-panel');
-                                if (propPanel) propPanel.remove();
-                                document.querySelector('.fd-node-toolbar').style.display = 'none';
-
-                                for (const index in flowJson.nodes) {
-                                    const num = testResult['flowMap'][flowJson.nodes[index].name];
-                                    if (num != null) {
-                                        flowJson.nodes[index].text = flowJson.nodes[index].name + ' (' + num + ')';
-                                    }
-                                }
-                                designer.fromJson(flowJson);
-
-                                const datetime = new Date();
-                                const filePrefix = '' + datetime.getFullYear() + (datetime.getMonth() + 1) + datetime.getDate()
-                                    + datetime.getHours() + datetime.getMinutes() + datetime.getSeconds() + '_';
-                                // 下载excel
-                                document.getElementById("input-prefix").value = filePrefix;
-                                document.getElementById(formId).submit();
-                                // 下载图片
-                                downloadSvg('.fd-canvas-container', filePrefix);
-                            }).catch(function () {
-                                alert(`加载决策流${files}失败！`);
-                            });
+                            const datetime = new Date();
+                            const filePrefix = '' + datetime.getFullYear() + (datetime.getMonth() + 1) + datetime.getDate()
+                                + datetime.getHours() + datetime.getMinutes() + datetime.getSeconds() + '_';
+                            document.getElementById("input-prefix").value = filePrefix;
+                            document.getElementById(formId).submit();
                         });
                     }
                 }
@@ -187,7 +101,6 @@ export default class FlowDialog extends Component {
             body = (
                 <div>
                     <Grid headers={headers} operationConfig={gridOperationCol} rows={this.state.flows}/>
-                    <div id={containerId}></div>
                     <form id={formId} method="post"
                           action={window._server + '/packageeditor/exportBatchTestExcel'}>
                         <input id="input-prefix" name="prefix" type="hidden"/>

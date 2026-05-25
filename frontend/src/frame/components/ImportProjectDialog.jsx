@@ -30,12 +30,12 @@ export default class ImportProjectDialog extends Component {
                 if (responseText !== "") {
                     const responseData = JSON.parse(responseText);
                     if (responseData && responseData.status) {
-                        bootbox.alert('导入成功');
+                        window.bootbox.alert('导入成功');
                         return;
                     }
                 }
 
-                bootbox.alert('导入失败');
+                window.bootbox.alert('导入失败');
             }
         }
     }
@@ -87,12 +87,12 @@ export default class ImportProjectDialog extends Component {
                 icon: 'fa fa-upload',
                 click: function () {
                     if ($vm.state.isImporting) {
-                        bootbox.alert('正在导入中，请等待');
+                        window.bootbox.alert('正在导入中，请等待');
                         return;
                     }
                     var file = document.querySelector('[name=file]').value;
                     if (!file || file.length < 2) {
-                        bootbox.alert('请选择要导入的文件');
+                        window.bootbox.alert('请选择要导入的文件');
                         return;
                     }
                     $vm.setState({isImporting: true});

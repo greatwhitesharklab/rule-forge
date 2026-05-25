@@ -72,11 +72,9 @@ public class RuleForgeServiceImpl implements RuleForgeService {
         }
         ExecutionResponse response = null;
         if (StringUtils.hasText(flowId)) {
-            if (parameters != null) {
-                response = session.startProcess(flowId, parameters);
-            } else {
-                response = session.startProcess(flowId);
-            }
+            // Flow execution is now handled by Flowable BPMN engine.
+            // Executor only handles rule execution; flow must be started via Flowable.
+            throw new RuntimeException("Flow execution requires Flowable engine. Deploy and start via console app.");
         } else {
             if (parameters == null) {
                 response = session.fireRules();

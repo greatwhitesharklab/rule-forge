@@ -16,7 +16,6 @@ import com.ruleforge.dsl.DSLRuleSetBuilder;
 import com.ruleforge.dsl.RuleParserLexer;
 import com.ruleforge.dsl.RuleParserParser;
 import com.ruleforge.exception.RuleException;
-import com.ruleforge.model.flow.*;
 import com.ruleforge.model.rule.RuleSet;
 import com.ruleforge.model.function.FunctionDescriptor;
 import com.ruleforge.model.library.Datatype;
@@ -24,7 +23,6 @@ import com.ruleforge.model.library.action.ActionLibrary;
 import com.ruleforge.model.library.action.SpringBean;
 import com.ruleforge.model.library.variable.Variable;
 import com.ruleforge.parse.deserializer.*;
-import com.ruleforge.parse.flow.FlowDefinitionParser;
 import com.ruleforge.runtime.BuiltInActionLibraryBuilder;
 import com.ruleforge.runtime.cache.CacheUtils;
 import com.ruleforge.console.entity.ProjectEntity;
@@ -75,7 +73,6 @@ public class CommonController extends BaseController {
     private final ExternalProcessService externalProcessService;
     private final ExternalRepository externalRepository;
 
-    private final FlowDefinitionParser flowDefinitionParser;
     private final ActionLibraryDeserializer actionLibraryDeserializer;
     private final VariableLibraryDeserializer variableLibraryDeserializer;
     private final ConstantLibraryDeserializer constantLibraryDeserializer;
@@ -225,27 +222,6 @@ public class CommonController extends BaseController {
                     if (des.support(element)) {
                         des.deserialize(element, true);
                         break;
-                    }
-                }
-
-                // 决策流节点语法校验
-                if (this.flowDefinitionParser.support(element.getName())) {
-                    FlowDefinition flowDefinition = flowDefinitionParser.parse(element);
-                    for (FlowNode flowNode : flowDefinition.getNodes()) {
-                        if (flowNode instanceof DecisionNode) {
-                            DecisionNode decisionNode = (DecisionNode) flowNode;
-                            if (DecisionType.Criteria == decisionNode.getDecisionType()) {
-                                for (DecisionItem decisionItem : decisionNode.getItems()) {
-                                    if ("script".equals(decisionItem.getConditionType())) {
-                                        List<ErrorInfo> errorInfoList = scriptValidationText(decisionItem.getScript(), "DecisionNode");
-                                        if (errorInfoList != null && !errorInfoList.isEmpty()) {
-                                            String errorMsg = String.format("[%s]决策节点的[%s]流向有语法错误", decisionNode.getName(), decisionItem.getTo());
-                                            throw new RuleException(errorMsg);
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }

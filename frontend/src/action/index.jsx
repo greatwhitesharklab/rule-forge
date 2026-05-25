@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const store = createStore(reducer, applyMiddleware(thunk));
     const file = _getParameter('file');
     if (!file || file.length < 1) {
-        bootbox.alert('请先指定要加载的变量库文件.');
+        window.bootbox.alert('请先指定要加载的变量库文件.');
         return;
     }
     store.dispatch(action.loadMasterData(file));

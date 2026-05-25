@@ -22,13 +22,13 @@ export function loadData(files){
             dispatch({type:LOAD_DATA_COMPLETED,data:data[0]});
         }).catch(function (response) {
             if (response && response.status === 401) {
-                bootbox.alert("权限不足，不能进行此操作.");
+                window.bootbox.alert("权限不足，不能进行此操作.");
             } else if (response && response.text) {
                 response.text().then(function(text) {
-                    bootbox.alert("<span style='color: red'>加载数据失败,服务端错误：" + text + "</span>");
+                    window.bootbox.alert("<span style='color: red'>加载数据失败,服务端错误：" + text + "</span>");
                 });
             } else {
-                bootbox.alert("<span style='color: red'>加载数据失败,服务端出错</span>");
+                window.bootbox.alert("<span style='color: red'>加载数据失败,服务端出错</span>");
             }
         });
     }
@@ -54,7 +54,7 @@ export function saveData(data,newVersion,file){
         xml+="<parameter name='"+item.name+"' label='"+item.label+"' type='"+item.type+"' act='InOut'/>";
     });
     if(errorInfo.length>1){
-        bootbox.alert(errorInfo+',不能保存！');
+        window.bootbox.alert(errorInfo+',不能保存！');
         return;
     }
     xml+='</parameter-library>';
@@ -68,12 +68,12 @@ export function saveData(data,newVersion,file){
             }
             postData.versionComment=versionComment;
             ajaxSave(url,postData,function () {
-                bootbox.alert('保存成功!');
+                window.bootbox.alert('保存成功!');
             })
         });
     }else{
         ajaxSave(url,postData,function () {
-            bootbox.alert('保存成功!');
+            window.bootbox.alert('保存成功!');
         })
     }
 };

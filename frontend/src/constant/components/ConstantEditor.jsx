@@ -67,7 +67,7 @@ class ConstantEditor extends React.Component{
                             <div className="btn-group btn-group-sm" style={{margin:'2px'}}>
                                 <button className="btn btn-info" type="button" onClick={(e)=>{
                                     if(!this.currentData){
-                                        bootbox.alert('请先选择一条具体的常量');
+                                        window.bootbox.alert('请先选择一条具体的常量');
                                         return;
                                     }
                                     const title=`常量"${this.masterData.name}.${this.currentData.name}"`;

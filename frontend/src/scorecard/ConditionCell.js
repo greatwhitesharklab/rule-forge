@@ -1,4 +1,4 @@
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 import Cell from './Cell.js';
 
 export default class ConditionCell extends Cell {
@@ -32,7 +32,7 @@ export default class ConditionCell extends Cell {
             }
             _this.cellCondition.renderTo(dialogContent);
             const caption = "配置条件";
-            MsgBox.showDialog(caption, dialogContent, [], [{
+            window.bootbox.dialog(caption, dialogContent, [], [{
                 name: 'hide.bs.modal',
                 callback: function () {
                     conditionContainer.innerHTML = '';

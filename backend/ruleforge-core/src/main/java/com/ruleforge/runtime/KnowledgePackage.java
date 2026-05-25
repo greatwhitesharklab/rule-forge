@@ -1,6 +1,5 @@
 package com.ruleforge.runtime;
 
-import com.ruleforge.model.flow.FlowDefinition;
 import com.ruleforge.model.rete.Rete;
 import com.ruleforge.model.rule.Rule;
 import com.ruleforge.runtime.rete.ReteInstance;
@@ -12,8 +11,6 @@ public interface KnowledgePackage {
     Rete getRete();
 
     Map<String, String> getVariableCateogoryMap();
-
-    Map<String, FlowDefinition> getFlowMap();
 
     Map<String, String> getParameters();
 

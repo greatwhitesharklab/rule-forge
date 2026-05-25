@@ -10,7 +10,7 @@
 
 import ResizableHeaderCell from './ResizableHeaderCell.js';
 import RowContext from './RowContext.js';
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 
 export default class HeaderRow {
     /**
@@ -123,7 +123,7 @@ class ConditionHeaderCell extends ResizableHeaderCell {
      */
     deleteColumn(complexTable) {
         if (complexTable.headerRow.conditionHeaders.length < 2) {
-            bootbox.alert('条件列至少要有一列！');
+            window.bootbox.alert('条件列至少要有一列！');
             return;
         }
 
@@ -391,7 +391,7 @@ class ActionHeaderCell extends ResizableHeaderCell {
                 complexTable.addActionColumn(rowContext);
                 window._setDirty();
             } else {
-                bootbox.alert('自定义列名不能为空！');
+                window.bootbox.alert('自定义列名不能为空！');
             }
         });
     }

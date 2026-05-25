@@ -5,7 +5,7 @@ import '../../../node_modules/codemirror/addon/hint/show-hint.css';
 import '../../../node_modules/codemirror/addon/lint/lint.css';
 import './ul.css';
 import {createRoot} from 'react-dom/client';
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 import CodeMirror from 'codemirror';
 import '../../../node_modules/codemirror/addon/mode/simple.js';
 import '../../../node_modules/codemirror/addon/hint/show-hint.js';
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (newVersion) {
             saveNewVersion(url, postData, function () {
                 toolbarApi.clearDirty();
-                bootbox.alert('保存成功!');
+                window.bootbox.alert('保存成功!');
             });
         } else {
             ajaxSave(url, postData, function () {
@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function loadResLib() {
         var content = codeMirror.getValue();
         if (!content || content.length < 10) {
-            MsgBox.alert("请先输入脚本.");
+            window.bootbox.alert("请先输入脚本.");
             return;
         }
         var url = window._server + '/uleditor/loadULLibs';

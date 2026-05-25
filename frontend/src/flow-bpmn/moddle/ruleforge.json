@@ -1,0 +1,92 @@
+{
+  "name": "RuleForge",
+  "prefix": "ruleforge",
+  "uri": "http://ruleforge.com/schema",
+  "types": [
+    {
+      "name": "RuleForgeTask",
+      "extends": ["bpmn:ServiceTask"],
+      "properties": [
+        {
+          "name": "file",
+          "type": "String",
+          "meta": { "allowedIn": ["bpmn:ServiceTask"] }
+        },
+        {
+          "name": "project",
+          "type": "String",
+          "meta": { "allowedIn": ["bpmn:ServiceTask"] }
+        },
+        {
+          "name": "version",
+          "type": "String",
+          "meta": { "allowedIn": ["bpmn:ServiceTask"] }
+        },
+        {
+          "name": "taskType",
+          "type": "String",
+          "meta": { "allowedIn": ["bpmn:ServiceTask"] }
+        },
+        {
+          "name": "bean",
+          "type": "String",
+          "meta": { "allowedIn": ["bpmn:ServiceTask"] }
+        },
+        {
+          "name": "method",
+          "type": "String",
+          "meta": { "allowedIn": ["bpmn:ServiceTask"] }
+        },
+        {
+          "name": "script",
+          "type": "String",
+          "isAttr": false,
+          "meta": { "allowedIn": ["bpmn:ServiceTask"] }
+        },
+        {
+          "name": "packageId",
+          "type": "String",
+          "meta": { "allowedIn":["bpmn:ServiceTask"] }
+        },
+        {
+          "name": "eventBean",
+          "type": "String",
+          "meta": { "allowedIn": ["bpmn:ServiceTask", "bpmn:ExclusiveGateway", "bpmn:ParallelGateway"] }
+        }
+      ]
+    },
+    {
+      "name": "RuleForgeGateway",
+      "extends": ["bpmn:ExclusiveGateway"],
+      "properties": [
+        {
+          "name": "decisionType",
+          "type": "String",
+          "meta": { "allowedIn": ["bpmn:ExclusiveGateway"] }
+        },
+        {
+          "name": "eventBean",
+          "type": "String",
+          "meta": { "allowedIn": ["bpmn:ExclusiveGateway"] }
+        }
+      ]
+    },
+    {
+      "name": "RuleForgeSequenceFlow",
+      "extends": ["bpmn:SequenceFlow"],
+      "properties": [
+        {
+          "name": "percent",
+          "type": "Number",
+          "meta": { "allowedIn": ["bpmn:SequenceFlow"] }
+        },
+        {
+          "name": "conditionScript",
+          "type": "String",
+          "isAttr": false,
+          "meta": { "allowedIn": ["bpmn:SequenceFlow"] }
+        }
+      ]
+    }
+  ]
+}

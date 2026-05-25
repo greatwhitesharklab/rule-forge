@@ -43,7 +43,7 @@ class ParameterEditor extends Component{
                     <div className="btn-group btn-group-sm" style={{margin:'2px'}}>
                         <button className="btn btn-info" type="button" onClick={(e)=>{
                                     if(!this.currentData){
-                                        bootbox.alert('请先选择一条具体的参数');
+                                        window.bootbox.alert('请先选择一条具体的参数');
                                         return;
                                     }
                                     const title=`参数"${this.currentData.name}"`;

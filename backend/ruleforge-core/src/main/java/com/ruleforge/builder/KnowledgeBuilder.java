@@ -10,7 +10,6 @@ import com.ruleforge.dsl.DSLRuleSetBuilder;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.crosstab.CrosstabDefinition;
 import com.ruleforge.model.decisiontree.DecisionTree;
-import com.ruleforge.model.flow.FlowDefinition;
 import com.ruleforge.model.library.ResourceLibrary;
 import com.ruleforge.model.rete.Rete;
 import com.ruleforge.model.rete.builder.ReteBuilder;
@@ -59,7 +58,6 @@ public class KnowledgeBuilder extends AbstractBuilder {
         }
         List<Rule> rules = new ArrayList<>();
         Map<String, Library> libMap = new HashMap<>();
-        Map<String, FlowDefinition> flowMap = new HashMap<>();
 
         for (Resource resource : resourceBase.getResources()) {
             String path = resource.getPath(); // 获取资源路径
@@ -125,10 +123,8 @@ public class KnowledgeBuilder extends AbstractBuilder {
                                         rules.addAll(ruleSet.getRules());
                                     }
                                 } else if (type.equals(ResourceType.Flow)) {
-                                    FlowDefinition fd = (FlowDefinition) object;
-                                    fd = fd.newFlowDefinitionForSerialize(this, knowledgePackageService, this.dslRuleSetBuilder, resource.getProjectVersion());
-                                    this.addToLibraryMap(libMap, fd.getLibraries());
-                                    flowMap.put(fd.getId(), fd);
+                                    // Flow resources are now handled by Flowable BPMN engine
+                                    // Skip old flow definition processing
                                 } else {
                                     // Scorecard 和 ComplexScorecard
                                     ScoreRule rule;
@@ -156,7 +152,7 @@ public class KnowledgeBuilder extends AbstractBuilder {
         ResourceLibrary resourceLibrary = this.resourceLibraryBuilder.buildResourceLibrary(libMap.values());
         this.buildLoopRules(rules, resourceLibrary);
         Rete rete = this.reteBuilder.buildRete(rules, resourceLibrary); // 使用收集到的 rules 构建 Rete 网络
-        return new KnowledgeBase(rete, flowMap);
+        return new KnowledgeBase(rete);
     }
 
     // 这个方法负责将路径设置到 Rule 对象上
@@ -207,7 +203,7 @@ public class KnowledgeBuilder extends AbstractBuilder {
 
         ResourceLibrary resourceLibrary = this.resourceLibraryBuilder.buildResourceLibrary(libMap.values());
         Rete rete = this.reteBuilder.buildRete(rules, resourceLibrary);
-        return new KnowledgeBase(rete, null);
+        return new KnowledgeBase(rete);
     }
 
     private void addToLibraryMap(Map<String, Library> map, List<Library> libraries) {

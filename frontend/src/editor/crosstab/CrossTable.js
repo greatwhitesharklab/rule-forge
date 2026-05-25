@@ -334,7 +334,7 @@ export default class CrossTable {
             xml += '</crosstab>';
             return xml;
         } catch (error) {
-            bootbox.alert(error);
+            window.bootbox.alert(error);
         }
     }
 }

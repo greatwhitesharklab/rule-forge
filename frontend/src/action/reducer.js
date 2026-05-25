@@ -42,7 +42,7 @@ function slave(state = {}, action) {
             return Object.assign({}, state.prototype, {data: action.masterRowData});
         case ACTIONS.ADD_SLAVE:
             if (!state.data || !state.data.methods) {
-                bootbox.alert('请先指定方法所属的Bean');
+                window.bootbox.alert('请先指定方法所属的Bean');
                 return state;
             }
             var newData = Object.assign({}, state.data);
@@ -67,7 +67,7 @@ function method(state = {}, action) {
             return Object.assign({}, state.prototype, {data: {}});
         case ACTIONS.ADD_PARAMETER:
             if (!state.data || !state.data.parameters) {
-                bootbox.alert('请先指定参数所属的方法');
+                window.bootbox.alert('请先指定参数所属的方法');
                 return state;
             }
             var newData = Object.assign({}, state.data);

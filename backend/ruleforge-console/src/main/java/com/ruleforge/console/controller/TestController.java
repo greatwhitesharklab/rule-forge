@@ -30,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -68,6 +70,7 @@ public class TestController {
     private final HttpSessionKnowledgeCache httpSessionKnowledgeCache;
     private final ExternalRepository externalRepository;
     private final TestService testService;
+    private final RuntimeService flowableRuntimeService;
 
     @PostMapping("/doTest")
     public Map<String, Object> doTest(HttpServletRequest req, @RequestBody DoTestDto data) throws Exception {
@@ -106,11 +109,20 @@ public class TestController {
         }
         ExecutionResponse response = null;
         if (StringUtils.isNotEmpty(flowId)) {
-            if (parameters != null) {
-                response = session.startProcess(flowId, parameters);
-            } else {
-                response = session.startProcess(flowId);
+            // Flow execution via Flowable
+            Map<String, Object> flowVariables = new HashMap<>();
+            for (Object obj : facts.values()) {
+                if (obj instanceof GeneralEntity) {
+                    flowVariables.put(((GeneralEntity) obj).getTargetClass(), obj);
+                } else if (obj instanceof Map) {
+                    flowVariables.putAll((Map<String, Object>) obj);
+                }
             }
+            ProcessInstance processInstance = flowableRuntimeService.startProcessInstanceByKey(flowId, flowVariables);
+            Map<String, Object> resultVars = flowableRuntimeService.getVariables(processInstance.getId());
+            // Use session parameters to capture results
+            session.getParameters().putAll(resultVars);
+            response = session.fireRules(); // No-op just for response wrapper
         } else {
             if (parameters == null) {
                 response = session.fireRules();

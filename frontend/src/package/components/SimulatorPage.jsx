@@ -22,7 +22,7 @@ export default class SimulatorPage extends Component {
         event.eventEmitter.on(event.OPEN_SIMULATOR_DIALOG, (rowData) => {
             const resourceItems = rowData.resourceItems;
             if (!resourceItems || resourceItems.length === 0) {
-                bootbox.alert("知识包[" + rowData.name + "]下未定义具体的文件，不能进行仿真测试!");
+                window.bootbox.alert("知识包[" + rowData.name + "]下未定义具体的文件，不能进行仿真测试!");
                 return;
             }
             this.setState({project: rowData.project, packageId: rowData.id})
@@ -99,7 +99,7 @@ export default class SimulatorPage extends Component {
                                     'data': [this.state.simulatorCategoryData]
                                 }, function (result) {
                                     var info = '测试结果：' + result.info;
-                                    bootbox.alert(info);
+                                    window.bootbox.alert(info);
                                     var data = result.data;
                                     action.buildSimulatorVariableEditorType(data);
                                     this.setState({

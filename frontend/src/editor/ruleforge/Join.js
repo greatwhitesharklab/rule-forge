@@ -1,4 +1,4 @@
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 
 ruleforge.Join=function(context){
 	this.type="and";
@@ -82,7 +82,7 @@ ruleforge.Join.prototype.init=function(parentConnection){
 			label:"删除",
 			onClick:function(){
 				if(self.children.length>0){
-					MsgBox.alert("请先删除当前连接下子元素！");
+					window.bootbox.alert("请先删除当前连接下子元素！");
 					return;
 				}
 				if(parentConnection){

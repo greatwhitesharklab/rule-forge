@@ -71,7 +71,7 @@ export function saveData(data, newVersion, file) {
         xml += '</spring-bean>';
     }
     if (errorInfo.length > 1) {
-        bootbox.alert(errorInfo + ',不能保存！');
+        window.bootbox.alert(errorInfo + ',不能保存！');
         return;
     }
     xml += '</action-library>';
@@ -85,12 +85,12 @@ export function saveData(data, newVersion, file) {
             }
             postData.versionComment = versionComment;
             ajaxSave(url, postData, function () {
-                bootbox.alert('保存成功!');
+                window.bootbox.alert('保存成功!');
             })
         });
     } else {
         ajaxSave(url, postData, function () {
-            bootbox.alert('保存成功!');
+            window.bootbox.alert('保存成功!');
         })
     }
     return {type: SAVE_COMPLETED};

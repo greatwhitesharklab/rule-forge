@@ -40,7 +40,7 @@ class ActionEditor extends Component {
                     click: function (rowIndex, rowData) {
                         let id = rowData.id;
                         if (!id || id.length < 1) {
-                            bootbox.alert('请先指定Bean Id');
+                            window.bootbox.alert('请先指定Bean Id');
                             return;
                         }
                         event.eventEmitter.emit(event.OPEN_SELECT_METHOD_DIALOG, id);
@@ -119,7 +119,7 @@ class ActionEditor extends Component {
                             <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
                                 <button className="btn btn-info" type="button" onClick={(e) => {
                                     if (!this.currentData) {
-                                        bootbox.alert('请先选择一条具体的动作方法');
+                                        window.bootbox.alert('请先选择一条具体的动作方法');
                                         return;
                                     }
                                     const title = `动作"${this.masterData.name}.${this.currentData.name}"`;

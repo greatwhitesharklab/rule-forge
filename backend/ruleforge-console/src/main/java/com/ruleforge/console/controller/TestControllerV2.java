@@ -188,11 +188,7 @@ public class TestControllerV2 {
         ExecutionResponse response = null;
         String flowId = fastTestDto.getFlowId();
         if (StringUtils.isNotEmpty(flowId)) {
-            if (parameters != null) {
-                response = session.startProcess(flowId, parameters);
-            } else {
-                response = session.startProcess(flowId);
-            }
+            throw new RuleException("Flow execution via V2 test endpoint is no longer supported. Use Flowable engine.");
         } else if (parameters == null) {
             response = session.fireRules();
         } else {

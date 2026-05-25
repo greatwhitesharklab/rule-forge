@@ -72,19 +72,19 @@ document.addEventListener('DOMContentLoaded', function () {
             if (newVersion) {
                 let postData = {content, file, newVersion}
                 saveNewVersion(url, postData, function () {
-                    bootbox.alert("保存成功", function () {
+                    window.bootbox.alert("保存成功", function () {
                         toolbarApi.clearDirty();
                     });
                 });
             } else {
                 ajaxSave(url, {content, file, newVersion}, function () {
-                    bootbox.alert("保存成功", function () {
+                    window.bootbox.alert("保存成功", function () {
                         toolbarApi.clearDirty();
                     });
                 });
             }
         } catch (error) {
-            bootbox.alert(error.message || error);
+            window.bootbox.alert(error.message || error);
         }
     }
 
@@ -124,13 +124,13 @@ document.addEventListener('DOMContentLoaded', function () {
         toolbarApi.clearDirty();
     }).catch(function (response) {
         if (response && response.status === 401) {
-            bootbox.alert("权限不足，不能进行此操作.");
+            window.bootbox.alert("权限不足，不能进行此操作.");
         } else if (response && response.text) {
             response.text().then(function(text) {
-                bootbox.alert("<span style='color: red'>加载数据失败,服务端错误：" + text + "</span>");
+                window.bootbox.alert("<span style='color: red'>加载数据失败,服务端错误：" + text + "</span>");
             });
         } else {
-            bootbox.alert("<span style='color: red'>加载数据失败,服务端出错</span>");
+            window.bootbox.alert("<span style='color: red'>加载数据失败,服务端出错</span>");
         }
     });
 });

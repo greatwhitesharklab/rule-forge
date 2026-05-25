@@ -5,15 +5,12 @@ import com.ruleforge.debug.DebugWriter;
 import com.ruleforge.debug.MessageItem;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.GeneralEntity;
-import com.ruleforge.model.flow.FlowDefinition;
-import com.ruleforge.model.flow.ins.FlowContextImpl;
 import com.ruleforge.model.library.Datatype;
 import com.ruleforge.runtime.agenda.Agenda;
 import com.ruleforge.runtime.agenda.AgendaFilter;
 import com.ruleforge.runtime.event.KnowledgeEvent;
 import com.ruleforge.runtime.event.KnowledgeEventListener;
 import com.ruleforge.runtime.response.ExecutionResponseImpl;
-import com.ruleforge.runtime.response.FlowExecutionResponse;
 import com.ruleforge.runtime.response.RuleExecutionResponse;
 import com.ruleforge.runtime.rete.*;
 
@@ -23,7 +20,6 @@ import java.util.*;
 public class KnowledgeSessionImpl implements KnowledgeSession {
     private Context context;
     private EvaluationContextImpl evaluationContext;
-    private FlowContextImpl flowContext;
     private Agenda agenda;
     private KnowledgeSession parentSession;
     private List<String> activedActivationGroup;
@@ -137,52 +133,6 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
 
     public RuleExecutionResponse fireRules(Map<String, Object> parameters, int max) {
         return this.execute(null, parameters, max);
-    }
-
-    public FlowExecutionResponse startProcess(String processId) {
-        return this.startProcess(processId, null);
-    }
-
-    public FlowExecutionResponse startProcess(String processId, Map<String, Object> parameters) {
-        return startProcess(processId, parameters, 1);
-    }
-
-    @Override
-    public FlowExecutionResponse startProcess(String processId, Map<String, Object> parameters, Integer sort) {
-        FlowDefinition targetFlow = null;
-        String knowledgePackageVersion = null;
-
-        for (KnowledgePackage knowledgePackage : this.knowledgePackageList) {
-            Map<String, FlowDefinition> flowMap = knowledgePackage.getFlowMap();
-            if (flowMap != null && flowMap.containsKey(processId)) {
-                targetFlow = flowMap.get(processId);
-                knowledgePackageVersion = knowledgePackage.getVersion();
-                break;
-            }
-        }
-
-        if (targetFlow == null) {
-            throw new RuleException("Rule flow [" + processId + "] not exist.");
-        } else {
-            this.parameterMap.clear();
-            this.clearInitParameters();
-            this.parameterMap.putAll(this.initParameters);
-            if (parameters != null) {
-                this.parameterMap.putAll(parameters);
-            }
-
-            this.flowContext.setVariableMap(this.parameterMap);
-            ExecutionResponseImpl executionResponse = new ExecutionResponseImpl();
-            executionResponse.setSort(sort);
-            this.flowContext.setResponse(executionResponse);
-            long start = System.currentTimeMillis();
-            targetFlow.newInstance(this.flowContext);
-            ExecutionResponseImpl response = (ExecutionResponseImpl) this.flowContext.getResponse();
-            response.setVersion(knowledgePackageVersion);
-            response.setDuration(System.currentTimeMillis() - start);
-            reset();
-            return response;
-        }
     }
 
     private RuleExecutionResponse execute(AgendaFilter filter, Map<String, Object> params, int max) {
@@ -566,7 +516,6 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
 
         this.context = new ContextImpl(this, Utils.getApplicationContext(), allVariableCategoryMap, this.execMessageItems);
         this.evaluationContext = new EvaluationContextImpl(this, Utils.getApplicationContext(), allVariableCategoryMap, this.execMessageItems);
-        this.flowContext = new FlowContextImpl(this, allVariableCategoryMap, Utils.getApplicationContext(), this.execMessageItems);
     }
 
     public Context getContext() {

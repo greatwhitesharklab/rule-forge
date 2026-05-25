@@ -79,7 +79,7 @@ export function loadTestRuleSets(file, version, callback) {
         console.log('获取规则集', rules)
         callback(rules)
     }).catch(function () {
-        bootbox.alert('加载资源失败.');
+        window.bootbox.alert('加载资源失败.');
         callback([])
     });
 }
@@ -97,7 +97,7 @@ export function loadVariableCategories(params, callback) {
     }).then(function (data) {
         callback(data)
     }).catch(function () {
-        bootbox.alert('加载资源失败.');
+        window.bootbox.alert('加载资源失败.');
         callback([])
     });
 }
@@ -116,11 +116,11 @@ export function searchForAppId(appId, projectId, callback) {
         if(res.status) {
             callback(res.data)
         } else {
-            bootbox.alert(res.msg || '加载资源失败.');
+            window.bootbox.alert(res.msg || '加载资源失败.');
             callback([]);
         }
     }).catch(function () {
-        bootbox.alert('加载资源失败.');
+        window.bootbox.alert('加载资源失败.');
         callback([]);
     });
 }
@@ -140,17 +140,17 @@ export function beginTest(postData, type, callback) {
             callback(res.data, true);
         } else {
             if(type === 'json') {
-                bootbox.alert('JSON格式错误，请检查输入内容.');
+                window.bootbox.alert('JSON格式错误，请检查输入内容.');
             } else {
-                bootbox.alert(res.msg || '测试失败');
+                window.bootbox.alert(res.msg || '测试失败');
             }
             callback([], false);
         }
     }).catch(function () {
         if(type === 'json') {
-            bootbox.alert('JSON格式错误，请检查输入内容.');
+            window.bootbox.alert('JSON格式错误，请检查输入内容.');
         } else {
-            bootbox.alert('接口调用失败.');
+            window.bootbox.alert('接口调用失败.');
         }
         callback([], false);
     });

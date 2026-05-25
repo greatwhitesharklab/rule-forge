@@ -2,7 +2,6 @@ package com.ruleforge.runtime;
 
 import com.ruleforge.debug.MessageItem;
 import com.ruleforge.runtime.agenda.AgendaFilter;
-import com.ruleforge.runtime.response.FlowExecutionResponse;
 import com.ruleforge.runtime.response.RuleExecutionResponse;
 import com.ruleforge.runtime.rete.ReteInstance;
 
@@ -26,12 +25,6 @@ public interface KnowledgeSession extends WorkingMemory {
     RuleExecutionResponse fireRules(Map<String, Object> var1, AgendaFilter var2, int var3);
 
     RuleExecutionResponse fireRules(Map<String, Object> var1);
-
-    FlowExecutionResponse startProcess(String processId);
-
-    FlowExecutionResponse startProcess(String var1, Map<String, Object> var2);
-
-    FlowExecutionResponse startProcess(String var1, Map<String, Object> var2, Integer sort);
 
     void writeLogFile() throws IOException;
 

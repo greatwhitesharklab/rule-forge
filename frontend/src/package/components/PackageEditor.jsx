@@ -137,7 +137,7 @@ class PackageEditor extends Component {
                                         event.eventEmitter.emit(event.OPEN_VERSION_DIALOG, this.currentPackage);
                                         // dispatch(action.save(true, project))
                                     } else {
-                                        bootbox.alert('请先选择一个知识包！');
+                                        window.bootbox.alert('请先选择一个知识包！');
                                     }
                                 }}><i className="glyphicon glyphicon-floppy-disk"/> 生成版本
                                 </button>
@@ -147,7 +147,7 @@ class PackageEditor extends Component {
                                     if (this.currentPackage) {
                                         dispatch(action.apply(project, packageConfig, this.currentPackage))
                                     } else {
-                                        bootbox.alert('请先选择一个知识包！');
+                                        window.bootbox.alert('请先选择一个知识包！');
                                     }
                                 }}><i className="glyphicon glyphicon-send"/> 发起审批
                                 </button>
@@ -157,7 +157,7 @@ class PackageEditor extends Component {
                                     if (this.currentPackage) {
                                         action.refreshKnowledgeCache(project, packageConfig, this.currentPackage);
                                     } else {
-                                        bootbox.alert('请先选择一个知识包！');
+                                        window.bootbox.alert('请先选择一个知识包！');
                                     }
                                 }}><i className="glyphicon glyphicon-cloud-upload"/> 发布测试
                                 </button>
@@ -165,7 +165,7 @@ class PackageEditor extends Component {
                                     if (this.currentPackage) {
                                         event.eventEmitter.emit(event.OPEN_SIMULATOR_DIALOG, this.currentPackage);
                                     } else {
-                                        bootbox.alert('请先选择一个知识包！');
+                                        window.bootbox.alert('请先选择一个知识包！');
                                     }
                                 }}><i className="glyphicon glyphicon-flash"/> 仿真测试
                                 </button>
@@ -194,7 +194,7 @@ class PackageEditor extends Component {
                                             title: "添加包[" + masterRowData.name + "]中的知识文件"
                                         })
                                     } else {
-                                        bootbox.alert('请先选择一个知识包！');
+                                        window.bootbox.alert('请先选择一个知识包！');
                                     }
                                 }}><i className="fa fa-plus-square"/> 添加文件
                                 </button>

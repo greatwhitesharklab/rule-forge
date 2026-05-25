@@ -75,12 +75,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isNewVersion) {
             saveNewVersion(url, postData, function () {
                 toolbarApi.clearDirty();
-                bootbox.alert('保存成功!');
+                window.bootbox.alert('保存成功!');
             });
         } else {
             ajaxSave(url, postData, function () {
                 toolbarApi.clearDirty();
-                bootbox.alert('保存成功!');
+                window.bootbox.alert('保存成功!');
             });
         }
     }

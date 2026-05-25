@@ -1,4 +1,4 @@
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 
 ruleforge.NamedJoin=function(context){
 	this.type="and";
@@ -127,7 +127,7 @@ ruleforge.NamedJoin.prototype.initMenu=function(variableLibraries){
 	}
 	this.variableCategoryLabel.addEventListener('click',function(e){
 		if(!self.referenceName){
-			bootbox.alert("请先输入引用名称.");
+			window.bootbox.alert("请先输入引用名称.");
 			return;
 		}
 		self.categoryMenu.show(e);
@@ -213,7 +213,7 @@ ruleforge.NamedJoin.prototype.init=function(parentConnection){
 			label:"删除",
 			onClick:function(){
 				if(self.children.length>0){
-					MsgBox.alert("请先删除当前连接下子元素！");
+					window.bootbox.alert("请先删除当前连接下子元素！");
 					return;
 				}
 				if(parentConnection){
@@ -250,7 +250,7 @@ ruleforge.NamedJoin.prototype.removeConnection=function(connection){
 };
 ruleforge.NamedJoin.prototype.addItem=function(isJoin){
 	if(!this.variableCategoryName || !this.referenceName){
-		bootbox.alert("请先定义变量引用名及变量对象!");
+		window.bootbox.alert("请先定义变量引用名及变量对象!");
 		return;
 	}
 	window._setDirty();

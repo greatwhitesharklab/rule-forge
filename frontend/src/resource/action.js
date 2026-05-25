@@ -24,10 +24,10 @@ export function loadMasterData(files) {
         }).catch(function (response) {
             if (response && response.text) {
                 response.text().then(function(text) {
-                    bootbox.alert("<span style='color: red'>加载数据失败,服务端错误：" + text + "</span>");
+                    window.bootbox.alert("<span style='color: red'>加载数据失败,服务端错误：" + text + "</span>");
                 });
             } else {
-                bootbox.alert("<span style='color: red'>加载数据失败,服务端出错</span>");
+                window.bootbox.alert("<span style='color: red'>加载数据失败,服务端出错</span>");
             }
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
         });
@@ -61,10 +61,10 @@ export function addVariable(data, file) {
         }).catch(function (response) {
             if (response && response.text) {
                 response.text().then(function(text) {
-                    bootbox.alert("<span style='color: red'>保存数据失败,服务端错误：" + text + "</span>");
+                    window.bootbox.alert("<span style='color: red'>保存数据失败,服务端错误：" + text + "</span>");
                 });
             } else {
-                bootbox.alert("<span style='color: red'>保存数据失败,服务端出错</span>");
+                window.bootbox.alert("<span style='color: red'>保存数据失败,服务端出错</span>");
             }
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
         });
@@ -89,10 +89,10 @@ export function generateVariableLibrary(file) {
         }).catch(function (response) {
             if (response && response.text) {
                 response.text().then(function(text) {
-                    bootbox.alert("<span style='color: red'>生成字段失败,服务端错误：" + text + "</span>");
+                    window.bootbox.alert("<span style='color: red'>生成字段失败,服务端错误：" + text + "</span>");
                 });
             } else {
-                bootbox.alert("<span style='color: red'>生成字段失败,服务端出错</span>");
+                window.bootbox.alert("<span style='color: red'>生成字段失败,服务端出错</span>");
             }
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
         });
@@ -134,7 +134,7 @@ export function saveData(data, newVersion, file) {
         xml += '</category>';
     });
     if (errorInfo.length > 1) {
-        bootbox.alert(errorInfo + ',不能保存！');
+        window.bootbox.alert(errorInfo + ',不能保存！');
         return;
     }
     xml += '</variable-library>';
@@ -148,12 +148,12 @@ export function saveData(data, newVersion, file) {
             }
             postData.versionComment = versionComment;
             ajaxSave(url, postData, function () {
-                // bootbox.alert('保存成功!');
+                // window.bootbox.alert('保存成功!');
             })
         });
     } else {
         ajaxSave(url, postData, function () {
-            // bootbox.alert('保存成功!');
+            // window.bootbox.alert('保存成功!');
         })
     }
     return {type: SAVE_COMPLETED};

@@ -39,11 +39,11 @@ export function pasteCellData(type, callback) {
         if (data) {
             callback(data);
         } else {
-            bootbox.alert('当前没有数据可供粘贴！');
+            window.bootbox.alert('当前没有数据可供粘贴！');
         }
     }).catch(function (error) {
         if (error) {
-            bootbox.alert('粘贴失败: ' + (error.message || error));
+            window.bootbox.alert('粘贴失败: ' + (error.message || error));
         }
     });
 }

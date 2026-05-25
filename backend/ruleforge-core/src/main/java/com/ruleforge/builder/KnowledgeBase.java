@@ -1,6 +1,5 @@
 package com.ruleforge.builder;
 
-import com.ruleforge.model.flow.FlowDefinition;
 import com.ruleforge.model.library.ResourceLibrary;
 import com.ruleforge.model.library.variable.Variable;
 import com.ruleforge.model.library.variable.VariableCategory;
@@ -13,24 +12,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author Jacky.gao
- * @since 2014年12月22日
- */
 public class KnowledgeBase {
     private ResourceLibrary resourceLibrary;
-    private Map<String, FlowDefinition> flowMap;
     private Rete rete;
     private KnowledgePackageImpl knowledgePackage;
 
     public KnowledgeBase(Rete rete) {
-        this(rete, null);
-    }
-
-    protected KnowledgeBase(Rete rete, Map<String, FlowDefinition> flowMap) {
         this.rete = rete;
         this.resourceLibrary = rete.getResourceLibrary();
-        this.flowMap = flowMap;
     }
 
     public KnowledgePackage getKnowledgePackage() {
@@ -39,7 +28,6 @@ public class KnowledgeBase {
         } else {
             this.knowledgePackage = new KnowledgePackageImpl();
             this.knowledgePackage.setRete(this.rete);
-            this.knowledgePackage.setFlowMap(this.flowMap);
             Map<String, String> variableCategoryMap = new HashMap<>();
             this.knowledgePackage.setVariableCategoryMap(variableCategoryMap);
             List<VariableCategory> variableCategories = this.resourceLibrary.getVariableCategories();
@@ -81,9 +69,5 @@ public class KnowledgeBase {
 
     public ResourceLibrary getResourceLibrary() {
         return this.resourceLibrary;
-    }
-
-    public Map<String, FlowDefinition> getFlowMap() {
-        return this.flowMap;
     }
 }

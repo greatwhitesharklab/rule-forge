@@ -1,5 +1,5 @@
 import BaseNode from './BaseNode.js';
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 
 export default class ActionNode extends BaseNode{
     constructor(context,parentNode){
@@ -62,7 +62,7 @@ export default class ActionNode extends BaseNode{
         var self=this;
         delIcon.addEventListener('click',function(){
             if(self.actionTypes.length===1){
-                MsgBox.alert("动作至少要有一个.");
+                window.bootbox.alert("动作至少要有一个.");
                 return;
             }
             var pos=-1;
@@ -77,7 +77,7 @@ export default class ActionNode extends BaseNode{
                 actionContainer.remove();
                 window._setDirty();
             }else{
-                MsgBox.alert("未找到要删除的动作对象.");
+                window.bootbox.alert("未找到要删除的动作对象.");
             }
         });
         return newActionType;

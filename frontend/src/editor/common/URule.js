@@ -1,4 +1,4 @@
-import {MsgBox} from 'flowdesigner';
+/* bootbox is a global */
 
 window._ConstantValueArray = [];
 window._ActionTypeArray = [];
@@ -51,7 +51,7 @@ window.refreshParameterLibraries = function () {
             item.initMenu(data);
         });
     }).catch(function () {
-        MsgBox.alert("加载文件失败！");
+        window.bootbox.alert("加载文件失败！");
     });
 };
 
@@ -82,7 +82,7 @@ window.refreshVariableLibraries = function () {
             item.initMenu(data);
         });
     }).catch(function () {
-        MsgBox.alert("加载文件失败！");
+        window.bootbox.alert("加载文件失败！");
     });
 };
 window.refreshActionLibraries = function () {
@@ -112,7 +112,7 @@ window.refreshActionLibraries = function () {
             item.initMenu(data);
         });
     }).catch(function () {
-        MsgBox.alert("加载文件失败！");
+        window.bootbox.alert("加载文件失败！");
     });
 };
 window.refreshFunctionLibraries = function () {
@@ -126,7 +126,7 @@ window.refreshFunctionLibraries = function () {
             item.initMenu(data);
         });
     }).catch(function () {
-        MsgBox.alert("加载函数失败！");
+        window.bootbox.alert("加载函数失败！");
     });
 };
 
@@ -157,7 +157,7 @@ window.refreshConstantLibraries = function () {
             item.initMenu(data);
         });
     }).catch(function () {
-        MsgBox.alert("加载文件失败！");
+        window.bootbox.alert("加载文件失败！");
     });
 };
 

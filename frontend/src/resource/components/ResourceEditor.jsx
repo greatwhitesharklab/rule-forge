@@ -80,7 +80,7 @@ class ResourceEditor extends Component {
                             <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
                                 <button className="btn btn-info" type="button" onClick={(e) => {
                                     if (!this.currentData) {
-                                        bootbox.alert('请先选择一条具体的变量');
+                                        window.bootbox.alert('请先选择一条具体的变量');
                                         return;
                                     }
                                     const text = `var-category="${this.masterData.name}" var="${this.currentData.label}"`;
@@ -123,7 +123,7 @@ class ResourceEditor extends Component {
                                             }
                                         })
                                     } else {
-                                        bootbox.alert('请先选择一条数据源！');
+                                        window.bootbox.alert('请先选择一条数据源！');
                                     }
                                     // dispatch(action.addSlave())
                                 }}><i className="glyphicon glyphicon-plus-sign"/> 添加字段
@@ -132,7 +132,7 @@ class ResourceEditor extends Component {
                             {/* <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
                                 <button className="btn btn-info" type="button" onClick={(e) => {
                                     if (!this.currentData) {
-                                        bootbox.alert('请先选择一条具体的数据源');
+                                        window.bootbox.alert('请先选择一条具体的数据源');
                                         return;
                                     }
                                     const text = `var-category="${this.masterData.name}" var="${this.currentData.label}"`;
