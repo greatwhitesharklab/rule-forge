@@ -4,6 +4,7 @@ import '../css/theme.css';
 import '../../node_modules/bootstrap/dist/css/bootstrap.css';
 import '../../node_modules/codemirror/lib/codemirror.css';
 import '../../node_modules/bootstrapvalidator/dist/css/bootstrapValidator.css';
+import React from 'react';
 import {createRoot} from 'react-dom/client';
 import {applyMiddleware, createStore} from 'redux';
 import {Provider} from 'react-redux';

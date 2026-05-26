@@ -1,6 +1,7 @@
-import {Component} from 'react';
+import React, {Component} from 'react';
 import * as ACTIONS from '../action.js';
 import * as componentEvent from '../../components/componentEvent.js';
+import Tree from '../../components/tree/component/Tree.jsx';
 
 const FILE_TYPE_FILTERS = [
     {type: 'all', icon: 'glyphicon glyphicon-th', label: '显示所有文件', className: 'rf rf-check'},

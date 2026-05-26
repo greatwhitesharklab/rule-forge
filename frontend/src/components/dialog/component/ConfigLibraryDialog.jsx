@@ -1,4 +1,4 @@
-import {Component} from 'react';
+import React, {Component} from 'react';
 import * as componentEvent from '../../componentEvent.js';
 /* bootbox is a global */
 

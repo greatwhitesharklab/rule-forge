@@ -7,7 +7,9 @@
     "dev": "webpack serve --mode development --hot",
     "local": "webpack serve --mode development --hot",
     "build": "webpack --mode production",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "author": "Jacky.Gao",
   "license": "The Apache-2.0 License",
@@ -28,6 +30,7 @@
     "font-awesome": "^4.6.1",
     "handsontable": "^17.1.0",
     "html-webpack-plugin": "^5.6.3",
+    "jquery": "^4.0.0",
     "mini-css-extract-plugin": "^2.9.2",
     "object-assign": "^4.1.1",
     "raphael": "^2.2.1",
@@ -45,6 +48,12 @@
     "url-loader": "^4.1.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "jsdom": "^29.1.1",
+    "vitest": "^4.1.7",
     "webpack": "^5.97.1",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.0"

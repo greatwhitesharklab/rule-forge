@@ -24,6 +24,9 @@ public class DecisionTreeRulesBuilder {
                 rs.addLibrary(lib);
             }
         }
+        if (tree.getVariableTreeNode() == null) {
+            throw new RuleException("Decision tree variable node is null.");
+        }
         List<VariableTreeNode> nodes = new ArrayList<>();
         nodes.add(tree.getVariableTreeNode());
         List<ActionTreeNode> list = new ArrayList<>();

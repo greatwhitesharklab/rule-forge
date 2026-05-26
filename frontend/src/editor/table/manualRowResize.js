@@ -8,6 +8,10 @@
  * Warning! Whenever you make a change in this file, make an analogous change in manualRowResize.js
  * @constructor
  */
+var HandsontableModule = require('handsontable');
+var Handsontable = HandsontableModule.default || HandsontableModule;
+var $ = require('jquery');
+window.$ = window.jQuery = $;
 (function (Handsontable) {
   function HandsontableManualRowResize () {
 

@@ -43,6 +43,7 @@ import '../decisiontable/CellCondition.js';
 import CrossTable from './CrossTable.js';
 import ExcelImportDialog from './ExcelImportDialog.js';
 import {getParameter, ajaxSave, buildProjectNameFromFile, loadEditorData} from '../../Utils.js';
+import React from 'react';
 import {createRoot} from 'react-dom/client';
 import ResourceVersionDialogComponent from '../common/ResourceVersionDialogComponent.jsx';
 import ResourceListDialogComponent from '../common/ResourceListDialogComponent.jsx';

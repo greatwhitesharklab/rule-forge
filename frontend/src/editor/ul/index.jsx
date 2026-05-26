@@ -4,6 +4,7 @@ import '../../../node_modules/codemirror/lib/codemirror.css';
 import '../../../node_modules/codemirror/addon/hint/show-hint.css';
 import '../../../node_modules/codemirror/addon/lint/lint.css';
 import './ul.css';
+import React from 'react';
 import {createRoot} from 'react-dom/client';
 /* bootbox is a global */
 import CodeMirror from 'codemirror';

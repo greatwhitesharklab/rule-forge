@@ -95,7 +95,11 @@ public class DecisionTableParser implements Parser<DecisionTable> {
 		List<Library> libraries=table.getLibraries();
 		ResourceLibrary resLibraries=rulesRebuilder.getResourceLibraryBuilder().buildResourceLibrary(libraries);
 		Map<String,String> namedMap=new HashMap<String,String>();
-		for(Cell cell:table.getCellMap().values()){
+		Map<String,Cell> cellMap=table.getCellMap();
+		if(cellMap==null){
+			return;
+		}
+		for(Cell cell:cellMap.values()){
 			if(cell.getAction()!=null){
 				rulesRebuilder.rebuildAction(cell.getAction(), resLibraries, namedMap, false);;
 			}else if(cell.getValue()!=null){
@@ -114,15 +118,18 @@ public class DecisionTableParser implements Parser<DecisionTable> {
 				}
 			}
 		}
-		for(Column col:table.getColumns()){
-			String category=col.getVariableCategory();
-			String name=col.getVariableName();
-			if(StringUtils.isBlank(category) || StringUtils.isBlank(name)){
-				continue;
+		List<Column> columns=table.getColumns();
+		if(columns!=null){
+			for(Column col:columns){
+				String category=col.getVariableCategory();
+				String name=col.getVariableName();
+				if(StringUtils.isBlank(category) || StringUtils.isBlank(name)){
+					continue;
+				}
+				Variable variable=rulesRebuilder.getVariableByName(resLibraries.getVariableCategories(), category, name, namedMap);
+				col.setDatatype(variable.getType());
+				col.setVariableLabel(variable.getLabel());
 			}
-			Variable variable=rulesRebuilder.getVariableByName(resLibraries.getVariableCategories(), category, name, namedMap);
-			col.setDatatype(variable.getType());
-			col.setVariableLabel(variable.getLabel());
 		}
 	}
 	

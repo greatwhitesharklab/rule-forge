@@ -47,6 +47,7 @@ import '../table/manualColumnResize.js';
 import '../table/manualRowResize.js';
 import '../ruleforge/Rule.js';
 import './DecisionTable.js';
+import React from 'react';
 import QuickTestDialog from '../../components/dialog/component/QuickTestDialog.jsx';
 import KnowledgeTreeDialog from '../../components/dialog/component/KnowledgeTreeDialog.jsx';
 import ResourceVersionDialogComponent from '../common/ResourceVersionDialogComponent.jsx';

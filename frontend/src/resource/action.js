@@ -7,6 +7,9 @@ export const GENERATED_FIELDS = 'generated_fields';
 export const IMPORT_FIELDS = 'IMPORT_FIELDS';
 export const SAVE_COMPLETED = 'save_completed';
 export const SAVE = 'save';
+export const DEL_MASTER = 'del_master';
+export const ADD_SLAVE = 'add_slave';
+export const DEL_SLAVE = 'del_slave';
 
 export function loadMasterData(files) {
     return function (dispatch) {

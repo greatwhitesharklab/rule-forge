@@ -12,13 +12,19 @@
 
 </div>
 
+> **⚠️ 项目状态：深度重构中**
+> 本项目目前正在进行全面重构（Flowable 8 决策流迁移、测试覆盖补充等），**尚不可用**。需要等待重构全部完成后才能正常使用。
+
+---
+
 ---
 
 ## ✨ 特性
 
 - 🧩 **多类型规则定义** — 向导式规则集、脚本式规则集、决策表、决策树、评分卡、决策流
-- 🎨 **可视化设计器** — 基于 React 的 Web 规则编辑器，所见即所得
+- 🎨 **可视化设计器** — 基于 React + bpmn-js 的 Web 规则编辑器，所见即所得
 - ⚡ **RETE 算法** — 高性能规则匹配与执行引擎
+- 🔄 **Flowable 8 BPM** — 基于 Flowable 8 的 BPMN 2.0 决策流引擎
 - 🔥 **热部署** — 规则动态更新，无需重启服务
 - ☕ **标准 Java** — 纯 Java 实现，Spring Boot 4.0，易于集成
 
@@ -100,9 +106,25 @@ mvn compile
 
 | 层 | 技术 |
 |----|------|
-| ☕ 后端 | Java 17 · Spring Boot 4.0.6 · MyBatis-Plus · MySQL · ANTLR4 · RETE |
-| 🎨 前端 | React |
+| ☕ 后端 | Java 17 · Spring Boot 4.0.6 · MyBatis-Plus · MySQL · ANTLR4 · RETE · Flowable 8 |
+| 🎨 前端 | React · bpmn-js |
+| ✅ 测试 | JUnit 5 · Mockito · AssertJ · Vitest · Playwright |
 | 🐳 部署 | Docker |
+
+## ✅ 测试
+
+```bash
+# 后端单元测试
+cd backend
+mvn test
+
+# 前端单元测试
+cd frontend
+npm test
+
+# 前端 E2E 测试（需要启动后端服务）
+npx playwright test
+```
 
 ## 📄 License
 

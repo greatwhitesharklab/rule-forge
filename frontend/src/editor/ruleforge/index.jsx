@@ -53,6 +53,7 @@ import EditorToolbar from '../../components/editor-toolbar/EditorToolbar.jsx';
 import ReferenceDialog from '../../reference/ReferenceDialog.jsx';
 import * as refEvent from '../../reference/event.js';
 import * as componentEvent from '../../components/componentEvent.js';
+import React from 'react';
 import {createRoot} from 'react-dom/client';
 import {getParameter, ajaxSave, saveNewVersion, buildProjectNameFromFile, loadEditorData, handleResponseError} from "../../Utils.js";
 

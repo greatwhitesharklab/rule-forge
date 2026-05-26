@@ -44,6 +44,7 @@ import ResourceVersionDialogComponent from '../common/ResourceVersionDialogCompo
 import ResourceListDialogComponent from '../common/ResourceListDialogComponent.jsx';
 import ConfigLibraryDialog from '../../components/dialog/component/ConfigLibraryDialog.jsx';
 import EditorToolbar from '../../components/editor-toolbar/EditorToolbar.jsx';
+import React from 'react';
 import { createRoot } from 'react-dom/client';
 import {getParameter, ajaxSave, saveNewVersion, buildProjectNameFromFile, loadEditorData, handleResponseError} from "../../Utils.js";
 import * as event from '../../components/componentEvent.js';

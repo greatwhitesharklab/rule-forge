@@ -1,3 +1,6 @@
+var HandsontableModule = require('handsontable');
+var Handsontable = HandsontableModule.default || HandsontableModule;
+var $ = require('jquery');
 (function (Handsontable) {
     'use strict';
     var RuleForgeRenderer = function (instance, TD, row, col, prop, value, cellProperties) {

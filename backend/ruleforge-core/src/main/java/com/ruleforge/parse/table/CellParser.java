@@ -42,15 +42,17 @@ public class CellParser implements Parser<Cell>, ApplicationContextAware {
             }
             Element ele = (Element) obj;
             String name = ele.getName();
-            if (jointParser.support(name)) {
+            if (jointParser != null && jointParser.support(name)) {
                 cell.setJoint(jointParser.parse(ele));
-            } else if (valueParser.support(name)) {
+            } else if (valueParser != null && valueParser.support(name)) {
                 cell.setValue(valueParser.parse(ele));
             } else {
-                for (ActionParser parser : actionParsers) {
-                    if (parser.support(name)) {
-                        cell.setAction(parser.parse(ele));
-                        break;
+                if (actionParsers != null) {
+                    for (ActionParser parser : actionParsers) {
+                        if (parser.support(name)) {
+                            cell.setAction(parser.parse(ele));
+                            break;
+                        }
                     }
                 }
             }

@@ -32,7 +32,10 @@ public class ActionTreeNodeParser implements Parser<ActionTreeNode>,ApplicationC
 			}
 			Element ele=(Element)obj;
 			String name=ele.getName();
-			
+
+			if(actionParsers==null){
+				continue;
+			}
 			for(ActionParser actionParser:actionParsers){
 				if(actionParser.support(name)){
 					actions.add(actionParser.parse(ele));

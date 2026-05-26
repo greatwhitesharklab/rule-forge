@@ -31,6 +31,9 @@ public class DecisionTableRulesBuilder {
 		List<Rule> rules=new ArrayList<Rule>();
 		List<Row> rows=table.getRows();
 		List<Column> columns=table.getColumns();
+		if(rows==null || columns==null){
+			return rules;
+		}
 		for(Row row:rows){
 			Rule rule=new Rule();
 			rule.setDebug(table.getDebug());
@@ -94,6 +97,9 @@ public class DecisionTableRulesBuilder {
 	}
 	private Cell getCell(DecisionTable table,int row,int column){
 		Map<String,Cell> cellMap=table.getCellMap();
+		if(cellMap==null){
+			throw new RuleException("Decision table cell["+row+","+column+"] not exist.");
+		}
 		Cell cell=null;
 		for(int i=row;i>-1;i--){
 			String key=table.buildCellKey(i,column);
