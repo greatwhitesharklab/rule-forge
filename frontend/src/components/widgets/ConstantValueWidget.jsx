@@ -1,4 +1,4 @@
-import {Component, createRef} from 'react';
+import React, {Component, createRef} from 'react';
 import ClickableLabel from './ClickableLabel.jsx';
 
 export default class ConstantValueWidget extends Component {

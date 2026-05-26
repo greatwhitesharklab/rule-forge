@@ -5,6 +5,7 @@ import '../css/iconfont.css';
 import './scorecard.css';
 import '../editor/context.standalone.css';
 import '../editor/ruleforge/ruleset.css';
+import React from 'react';
 import {createRoot} from 'react-dom/client';
 import '../Remark.js';
 import '../editor/common/URule.js';

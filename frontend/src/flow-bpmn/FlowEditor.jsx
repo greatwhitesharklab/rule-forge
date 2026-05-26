@@ -1,4 +1,4 @@
-import {Component, createRef} from 'react';
+import React, {Component, createRef} from 'react';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import RuleForgePaletteModule from './palette';
 import RuleForgePropertiesPanel from './properties/RuleForgePropertiesPanel';

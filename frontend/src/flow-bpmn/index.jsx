@@ -1,8 +1,8 @@
 import '../bootbox.js';
 import '../../node_modules/bootstrap/dist/css/bootstrap.css';
 import '../css/iconfont.css';
+import React, {createElement} from 'react';
 import {createRoot} from 'react-dom/client';
-import {createElement} from 'react';
 import FlowEditor from './FlowEditor.jsx';
 import KnowledgeTreeDialog from '../components/dialog/component/KnowledgeTreeDialog.jsx';
 import QuickTestDialog from '../components/dialog/component/QuickTestDialog.jsx';

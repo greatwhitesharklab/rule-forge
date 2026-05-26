@@ -30,6 +30,7 @@
     "font-awesome": "^4.6.1",
     "handsontable": "^17.1.0",
     "html-webpack-plugin": "^5.6.3",
+    "jquery": "^4.0.0",
     "mini-css-extract-plugin": "^2.9.2",
     "object-assign": "^4.1.1",
     "raphael": "^2.2.1",

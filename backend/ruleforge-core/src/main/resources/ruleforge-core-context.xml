@@ -159,11 +159,7 @@
         <property name="debugToFile" value="${ruleforge.debugToFile:false}"/>
     </bean>
 
-    <bean id="ruleforge.flowResourceBuilder" class="com.ruleforge.builder.resource.FlowResourceBuilder">
-        <property name="flowDeserializer" ref="ruleforge.flowDeserializer"/>
-    </bean>
-
-    <bean class="com.ruleforge.builder.resource.DecisionTableResourceBuilder">
+<bean class="com.ruleforge.builder.resource.DecisionTableResourceBuilder">
         <property name="decisionTableDeserializer" ref="ruleforge.decisionTableDeserializer"/>
     </bean>
 
@@ -200,11 +196,7 @@
         <property name="scriptDecisionTableDeserializer" ref="ruleforge.scriptDecisionTableDeserializer"/>
     </bean>
 
-    <bean id="ruleforge.flowDeserializer" class="com.ruleforge.parse.deserializer.FlowDeserializer">
-        <property name="flowDefinitionParser" ref="ruleforge.flowDefinitionParser"/>
-    </bean>
-
-    <bean id="ruleforge.scriptDecisionTableDeserializer"
+<bean id="ruleforge.scriptDecisionTableDeserializer"
           class="com.ruleforge.parse.deserializer.ScriptDecisionTableDeserializer">
         <property name="scriptDecisionTableParser" ref="ruleforge.scriptDecisionTableParser"/>
     </bean>
@@ -270,18 +262,6 @@
         <property name="arithmeticParser" ref="ruleforge.complexArithmeticParser"/>
     </bean>
     <bean id="ruleforge.constantLibraryParser" class="com.ruleforge.parse.ConstantLibraryParser"/>
-    <bean id="ruleforge.actionNodeParser" class="com.ruleforge.parse.flow.ActionNodeParser"/>
-    <bean id="ruleforge.decisionNodeParser" class="com.ruleforge.parse.flow.DecisionNodeParser">
-        <property name="lhsParser" ref="ruleforge.lhsParser"/>
-    </bean>
-    <bean id="ruleforge.endNodeParser" class="com.ruleforge.parse.flow.EndNodeParser"/>
-    <bean id="ruleforge.flowDefinitionParser" class="com.ruleforge.parse.flow.FlowDefinitionParser"/>
-    <bean id="ruleforge.forkNodeParser" class="com.ruleforge.parse.flow.ForkNodeParser"/>
-    <bean id="ruleforge.joinNodeParser" class="com.ruleforge.parse.flow.JoinNodeParser"/>
-    <bean id="ruleforge.startNodeParser" class="com.ruleforge.parse.flow.StartNodeParser"/>
-    <bean id="ruleforge.scriptNodeParser" class="com.ruleforge.parse.flow.ScriptNodeParser"/>
-    <bean id="ruleforge.ruleNodeParser" class="com.ruleforge.parse.flow.RuleNodeParser"/>
-    <bean id="ruleforge.rulePackageNodeParser" class="com.ruleforge.parse.flow.RulePackageNodeParser"/>
 
     <bean id="ruleforge.endWithAssertor" class="com.ruleforge.runtime.assertor.EndWithAssertor"/>
     <bean id="ruleforge.equalsAssertor" class="com.ruleforge.runtime.assertor.EqualsAssertor"/>

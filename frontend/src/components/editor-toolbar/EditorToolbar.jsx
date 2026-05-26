@@ -1,4 +1,4 @@
-import {Component} from 'react';
+import React, {Component} from 'react';
 import * as componentEvent from '../../components/componentEvent.js';
 import {OPEN_CONFIG_LIBRARY_DIALOG} from '../dialog/component/ConfigLibraryDialog.jsx';
 

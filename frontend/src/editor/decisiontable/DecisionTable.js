@@ -14,7 +14,8 @@ window._setDirty = function () {
     saveButton.classList.remove("disabled");
 };
 
-var Handsontable = require('handsontable');
+var HandsontableModule = require('handsontable');
+var Handsontable = HandsontableModule.default || HandsontableModule;
 
 (function () {
     if (!window.RuleForge) {

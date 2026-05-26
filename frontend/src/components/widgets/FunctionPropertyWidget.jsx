@@ -1,4 +1,4 @@
-import {Component} from 'react';
+import React, {Component} from 'react';
 import ClickableLabel from './ClickableLabel.jsx';
 
 export default class FunctionPropertyWidget extends Component {

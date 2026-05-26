@@ -1,4 +1,5 @@
-var Handsontable = require('handsontable');
+var HandsontableModule = require('handsontable');
+var Handsontable = HandsontableModule.default || HandsontableModule;
 import {getParameter,ajaxSave,saveNewVersion} from '../../Utils.js';
 import '../../../node_modules/codemirror/addon/hint/show-hint.js';
 import '../../../node_modules/codemirror/addon/mode/simple.js';
