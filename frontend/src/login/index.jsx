@@ -38,6 +38,7 @@ class LoginPage extends Component {
         return (
             <div className="login-container">
                 <div className="login-brand-panel">
+                    <div className="login-brand-grid"/>
                     <div className="login-brand-content">
                         <div className="login-logo-icon">
                             <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
