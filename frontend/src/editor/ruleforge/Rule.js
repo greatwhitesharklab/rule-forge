@@ -135,7 +135,7 @@ ruleforge.Rule.prototype.addProperty = function (property) {
 };
 ruleforge.Rule.prototype.initParent = function () {
     var message;
-    if (this.data != null && this.data.remark != '') {
+    if (this.data != null && this.data.remark) {
         message = this.data.remark;
     } else {
         message = this.remark.defaultRemark;
