@@ -54,7 +54,7 @@ export default class Splitter extends Component {
     componentDidMount() {
         var domNode = this.containerRef.current;
         if (!domNode) return;
-        domNode.style.height = window.innerHeight + 'px';
+        domNode.style.height = '100%';
 
         var size = this._isVertical() ? domNode.offsetWidth : domNode.offsetHeight;
         var resolved = this._resolvePosition(this.state.position, size);
@@ -79,7 +79,6 @@ export default class Splitter extends Component {
     _onResize() {
         var domNode = this.containerRef.current;
         if (!domNode) return;
-        domNode.style.height = window.innerHeight + 'px';
 
         var size = this._isVertical() ? domNode.offsetWidth : domNode.offsetHeight;
         var limit = this._getLimit();
@@ -204,7 +203,7 @@ export default class Splitter extends Component {
         }
 
         return (
-            <div ref={this.containerRef} style={{position: 'relative'}}>
+            <div ref={this.containerRef} style={{position: 'relative', flex: 1, minWidth: 0, minHeight: 0}}>
                 <div style={firstStyle}>{first}</div>
                 <div style={dividerStyle} onMouseDown={this._onMouseDown}
                      onMouseEnter={this._onMouseEnter} onMouseLeave={this._onMouseLeave}></div>

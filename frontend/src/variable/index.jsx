@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
     store.dispatch(action.loadMasterData(file))
 
     createRoot(document.getElementById("container")).render(
-        <div>
+        <div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
             <Provider store={store}>
                 <VariableEditor file={file}/>
             </Provider>

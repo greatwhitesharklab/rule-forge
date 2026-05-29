@@ -11,6 +11,16 @@ export const FILE_RENAME = 'file_rename';
 export const CREATE_NEW_PROJECT = 'create_new_project';
 export const CREATE_NEW_FILE = 'create_new_file';
 export const LOAD_CHILDREN_END = 'load_children_end'; // 子菜单加载完成的action类型
+export const SET_ACTIVE_PANEL = 'set_active_panel';
+export const SET_MONITORING_TAB = 'set_monitoring_tab';
+
+export function setActivePanel(panel) {
+    return {type: SET_ACTIVE_PANEL, panel};
+}
+
+export function setMonitoringTab(tab) {
+    return {type: SET_MONITORING_TAB, tab};
+}
 
 const FILE_TYPE_MAP = {
     'vl.xml': 'VariableLibrary', 'cl.xml': 'ConstantLibrary',
@@ -226,6 +236,7 @@ export function loadData(classify, projectName, types, searchFileName, pathsToEx
             const {rootFile, publicResource, projectNames} = repo;
             event.eventEmitter.emit(event.CHANGE_CLASSIFY, classify);
             // Only update project list on full load (no specific project selected)
+            // Backend returns all project names only when projectName is not specified
             if (!projectName && projectNames && projectNames.length > 0) {
                 event.eventEmitter.emit(event.PROJECT_LIST_CHANGE, projectNames);
             }

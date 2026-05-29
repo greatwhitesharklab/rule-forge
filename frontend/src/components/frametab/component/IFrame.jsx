@@ -1,5 +1,4 @@
 import React,{Component} from 'react';
-import * as event from '../../componentEvent.js';
 
 export default class IFrame extends Component{
     constructor(props) {
@@ -10,28 +9,43 @@ export default class IFrame extends Component{
 
     componentDidMount(){
         const iframe = this.iframeRef.current;
-
-        iframe.addEventListener('load', function(){
-            try {
-                iframe.style.opacity = '1';
-            } catch(e) {}
+        this._updateHeight();
+        iframe.addEventListener('load', () => {
+            this._injectHeightStyles(iframe);
+            this._updateHeight();
         });
-
-        const docHeight = document.documentElement.scrollHeight;
-        iframe.style.height = (docHeight - 47) + "px";
-
         window.addEventListener('resize', this._onResize);
-    }
-
-    _onResize() {
-        const iframe = this.iframeRef.current;
-        if (iframe) {
-            iframe.style.height = document.documentElement.scrollHeight + "px";
-        }
     }
 
     componentWillUnmount() {
         window.removeEventListener('resize', this._onResize);
+    }
+
+    _onResize() {
+        this._updateHeight();
+    }
+
+    _injectHeightStyles(iframe) {
+        try {
+            const doc = iframe.contentDocument;
+            if (!doc || doc.getElementById('rf-height-fix')) return;
+            const style = doc.createElement('style');
+            style.id = 'rf-height-fix';
+            style.textContent = 'html,body,#container{height:100%;margin:0}';
+            doc.head.appendChild(style);
+        } catch(e) {}
+    }
+
+    _updateHeight() {
+        const iframe = this.iframeRef.current;
+        if (!iframe) return;
+        const parent = iframe.parentElement;
+        const h = parent ? parent.offsetHeight : 0;
+        if (h > 0) {
+            iframe.style.height = h + 'px';
+        } else {
+            iframe.style.height = document.documentElement.clientHeight + 'px';
+        }
     }
 
     render(){
@@ -39,7 +53,7 @@ export default class IFrame extends Component{
         const iframeId=this.props.id;
         return (
             <iframe ref={this.iframeRef} src={path} id={iframeId}
-                    style={{width:'100%', border:0, opacity: 0, transition: 'opacity 0.2s'}}
+                    style={{width:'100%', border:0}}
                     frameBorder="none"></iframe>
         );
     }
