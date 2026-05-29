@@ -46,13 +46,6 @@ core ← executor ← executor-app
 
 ## 🚀 快速开始
 
-### Prerequisites
-
-[![Java 17+](https://img.shields.io/badge/Java-17+-37699B?logo=openjdk&logoColor=white)](https://openjdk.org/)
-[![Maven 3.8+](https://img.shields.io/badge/Maven-3.8+-C71A36?logo=apachemaven&logoColor=white)](https://maven.apache.org/)
-[![MySQL 8.0+](https://img.shields.io/badge/MySQL-8.0+-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
-[![Node.js 18+](https://img.shields.io/badge/Node.js-18+-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-
 ### 1️⃣ 配置
 
 ```bash
