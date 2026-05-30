@@ -1,4 +1,5 @@
 import * as ACTIONS from './action.js';
+import datasourceReducer from '@/datasource/reducer';
 
 function ui(state = {activePanel: 'rules', monitoringTab: 'overview'}, action) {
     switch (action.type) {
@@ -234,5 +235,6 @@ function buildDataMap(data,map,cleanActive,parent) {
 export default function rootReducer(state = {}, action) {
     const treeState = tree(state, action);
     const uiState = ui(state.ui, action);
-    return {...treeState, ui: uiState};
+    const datasourceState = datasourceReducer(state.datasource, action);
+    return {...treeState, ui: uiState, datasource: datasourceState};
 }

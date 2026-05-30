@@ -18,6 +18,7 @@ import ContentTabBar from '@/frame/components/ContentTabBar.jsx';
 import ActivityBar from '@/frame/components/ActivityBar.jsx';
 import RuleEditorPanel from '@/frame/panels/RuleEditorPanel.jsx';
 import MonitoringPanel from '@/frame/panels/MonitoringPanel.jsx';
+import DatasourcePanel from '@/datasource/index.jsx';
 import PlaceholderPanel from '@/frame/panels/PlaceholderPanel.jsx';
 import Loading from '@/components/loading/component/Loading.jsx';
 import * as event from '@/frame/event.js';
@@ -29,7 +30,7 @@ function SidePanelSwitcher({activePanel, store, eventObj}) {
         case 'monitoring':
             return <MonitoringPanel/>;
         case 'datasource':
-            return <PlaceholderPanel panelId="datasource"/>;
+            return <DatasourcePanel/>;
         case 'release':
             return <PlaceholderPanel panelId="release"/>;
         case 'ai':
