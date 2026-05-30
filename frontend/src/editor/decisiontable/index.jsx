@@ -43,8 +43,6 @@ import './CellCondition.js';
 import './CellContent.js';
 import './CellExecuteMethod.js';
 import './renderers.js';
-import '../table/manualColumnResize.js';
-import '../table/manualRowResize.js';
 import '../ruleforge/Rule.js';
 import './DecisionTable.js';
 import React from 'react';

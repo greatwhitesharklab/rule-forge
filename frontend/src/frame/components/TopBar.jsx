@@ -1,33 +1,16 @@
 import React, {Component} from 'react';
-import * as ACTIONS from '@/frame/action.js';
-import * as event from '@/frame/event.js';
 import * as componentEvent from '@/components/componentEvent.js';
 
 export default class TopBar extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            projects: [],
-            selectedProject: null,
-            tabs: [],
-            activeTab: null,
-            projectDropdownOpen: false,
             userDropdownOpen: false
         };
         this._handleClickOutside = this._handleClickOutside.bind(this);
     }
 
     componentDidMount() {
-        const {eventObj} = this.props;
-        eventObj.eventEmitter.on(eventObj.PROJECT_LIST_CHANGE, projectNames => {
-            this.setState({projects: projectNames});
-            if (projectNames.length > 0 && !this.state.selectedProject) {
-                this._selectProject(projectNames[0]);
-            }
-        });
-        eventObj.eventEmitter.on(eventObj.PROJECT_SELECT, projectName => {
-            this.setState({selectedProject: projectName, projectDropdownOpen: false});
-        });
         document.addEventListener('click', this._handleClickOutside);
     }
 
@@ -36,23 +19,11 @@ export default class TopBar extends Component {
     }
 
     _handleClickOutside(e) {
-        if (this.state.projectDropdownOpen || this.state.userDropdownOpen) {
-            if (!e.target.closest('.topbar-project-selector') && !e.target.closest('.topbar-user')) {
-                this.setState({projectDropdownOpen: false, userDropdownOpen: false});
+        if (this.state.userDropdownOpen) {
+            if (!e.target.closest('.topbar-user')) {
+                this.setState({userDropdownOpen: false});
             }
         }
-    }
-
-    _selectProject(name) {
-        window._projectName = name;
-        this.setState({selectedProject: name});
-        this.props.store.dispatch(ACTIONS.loadData(true, name));
-        this.props.eventObj.eventEmitter.emit(this.props.eventObj.PROJECT_FILTER_CHANGE, name);
-    }
-
-    _handleCreateProject() {
-        this.props.eventObj.eventEmitter.emit(event.OPEN_NEW_PROJECT_DIALOG, {type: 'root'});
-        this.setState({projectDropdownOpen: false});
     }
 
     _handleLogout(e) {
@@ -62,70 +33,22 @@ export default class TopBar extends Component {
         });
     }
 
-    setTabData(tabs, activeTab) {
-        this.setState({tabs, activeTab});
-    }
-
     render() {
-        const {projects, selectedProject, tabs, activeTab, projectDropdownOpen, userDropdownOpen} = this.state;
-        const frameTabRef = this.frameTabRef || this.props.frameTabRef;
+        const {userDropdownOpen} = this.state;
         const username = (window.__currentUser && window.__currentUser.username) || 'admin';
 
         return (
             <div className="topbar">
-                <div className="topbar-left">
-                    <div className="topbar-project-selector">
-                        <button className="topbar-project-btn" onClick={(e) => {
-                            e.stopPropagation();
-                            this.setState({projectDropdownOpen: !projectDropdownOpen, userDropdownOpen: false});
-                        }}>
-                            <i className="rf rf-project" style={{marginRight: 6, fontSize: 14}}/>
-                            <span>{selectedProject || '选择项目'}</span>
-                            <i className="glyphicon glyphicon-chevron-down" style={{marginLeft: 6, fontSize: 10, opacity: 0.5}}/>
-                        </button>
-                        {projectDropdownOpen && (
-                            <div className="topbar-dropdown topbar-project-dropdown">
-                                {projects.map(name => (
-                                    <div key={name}
-                                         className={'topbar-dropdown-item' + (name === selectedProject ? ' active' : '')}
-                                         onClick={() => {
-                                             this._selectProject(name);
-                                             this.setState({projectDropdownOpen: false});
-                                         }}>
-                                        <i className={name === selectedProject ? 'rf rf-check' : ''} style={{width: 16}}/>
-                                        {name}
-                                    </div>
-                                ))}
-                                <div className="topbar-dropdown-divider"/>
-                                <div className="topbar-dropdown-item" onClick={() => this._handleCreateProject()}>
-                                    <i className="rf rf-createpro" style={{width: 16, fontSize: 12}}/>
-                                    创建新项目
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                <div className="topbar-brand">
+                    <span className="topbar-brand-logo">R</span>
+                    <span className="topbar-brand-name">RuleForge</span>
                 </div>
-
-                <div className="topbar-tabs">
-                    {tabs.map(tab => (
-                        <div key={tab.fullPath}
-                             className={'topbar-tab' + (tab.fullPath === activeTab ? ' active' : '')}>
-                            <span className="topbar-tab-label" onClick={() => {
-                                if (frameTabRef) frameTabRef.activateTab(tab.fullPath);
-                            }}>{tab.label}</span>
-                            <button className="topbar-tab-close" onClick={(e) => {
-                                e.stopPropagation();
-                                if (frameTabRef) frameTabRef.closeTab(tab.fullPath);
-                            }}>×</button>
-                        </div>
-                    ))}
-                </div>
-
+                <div style={{flex: 1}}/>
                 <div className="topbar-right">
                     <div className="topbar-user">
                         <button className="topbar-user-btn" onClick={(e) => {
                             e.stopPropagation();
-                            this.setState({userDropdownOpen: !userDropdownOpen, projectDropdownOpen: false});
+                            this.setState({userDropdownOpen: !userDropdownOpen});
                         }}>
                             <div className="topbar-user-avatar">{username.charAt(0).toUpperCase()}</div>
                         </button>
@@ -138,7 +61,7 @@ export default class TopBar extends Component {
                                     <span>{username}</span>
                                 </div>
                                 <div className="topbar-dropdown-divider"/>
-                                <div className="topbar-dropdown-item" onClick={(e) => {
+                                <div className="topbar-dropdown-item" onClick={() => {
                                     this.setState({userDropdownOpen: false});
                                     componentEvent.eventEmitter.emit(componentEvent.TREE_NODE_CLICK, {
                                         id: 'security_config_',

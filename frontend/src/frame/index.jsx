@@ -14,10 +14,34 @@ import Splitter from '@/components/splitter/component/Splitter.jsx';
 import FrameTab from '@/components/frametab/component/FrameTab.jsx';
 import ComponentContainer from '@/frame/components/ComponentContainer.jsx';
 import TopBar from '@/frame/components/TopBar.jsx';
-import FileTreePanel from '@/frame/components/FileTreePanel.jsx';
+import ContentTabBar from '@/frame/components/ContentTabBar.jsx';
+import ActivityBar from '@/frame/components/ActivityBar.jsx';
+import RuleEditorPanel from '@/frame/panels/RuleEditorPanel.jsx';
+import MonitoringPanel from '@/frame/panels/MonitoringPanel.jsx';
+import PlaceholderPanel from '@/frame/panels/PlaceholderPanel.jsx';
 import Loading from '@/components/loading/component/Loading.jsx';
 import * as event from '@/frame/event.js';
 import * as componentEvent from '@/components/componentEvent.js';
+import {connect} from 'react-redux';
+
+function SidePanelSwitcher({activePanel, store, eventObj}) {
+    switch (activePanel) {
+        case 'monitoring':
+            return <MonitoringPanel/>;
+        case 'datasource':
+            return <PlaceholderPanel panelId="datasource"/>;
+        case 'release':
+            return <PlaceholderPanel panelId="release"/>;
+        case 'ai':
+            return <PlaceholderPanel panelId="ai"/>;
+        case 'settings':
+            return <PlaceholderPanel panelId="settings"/>;
+        default:
+            return <RuleEditorPanel store={store} eventObj={eventObj}/>;
+    }
+}
+
+const SidePanelConnected = connect(state => ({activePanel: (state.ui && state.ui.activePanel) || 'rules'}))(SidePanelSwitcher);
 
 document.addEventListener('DOMContentLoaded', function () {
     window._types = null;
@@ -26,29 +50,32 @@ document.addEventListener('DOMContentLoaded', function () {
     const store = createStore(reducer, applyMiddleware(thunk));
     store.dispatch(ACTIONS.loadData());
 
-    var topBarRef = null;
+    var contentTabBarRef = null;
     var frameTabRef = null;
 
     createRoot(document.getElementById("container")).render(
         <div className="app-layout">
             <Loading show={true}/>
             <Provider store={store}>
-                <TopBar ref={ref => { topBarRef = ref; }}
-                        store={store} eventObj={event}
-                        frameTabRef={frameTabRef}/>
+                <TopBar/>
                 <div className="app-body">
-                    <Splitter orientation='vertical' position='260px'>
-                        <FileTreePanel store={store}/>
+                    <ActivityBar/>
+                    <Splitter orientation='vertical' position='240px'>
+                        <SidePanelConnected store={store} eventObj={event}/>
                         <div className="app-content">
-                            <ComponentContainer/>
-                            <FrameTab ref={ref => {
-                                frameTabRef = ref;
-                                if (topBarRef) topBarRef.frameTabRef = ref;
-                            }}
-                                      welcomePage={window._welcomePage}
-                                      onTabsChange={(tabs, activeTab) => {
-                                          if (topBarRef) topBarRef.setTabData(tabs, activeTab);
-                                      }}/>
+                            <ContentTabBar ref={ref => { contentTabBarRef = ref; }}
+                                           getFrameTabRef={() => frameTabRef}/>
+                            <div className="content-area">
+                                <ComponentContainer/>
+                                <FrameTab ref={ref => {
+                                    frameTabRef = ref;
+                                    if (contentTabBarRef) contentTabBarRef.frameTabRef = ref;
+                                }}
+                                          welcomePage={window._welcomePage}
+                                          onTabsChange={(tabs, activeTab) => {
+                                              if (contentTabBarRef) contentTabBarRef.setTabData(tabs, activeTab);
+                                          }}/>
+                            </div>
                         </div>
                     </Splitter>
                 </div>

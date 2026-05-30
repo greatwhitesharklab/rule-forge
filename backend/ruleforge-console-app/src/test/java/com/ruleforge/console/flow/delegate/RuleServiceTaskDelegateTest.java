@@ -1,6 +1,9 @@
 package com.ruleforge.console.flow.delegate;
 
 import com.ruleforge.Utils;
+import com.ruleforge.builder.KnowledgeBase;
+import com.ruleforge.builder.KnowledgeBuilder;
+import com.ruleforge.builder.ResourceBase;
 import com.ruleforge.runtime.KnowledgePackage;
 import com.ruleforge.runtime.KnowledgeSession;
 import com.ruleforge.runtime.KnowledgeSessionFactory;
@@ -40,10 +43,12 @@ class RuleServiceTaskDelegateTest {
     private MockedStatic<KnowledgeSessionFactory> factoryMock;
     private ApplicationContext applicationContext;
     private KnowledgeService knowledgeService;
+    private KnowledgeBuilder knowledgeBuilder;
 
     @BeforeEach
     void setUp() {
-        delegate = new RuleServiceTaskDelegate();
+        knowledgeBuilder = mock(KnowledgeBuilder.class);
+        delegate = new RuleServiceTaskDelegate(knowledgeBuilder);
         utilsMock = mockStatic(Utils.class);
         factoryMock = mockStatic(KnowledgeSessionFactory.class);
 
@@ -51,6 +56,17 @@ class RuleServiceTaskDelegateTest {
         knowledgeService = mock(KnowledgeService.class);
         utilsMock.when(Utils::getApplicationContext).thenReturn(applicationContext);
         when(applicationContext.getBean(KnowledgeService.BEAN_ID)).thenReturn(knowledgeService);
+    }
+
+    /**
+     * Set up knowledgeBuilder mock to produce a working KnowledgePackage via buildFromFile path.
+     */
+    private void setupKnowledgeBuilder(String file, KnowledgePackage pkg) {
+        ResourceBase resourceBase = mock(ResourceBase.class);
+        KnowledgeBase knowledgeBase = mock(KnowledgeBase.class);
+        when(knowledgeBuilder.newResourceBase()).thenReturn(resourceBase);
+        when(knowledgeBuilder.buildKnowledgeBase(any(ResourceBase.class))).thenReturn(knowledgeBase);
+        when(knowledgeBase.getKnowledgePackage()).thenReturn(pkg);
     }
 
     @AfterEach
@@ -127,7 +143,7 @@ class RuleServiceTaskDelegateTest {
         void shouldPassParametersToSession() throws Exception {
             // Given 知识包中包含参数定义
             KnowledgePackage pkg = mock(KnowledgePackage.class);
-            when(knowledgeService.getKnowledge("rules/rule.xml")).thenReturn(pkg);
+            when(knowledgeService.getKnowledge("demo/rules/rule.xml")).thenReturn(pkg);
 
             KnowledgeSession session = mock(KnowledgeSession.class);
             factoryMock.when(() -> KnowledgeSessionFactory.newKnowledgeSession(any(KnowledgePackage.class)))
@@ -140,7 +156,7 @@ class RuleServiceTaskDelegateTest {
 
             Map<String, Object> variables = new HashMap<>();
             variables.put("params", Map.of("input", "test"));
-            DelegateExecution execution = createExecution("rules/rule.xml", null, variables);
+            DelegateExecution execution = createExecution("rules/rule.xml", "demo", variables);
 
             // When 执行规则时传入参数
             delegate.execute(execution);
@@ -206,11 +222,11 @@ class RuleServiceTaskDelegateTest {
         @Test
         @DisplayName("知识包为 null 时应跳过并记日志")
         void shouldSkipWhenKnowledgePackageIsNull() throws Exception {
-            // Given BPMN 中有 serviceTask，扩展属性 file="valid.xml"
+            // Given BPMN 中有 serviceTask，扩展属性 file="valid.xml" project="demo"
             // And KnowledgeService 返回 null
-            when(knowledgeService.getKnowledge("valid.xml")).thenReturn(null);
+            when(knowledgeService.getKnowledge("demo/valid.xml")).thenReturn(null);
 
-            DelegateExecution execution = createExecution("valid.xml", null, new HashMap<>());
+            DelegateExecution execution = createExecution("valid.xml", "demo", new HashMap<>());
 
             // When Flowable 执行到该 serviceTask
             delegate.execute(execution);
@@ -248,11 +264,12 @@ class RuleServiceTaskDelegateTest {
         }
 
         @Test
-        @DisplayName("project 为空时应只返回 file")
-        void shouldReturnFileOnlyWhenProjectIsEmpty() throws Exception {
+        @DisplayName("project 为空时应通过 buildFromFile 构建知识包")
+        void shouldBuildFromFileWhenProjectIsEmpty() throws Exception {
             // Given project 为空 file="rules/rule.xml"
+            //     And KnowledgeBuilder 能从文件构建知识包
             KnowledgePackage pkg = mock(KnowledgePackage.class);
-            when(knowledgeService.getKnowledge("rules/rule.xml")).thenReturn(pkg);
+            setupKnowledgeBuilder("rules/rule.xml", pkg);
 
             KnowledgeSession session = mock(KnowledgeSession.class);
             factoryMock.when(() -> KnowledgeSessionFactory.newKnowledgeSession(any(KnowledgePackage.class)))
@@ -266,8 +283,9 @@ class RuleServiceTaskDelegateTest {
             // When 调用 delegate.execute
             delegate.execute(execution);
 
-            // Then 应使用 "rules/rule.xml" 查找知识包
-            verify(knowledgeService).getKnowledge("rules/rule.xml");
+            // Then 应通过 buildFromFile 构建知识包（不通过 KnowledgeService）
+            verify(knowledgeBuilder).newResourceBase();
+            verify(knowledgeService, never()).getKnowledge(anyString());
         }
     }
 }

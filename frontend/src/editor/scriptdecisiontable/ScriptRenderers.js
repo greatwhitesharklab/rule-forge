@@ -1,4 +1,7 @@
 import CodeMirror from 'codemirror';
+var HandsontableModule = require('handsontable');
+var Handsontable = HandsontableModule.default || HandsontableModule;
+var $ = require('jquery');
 
 (function (Handsontable) {
 	'use strict';
@@ -82,9 +85,8 @@ import CodeMirror from 'codemirror';
 })(Handsontable);
 
 (function(){
-	Handsontable.RuleForgeCell = {
-		editor:Handsontable.editors.TextEditor,
+	Handsontable.cellTypes.registerCellType('ruleforge', {
+		editor: Handsontable.editors.TextEditor,
 		renderer: Handsontable.renderers.RuleForgeRenderer
-	};
-	Handsontable.cellTypes.ruleforge=Handsontable.RuleForgeCell;
+	});
 })();

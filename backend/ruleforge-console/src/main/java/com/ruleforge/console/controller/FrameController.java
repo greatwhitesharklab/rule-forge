@@ -234,6 +234,9 @@ public class FrameController extends BaseController {
                                      @RequestParam String type) throws ServletException, IOException {
         path = Utils.decodeURL(path);
         FileType fileType = FileType.parse(type);
+        if (fileType == null) {
+            throw new RuleException("Unknown file type: " + type);
+        }
         StringBuilder content = new StringBuilder();
         if (fileType.equals(FileType.UL)) {
             content.append("rule \"rule01\"");

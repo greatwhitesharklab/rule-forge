@@ -43,7 +43,16 @@ public class BpmnFlowController {
                 return ResponseEntity.notFound().build();
             }
             return ResponseEntity.ok(new String(inputStream.readAllBytes(), StandardCharsets.UTF_8));
+        } catch (RuleException ex) {
+            if (ex.getMessage() != null && ex.getMessage().contains("not exist")) {
+                return ResponseEntity.notFound().build();
+            }
+            throw ex;
         } catch (Exception ex) {
+            String msg = ex.getMessage();
+            if (msg != null && msg.contains("not exist")) {
+                return ResponseEntity.notFound().build();
+            }
             throw new RuleException(ex);
         }
     }

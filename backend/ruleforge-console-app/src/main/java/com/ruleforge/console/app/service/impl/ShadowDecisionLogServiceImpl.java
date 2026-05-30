@@ -28,6 +28,9 @@ import com.ruleforge.console.app.mapper.ShadowRuleLogMapper;
 import com.ruleforge.console.app.service.IShadowDecisionLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +52,7 @@ public class ShadowDecisionLogServiceImpl implements IShadowDecisionLogService {
     private final ShadowNodeLogMapper nodeLogMapper;
     private final ShadowRuleLogMapper ruleLogMapper;
     private final ShadowMessageLogMapper messageLogMapper;
+    private final SqlSessionFactory sqlSessionFactory;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -137,36 +141,31 @@ public class ShadowDecisionLogServiceImpl implements IShadowDecisionLogService {
             return;
         }
 
-        // 3. 保存规则执行明细
+        // 3. 收集所有规则日志 + 消息日志，用批量 INSERT
+        List<ShadowRuleLog> allRuleLogs = new ArrayList<>();
         if (ruleExecutionResponses != null && !ruleExecutionResponses.isEmpty()) {
             for (int i = 0; i < ruleExecutionResponses.size(); i++) {
                 RuleExecutionResponse ruleResp = ruleExecutionResponses.get(i);
 
-                // 命中规则
                 List<RuleInfo> matchedRules = ruleResp.getMatchedRules();
                 if (matchedRules != null && !matchedRules.isEmpty()) {
                     for (int j = 0; j < matchedRules.size(); j++) {
-                        RuleInfo ruleInfo = matchedRules.get(j);
-                        ShadowRuleLog ruleLog = buildRuleLog(flowLogId, userId, i, ruleResp.getDuration(),
-                                "MATCHED", j, ruleInfo, now);
-                        ruleLogMapper.insert(ruleLog);
+                        allRuleLogs.add(buildRuleLog(flowLogId, userId, i, ruleResp.getDuration(),
+                                "MATCHED", j, matchedRules.get(j), now));
                     }
                 }
 
-                // 触发规则
                 List<RuleInfo> firedRules = ruleResp.getFiredRules();
                 if (firedRules != null && !firedRules.isEmpty()) {
                     for (int j = 0; j < firedRules.size(); j++) {
-                        RuleInfo ruleInfo = firedRules.get(j);
-                        ShadowRuleLog ruleLog = buildRuleLog(flowLogId, userId, i, ruleResp.getDuration(),
-                                "FIRED", j, ruleInfo, now);
-                        ruleLogMapper.insert(ruleLog);
+                        allRuleLogs.add(buildRuleLog(flowLogId, userId, i, ruleResp.getDuration(),
+                                "FIRED", j, firedRules.get(j), now));
                     }
                 }
             }
         }
 
-        // 4. 保存执行消息明细
+        List<ShadowMessageLog> allMsgLogs = new ArrayList<>();
         if (execMessageItems != null && !execMessageItems.isEmpty()) {
             for (int i = 0; i < execMessageItems.size(); i++) {
                 MessageItem item = execMessageItems.get(i);
@@ -182,13 +181,15 @@ public class ShadowDecisionLogServiceImpl implements IShadowDecisionLogService {
                 msgLog.setRightVariableValue(item.getRightVariableValue());
                 msgLog.setExecTime(item.getExecTime());
                 msgLog.setCreatedAt(now);
-
-                messageLogMapper.insert(msgLog);
+                allMsgLogs.add(msgLog);
             }
         }
 
-        log.info("陪跑日志保存成功: shadowFlowLogId={}, mainFlowLogId={}, userId={}, flowId={}",
-                flowLogId, mainFlowLogId, userId, flowId);
+        // 批量写入
+        batchInsert(allRuleLogs, allMsgLogs);
+
+        log.info("陪跑日志保存成功: shadowFlowLogId={}, mainFlowLogId={}, userId={}, flowId={}, ruleLogs={}, msgLogs={}",
+                flowLogId, mainFlowLogId, userId, flowId, allRuleLogs.size(), allMsgLogs.size());
     }
 
     private ShadowRuleLog buildRuleLog(Long flowLogId, String userId, int ruleNodeIndex,
@@ -274,6 +275,32 @@ public class ShadowDecisionLogServiceImpl implements IShadowDecisionLogService {
         } catch (JsonProcessingException e) {
             log.warn("JSON序列化失败: {}", e.getMessage());
             return obj.toString();
+        }
+    }
+
+    private void batchInsert(List<ShadowRuleLog> ruleLogs, List<ShadowMessageLog> msgLogs) {
+        if ((ruleLogs == null || ruleLogs.isEmpty()) && (msgLogs == null || msgLogs.isEmpty())) {
+            return;
+        }
+        try (SqlSession sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH, false)) {
+            try {
+                if (ruleLogs != null && !ruleLogs.isEmpty()) {
+                    ShadowRuleLogMapper batchRuleMapper = sqlSession.getMapper(ShadowRuleLogMapper.class);
+                    for (ShadowRuleLog ruleLog : ruleLogs) {
+                        batchRuleMapper.insert(ruleLog);
+                    }
+                }
+                if (msgLogs != null && !msgLogs.isEmpty()) {
+                    ShadowMessageLogMapper batchMsgMapper = sqlSession.getMapper(ShadowMessageLogMapper.class);
+                    for (ShadowMessageLog msgLog : msgLogs) {
+                        batchMsgMapper.insert(msgLog);
+                    }
+                }
+                sqlSession.commit();
+            } catch (Exception e) {
+                sqlSession.rollback();
+                throw e;
+            }
         }
     }
 }

@@ -17,6 +17,8 @@ import com.ruleforge.console.app.lazy.DecisionContext;
 import com.ruleforge.console.app.lazy.LazyEntityFactory;
 import com.ruleforge.console.app.lazy.LazyGeneralEntity;
 import com.ruleforge.console.app.service.*;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.RuntimeService;
@@ -28,6 +30,7 @@ import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -44,6 +47,7 @@ public class LoanDecisionServiceImpl implements ILoanDecisionService {
     private final IShadowConfigService shadowConfigService;
     private final IShadowExecutionService shadowExecutionService;
     private final RuntimeService flowableRuntimeService;
+    private final MeterRegistry meterRegistry;
 
     @Override
     public LoanEvaluateResponse evaluate(LoanEvaluateRequest request) {
@@ -74,10 +78,13 @@ public class LoanDecisionServiceImpl implements ILoanDecisionService {
             // 5. 收集结果
             collectResults(ctx);
 
-            // 6. 保存日志
+            // 6. 记录监控指标
+            recordMetrics(ctx, "SUCCESS");
+
+            // 7. 保存日志
             Long flowLogId = saveSuccessLog(ctx);
 
-            // 7. 触发陪跑
+            // 8. 触发陪跑
             triggerShadowExecution(flowLogId, request);
 
             return LoanEvaluateResponse.success(ctx.resultData);
@@ -93,6 +100,8 @@ public class LoanDecisionServiceImpl implements ILoanDecisionService {
                 // 保存 PENDING 状态日志
                 savePendingLog(ctx, asyncEx);
 
+                recordMetrics(ctx, "PENDING");
+
                 return LoanEvaluateResponse.asyncPending(
                         asyncEx.getAsyncDataSourceId(),
                         asyncEx.isTaskTriggered()
@@ -104,6 +113,7 @@ public class LoanDecisionServiceImpl implements ILoanDecisionService {
                     request.getUserId(), request.getRulePackagePath(), request.getFlowId(), e);
 
             saveFailureLog(ctx, e);
+            recordMetrics(ctx, "FAILED");
             return LoanEvaluateResponse.failure("Decision execution failed: " + e.getMessage());
         } finally {
             DecisionContext.clear();
@@ -400,6 +410,62 @@ public class LoanDecisionServiceImpl implements ILoanDecisionService {
             current = current.getCause();
         }
         return null;
+    }
+
+    private void recordMetrics(ExecutionContext ctx, String status) {
+        try {
+            String packageName = ctx.request.getRulePackagePath();
+            String flowId = ctx.request.getFlowId();
+
+            Timer.builder("rule.execution.latency")
+                    .tag("package", packageName != null ? packageName : "unknown")
+                    .tag("flow", flowId != null ? flowId : "unknown")
+                    .tag("status", status)
+                    .publishPercentiles(0.5, 0.95, 0.99)
+                    .publishPercentileHistogram()
+                    .register(meterRegistry)
+                    .record(ctx.totalExecutionTime, TimeUnit.MILLISECONDS);
+
+            if (ctx.loadKnowledgeTime > 0) {
+                Timer.builder("rule.execution.phase")
+                        .tag("phase", "loadKnowledge")
+                        .tag("package", packageName != null ? packageName : "unknown")
+                        .publishPercentiles(0.5, 0.95, 0.99)
+                        .register(meterRegistry)
+                        .record(ctx.loadKnowledgeTime, TimeUnit.MILLISECONDS);
+            }
+            if (ctx.flowExecutionTime > 0) {
+                Timer.builder("rule.execution.phase")
+                        .tag("phase", "flowExecution")
+                        .tag("package", packageName != null ? packageName : "unknown")
+                        .publishPercentiles(0.5, 0.95, 0.99)
+                        .register(meterRegistry)
+                        .record(ctx.flowExecutionTime, TimeUnit.MILLISECONDS);
+            }
+            if (ctx.createSessionTime > 0) {
+                Timer.builder("rule.execution.phase")
+                        .tag("phase", "createSession")
+                        .tag("package", packageName != null ? packageName : "unknown")
+                        .publishPercentiles(0.5, 0.95, 0.99)
+                        .register(meterRegistry)
+                        .record(ctx.createSessionTime, TimeUnit.MILLISECONDS);
+            }
+            if (ctx.insertEntityTime > 0) {
+                Timer.builder("rule.execution.phase")
+                        .tag("phase", "insertEntity")
+                        .tag("package", packageName != null ? packageName : "unknown")
+                        .publishPercentiles(0.5, 0.95, 0.99)
+                        .register(meterRegistry)
+                        .record(ctx.insertEntityTime, TimeUnit.MILLISECONDS);
+            }
+
+            meterRegistry.counter("rule.execution.total",
+                    "package", packageName != null ? packageName : "unknown",
+                    "status", status
+            ).increment();
+        } catch (Exception e) {
+            log.warn("记录监控指标失败", e);
+        }
     }
 
     private void triggerShadowExecution(Long mainFlowLogId, LoanEvaluateRequest request) {

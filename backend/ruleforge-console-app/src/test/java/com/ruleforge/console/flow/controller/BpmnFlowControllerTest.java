@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import org.springframework.http.ResponseEntity;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -65,24 +66,26 @@ class BpmnFlowControllerTest {
             when(repositoryService.readFile("project/flow.xml", null)).thenReturn(is);
 
             // When GET /flow/load?file=project/flow.xml
-            String result = controller.loadBpmn("project/flow.xml", null);
+            ResponseEntity<String> result = controller.loadBpmn("project/flow.xml", null);
 
-            // Then 应返回文件内容
-            assertThat(result).contains("bpmn:definitions");
-            assertThat(result).contains("bpmn:process");
+            // Then 应返回 200 和文件内容
+            assertThat(result.getStatusCode().value()).isEqualTo(200);
+            assertThat(result.getBody()).contains("bpmn:definitions");
+            assertThat(result.getBody()).contains("bpmn:process");
         }
 
         @Test
-        @DisplayName("文件不存在时应返回错误")
-        void shouldReturnErrorWhenFileNotFound() throws Exception {
+        @DisplayName("文件不存在时应返回 404")
+        void shouldReturn404WhenFileNotFound() throws Exception {
             // Given 仓库中不存在该文件
             when(repositoryService.readFile("notexist.xml", null))
-                .thenThrow(new RuntimeException("File not found"));
+                .thenThrow(new RuntimeException("File [notexist.xml] not exist."));
 
             // When GET /flow/load?file=notexist.xml
-            // Then 应抛出异常
-            assertThatThrownBy(() -> controller.loadBpmn("notexist.xml", null))
-                .isInstanceOf(Exception.class);
+            ResponseEntity<String> result = controller.loadBpmn("notexist.xml", null);
+
+            // Then 应返回 404
+            assertThat(result.getStatusCode().value()).isEqualTo(404);
         }
 
         @Test
@@ -94,10 +97,11 @@ class BpmnFlowControllerTest {
             when(repositoryService.readFile("project/flow.xml", "v1.0")).thenReturn(is);
 
             // When GET /flow/load?file=project/flow.xml&version=v1.0
-            String result = controller.loadBpmn("project/flow.xml", "v1.0");
+            ResponseEntity<String> result = controller.loadBpmn("project/flow.xml", "v1.0");
 
             // Then 应返回指定版本的文件内容
-            assertThat(result).contains("v1");
+            assertThat(result.getStatusCode().value()).isEqualTo(200);
+            assertThat(result.getBody()).contains("v1");
             verify(repositoryService).readFile("project/flow.xml", "v1.0");
         }
     }

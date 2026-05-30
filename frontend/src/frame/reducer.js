@@ -1,5 +1,16 @@
 import * as ACTIONS from './action.js';
 
+function ui(state = {activePanel: 'rules', monitoringTab: 'overview'}, action) {
+    switch (action.type) {
+        case ACTIONS.SET_ACTIVE_PANEL:
+            return {...state, activePanel: action.panel};
+        case ACTIONS.SET_MONITORING_TAB:
+            return {...state, monitoringTab: action.tab};
+        default:
+            return state;
+    }
+}
+
 function tree(state={}, action) {
     switch (action.type){
         case ACTIONS.ADD:
@@ -220,4 +231,8 @@ function buildDataMap(data,map,cleanActive,parent) {
     }
 }
 
-export default tree;
+export default function rootReducer(state = {}, action) {
+    const treeState = tree(state, action);
+    const uiState = ui(state.ui, action);
+    return {...treeState, ui: uiState};
+}

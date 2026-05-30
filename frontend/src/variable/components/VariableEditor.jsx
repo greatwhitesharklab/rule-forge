@@ -93,7 +93,7 @@ class VariableEditor extends Component {
         };
 
         return (
-            <div style={{margin: '0px'}}>
+            <div style={{margin: '0px', height: '100%', display: 'flex', flexDirection: 'column'}}>
                 <ReferenceDialog/>
                 <Splitter orientation='vertical' position='50%'>
                     <div style={{padding: '0px'}}>

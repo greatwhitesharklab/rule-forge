@@ -21,7 +21,12 @@ public class DefaultHtmlFileDebugWriter implements DebugWriter {
             msg.append(item.toHtml());
         }
         String fullPath = path + "/ruleforge-debug.html";
-        FileOutputStream out = new FileOutputStream(new File(fullPath));
+        File file = new File(fullPath);
+        File parentDir = file.getParentFile();
+        if (parentDir != null && !parentDir.exists()) {
+            parentDir.mkdirs();
+        }
+        FileOutputStream out = new FileOutputStream(file);
         String sb = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>RuleForge调试日志信息</title><body style='font-size:12px'>" +
                 msg.toString() +
                 "</body></html>";

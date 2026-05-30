@@ -28,6 +28,9 @@ import com.ruleforge.console.app.mapper.DecisionRuleLogMapper;
 import com.ruleforge.console.app.service.IDecisionLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +53,7 @@ public class DecisionLogServiceImpl implements IDecisionLogService {
     private final DecisionNodeLogMapper nodeLogMapper;
     private final DecisionRuleLogMapper ruleLogMapper;
     private final DecisionMessageLogMapper messageLogMapper;
+    private final SqlSessionFactory sqlSessionFactory;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -183,36 +187,31 @@ public class DecisionLogServiceImpl implements IDecisionLogService {
             return flowLogId;
         }
 
-        // 3. 保存规则执行明细
+        // 3. 收集所有规则日志 + 消息日志，用批量 INSERT
+        List<DecisionRuleLog> allRuleLogs = new ArrayList<>();
         if (ruleExecutionResponses != null && !ruleExecutionResponses.isEmpty()) {
             for (int i = 0; i < ruleExecutionResponses.size(); i++) {
                 RuleExecutionResponse ruleResp = ruleExecutionResponses.get(i);
 
-                // 命中规则
                 List<RuleInfo> matchedRules = ruleResp.getMatchedRules();
                 if (matchedRules != null && !matchedRules.isEmpty()) {
                     for (int j = 0; j < matchedRules.size(); j++) {
-                        RuleInfo ruleInfo = matchedRules.get(j);
-                        DecisionRuleLog ruleLog = buildRuleLog(flowLogId, userId, i, ruleResp.getDuration(),
-                                "MATCHED", j, ruleInfo, now);
-                        ruleLogMapper.insert(ruleLog);
+                        allRuleLogs.add(buildRuleLog(flowLogId, userId, i, ruleResp.getDuration(),
+                                "MATCHED", j, matchedRules.get(j), now));
                     }
                 }
 
-                // 触发规则
                 List<RuleInfo> firedRules = ruleResp.getFiredRules();
                 if (firedRules != null && !firedRules.isEmpty()) {
                     for (int j = 0; j < firedRules.size(); j++) {
-                        RuleInfo ruleInfo = firedRules.get(j);
-                        DecisionRuleLog ruleLog = buildRuleLog(flowLogId, userId, i, ruleResp.getDuration(),
-                                "FIRED", j, ruleInfo, now);
-                        ruleLogMapper.insert(ruleLog);
+                        allRuleLogs.add(buildRuleLog(flowLogId, userId, i, ruleResp.getDuration(),
+                                "FIRED", j, firedRules.get(j), now));
                     }
                 }
             }
         }
 
-        // 4. 保存执行消息明细
+        List<DecisionMessageLog> allMsgLogs = new ArrayList<>();
         if (execMessageItems != null && !execMessageItems.isEmpty()) {
             for (int i = 0; i < execMessageItems.size(); i++) {
                 MessageItem item = execMessageItems.get(i);
@@ -228,12 +227,15 @@ public class DecisionLogServiceImpl implements IDecisionLogService {
                 msgLog.setRightVariableValue(item.getRightVariableValue());
                 msgLog.setExecTime(item.getExecTime());
                 msgLog.setCreatedAt(now);
-
-                messageLogMapper.insert(msgLog);
+                allMsgLogs.add(msgLog);
             }
         }
 
-        log.info("决策流日志保存成功: flowLogId={}, userId={}, flowId={}", flowLogId, userId, flowId);
+        // 批量写入：用 SqlSession batch 模式，一次 commit
+        batchInsert(allRuleLogs, allMsgLogs);
+
+        log.info("决策流日志保存成功: flowLogId={}, userId={}, flowId={}, ruleLogs={}, msgLogs={}",
+                flowLogId, userId, flowId, allRuleLogs.size(), allMsgLogs.size());
         return flowLogId;
     }
 
@@ -326,6 +328,37 @@ public class DecisionLogServiceImpl implements IDecisionLogService {
         } catch (JsonProcessingException e) {
             log.warn("JSON序列化失败: {}", e.getMessage());
             return obj.toString();
+        }
+    }
+
+    /**
+     * 批量写入规则日志和消息日志。
+     * 用 SqlSession BATCH 模式：所有 INSERT 缓存在内存，最后一次 commit。
+     * 50 条规则日志从 50 次 DB 往返降到 1 次。
+     */
+    private void batchInsert(List<DecisionRuleLog> ruleLogs, List<DecisionMessageLog> msgLogs) {
+        if ((ruleLogs == null || ruleLogs.isEmpty()) && (msgLogs == null || msgLogs.isEmpty())) {
+            return;
+        }
+        try (SqlSession sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH, false)) {
+            try {
+                if (ruleLogs != null && !ruleLogs.isEmpty()) {
+                    DecisionRuleLogMapper batchRuleMapper = sqlSession.getMapper(DecisionRuleLogMapper.class);
+                    for (DecisionRuleLog ruleLog : ruleLogs) {
+                        batchRuleMapper.insert(ruleLog);
+                    }
+                }
+                if (msgLogs != null && !msgLogs.isEmpty()) {
+                    DecisionMessageLogMapper batchMsgMapper = sqlSession.getMapper(DecisionMessageLogMapper.class);
+                    for (DecisionMessageLog msgLog : msgLogs) {
+                        batchMsgMapper.insert(msgLog);
+                    }
+                }
+                sqlSession.commit();
+            } catch (Exception e) {
+                sqlSession.rollback();
+                throw e;
+            }
         }
     }
 }

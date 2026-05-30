@@ -8,8 +8,6 @@ import './table_if_mode.js';
 import './table_print_mode.js';
 import './table-if-hint.js';
 import './ScriptRenderers.js';
-import '../table/manualColumnResize.js';
-import '../table/manualRowResize.js';
 
 window._dirty=false;
 window._setDirty=function(){
@@ -25,10 +23,13 @@ window._setDirty=function(){
 	if(!window.RuleForge){
 		window.RuleForge={};
 	}
-	Handsontable.helper.keyCode.ARROW_UP = "none";
-	Handsontable.helper.keyCode.ARROW_DOWN = "none";
-	Handsontable.helper.keyCode.ARROW_LEFT = "none";
-	Handsontable.helper.keyCode.ARROW_RIGHT = "none";
+	var keyCodes = Handsontable.helper.KEY_CODES || Handsontable.helper.keyCode;
+	if (keyCodes) {
+		keyCodes.ARROW_UP = "none";
+		keyCodes.ARROW_DOWN = "none";
+		keyCodes.ARROW_LEFT = "none";
+		keyCodes.ARROW_RIGHT = "none";
+	}
 
 	RuleForge.DecisionTable=function(id){
 		var table;
@@ -183,8 +184,9 @@ window._setDirty=function(){
 		self._dom=table;
 		self._handsontable.ht=self;
 		config.colHeaders=function(col){
-			var column=self.getColData(col),
-				type=column.type,
+			var column=self.getColData(col);
+			if(!column) return '';
+			var type=column.type,
 				category=column.variableCategory=="parameter"?"参数":column.variableCategory,
 				variable=column.variableLabel,
 				width=column.width,
@@ -209,9 +211,10 @@ window._setDirty=function(){
 			return "<i class='"+iconClass+"' style='line-height:21px;'></i> "+title;
 		};
 		config.rowHeaders=function(row){
-			var rowData=self.getRowData(row),
-				height=rowData.height;
-			self.setRowHeight(row,height);
+			var rowData=self.getRowData(row);
+			if(rowData && rowData.height){
+				self.setRowHeight(row,rowData.height);
+			}
 			return row+1;
 		};
 		config.cells=function(row,col,prop){
@@ -756,11 +759,13 @@ window._setDirty=function(){
 		},
 
 		setRowHeight:function(row,height){
-			this.getInstance().manualRowHeights[row]=height;
+			var inst=this.getInstance();
+			if(inst && inst.manualRowHeights){inst.manualRowHeights[row]=height;}
 		},
 
 		setColWidth:function(col,width){
-			this.getInstance().manualColumnWidths[col]=width;
+			var inst=this.getInstance();
+			if(inst && inst.manualColumnWidths){inst.manualColumnWidths[col]=width;}
 		},
 
 		mergeRange:function(end,rowspan){

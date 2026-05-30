@@ -224,7 +224,7 @@ class ConditionHeaderCell extends ResizableHeaderCell {
         }
 
         const menuConfig = this.buildMenuConfig(menuItems);
-        const menu = new URule.menu.Menu(menuConfig);
+        const menu = new RuleForge.menu.Menu(menuConfig);
         this.td.addEventListener('contextmenu', function (e) {
             menu.show(e);
         });
@@ -466,7 +466,7 @@ class ActionHeaderCell extends ResizableHeaderCell {
             });
         }
 
-        const menu = new URule.menu.Menu(config);
+        const menu = new RuleForge.menu.Menu(config);
         this.td.addEventListener('contextmenu', function (e) {
             menu.show(e);
         });

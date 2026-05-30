@@ -50,10 +50,9 @@ var $ = require('jquery');
 })(Handsontable);
 
 (function () {
-    Handsontable.RuleForgeCell = {
+    Handsontable.cellTypes.registerCellType('ruleforge', {
         editor: Handsontable.editors.TextEditor,
         renderer: Handsontable.renderers.RuleForgeRenderer
-    };
-    Handsontable.cellTypes.ruleforge = Handsontable.RuleForgeCell;
+    });
 })();
   

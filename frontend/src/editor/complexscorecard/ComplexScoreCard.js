@@ -62,14 +62,14 @@ export default class ComplexScoreCard {
         propertyContainer.appendChild(propertySpan);
 
         const onPropertyClick = function (menuItem) {
-            const prop = new urule.RuleProperty(self, menuItem.name, menuItem.defaultValue, menuItem.editorType);
+            const prop = new ruleforge.RuleProperty(self, menuItem.name, menuItem.defaultValue, menuItem.editorType);
             self.propertyContainer.appendChild(prop.getContainer());
             self.properties.push(prop);
             window._setDirty();
         };
 
         // Property menu
-        self.menu = new URule.menu.Menu({
+        self.menu = new RuleForge.menu.Menu({
             menuItems: [{
                 label: '优先级',
                 name: 'salience',
@@ -393,27 +393,27 @@ export default class ComplexScoreCard {
             // Load properties
             const salience = data.salience;
             if (salience) {
-                self.addProperty(new urule.RuleProperty(self, 'salience', salience, 1));
+                self.addProperty(new ruleforge.RuleProperty(self, 'salience', salience, 1));
             }
             const loop = data.loop;
             if (loop != null) {
-                self.addProperty(new urule.RuleProperty(self, 'loop', loop, 3));
+                self.addProperty(new ruleforge.RuleProperty(self, 'loop', loop, 3));
             }
             const effectiveDate = data.effectiveDate;
             if (effectiveDate) {
-                self.addProperty(new urule.RuleProperty(self, 'effective-date', effectiveDate, 2));
+                self.addProperty(new ruleforge.RuleProperty(self, 'effective-date', effectiveDate, 2));
             }
             const expiresDate = data.expiresDate;
             if (expiresDate) {
-                self.addProperty(new urule.RuleProperty(self, 'expires-date', expiresDate, 2));
+                self.addProperty(new ruleforge.RuleProperty(self, 'expires-date', expiresDate, 2));
             }
             const enabled = data.enabled;
             if (enabled != null) {
-                self.addProperty(new urule.RuleProperty(self, 'enabled', enabled, 3));
+                self.addProperty(new ruleforge.RuleProperty(self, 'enabled', enabled, 3));
             }
             const debug = data.debug;
             if (debug != null) {
-                self.addProperty(new urule.RuleProperty(self, 'debug', debug, 3));
+                self.addProperty(new ruleforge.RuleProperty(self, 'debug', debug, 3));
             }
 
             // Load libraries

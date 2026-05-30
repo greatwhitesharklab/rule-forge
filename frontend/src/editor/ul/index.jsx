@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
         body: new URLSearchParams({file}).toString()
     }).then(function(response) {
         if (!response.ok) throw response;
-        return response.json();
+        return response.text();
     }).then(function (data) {
         codeMirror.setValue(data);
         codeMirror.on("change", function () {

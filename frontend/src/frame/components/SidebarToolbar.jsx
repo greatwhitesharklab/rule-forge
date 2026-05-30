@@ -43,10 +43,11 @@ export default class SidebarToolbar extends Component {
         });
 
         eventObj.eventEmitter.on(eventObj.PROJECT_LIST_CHANGE, projectNames => {
-            this.setState({
+            this.setState(prevState => ({
                 projects: projectNames,
-                selectedProject: null
-            });
+                selectedProject: (prevState.selectedProject && projectNames.includes(prevState.selectedProject))
+                    ? prevState.selectedProject : null
+            }));
         });
 
         eventObj.eventEmitter.on(eventObj.PROJECT_FILTER_CHANGE, name => {

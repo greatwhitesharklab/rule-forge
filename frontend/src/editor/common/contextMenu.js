@@ -2,6 +2,9 @@
     if (!window.RuleForge) {
         window.RuleForge = {};
     }
+    RuleForge.setDomContent = function (container, text) {
+        container.textContent = text;
+    };
     RuleForge.menu = {};
     RuleForge.menu.AbstractMenu = function (config) {
     };

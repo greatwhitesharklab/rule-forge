@@ -910,7 +910,9 @@ select.form-control {
 }
 
 .app-body {
+    display: flex;
     flex: 1;
+    flex-direction: row;
     overflow: hidden;
 }
 
@@ -932,89 +934,31 @@ select.form-control {
     z-index: 100;
 }
 
-.topbar-left {
+.topbar-brand {
     display: flex;
     align-items: center;
+    gap: 8px;
     flex-shrink: 0;
 }
 
-.topbar-project-selector {
-    position: relative;
-}
-
-.topbar-project-btn {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 12px;
-    border: 1px solid var(--rf-border-split);
+.topbar-brand-logo {
+    width: 24px;
+    height: 24px;
     border-radius: var(--rf-radius-base);
-    background: var(--rf-bg-base);
-    color: var(--rf-text-primary);
-    font-size: var(--rf-font-size-sm);
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-}
-.topbar-project-btn:hover {
-    border-color: var(--rf-primary);
-    color: var(--rf-primary);
-}
-
-.topbar-tabs {
+    background: linear-gradient(135deg, var(--rf-primary) 0%, var(--rf-primary-hover) 100%);
+    color: #fff;
     display: flex;
-    align-items: stretch;
-    flex: 1;
-    min-width: 0;
-    padding: 0 var(--rf-space-2);
-    height: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-}
-
-.topbar-tab {
-    display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 0 var(--rf-space-3);
-    font-size: var(--rf-font-size-sm);
-    color: var(--rf-text-tertiary);
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.15s;
-    flex-shrink: 0;
-}
-.topbar-tab:hover {
-    color: var(--rf-text-primary);
-    background: rgba(0, 0, 0, 0.02);
-}
-.topbar-tab.active {
-    color: var(--rf-primary);
-    border-bottom-color: var(--rf-primary);
-    font-weight: var(--rf-font-weight-medium);
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
 }
 
-.topbar-tab-label {
-    cursor: pointer;
-}
-
-.topbar-tab-close {
+.topbar-brand-name {
     font-size: 14px;
-    opacity: 0;
-    border: none;
-    background: none;
-    color: var(--rf-text-tertiary);
-    cursor: pointer;
-    padding: 0 2px;
-    line-height: 1;
-    transition: opacity 0.15s;
-}
-.topbar-tab:hover .topbar-tab-close {
-    opacity: 0.5;
-}
-.topbar-tab-close:hover {
-    opacity: 1 !important;
-    color: var(--rf-danger);
+    font-weight: var(--rf-font-weight-medium);
+    color: var(--rf-text-primary);
+    letter-spacing: -0.3px;
 }
 
 .topbar-right {
@@ -1065,10 +1009,6 @@ select.form-control {
     min-width: 180px;
     z-index: 1000;
     overflow: hidden;
-}
-
-.topbar-project-dropdown {
-    left: 0;
 }
 
 .topbar-user-dropdown {
@@ -1322,4 +1262,152 @@ select.form-control {
 }
 .handsontable .area {
     background: var(--rf-primary-bg) !important;
+}
+
+/* ========== Activity Bar ========== */
+.activity-bar {
+    width: 48px;
+    min-width: 48px;
+    background: #1e1e2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 4px;
+    user-select: none;
+}
+.activity-bar-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #7f849c;
+    border-left: 2px solid transparent;
+    font-size: 18px;
+    transition: color 150ms, background 150ms, border-color 150ms;
+}
+.activity-bar-icon:hover {
+    color: #bac2de;
+    background: #313244;
+}
+.activity-bar-icon.active {
+    color: #cdd6f4;
+    background: #313244;
+    border-left-color: #89b4fa;
+}
+
+/* ========== Side Panel (shared) ========== */
+.side-panel-header {
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--rf-text-primary, #1f1f1f);
+    border-bottom: 1px solid var(--rf-border-split, #f0f0f0);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.side-panel-nav {
+    padding: 4px 0;
+}
+.side-panel-nav-item {
+    padding: 8px 16px;
+    font-size: 13px;
+    color: var(--rf-text-secondary, #666);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: background 150ms, color 150ms;
+}
+.side-panel-nav-item:hover {
+    background: var(--rf-bg-base, #f5f5f5);
+    color: var(--rf-text-primary, #1f1f1f);
+}
+.side-panel-nav-item.active {
+    background: var(--rf-primary-bg, #e6f4ff);
+    color: var(--rf-primary, #1677ff);
+    font-weight: 500;
+}
+
+/* ========== Monitoring Panel ========== */
+.monitoring-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100%;
+    background: var(--rf-bg-container, #fff);
+}
+.file-tree-panel {
+    height: 100%;
+}
+.placeholder-panel {
+    height: 100%;
+}
+.monitoring-panel-status {
+    padding: 12px 16px;
+    background: var(--rf-bg-container, #fff);
+}
+.status-divider {
+    height: 1px;
+    background: var(--rf-border-split, #f0f0f0);
+    margin-bottom: 12px;
+}
+.status-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 12px;
+}
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+.status-dot-green { background: var(--rf-success, #52c41a); }
+.status-dot-red   { background: var(--rf-danger, #ff4d4f); }
+.status-dot-gray  { background: #bbb; }
+.status-label {
+    color: var(--rf-text-secondary, #666);
+    width: 50px;
+}
+.status-value {
+    color: var(--rf-text-primary, #1f1f1f);
+    font-weight: 500;
+}
+
+/* ========== Placeholder Panel ========== */
+.placeholder-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--rf-bg-container, #fff);
+}
+.placeholder-content {
+    padding: 20px 16px;
+}
+.placeholder-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    background: #f0f0f0;
+    color: #999;
+    border-radius: 10px;
+    font-size: 11px;
+    margin-bottom: 12px;
+}
+.placeholder-desc {
+    font-size: 12px;
+    color: var(--rf-text-secondary, #666);
+    line-height: 1.6;
+    margin: 0 0 16px 0;
+}
+.placeholder-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.placeholder-items li {
+    padding: 6px 0;
+    font-size: 12px;
+    color: var(--rf-text-secondary, #666);
 }

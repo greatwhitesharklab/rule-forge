@@ -207,7 +207,7 @@ window.$ = window.jQuery = $;
 
     this.modifyRowHeight = function (height, row) {
       if (this.getSettings().manualRowResize) {
-        row = this.runHooksAndReturn('modifyRow', row);
+        row = this.runHooks('modifyRow', row);
         if (this.manualRowHeights[row] !== void 0) {
           return this.manualRowHeights[row];
         }

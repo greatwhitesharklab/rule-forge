@@ -245,8 +245,9 @@ var Handsontable = HandsontableModule.default || HandsontableModule;
         self._dom = table;
         self._handsontable.ht = self;
         config.colHeaders = function (col) {
-            var column = self.getColData(col),
-                type = column.type,
+            var column = self.getColData(col);
+            if (!column) return '';
+            var type = column.type,
                 category = column.variableCategory == "parameter" ? "参数" : column.variableCategory,
                 variable = column.variableLabel,
                 width = column.width,
@@ -271,9 +272,10 @@ var Handsontable = HandsontableModule.default || HandsontableModule;
             return "<i class='" + iconClass + "' style='line-height:21px;'></i> " + title;
         };
         config.rowHeaders = function (row) {
-            var rowData = self.getRowData(row),
-                height = rowData.height;
-            self.setRowHeight(row, height);
+            var rowData = self.getRowData(row);
+            if (rowData && rowData.height) {
+                self.setRowHeight(row, rowData.height);
+            }
             return row + 1;
         };
         config.cells = function (row, col, prop) {
@@ -852,11 +854,17 @@ var Handsontable = HandsontableModule.default || HandsontableModule;
         },
 
         setRowHeight: function (row, height) {
-            this.getInstance().manualRowHeights[row] = height;
+            var instance = this.getInstance();
+            if (instance && instance.manualRowHeights) {
+                instance.manualRowHeights[row] = height;
+            }
         },
 
         setColWidth: function (col, width) {
-            this.getInstance().manualColumnWidths[col] = width;
+            var instance = this.getInstance();
+            if (instance && instance.manualColumnWidths) {
+                instance.manualColumnWidths[col] = width;
+            }
         },
 
         mergeRange: function (end, rowspan) {

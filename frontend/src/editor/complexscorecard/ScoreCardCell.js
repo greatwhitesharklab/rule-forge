@@ -36,7 +36,7 @@ export default class ConditionCell extends HighlightCell {
 
         // Variable/parameter selector
         this.propContainer = generateContainer();
-        URule.setDomContent(this.propContainer, '请选择属性');
+        RuleForge.setDomContent(this.propContainer, '请选择属性');
         this.td.appendChild(this.propContainer);
         this.propContainer.style.cssText = 'color: #999; position: relative';
         this.refreshVariableMenus();
@@ -106,7 +106,7 @@ export default class ConditionCell extends HighlightCell {
                         if (self.cellCondition) {
                             self.cellCondition.clean();
                         }
-                        self.cellCondition = new urule.CellCondition('<div/>');
+                        self.cellCondition = new ruleforge.CellCondition('<div/>');
                         self.cellCondition.initData(data);
                         self.container.innerHTML = '';
                         self.container.appendChild(self.cellCondition.getDisplayContainer());
@@ -114,7 +114,7 @@ export default class ConditionCell extends HighlightCell {
                 }
             }]
         };
-        const menu = new URule.menu.Menu(menuConfig);
+        const menu = new RuleForge.menu.Menu(menuConfig);
         this.td.addEventListener('contextmenu', function (e) {
             menu.show(e);
         });
@@ -131,7 +131,7 @@ export default class ConditionCell extends HighlightCell {
      */
     initData(data) {
         if (data.joint) {
-            this.cellCondition = new urule.CellCondition('<div/>');
+            this.cellCondition = new ruleforge.CellCondition('<div/>');
             this.cellCondition.initData(data.joint);
             this.container.innerHTML = '';
             this.container.appendChild(this.cellCondition.getDisplayContainer());
@@ -140,7 +140,7 @@ export default class ConditionCell extends HighlightCell {
             this.variableLabel = data.variableLabel;
             this.variableName = data.variableName;
             this.datatype = data.datatype;
-            URule.setDomContent(this.propContainer, this.variableLabel || this.variableName);
+            RuleForge.setDomContent(this.propContainer, this.variableLabel || this.variableName);
             this.propContainer.style.color = '#1d1d1d';
         }
     }
@@ -167,7 +167,7 @@ export default class ConditionCell extends HighlightCell {
         if (this.propContainer.menu) {
             this.propContainer.menu.setConfig({menuItems: menuItems});
         } else {
-            this.propContainer.menu = new URule.menu.Menu({menuItems: menuItems});
+            this.propContainer.menu = new RuleForge.menu.Menu({menuItems: menuItems});
             this.propContainer.addEventListener('click', function (e) {
                 self.propContainer.menu.show(e);
             });
@@ -197,7 +197,7 @@ export default class ConditionCell extends HighlightCell {
     configCondition(container) {
         const dialog = document.createElement('div');
         if (!this.cellCondition) {
-            this.cellCondition = new urule.CellCondition('<div/>');
+            this.cellCondition = new ruleforge.CellCondition('<div/>');
         }
         const self = this;
         this.cellCondition.renderTo(dialog);
@@ -371,7 +371,7 @@ export class ActionCell extends HighlightCell {
             window._currentConditionCell = null;
         });
 
-        this.inputType = new urule.InputType(null, '无');
+        this.inputType = new ruleforge.InputType(null, '无');
         container.appendChild(this.inputType.getContainer());
 
         // Context menu
@@ -382,7 +382,7 @@ export class ActionCell extends HighlightCell {
                 onClick: function () {
                     MsgBox.confirm('真的要清空当前单元格内容吗？', function () {
                         self.inputType.getContainer().remove();
-                        self.inputType = new urule.InputType(null, '无');
+                        self.inputType = new ruleforge.InputType(null, '无');
                         self.container.appendChild(self.inputType.getContainer());
                         window._setDirty();
                     });
@@ -404,14 +404,14 @@ export class ActionCell extends HighlightCell {
                 onClick: function () {
                     pasteCellData('value', function (data) {
                         self.inputType.getContainer().remove();
-                        self.inputType = new urule.InputType(null, '无');
+                        self.inputType = new ruleforge.InputType(null, '无');
                         self.container.appendChild(self.inputType.getContainer());
                         self.inputType.setValueType(data.valueType, data);
                     });
                 }
             }]
         };
-        const menu = new URule.menu.Menu(menuConfig);
+        const menu = new RuleForge.menu.Menu(menuConfig);
         this.td.addEventListener('contextmenu', function (e) {
             menu.show(e);
         });
