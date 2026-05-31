@@ -6,6 +6,9 @@ import com.ruleforge.Utils;
 import com.ruleforge.builder.KnowledgeBase;
 import com.ruleforge.builder.KnowledgeBuilder;
 import com.ruleforge.builder.ResourceBase;
+import com.ruleforge.console.model.TestDataImportResult;
+import com.ruleforge.console.service.BatchTestService;
+import com.ruleforge.console.service.TestDataService;
 import com.ruleforge.console.repository.ExternalRepository;
 import com.ruleforge.console.servlet.respackage.HttpSessionKnowledgeCache;
 import com.ruleforge.exception.RuleException;
@@ -54,6 +57,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * 测试控制器 — 单条测试、批量测试、Excel 导入导出
+ *
+ * 重构要点：
+ * - importExcelTemplate 委托 TestDataService.importExcel → DB 存储（替代 Session）
+ * - doBatchTest 委托 BatchTestService.executeBatchAsync → 异步执行
+ * - batchTestProgress 新增轮询进度端点
+ * - exportBatchTestExcel 委托 TestDataService.exportTestResult（从 DB 读取）
+ *
  * @author Fred
  * @since 2025/8/17 13:33
  */
@@ -64,13 +75,22 @@ import java.util.Set;
 public class TestController {
     public static final String KB_KEY = "_kb";
     public static final String VCS_KEY = "_vcs";
+    /** @deprecated 数据已迁移至 DB，保留兼容 */
+    @Deprecated
     public static final String IMPORT_EXCEL_DATA = "_import_excel_data";
+    /** @deprecated 数据已迁移至 DB，保留兼容 */
+    @Deprecated
     public static final String EXPORT_EXCEL_TEST_DATA = "_export_excel_test_data";
+
     private final KnowledgeBuilder knowledgeBuilder;
     private final HttpSessionKnowledgeCache httpSessionKnowledgeCache;
     private final ExternalRepository externalRepository;
     private final TestService testService;
+    private final TestDataService testDataService;
+    private final BatchTestService batchTestService;
     private final RuntimeService flowableRuntimeService;
+
+    // ==================== 单条测试 ====================
 
     @PostMapping("/doTest")
     public Map<String, Object> doTest(HttpServletRequest req, @RequestBody DoTestDto data) throws Exception {
@@ -94,7 +114,6 @@ public class TestController {
         long start = System.currentTimeMillis();
         KnowledgeBase knowledgeBase = (KnowledgeBase) httpSessionKnowledgeCache.get(req, KB_KEY);
         if (knowledgeBase == null) {
-//            knowledgeBase = buildKnowledgeBase(req);
             return null;
         }
         KnowledgePackage knowledgePackage = knowledgeBase.getKnowledgePackage();
@@ -109,7 +128,6 @@ public class TestController {
         }
         ExecutionResponse response = null;
         if (StringUtils.isNotEmpty(flowId)) {
-            // Flow execution via Flowable
             Map<String, Object> flowVariables = new HashMap<>();
             for (Map.Entry<VariableCategory, Object> entry : facts.entrySet()) {
                 Object obj = entry.getValue();
@@ -121,7 +139,6 @@ public class TestController {
                 }
             }
             ProcessInstance processInstance = flowableRuntimeService.startProcessInstanceByKey(flowId, flowVariables);
-            // Update facts from modified flow variables (entities are modified in-place by delegates)
             for (Map.Entry<VariableCategory, Object> entry : facts.entrySet()) {
                 Object obj = entry.getValue();
                 if (obj instanceof GeneralEntity) {
@@ -176,60 +193,12 @@ public class TestController {
         return resultMap;
     }
 
-    @PostMapping("/doBatchTest")
-    public Map<String, Object> doBatchTest(HttpServletRequest req, @RequestBody DoTestDto doTestModel) throws Exception {
-        try {
-            List<ApplicationAllVariableCategoryMap> rowList = (List<ApplicationAllVariableCategoryMap>) this.httpSessionKnowledgeCache.get(req, IMPORT_EXCEL_DATA);
-            if (rowList == null) {
-                throw new RuleException("Import excel data for test has expired, please import the excel and try again.");
-            }
+    // ==================== 批量测试（重构后） ====================
 
-            if (rowList.isEmpty()) {
-                throw new RuleException("Import data is empty.");
-            }
-
-            KnowledgeBase knowledgeBase = buildKnowledgeBase(req, doTestModel.getFiles());
-            BatchTestFlowMap flowMap = new BatchTestFlowMap();
-            String project = doTestModel.getProject();
-            String packageId = doTestModel.getPackageId();
-            String decisionPath = project.concat("/").concat(packageId);
-            Map<String, Object> result = this.testService.doBatchFlowTest(decisionPath, knowledgeBase.getKnowledgePackage(), doTestModel.getFlowId(), rowList, flowMap);
-//            // todo 保存结果excel
-            ByteArrayOutputStream wb = new ByteArrayOutputStream();
-            ExcelUtils.writeExcelWithVariableCategories(knowledgeBase.getResourceLibrary().getVariableCategories(), rowList, null, (BatchTestFlowMap) result.get("flowMap"), wb);
-            httpSessionKnowledgeCache.put(req, EXPORT_EXCEL_TEST_DATA, wb);
-
-            return result;
-        } catch (Exception e) {
-            log.error("doBatchTest error", e);
-            throw e;
-        }
-    }
-
-    @GetMapping("/exportExcelTemplate")
-    public void exportExcelTemplate(HttpServletRequest req, HttpServletResponse resp) throws Exception {
-        List<VariableCategory> variableCategories = (List<VariableCategory>) httpSessionKnowledgeCache.get(req, VCS_KEY);
-        if (variableCategories == null) {
-//            KnowledgeBase knowledgeBase = buildKnowledgeBase(req);
-//            variableCategories = knowledgeBase.getResourceLibrary().getVariableCategories();
-            return;
-        }
-
-        try {
-            // 设置HTTP响应
-            resp.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8");
-            resp.setHeader("Content-Disposition", "attachment; filename=ruleforge-batch-test-template.xlsx");
-            OutputStream respOutputStream = resp.getOutputStream();
-            ExcelUtils.writeExcelWithVariableCategories(variableCategories, null, null, null, respOutputStream);
-
-            respOutputStream.flush();
-            respOutputStream.close();
-        } catch (Exception e) {
-            log.error("导出Excel失败", e);
-            throw e;
-        }
-    }
-
+    /**
+     * 导入 Excel 测试数据 → 解析后存入 DB
+     * 返回 { sessionId, totalRows, errors }
+     */
     @PostMapping("/importExcelTemplate")
     public Map<String, Object> importExcelTemplate(HttpServletRequest req,
                                                    @RequestParam String targetFiles,
@@ -243,31 +212,140 @@ public class TestController {
             return result;
         }
 
-        ReadTestDataExcelResult testDataExcelResult = ExcelUtils.readTestDataExcel(file, variableCategories);
-        if (testDataExcelResult.getErrorMsgDtoList().isEmpty()) {
-            this.httpSessionKnowledgeCache.put(req, IMPORT_EXCEL_DATA, testDataExcelResult.getApplicationAllVariableCategoryMapList());
+        // 获取 project/packageId（从前端参数或 session）
+        String project = req.getParameter("project");
+        String packageId = req.getParameter("packageId");
+
+        TestDataImportResult importResult = testDataService.importExcel(
+                file, variableCategories, project, packageId, targetFiles);
+
+        result.put("sessionId", importResult.getSessionId());
+        result.put("totalRows", importResult.getTotalRows());
+
+        if (importResult.getErrors().isEmpty()) {
             result.put("status", true);
         } else {
-            // todo
-            ByteArrayOutputStream wb = new ByteArrayOutputStream();
-            ExcelUtils.writeExcelWithVariableCategories(variableCategories, testDataExcelResult.getApplicationAllVariableCategoryMapList(), testDataExcelResult.getErrorMsgDtoList(), null, wb);
-            httpSessionKnowledgeCache.put(req, EXPORT_EXCEL_TEST_DATA, wb);
-            result.put("data", testDataExcelResult.getErrorMsgDtoList());
+            result.put("data", importResult.getErrors());
             result.put("msg", "导入excel有错误");
         }
 
         return result;
     }
 
+    /**
+     * 触发批量测试（异步执行）
+     * 接收 { sessionId, files, flowId, project, packageId }
+     */
+    @PostMapping("/doBatchTest")
+    public Map<String, Object> doBatchTest(HttpServletRequest req, @RequestBody DoTestDto doTestModel) throws Exception {
+        try {
+            Long sessionId = doTestModel.getSessionId();
+            if (sessionId != null) {
+                // 新流程：从 DB 读取数据，异步执行
+                KnowledgeBase knowledgeBase = buildKnowledgeBase(req, doTestModel.getFiles());
+                batchTestService.executeBatchAsync(
+                        sessionId,
+                        knowledgeBase.getKnowledgePackage(),
+                        doTestModel.getFlowId(),
+                        knowledgeBase.getResourceLibrary().getVariableCategories()
+                );
+
+                Map<String, Object> result = new HashMap<>();
+                result.put("sessionId", sessionId);
+                result.put("status", "RUNNING");
+                return result;
+            }
+
+            // 旧流程兼容：从 Session 读取数据（逐步废弃）
+            @SuppressWarnings("unchecked")
+            List<ApplicationAllVariableCategoryMap> rowList = (List<ApplicationAllVariableCategoryMap>)
+                    this.httpSessionKnowledgeCache.get(req, IMPORT_EXCEL_DATA);
+            if (rowList == null) {
+                throw new RuleException("Import excel data for test has expired, please import the excel and try again.");
+            }
+            if (rowList.isEmpty()) {
+                throw new RuleException("Import data is empty.");
+            }
+
+            KnowledgeBase knowledgeBase = buildKnowledgeBase(req, doTestModel.getFiles());
+            BatchTestFlowMap flowMap = new BatchTestFlowMap();
+            String project = doTestModel.getProject();
+            String packageId = doTestModel.getPackageId();
+            String decisionPath = project.concat("/").concat(packageId);
+            Map<String, Object> result = this.testService.doBatchFlowTest(
+                    decisionPath, knowledgeBase.getKnowledgePackage(), doTestModel.getFlowId(), rowList, flowMap);
+
+            ByteArrayOutputStream wb = new ByteArrayOutputStream();
+            ExcelUtils.writeExcelWithVariableCategories(
+                    knowledgeBase.getResourceLibrary().getVariableCategories(), rowList, null,
+                    (BatchTestFlowMap) result.get("flowMap"), wb);
+            httpSessionKnowledgeCache.put(req, EXPORT_EXCEL_TEST_DATA, wb);
+
+            return result;
+        } catch (Exception e) {
+            log.error("doBatchTest error", e);
+            throw e;
+        }
+    }
+
+    /**
+     * 轮询批量测试进度
+     */
+    @GetMapping("/batchTestProgress")
+    public Map<String, Object> batchTestProgress(@RequestParam Long sessionId) {
+        return batchTestService.getSessionProgress(sessionId);
+    }
+
+    /**
+     * 导出批量测试结果 Excel（从 DB 读取）
+     */
     @PostMapping("/exportBatchTestExcel")
-    public void exportBatchTestExcel(HttpServletRequest req, HttpServletResponse resp, @RequestParam String prefix) throws Exception {
+    public void exportBatchTestExcel(HttpServletRequest req, HttpServletResponse resp,
+                                     @RequestParam String prefix,
+                                     @RequestParam(required = false) Long sessionId) throws Exception {
+        if (sessionId != null) {
+            // 新流程：从 DB 读取
+            List<VariableCategory> variableCategories = (List<VariableCategory>) httpSessionKnowledgeCache.get(req, VCS_KEY);
+            if (variableCategories == null) {
+                return;
+            }
+            resp.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8");
+            resp.setHeader("Content-Disposition", String.format("attachment; filename=%stest_result.xlsx", prefix));
+            OutputStream outputStream = resp.getOutputStream();
+            testDataService.exportTestResult(sessionId, variableCategories, null, outputStream);
+            outputStream.flush();
+            outputStream.close();
+            return;
+        }
+
+        // 旧流程兼容：从 Session 读取
         ByteArrayOutputStream wb = (ByteArrayOutputStream) this.httpSessionKnowledgeCache.get(req, EXPORT_EXCEL_TEST_DATA);
+        if (wb == null) {
+            return;
+        }
         resp.setContentType("application/x-xls");
         resp.setHeader("Content-Disposition", String.format("attachment; filename=%stest_result.xlsx", prefix));
         OutputStream outputStream = resp.getOutputStream();
         wb.writeTo(outputStream);
         outputStream.flush();
         outputStream.close();
+    }
+
+    // ==================== 模板 / 历史数据导出 ====================
+
+    @GetMapping("/exportExcelTemplate")
+    public void exportExcelTemplate(HttpServletRequest req, HttpServletResponse resp) throws Exception {
+        List<VariableCategory> variableCategories = (List<VariableCategory>) httpSessionKnowledgeCache.get(req, VCS_KEY);
+        if (variableCategories == null) {
+            return;
+        }
+
+        resp.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8");
+        resp.setHeader("Content-Disposition", "attachment; filename=ruleforge-batch-test-template.xlsx");
+        OutputStream respOutputStream = resp.getOutputStream();
+        testDataService.exportTemplate(variableCategories, respOutputStream);
+        respOutputStream.flush();
+        respOutputStream.close();
     }
 
     @PostMapping("/exportExcelData")
@@ -279,26 +357,21 @@ public class TestController {
         List<VariableCategory> variableCategories = (List<VariableCategory>) httpSessionKnowledgeCache.get(req, VCS_KEY);
 
         if (variableCategories == null) {
-//            KnowledgeBase knowledgeBase = buildKnowledgeBase(req);
-//            variableCategories = knowledgeBase.getResourceLibrary().getVariableCategories();
             return;
         }
 
         try {
-            // 获取历史数据
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
             Date startDate = sdf.parse(startDateStr);
             Date endDate = sdf.parse(endDateStr);
             JSONArray data = this.externalRepository.findDataByDate(startDate, endDate, projectName, packageName);
 
-            // 创建Sheet数据映射
             Map<String, List<List<Object>>> sheetDataMap = new HashMap<>();
             for (VariableCategory vc : variableCategories) {
                 List<List<Object>> sheetData = createHistorySheetData(vc, data);
                 sheetDataMap.put(vc.getName(), sheetData);
             }
 
-            // 使用ExcelUtils写入Excel
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             ExcelUtils.writeExcel(outputStream, sheetDataMap);
 
@@ -320,13 +393,10 @@ public class TestController {
         }
     }
 
-    /**
-     * 创建历史数据Sheet
-     */
+    // ==================== 私有辅助方法 ====================
+
     private List<List<Object>> createHistorySheetData(VariableCategory vc, JSONArray data) {
         List<List<Object>> sheetData = new ArrayList<>();
-
-        // 创建表头
         List<Object> headers = new ArrayList<>();
         List<Variable> variables = vc.getVariables();
         for (Variable var : variables) {
@@ -334,7 +404,6 @@ public class TestController {
         }
         sheetData.add(headers);
 
-        // 创建数据行
         if (data != null) {
             for (Object obj : data.toArray()) {
                 JSONObject jobj = (JSONObject) obj;
@@ -342,29 +411,18 @@ public class TestController {
                 if (dataSource == null) {
                     continue;
                 }
-
                 JSONObject dataSourceJobj = (JSONObject) dataSource;
                 List<Object> row = new ArrayList<>();
-
                 for (Variable var : variables) {
                     Object value = "";
                     if (dataSourceJobj.get(var.getName()) != null) {
                         switch (var.getType()) {
-                            case Integer:
-                                value = dataSourceJobj.getInteger(var.getName());
-                                break;
-                            case Double:
-                                value = dataSourceJobj.getDouble(var.getName());
-                                break;
-                            case Long:
-                                value = dataSourceJobj.getLong(var.getName());
-                                break;
-                            case BigDecimal:
-                                value = dataSourceJobj.getBigDecimal(var.getName());
-                                break;
+                            case Integer: value = dataSourceJobj.getInteger(var.getName()); break;
+                            case Double: value = dataSourceJobj.getDouble(var.getName()); break;
+                            case Long: value = dataSourceJobj.getLong(var.getName()); break;
+                            case BigDecimal: value = dataSourceJobj.getBigDecimal(var.getName()); break;
                             case String:
-                            default:
-                                value = dataSourceJobj.getString(var.getName());
+                            default: value = dataSourceJobj.getString(var.getName());
                         }
                     }
                     row.add(value);
@@ -372,15 +430,12 @@ public class TestController {
                 sheetData.add(row);
             }
         }
-
         return sheetData;
     }
 
     private void instanceChildObject(Object obj, String propertyName) {
         int pointIndex = propertyName.indexOf(".");
-        if (pointIndex == -1) {
-            return;
-        }
+        if (pointIndex == -1) return;
         String name = propertyName.substring(0, pointIndex);
         propertyName = propertyName.substring(pointIndex + 1);
         try {
@@ -449,9 +504,7 @@ public class TestController {
             instanceChildObject(obj, name);
         }
         String defaultValue = var.getDefaultValue();
-        if (StringUtils.isBlank(defaultValue)) {
-            return;
-        }
+        if (StringUtils.isBlank(defaultValue)) return;
         Datatype type = var.getType();
         if (type.equals(Datatype.List)) {
             Utils.setObjectProperty(obj, name, buildList(defaultValue));
@@ -468,9 +521,7 @@ public class TestController {
         sb.append("：");
         int i = 0;
         for (RuleInfo rule : firedRules) {
-            if (i > 0) {
-                sb.append("，");
-            }
+            if (i > 0) sb.append("，");
             sb.append(rule.getName());
             i++;
         }
@@ -481,9 +532,7 @@ public class TestController {
         Object value = Utils.getObjectProperty(object, name);
         if (value != null) {
             Datatype type = var.getType();
-            if (type.equals(Datatype.List) || type.equals(Datatype.Set)) {
-                //var.setDefaultValue(value.toString());
-            } else {
+            if (!type.equals(Datatype.List) && !type.equals(Datatype.Set)) {
                 String str = type.convertObjectToString(value);
                 var.setDefaultValue(str);
             }
@@ -497,12 +546,8 @@ public class TestController {
             list.add(category);
             for (String key : map.keySet()) {
                 switch (key) {
-                    case "name":
-                        category.setName((String) map.get(key));
-                        break;
-                    case "clazz":
-                        category.setClazz((String) map.get(key));
-                        break;
+                    case "name": category.setName((String) map.get(key)); break;
+                    case "clazz": category.setClazz((String) map.get(key)); break;
                     case "variables":
                         List<Map<String, Object>> variables = (List<Map<String, Object>>) map.get(key);
                         if (variables != null) {
@@ -511,18 +556,10 @@ public class TestController {
                                 category.addVariable(var);
                                 for (String varName : m.keySet()) {
                                     switch (varName) {
-                                        case "name":
-                                            var.setName((String) m.get(varName));
-                                            break;
-                                        case "label":
-                                            var.setLabel((String) m.get(varName));
-                                            break;
-                                        case "type":
-                                            var.setType(Datatype.valueOf((String) m.get(varName)));
-                                            break;
-                                        case "defaultValue":
-                                            var.setDefaultValue((String) m.get(varName));
-                                            break;
+                                        case "name": var.setName((String) m.get(varName)); break;
+                                        case "label": var.setLabel((String) m.get(varName)); break;
+                                        case "type": var.setType(Datatype.valueOf((String) m.get(varName))); break;
+                                        case "defaultValue": var.setDefaultValue((String) m.get(varName)); break;
                                     }
                                 }
                             }
@@ -552,5 +589,4 @@ public class TestController {
         this.httpSessionKnowledgeCache.put(req, KB_KEY, knowledgeBase);
         return knowledgeBase;
     }
-
 }

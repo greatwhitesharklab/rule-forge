@@ -16,4 +16,5 @@ public class DoTestDto {
     private String files;
     private String project;
     private String packageId;
+    private Long sessionId;
 }
