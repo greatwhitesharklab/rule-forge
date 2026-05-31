@@ -35,6 +35,7 @@
     "codemirror": "^5.33.0",
     "copy-webpack-plugin": "^12.0.2",
     "css-loader": "^7.1.2",
+    "diff2html": "^3.4.56",
     "echarts": "^5.6.0",
     "events": "^1.1.0",
     "file-loader": "^6.2.0",

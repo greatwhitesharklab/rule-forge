@@ -547,6 +547,80 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
     }
 
     @Override
+    public List<com.ruleforge.console.storage.model.FileDiff> getPackageVersionDiffStructured(String project, String fromVersion, String toVersion) throws Exception {
+        if (!gitStorageService.repoExists(project)) {
+            throw new IllegalStateException("Git repository not found for project: " + project);
+        }
+
+        // Resolve package ID from the toVersion by looking up the project version entity
+        ProjectEntity projectEntity = this.projectRepository.findByName(project);
+        if (projectEntity == null) {
+            throw new IllegalArgumentException("Project not found: " + project);
+        }
+
+        ProjectVersionEntity toPVE = this.projectRepository.findVersionByProjectIdAndVersionName(projectEntity.getId(), toVersion);
+        if (toPVE == null) {
+            throw new IllegalArgumentException("Target version not found: " + toVersion);
+        }
+
+        String packageId = toPVE.getPackageId();
+        if (packageId == null) {
+            throw new IllegalStateException("Package ID not found for version: " + toVersion);
+        }
+
+        String fromTag = "pkg/" + packageId + "/" + fromVersion;
+        String toTag = "pkg/" + packageId + "/" + toVersion;
+
+        return gitStorageService.diff(project, fromTag, toTag);
+    }
+
+    @Override
+    public com.ruleforge.console.storage.model.FileDiff getFileVersionDiffStructured(String filePath, String fromVersion, String toVersion) throws Exception {
+        // Extract project name from the file path (first path segment)
+        String project = filePath.startsWith("/") ? filePath.substring(1) : filePath;
+        int slashIdx = project.indexOf('/');
+        if (slashIdx > 0) {
+            project = project.substring(0, slashIdx);
+        }
+
+        if (!gitStorageService.repoExists(project)) {
+            throw new IllegalStateException("Git repository not found for project: " + project);
+        }
+
+        // Resolve package ID from the toVersion
+        ProjectEntity projectEntity = this.projectRepository.findByName(project);
+        if (projectEntity == null) {
+            throw new IllegalArgumentException("Project not found: " + project);
+        }
+
+        ProjectVersionEntity toPVE = this.projectRepository.findVersionByProjectIdAndVersionName(projectEntity.getId(), toVersion);
+        if (toPVE == null) {
+            throw new IllegalArgumentException("Target version not found: " + toVersion);
+        }
+
+        String packageId = toPVE.getPackageId();
+        if (packageId == null) {
+            throw new IllegalStateException("Package ID not found for version: " + toVersion);
+        }
+
+        String fromTag = "pkg/" + packageId + "/" + fromVersion;
+        String toTag = "pkg/" + packageId + "/" + toVersion;
+
+        List<com.ruleforge.console.storage.model.FileDiff> diffs = gitStorageService.diff(project, fromTag, toTag);
+
+        // Normalize the file path for comparison (remove leading slash)
+        String normalizedPath = filePath.startsWith("/") ? filePath.substring(1) : filePath;
+
+        for (com.ruleforge.console.storage.model.FileDiff d : diffs) {
+            if (normalizedPath.equals(d.getFilePath())) {
+                return d;
+            }
+        }
+
+        return null;
+    }
+
+    @Override
     public void deleteFile(String path, User user) throws Exception {
         deleteFile(path, user, null);
     }

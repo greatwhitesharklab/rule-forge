@@ -10,6 +10,7 @@ import com.ruleforge.console.servlet.frame.ExportProject;
 import com.ruleforge.console.model.PackageConfig;
 import com.ruleforge.console.model.Repository;
 import com.ruleforge.console.model.User;
+import com.ruleforge.console.storage.model.FileDiff;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -111,4 +112,26 @@ public interface RuleForgeRepositoryService extends RepositoryReader {
     String createProjectVersion(String projectName, User user, String comment) throws Exception;
 
     String createProjectVersion(String projectName, String packageId, String projectVersion, User user, String comment, Integer status) throws Exception;
+
+    /**
+     * Get structured diff between two package versions, returning per-file diff information.
+     *
+     * @param project     project name
+     * @param fromVersion the source version tag
+     * @param toVersion   the target version tag
+     * @return list of file diffs with structured change details
+     * @throws Exception if diff computation fails
+     */
+    List<FileDiff> getPackageVersionDiffStructured(String project, String fromVersion, String toVersion) throws Exception;
+
+    /**
+     * Get structured diff for a single file between two versions.
+     *
+     * @param filePath    file path relative to repo root
+     * @param fromVersion the source version tag
+     * @param toVersion   the target version tag
+     * @return file diff with structured change details, or null if not found
+     * @throws Exception if diff computation fails
+     */
+    FileDiff getFileVersionDiffStructured(String filePath, String fromVersion, String toVersion) throws Exception;
 }

@@ -20,6 +20,7 @@ import RuleEditorPanel from '@/frame/panels/RuleEditorPanel.jsx';
 import MonitoringPanel from '@/frame/panels/MonitoringPanel.jsx';
 import DatasourcePanel from '@/datasource/index.jsx';
 import PlaceholderPanel from '@/frame/panels/PlaceholderPanel.jsx';
+import ReleasePanel from '@/release/index.jsx';
 import Loading from '@/components/loading/component/Loading.jsx';
 import * as event from '@/frame/event.js';
 import * as componentEvent from '@/components/componentEvent.js';
@@ -32,7 +33,7 @@ function SidePanelSwitcher({activePanel, store, eventObj}) {
         case 'datasource':
             return <DatasourcePanel/>;
         case 'release':
-            return <PlaceholderPanel panelId="release"/>;
+            return <ReleasePanel/>;
         case 'ai':
             return <PlaceholderPanel panelId="ai"/>;
         case 'settings':

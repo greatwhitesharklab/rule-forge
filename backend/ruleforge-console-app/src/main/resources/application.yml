@@ -45,6 +45,8 @@ spring:
 ruleforge:
   knowledgeUpdateCycleV2: 300
   isKnowledgeUpdateRemoteV2: false
+  approval:
+    mode: ${APPROVAL_MODE:auto}
   repository:
     dir: ${RF_REPO_DIR:./data/riskruleforge}
   exec:

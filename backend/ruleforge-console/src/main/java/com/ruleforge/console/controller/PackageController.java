@@ -21,6 +21,7 @@ import com.ruleforge.console.model.PackageConfig;
 import com.ruleforge.console.model.User;
 import com.ruleforge.console.service.RuleForgeRepositoryService;
 import com.ruleforge.console.storage.GitStorageService;
+import com.ruleforge.console.storage.model.FileDiff;
 import com.ruleforge.console.storage.model.MergeResult;
 import com.ruleforge.console.util.EnvironmentUtils;
 import lombok.RequiredArgsConstructor;
@@ -167,6 +168,22 @@ public class PackageController extends BaseController {
         map.put("status", true);
         map.put("data", versionDiff);
         return map;
+    }
+
+    @PostMapping("/getPackageDiffStructured")
+    public List<FileDiff> getPackageDiffStructured(
+            @RequestParam String project,
+            @RequestParam String fromVersion,
+            @RequestParam String toVersion) throws Exception {
+        return this.ruleforgeRepositoryService.getPackageVersionDiffStructured(project, fromVersion, toVersion);
+    }
+
+    @PostMapping("/getFileDiffStructured")
+    public FileDiff getFileDiffStructured(
+            @RequestParam String filePath,
+            @RequestParam String fromVersion,
+            @RequestParam String toVersion) throws Exception {
+        return this.ruleforgeRepositoryService.getFileVersionDiffStructured(filePath, fromVersion, toVersion);
     }
 
     @PostMapping("/refreshKnowledgeCache")

@@ -1,5 +1,6 @@
 import * as ACTIONS from './action.js';
 import datasourceReducer from '@/datasource/reducer';
+import releaseReducer from '@/release/reducer';
 
 function ui(state = {activePanel: 'rules', monitoringTab: 'overview'}, action) {
     switch (action.type) {
@@ -236,5 +237,6 @@ export default function rootReducer(state = {}, action) {
     const treeState = tree(state, action);
     const uiState = ui(state.ui, action);
     const datasourceState = datasourceReducer(state.datasource, action);
-    return {...treeState, ui: uiState, datasource: datasourceState};
+    const releaseState = releaseReducer(state.release, action);
+    return {...treeState, ui: uiState, datasource: datasourceState, release: releaseState};
 }
