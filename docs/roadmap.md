@@ -113,19 +113,31 @@ Agent 分析模块
 
 ### 关键特性
 
-- **变更审批工作流** — 规则变更需经过审批才能发布到生产环境
-- **环境隔离** — dev / staging / prod 环境独立，规则按环境发布
-- **灰度发布** — 新规则先对部分流量生效，验证无误后全量发布
-- **版本 Diff** — 发布前可视化对比新旧版本差异
-- **一键回滚** — 出问题时秒级回退到上一版本
+- **变更审批工作流** — 规则变更需经过审批才能发布到生产环境 ✅
+- **环境隔离** — dev / staging / prod 环境独立，规则按环境发布 ✅
+- **灰度发布** — 新规则先对部分流量生效，验证无误后全量发布 ⏳ 延后
+- **版本 Diff** — 发布前可视化对比新旧版本差异 ✅
+- **一键回滚** — 出问题时秒级回退到上一版本 ✅
 
-### 可能的实现方向
+### 已实现
+
+- **审批任务表** — `gr_approval_task` 支持内部审批流程，auto/manual 两种模式
+- **ApprovalController** — REST 端点：listPending / approve / reject / listByProject
+- **DeploymentController** — REST 端点：deploy / current / history / environments / promote / rollback / registerNode / heartbeat
+- **ExternalProcessServiceImpl** — 真审批逻辑替代硬编码 stub，配置 `ruleforge.approval.mode`
+- **结构化 Diff API** — `getPackageDiffStructured` / `getFileDiffStructured` 返回 `List<FileDiff>` JSON
+- **ReleasePanel 前端** — 三 Tab 面板（环境管理 / 审批流程 / 部署历史），替换 PlaceholderPanel
+- **DiffViewer 组件** — 基于 diff2html 的 side-by-side 可视化 diff
+- **一键回滚** — 部署历史表格中的回滚按钮，自动通知 executor
+
+### 模块结构
 
 ```
 版本与发布模块
-├── approval-workflow      审批工作流（可复用 Flowable）
-├── environment-manager    环境管理与隔离
-├── release-manager        发布管理（灰度、全量）
-├── version-diff           版本差异对比
-└── rollback-manager       回滚管理
+├── ApprovalTaskEntity     审批任务实体
+├── ApprovalRepository     审批任务数据访问
+├── ApprovalController     审批 REST 端点
+├── DeploymentController   部署管理 REST 端点
+├── ReleasePanel           前端版本发布面板（3 Tab）
+└── DiffViewer             前端可视化 diff 组件
 ```
