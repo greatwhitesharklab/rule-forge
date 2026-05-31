@@ -1,12 +1,9 @@
-package com.ruleforge.console.app.service.impl;
+package com.ruleforge.decision.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.ruleforge.console.app.entity.Datasource;
-import com.ruleforge.console.app.entity.DatasourceEntityMapping;
-import com.ruleforge.console.app.entity.DatasourceFieldMapping;
-import com.ruleforge.console.app.mapper.DatasourceEntityMappingMapper;
-import com.ruleforge.console.app.mapper.DatasourceFieldMappingMapper;
-import com.ruleforge.console.app.mapper.DatasourceMapper;
+import com.ruleforge.decision.entity.Datasource;
+import com.ruleforge.decision.entity.DatasourceEntityMapping;
+import com.ruleforge.decision.entity.DatasourceFieldMapping;
+import com.ruleforge.decision.repository.DatasourceRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -28,9 +25,7 @@ import static org.mockito.Mockito.*;
 @DisplayName("DatasourceServiceImpl - 数据源管理")
 class DatasourceServiceImplTest {
 
-    @Mock private DatasourceMapper datasourceMapper;
-    @Mock private DatasourceEntityMappingMapper entityMappingMapper;
-    @Mock private DatasourceFieldMappingMapper fieldMappingMapper;
+    @Mock private DatasourceRepository datasourceRepository;
 
     @InjectMocks
     private DatasourceServiceImpl service;
@@ -57,9 +52,9 @@ class DatasourceServiceImplTest {
         void shouldCreateDatasource() {
             // Given
             Datasource ds = buildDatasource(null, "test-ds", "REST_API");
-            when(datasourceMapper.insert(any(Datasource.class))).thenAnswer(inv -> {
+            when(datasourceRepository.insertDatasource(any(Datasource.class))).thenAnswer(inv -> {
                 inv.getArgument(0, Datasource.class).setId(1L);
-                return 1;
+                return ds;
             });
 
             // When
@@ -67,7 +62,7 @@ class DatasourceServiceImplTest {
 
             // Then
             assertThat(result.getId()).isEqualTo(1L);
-            verify(datasourceMapper).insert(any(Datasource.class));
+            verify(datasourceRepository).insertDatasource(any(Datasource.class));
         }
 
         @Test
@@ -77,7 +72,7 @@ class DatasourceServiceImplTest {
             DatasourceFieldMapping fm = new DatasourceFieldMapping();
             fm.setVariableName("score");
             fm.setRemoteField("credit_score");
-            when(fieldMappingMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(fm));
+            when(datasourceRepository.findFieldMappings(1L, "com.test.Model")).thenReturn(List.of(fm));
             service.getFieldMappingCache(1L, "com.test.Model");
             assertThat(service.resolveRemoteField(1L, "com.test.Model", "score")).isEqualTo("credit_score");
 
@@ -87,9 +82,8 @@ class DatasourceServiceImplTest {
             service.updateDatasource(ds);
 
             // Then — 缓存被清除，再次查 DB 返回空
-            reset(fieldMappingMapper);
-            when(fieldMappingMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
-            verify(datasourceMapper).updateById(ds);
+            when(datasourceRepository.findFieldMappings(1L, "com.test.Model")).thenReturn(List.of());
+            verify(datasourceRepository).updateDatasource(ds);
             assertThat(service.resolveRemoteField(1L, "com.test.Model", "score")).isNull();
         }
 
@@ -100,7 +94,7 @@ class DatasourceServiceImplTest {
             service.deleteDatasource(1L);
 
             // Then
-            verify(datasourceMapper).deleteById(1L);
+            verify(datasourceRepository).deleteDatasource(1L);
         }
     }
 
@@ -112,18 +106,17 @@ class DatasourceServiceImplTest {
         @DisplayName("创建新的实体类映射")
         void shouldCreateNewEntityMapping() {
             // Given
-            when(entityMappingMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
-            when(entityMappingMapper.insert(any(DatasourceEntityMapping.class))).thenReturn(1);
+            when(datasourceRepository.findEntityMappingByClazz("com.test.Model")).thenReturn(null);
 
             // When
             service.saveEntityMapping("com.test.Model", 1L);
 
             // Then
             ArgumentCaptor<DatasourceEntityMapping> captor = ArgumentCaptor.forClass(DatasourceEntityMapping.class);
-            verify(entityMappingMapper).insert(captor.capture());
+            verify(datasourceRepository).insertEntityMapping(captor.capture());
             assertThat(captor.getValue().getClazz()).isEqualTo("com.test.Model");
             assertThat(captor.getValue().getDatasourceId()).isEqualTo(1L);
-            verify(entityMappingMapper, never()).updateById(any(DatasourceEntityMapping.class));
+            verify(datasourceRepository, never()).updateEntityMapping(any(DatasourceEntityMapping.class));
         }
 
         @Test
@@ -134,16 +127,16 @@ class DatasourceServiceImplTest {
             existing.setId(10L);
             existing.setClazz("com.test.Model");
             existing.setDatasourceId(1L);
-            when(entityMappingMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+            when(datasourceRepository.findEntityMappingByClazz("com.test.Model")).thenReturn(existing);
 
             // When
             service.saveEntityMapping("com.test.Model", 2L);
 
             // Then
             ArgumentCaptor<DatasourceEntityMapping> captor = ArgumentCaptor.forClass(DatasourceEntityMapping.class);
-            verify(entityMappingMapper).updateById(captor.capture());
+            verify(datasourceRepository).updateEntityMapping(captor.capture());
             assertThat(captor.getValue().getDatasourceId()).isEqualTo(2L);
-            verify(entityMappingMapper, never()).insert(any(DatasourceEntityMapping.class));
+            verify(datasourceRepository, never()).insertEntityMapping(any(DatasourceEntityMapping.class));
         }
     }
 
@@ -155,9 +148,6 @@ class DatasourceServiceImplTest {
         @DisplayName("保存字段映射（先删后插）")
         void shouldSaveFieldMappings() {
             // Given
-            when(fieldMappingMapper.delete(any(LambdaQueryWrapper.class))).thenReturn(0);
-            when(fieldMappingMapper.insert(any(DatasourceFieldMapping.class))).thenReturn(1);
-
             DatasourceFieldMapping fm1 = new DatasourceFieldMapping();
             fm1.setVariableName("score");
             fm1.setRemoteField("credit_score");
@@ -168,9 +158,9 @@ class DatasourceServiceImplTest {
             // When
             service.saveFieldMappings(1L, "com.test.Model", List.of(fm1, fm2));
 
-            // Then — 先删后插 2 条
-            verify(fieldMappingMapper).delete(any(LambdaQueryWrapper.class));
-            verify(fieldMappingMapper, times(2)).insert(any(DatasourceFieldMapping.class));
+            // Then — 先删后批量插
+            verify(datasourceRepository).deleteFieldMappings(1L, "com.test.Model");
+            verify(datasourceRepository).insertFieldMappings(anyList());
         }
 
         @Test
@@ -180,7 +170,7 @@ class DatasourceServiceImplTest {
             DatasourceFieldMapping fm = new DatasourceFieldMapping();
             fm.setVariableName("score");
             fm.setRemoteField("credit_score");
-            when(fieldMappingMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(fm));
+            when(datasourceRepository.findFieldMappings(1L, "com.test.Model")).thenReturn(List.of(fm));
 
             // When
             String result = service.resolveRemoteField(1L, "com.test.Model", "score");
@@ -193,7 +183,7 @@ class DatasourceServiceImplTest {
         @DisplayName("无映射时返回 null")
         void shouldReturnNullWhenNoMapping() {
             // Given
-            when(fieldMappingMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+            when(datasourceRepository.findFieldMappings(1L, "com.test.Model")).thenReturn(List.of());
 
             // When
             String result = service.resolveRemoteField(1L, "com.test.Model", "unknown_field");
@@ -214,10 +204,10 @@ class DatasourceServiceImplTest {
             DatasourceEntityMapping mapping = new DatasourceEntityMapping();
             mapping.setClazz("com.test.Model");
             mapping.setDatasourceId(1L);
-            when(entityMappingMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(mapping);
+            when(datasourceRepository.findEntityMappingByClazz("com.test.Model")).thenReturn(mapping);
 
             Datasource ds = buildDatasource(1L, "test-ds", "ADVANCE_AI");
-            when(datasourceMapper.selectById(1L)).thenReturn(ds);
+            when(datasourceRepository.findDatasourceById(1L)).thenReturn(ds);
 
             // When
             Datasource result = service.resolveDatasource("com.test.Model");
@@ -232,14 +222,14 @@ class DatasourceServiceImplTest {
         @DisplayName("无映射时返回 null")
         void shouldReturnNullWhenNoMapping() {
             // Given
-            when(entityMappingMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+            when(datasourceRepository.findEntityMappingByClazz("com.test.UnknownModel")).thenReturn(null);
 
             // When
             Datasource result = service.resolveDatasource("com.test.UnknownModel");
 
             // Then
             assertThat(result).isNull();
-            verify(datasourceMapper, never()).selectById(anyLong());
+            verify(datasourceRepository, never()).findDatasourceById(anyLong());
         }
     }
 }

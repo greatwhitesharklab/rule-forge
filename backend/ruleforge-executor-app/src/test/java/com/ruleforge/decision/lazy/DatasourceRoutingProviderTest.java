@@ -1,8 +1,8 @@
-package com.ruleforge.console.app.lazy;
+package com.ruleforge.decision.lazy;
 
-import com.ruleforge.console.app.connector.DataSourceConnector;
-import com.ruleforge.console.app.entity.Datasource;
-import com.ruleforge.console.app.service.IDatasourceService;
+import com.ruleforge.decision.connector.DataSourceConnector;
+import com.ruleforge.decision.entity.Datasource;
+import com.ruleforge.decision.service.IDatasourceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

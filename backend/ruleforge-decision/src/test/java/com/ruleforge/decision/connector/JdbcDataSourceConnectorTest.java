@@ -1,7 +1,7 @@
-package com.ruleforge.console.app.connector;
+package com.ruleforge.decision.connector;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ruleforge.console.app.entity.Datasource;
+import com.ruleforge.decision.entity.Datasource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -1,4 +1,4 @@
-package com.ruleforge.console.app.config;
+package com.ruleforge.decision.config;
 
 import org.flowable.spring.SpringProcessEngineConfiguration;
 import org.junit.jupiter.api.DisplayName;

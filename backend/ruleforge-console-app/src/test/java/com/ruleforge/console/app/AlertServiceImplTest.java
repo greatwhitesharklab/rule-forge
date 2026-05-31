@@ -1,13 +1,9 @@
 package com.ruleforge.console.app.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ruleforge.console.app.entity.AlertHistory;
 import com.ruleforge.console.app.entity.AlertRule;
 import com.ruleforge.console.app.entity.MetricsSnapshot;
-import com.ruleforge.console.app.mapper.AlertHistoryMapper;
-import com.ruleforge.console.app.mapper.AlertRuleMapper;
-import com.ruleforge.console.app.mapper.MetricsSnapshotMapper;
-import org.junit.jupiter.api.BeforeEach;
+import com.ruleforge.console.app.repository.data.MonitoringRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,9 +30,7 @@ import static org.mockito.Mockito.*;
 @DisplayName("AlertServiceImpl - 告警规则引擎")
 class AlertServiceImplTest {
 
-    @Mock private AlertRuleMapper alertRuleMapper;
-    @Mock private AlertHistoryMapper alertHistoryMapper;
-    @Mock private MetricsSnapshotMapper metricsSnapshotMapper;
+    @Mock private MonitoringRepository monitoringRepository;
     @Mock private RestTemplate restTemplate;
 
     @InjectMocks
@@ -82,9 +76,6 @@ class AlertServiceImplTest {
     @DisplayName("Scenario: 指标超阈值触发告警")
     class AlertFiredWhenThresholdExceeded {
 
-        // Given 一条启用的 GT 告警规则（threshold=1000），且最近快照 P95=1500 超过阈值
-        // When evaluateAlerts 被调用
-        // Then 告警历史被记录，Webhook 被调用，last_fired_at 更新
         @Test
         @DisplayName("P95 延迟超阈值触发告警并调用 Webhook")
         void shouldFireAlertWhenP95ExceedsThreshold() {
@@ -92,10 +83,11 @@ class AlertServiceImplTest {
             AlertRule rule = buildRule(1L, "高延迟告警", "rule.execution.latency",
                     "GT", 1000.0, 1, 30, "https://hook.example.com/alert", null);
 
-            when(alertRuleMapper.selectList(any(QueryWrapper.class))).thenReturn(List.of(rule));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
 
             MetricsSnapshot snapshot = buildTimerSnapshot("rule.execution.latency", 1500L, 10L);
-            when(metricsSnapshotMapper.selectList(any(QueryWrapper.class))).thenReturn(List.of(snapshot));
+            when(monitoringRepository.findLatestMetrics(eq("rule.execution.latency"), eq(1), isNull()))
+                    .thenReturn(List.of(snapshot));
 
             when(restTemplate.exchange(anyString(), any(), any(), eq(String.class)))
                     .thenReturn(new ResponseEntity<>("ok", HttpStatus.OK));
@@ -105,7 +97,7 @@ class AlertServiceImplTest {
 
             // Then — 告警历史被记录
             ArgumentCaptor<AlertHistory> historyCaptor = ArgumentCaptor.forClass(AlertHistory.class);
-            verify(alertHistoryMapper).insert(historyCaptor.capture());
+            verify(monitoringRepository).insertAlertHistory(historyCaptor.capture());
             AlertHistory history = historyCaptor.getValue();
             assertThat(history.getAlertRuleId()).isEqualTo(1L);
             assertThat(history.getRuleName()).isEqualTo("高延迟告警");
@@ -117,7 +109,7 @@ class AlertServiceImplTest {
             verify(restTemplate).exchange(contains("hook.example.com"), any(), any(), eq(String.class));
 
             // last_fired_at 被更新
-            verify(alertRuleMapper).update(isNull(), any());
+            verify(monitoringRepository).updateAlertRuleLastFired(eq(1L), any(Date.class));
         }
     }
 
@@ -125,9 +117,6 @@ class AlertServiceImplTest {
     @DisplayName("Scenario: 冷却期内不重复告警")
     class CooldownPreventsRepeatAlert {
 
-        // Given 一条规则 last_fired_at 在冷却期（30min）内
-        // When evaluateAlerts 被调用
-        // Then 不查询快照、不触发告警
         @Test
         @DisplayName("冷却期内跳过告警评估")
         void shouldSkipAlertDuringCooldown() {
@@ -135,14 +124,14 @@ class AlertServiceImplTest {
             AlertRule rule = buildRule(2L, "冷却中规则", "rule.execution.latency",
                     "GT", 100.0, 1, 30, "https://hook.example.com", new Date(System.currentTimeMillis() - 5000));
 
-            when(alertRuleMapper.selectList(any(QueryWrapper.class))).thenReturn(List.of(rule));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
 
             // When
             alertService.evaluateAlerts();
 
             // Then — 不查快照、不记录历史、不调 Webhook
-            verify(metricsSnapshotMapper, never()).selectList(any(QueryWrapper.class));
-            verify(alertHistoryMapper, never()).insert(any(AlertHistory.class));
+            verify(monitoringRepository, never()).findLatestMetrics(anyString(), anyInt(), any());
+            verify(monitoringRepository, never()).insertAlertHistory(any(AlertHistory.class));
             verify(restTemplate, never()).exchange(anyString(), any(), any(), eq(String.class));
         }
     }
@@ -151,9 +140,6 @@ class AlertServiceImplTest {
     @DisplayName("Scenario: 快照数据不足不触发告警")
     class InsufficientSnapshotsNoAlert {
 
-        // Given 规则要求持续 3 个快照窗口，但只有 2 个快照
-        // When evaluateAlerts 被调用
-        // Then 不触发告警
         @Test
         @DisplayName("快照数量不足时不触发告警")
         void shouldNotFireWhenSnapshotsInsufficient() {
@@ -161,18 +147,19 @@ class AlertServiceImplTest {
             AlertRule rule = buildRule(3L, "持续超阈值", "rule.execution.latency",
                     "GT", 500.0, 3, 10, "https://hook.example.com", null);
 
-            when(alertRuleMapper.selectList(any(QueryWrapper.class))).thenReturn(List.of(rule));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
 
             // 只有 2 个快照，不够 3 个
             MetricsSnapshot s1 = buildTimerSnapshot("rule.execution.latency", 800L, 5L);
             MetricsSnapshot s2 = buildTimerSnapshot("rule.execution.latency", 900L, 3L);
-            when(metricsSnapshotMapper.selectList(any(QueryWrapper.class))).thenReturn(List.of(s1, s2));
+            when(monitoringRepository.findLatestMetrics(eq("rule.execution.latency"), eq(3), isNull()))
+                    .thenReturn(List.of(s1, s2));
 
             // When
             alertService.evaluateAlerts();
 
             // Then — 不触发告警
-            verify(alertHistoryMapper, never()).insert(any(AlertHistory.class));
+            verify(monitoringRepository, never()).insertAlertHistory(any(AlertHistory.class));
             verify(restTemplate, never()).exchange(anyString(), any(), any(), eq(String.class));
         }
     }
@@ -181,9 +168,6 @@ class AlertServiceImplTest {
     @DisplayName("Scenario: 指标未超阈值不触发告警")
     class BelowThresholdNoAlert {
 
-        // Given 规则 threshold=1000，但快照 P95=500 低于阈值
-        // When evaluateAlerts 被调用
-        // Then 不触发告警
         @Test
         @DisplayName("P95 低于阈值时不触发告警")
         void shouldNotFireWhenBelowThreshold() {
@@ -191,16 +175,17 @@ class AlertServiceImplTest {
             AlertRule rule = buildRule(4L, "高延迟告警", "rule.execution.latency",
                     "GT", 1000.0, 1, 30, "https://hook.example.com", null);
 
-            when(alertRuleMapper.selectList(any(QueryWrapper.class))).thenReturn(List.of(rule));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
 
             MetricsSnapshot snapshot = buildTimerSnapshot("rule.execution.latency", 500L, 10L);
-            when(metricsSnapshotMapper.selectList(any(QueryWrapper.class))).thenReturn(List.of(snapshot));
+            when(monitoringRepository.findLatestMetrics(eq("rule.execution.latency"), eq(1), isNull()))
+                    .thenReturn(List.of(snapshot));
 
             // When
             alertService.evaluateAlerts();
 
             // Then
-            verify(alertHistoryMapper, never()).insert(any(AlertHistory.class));
+            verify(monitoringRepository, never()).insertAlertHistory(any(AlertHistory.class));
             verify(restTemplate, never()).exchange(anyString(), any(), any(), eq(String.class));
         }
     }
@@ -209,9 +194,6 @@ class AlertServiceImplTest {
     @DisplayName("Scenario: Webhook 调用失败仍记录告警历史")
     class WebhookFailureStillRecords {
 
-        // Given 规则会触发告警，但 Webhook 调用抛异常
-        // When evaluateAlerts 被调用
-        // Then 告警历史被记录，webhookStatus=-1，last_fired_at 仍更新
         @Test
         @DisplayName("Webhook 失败时记录 webhookStatus=-1")
         void shouldRecordAlertEvenWhenWebhookFails() {
@@ -219,10 +201,11 @@ class AlertServiceImplTest {
             AlertRule rule = buildRule(5L, "Webhook 故障", "rule.execution.latency",
                     "GT", 100.0, 1, 10, "https://broken-hook.example.com", null);
 
-            when(alertRuleMapper.selectList(any(QueryWrapper.class))).thenReturn(List.of(rule));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
 
             MetricsSnapshot snapshot = buildTimerSnapshot("rule.execution.latency", 500L, 5L);
-            when(metricsSnapshotMapper.selectList(any(QueryWrapper.class))).thenReturn(List.of(snapshot));
+            when(monitoringRepository.findLatestMetrics(eq("rule.execution.latency"), eq(1), isNull()))
+                    .thenReturn(List.of(snapshot));
 
             when(restTemplate.exchange(anyString(), any(), any(), eq(String.class)))
                     .thenThrow(new RuntimeException("Connection refused"));
@@ -232,13 +215,13 @@ class AlertServiceImplTest {
 
             // Then — 告警历史仍然记录
             ArgumentCaptor<AlertHistory> historyCaptor = ArgumentCaptor.forClass(AlertHistory.class);
-            verify(alertHistoryMapper).insert(historyCaptor.capture());
+            verify(monitoringRepository).insertAlertHistory(historyCaptor.capture());
             AlertHistory history = historyCaptor.getValue();
             assertThat(history.getWebhookStatus()).isEqualTo(-1);
             assertThat(history.getWebhookResponse()).contains("Connection refused");
 
             // last_fired_at 仍更新
-            verify(alertRuleMapper).update(isNull(), any());
+            verify(monitoringRepository).updateAlertRuleLastFired(eq(5L), any(Date.class));
         }
     }
 
@@ -246,9 +229,6 @@ class AlertServiceImplTest {
     @DisplayName("Scenario: 告警规则支持多种条件运算符")
     class MultipleConditionOperators {
 
-        // Given 不同条件类型（GT、GTE、LT、LTE、EQ）的规则
-        // When evaluateAlerts 被调用
-        // Then 只有满足条件的规则触发告警
         @Test
         @DisplayName("GT / LT / EQ 条件正确判断")
         void shouldEvaluateMultipleConditionsCorrectly() {
@@ -262,7 +242,7 @@ class AlertServiceImplTest {
             AlertRule eqRule = buildRule(12L, "EQ 告警", "rule.execution.gauge",
                     "EQ", 500.0, 1, 10, "https://hook.example.com/eq", null);
 
-            when(alertRuleMapper.selectList(any(QueryWrapper.class)))
+            when(monitoringRepository.findEnabledAlertRules())
                     .thenReturn(List.of(gtRule, ltRule, eqRule));
 
             MetricsSnapshot timerSnap = buildTimerSnapshot("rule.execution.latency", 500L, 5L);
@@ -272,9 +252,11 @@ class AlertServiceImplTest {
             gaugeSnap.setMetricType("GAUGE");
             gaugeSnap.setGaugeVal(500.0);
 
-            when(metricsSnapshotMapper.selectList(any(QueryWrapper.class)))
-                    .thenReturn(List.of(timerSnap))
-                    .thenReturn(List.of(counterSnap))
+            when(monitoringRepository.findLatestMetrics(eq("rule.execution.latency"), eq(1), isNull()))
+                    .thenReturn(List.of(timerSnap));
+            when(monitoringRepository.findLatestMetrics(eq("rule.execution.counter"), eq(1), isNull()))
+                    .thenReturn(List.of(counterSnap));
+            when(monitoringRepository.findLatestMetrics(eq("rule.execution.gauge"), eq(1), isNull()))
                     .thenReturn(List.of(gaugeSnap));
 
             when(restTemplate.exchange(anyString(), any(), any(), eq(String.class)))
@@ -284,7 +266,7 @@ class AlertServiceImplTest {
             alertService.evaluateAlerts();
 
             // Then — 只有 GT 和 EQ 触发，2 条告警历史
-            verify(alertHistoryMapper, times(2)).insert(any(AlertHistory.class));
+            verify(monitoringRepository, times(2)).insertAlertHistory(any(AlertHistory.class));
             verify(restTemplate, times(2)).exchange(anyString(), any(), any(), eq(String.class));
         }
     }
@@ -293,9 +275,6 @@ class AlertServiceImplTest {
     @DisplayName("Scenario: 告警规则 CRUD")
     class AlertRuleCrud {
 
-        // Given 新的告警规则
-        // When saveAlertRule 被调用
-        // Then 规则被插入，enabled 默认为 true
         @Test
         @DisplayName("创建告警规则默认启用")
         void shouldCreateRuleWithEnabledTrue() {
@@ -312,12 +291,9 @@ class AlertServiceImplTest {
             // Then
             assertThat(result.getEnabled()).isTrue();
             assertThat(result.getCreatedAt()).isNotNull();
-            verify(alertRuleMapper).insert(newRule);
+            verify(monitoringRepository).insertAlertRule(newRule);
         }
 
-        // Given 已有告警规则
-        // When deleteAlertRule 被调用
-        // Then 规则被删除
         @Test
         @DisplayName("删除告警规则")
         void shouldDeleteRule() {
@@ -325,7 +301,7 @@ class AlertServiceImplTest {
             alertService.deleteAlertRule(42L);
 
             // Then
-            verify(alertRuleMapper).deleteById(42L);
+            verify(monitoringRepository).deleteAlertRule(42L);
         }
     }
 
@@ -333,9 +309,6 @@ class AlertServiceImplTest {
     @DisplayName("Scenario: 告警历史查询")
     class AlertHistoryQuery {
 
-        // Given 存在多条告警历史
-        // When listAlertHistory 被调用（带规则 ID 过滤）
-        // Then 使用正确的查询条件
         @Test
         @DisplayName("按规则 ID 查询告警历史")
         void shouldQueryHistoryByRuleId() {
@@ -347,21 +320,21 @@ class AlertServiceImplTest {
             h2.setAlertRuleId(1L);
             h2.setRuleName("规则A");
 
-            when(alertHistoryMapper.selectList(any(QueryWrapper.class))).thenReturn(List.of(h1, h2));
+            when(monitoringRepository.findAlertHistory(eq(1L), isNull(), isNull())).thenReturn(List.of(h1, h2));
 
             // When
             List<AlertHistory> result = alertService.listAlertHistory(1L, null, null);
 
             // Then
             assertThat(result).hasSize(2);
-            verify(alertHistoryMapper).selectList(any(QueryWrapper.class));
+            verify(monitoringRepository).findAlertHistory(1L, null, null);
         }
 
         @Test
         @DisplayName("无过滤条件返回所有历史")
         void shouldReturnAllHistoryWhenNoFilter() {
             // Given
-            when(alertHistoryMapper.selectList(any(QueryWrapper.class))).thenReturn(List.of(new AlertHistory()));
+            when(monitoringRepository.findAlertHistory(isNull(), isNull(), isNull())).thenReturn(List.of(new AlertHistory()));
 
             // When
             List<AlertHistory> result = alertService.listAlertHistory(null, null, null);

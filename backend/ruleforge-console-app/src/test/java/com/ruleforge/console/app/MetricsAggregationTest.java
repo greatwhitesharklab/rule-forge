@@ -1,7 +1,7 @@
 package com.ruleforge.console.app.monitoring;
 
 import com.ruleforge.console.app.entity.MetricsSnapshot;
-import com.ruleforge.console.app.mapper.MetricsSnapshotMapper;
+import com.ruleforge.console.app.repository.data.MonitoringRepository;
 import com.ruleforge.console.app.service.IAlertService;
 import com.ruleforge.console.app.service.impl.MetricsAggregationServiceImpl;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -24,16 +24,16 @@ import static org.mockito.Mockito.*;
 class MetricsAggregationTest {
 
     private MeterRegistry meterRegistry;
-    private MetricsSnapshotMapper metricsSnapshotMapper;
+    private MonitoringRepository monitoringRepository;
     private IAlertService alertService;
     private MetricsAggregationServiceImpl service;
 
     @BeforeEach
     void setUp() {
         meterRegistry = new SimpleMeterRegistry();
-        metricsSnapshotMapper = mock(MetricsSnapshotMapper.class);
+        monitoringRepository = mock(MonitoringRepository.class);
         alertService = mock(IAlertService.class);
-        service = new MetricsAggregationServiceImpl(meterRegistry, metricsSnapshotMapper, alertService);
+        service = new MetricsAggregationServiceImpl(meterRegistry, monitoringRepository, alertService);
     }
 
     @Nested
@@ -56,7 +56,7 @@ class MetricsAggregationTest {
 
             // Then
             ArgumentCaptor<MetricsSnapshot> captor = ArgumentCaptor.forClass(MetricsSnapshot.class);
-            verify(metricsSnapshotMapper, atLeastOnce()).insert(captor.capture());
+            verify(monitoringRepository, atLeastOnce()).insertSnapshot(captor.capture());
 
             MetricsSnapshot snapshot = captor.getAllValues().stream()
                     .filter(s -> "rule.execution.latency".equals(s.getMetricName()))
@@ -82,7 +82,7 @@ class MetricsAggregationTest {
 
             // Then
             ArgumentCaptor<MetricsSnapshot> captor = ArgumentCaptor.forClass(MetricsSnapshot.class);
-            verify(metricsSnapshotMapper, atLeast(2)).insert(captor.capture());
+            verify(monitoringRepository, atLeast(2)).insertSnapshot(captor.capture());
 
             long distinctTags = captor.getAllValues().stream()
                     .map(MetricsSnapshot::getTags)
@@ -108,7 +108,7 @@ class MetricsAggregationTest {
 
             // Then
             ArgumentCaptor<MetricsSnapshot> captor = ArgumentCaptor.forClass(MetricsSnapshot.class);
-            verify(metricsSnapshotMapper).insert((MetricsSnapshot) captor.capture());
+            verify(monitoringRepository).insertSnapshot((MetricsSnapshot) captor.capture());
 
             MetricsSnapshot snapshot = captor.getValue();
             assertThat(snapshot.getMetricType()).isEqualTo("COUNTER");
@@ -147,7 +147,7 @@ class MetricsAggregationTest {
             service.aggregateAndSnapshot();
 
             // Then
-            verify(metricsSnapshotMapper, never()).insert((MetricsSnapshot) any());
+            verify(monitoringRepository, never()).insertSnapshot((MetricsSnapshot) any());
             verify(alertService, never()).evaluateAlerts();
         }
     }

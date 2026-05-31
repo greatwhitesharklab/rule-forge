@@ -1,11 +1,10 @@
 package com.ruleforge.console.app.monitoring;
 
 import com.ruleforge.console.app.controller.MonitoringController;
-import com.ruleforge.console.app.entity.AlertHistory;
 import com.ruleforge.console.app.entity.AlertRule;
 import com.ruleforge.console.app.entity.MetricsSnapshot;
+import com.ruleforge.console.app.repository.data.MonitoringRepository;
 import com.ruleforge.console.app.service.IAlertService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,7 +32,7 @@ class MonitoringControllerTest {
     private IAlertService alertService;
 
     @Mock
-    private com.ruleforge.console.app.mapper.MetricsSnapshotMapper metricsSnapshotMapper;
+    private MonitoringRepository monitoringRepository;
 
     @InjectMocks
     private MonitoringController controller;
@@ -63,7 +62,8 @@ class MonitoringControllerTest {
             List<MetricsSnapshot> snapshots = List.of(
                     createTestSnapshot("rule.execution.latency", "{\"package\":\"loan-rules\"}", 200, 10, now)
             );
-            when(metricsSnapshotMapper.selectList(any())).thenReturn(snapshots);
+            when(monitoringRepository.findMetricsByMetricName("rule.execution.latency", now, now, null))
+                    .thenReturn(snapshots);
 
             // When
             ResponseEntity<?> response = controller.queryMetrics(
@@ -82,7 +82,8 @@ class MonitoringControllerTest {
         void shouldFilterByTags() {
             // Given
             Date now = new Date();
-            when(metricsSnapshotMapper.selectList(any())).thenReturn(Collections.emptyList());
+            when(monitoringRepository.findMetricsByMetricName("rule.execution.latency", now, now, "{\"package\":\"loan-rules\"}"))
+                    .thenReturn(Collections.emptyList());
 
             // When
             ResponseEntity<?> response = controller.queryMetrics(
@@ -106,7 +107,7 @@ class MonitoringControllerTest {
             s1.setTags("{\"package\":\"loan-rules\"}");
             MetricsSnapshot s2 = new MetricsSnapshot();
             s2.setTags("{\"package\":\"credit-score\"}");
-            when(metricsSnapshotMapper.selectList(any())).thenReturn(List.of(s1, s2));
+            when(monitoringRepository.findDistinctTags()).thenReturn(List.of(s1, s2));
 
             // When
             ResponseEntity<?> response = controller.listPackages();

@@ -3,9 +3,7 @@ package com.ruleforge.console.app.monitoring;
 import com.ruleforge.console.app.entity.AlertHistory;
 import com.ruleforge.console.app.entity.AlertRule;
 import com.ruleforge.console.app.entity.MetricsSnapshot;
-import com.ruleforge.console.app.mapper.AlertHistoryMapper;
-import com.ruleforge.console.app.mapper.AlertRuleMapper;
-import com.ruleforge.console.app.mapper.MetricsSnapshotMapper;
+import com.ruleforge.console.app.repository.data.MonitoringRepository;
 import com.ruleforge.console.app.service.impl.AlertServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,19 +28,15 @@ import static org.mockito.Mockito.*;
 @DisplayName("告警引擎 - 规则评估与通知")
 class AlertEngineTest {
 
-    private AlertRuleMapper alertRuleMapper;
-    private AlertHistoryMapper alertHistoryMapper;
-    private MetricsSnapshotMapper metricsSnapshotMapper;
+    private MonitoringRepository monitoringRepository;
     private RestTemplate restTemplate;
     private AlertServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        alertRuleMapper = mock(AlertRuleMapper.class);
-        alertHistoryMapper = mock(AlertHistoryMapper.class);
-        metricsSnapshotMapper = mock(MetricsSnapshotMapper.class);
+        monitoringRepository = mock(MonitoringRepository.class);
         restTemplate = mock(RestTemplate.class);
-        service = new AlertServiceImpl(alertRuleMapper, alertHistoryMapper, metricsSnapshotMapper, restTemplate);
+        service = new AlertServiceImpl(monitoringRepository, restTemplate);
     }
 
     private AlertRule createRule(String condition, double threshold, int durationMin, int cooldownMin) {
@@ -77,8 +71,8 @@ class AlertEngineTest {
         void shouldFireWhenValueGreaterThanThreshold() {
             // Given
             AlertRule rule = createRule("GT", 5000, 1, 0);
-            when(alertRuleMapper.selectList(any())).thenReturn(List.of(rule));
-            when(metricsSnapshotMapper.selectList(any())).thenReturn(List.of(createSnapshot(8000)));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
+            when(monitoringRepository.findLatestMetrics(anyString(), anyInt(), any())).thenReturn(List.of(createSnapshot(8000)));
             when(restTemplate.exchange(anyString(), any(), any(), eq(String.class)))
                     .thenReturn(new ResponseEntity<>("ok", HttpStatus.OK));
 
@@ -86,7 +80,7 @@ class AlertEngineTest {
             service.evaluateAlerts();
 
             // Then
-            verify(alertHistoryMapper).insert((AlertHistory) any());
+            verify(monitoringRepository).insertAlertHistory((AlertHistory) any());
         }
 
         @Test
@@ -94,14 +88,14 @@ class AlertEngineTest {
         void shouldNotFireWhenValueNotGreaterThanThreshold() {
             // Given
             AlertRule rule = createRule("GT", 5000, 1, 0);
-            when(alertRuleMapper.selectList(any())).thenReturn(List.of(rule));
-            when(metricsSnapshotMapper.selectList(any())).thenReturn(List.of(createSnapshot(3000)));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
+            when(monitoringRepository.findLatestMetrics(anyString(), anyInt(), any())).thenReturn(List.of(createSnapshot(3000)));
 
             // When
             service.evaluateAlerts();
 
             // Then
-            verify(alertHistoryMapper, never()).insert((AlertHistory) any());
+            verify(monitoringRepository, never()).insertAlertHistory((AlertHistory) any());
         }
 
         @Test
@@ -110,12 +104,12 @@ class AlertEngineTest {
         void shouldEvaluateLTCondition() {
             // Given
             AlertRule rule = createRule("LT", 10, 1, 0);
-            when(alertRuleMapper.selectList(any())).thenReturn(List.of(rule));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
 
             MetricsSnapshot snapshot = new MetricsSnapshot();
             snapshot.setMetricType("COUNTER");
             snapshot.setCountVal(5L);
-            when(metricsSnapshotMapper.selectList(any())).thenReturn(List.of(snapshot));
+            when(monitoringRepository.findLatestMetrics(anyString(), anyInt(), any())).thenReturn(List.of(snapshot));
             when(restTemplate.exchange(anyString(), any(), any(), eq(String.class)))
                     .thenReturn(new ResponseEntity<>("ok", HttpStatus.OK));
 
@@ -123,7 +117,7 @@ class AlertEngineTest {
             service.evaluateAlerts();
 
             // Then
-            verify(alertHistoryMapper).insert((AlertHistory) any());
+            verify(monitoringRepository).insertAlertHistory((AlertHistory) any());
         }
     }
 
@@ -136,17 +130,17 @@ class AlertEngineTest {
         void shouldFireOnlyAfterConsecutiveBreaches() {
             // Given 需要连续 3 个窗口，但只有 2 个快照
             AlertRule rule = createRule("GT", 5000, 3, 0);
-            when(alertRuleMapper.selectList(any())).thenReturn(List.of(rule));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
 
             MetricsSnapshot s1 = createSnapshot(8000);
             MetricsSnapshot s2 = createSnapshot(9000);
-            when(metricsSnapshotMapper.selectList(any())).thenReturn(List.of(s1, s2));
+            when(monitoringRepository.findLatestMetrics(anyString(), anyInt(), any())).thenReturn(List.of(s1, s2));
 
             // When
             service.evaluateAlerts();
 
             // Then 快照数 < durationMin，不应触发
-            verify(alertHistoryMapper, never()).insert((AlertHistory) any());
+            verify(monitoringRepository, never()).insertAlertHistory((AlertHistory) any());
         }
     }
 
@@ -160,13 +154,13 @@ class AlertEngineTest {
             // Given 5 分钟前触发过，冷却 10 分钟
             AlertRule rule = createRule("GT", 5000, 1, 10);
             rule.setLastFiredAt(new Date(System.currentTimeMillis() - 5 * 60 * 1000));
-            when(alertRuleMapper.selectList(any())).thenReturn(List.of(rule));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
 
             // When
             service.evaluateAlerts();
 
             // Then 不触发（冷却中）
-            verify(metricsSnapshotMapper, never()).selectList(any());
+            verify(monitoringRepository, never()).findLatestMetrics(anyString(), anyInt(), any());
         }
 
         @Test
@@ -176,8 +170,8 @@ class AlertEngineTest {
             // Given 15 分钟前触发过，冷却 10 分钟
             AlertRule rule = createRule("GT", 5000, 1, 10);
             rule.setLastFiredAt(new Date(System.currentTimeMillis() - 15 * 60 * 1000));
-            when(alertRuleMapper.selectList(any())).thenReturn(List.of(rule));
-            when(metricsSnapshotMapper.selectList(any())).thenReturn(List.of(createSnapshot(8000)));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
+            when(monitoringRepository.findLatestMetrics(anyString(), anyInt(), any())).thenReturn(List.of(createSnapshot(8000)));
             when(restTemplate.exchange(anyString(), any(), any(), eq(String.class)))
                     .thenReturn(new ResponseEntity<>("ok", HttpStatus.OK));
 
@@ -185,7 +179,7 @@ class AlertEngineTest {
             service.evaluateAlerts();
 
             // Then 应触发
-            verify(alertHistoryMapper).insert((AlertHistory) any());
+            verify(monitoringRepository).insertAlertHistory((AlertHistory) any());
         }
     }
 
@@ -199,8 +193,8 @@ class AlertEngineTest {
         void shouldSendJsonPostToWebhookUrl() {
             // Given
             AlertRule rule = createRule("GT", 5000, 1, 0);
-            when(alertRuleMapper.selectList(any())).thenReturn(List.of(rule));
-            when(metricsSnapshotMapper.selectList(any())).thenReturn(List.of(createSnapshot(8000)));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
+            when(monitoringRepository.findLatestMetrics(anyString(), anyInt(), any())).thenReturn(List.of(createSnapshot(8000)));
             when(restTemplate.exchange(anyString(), any(), any(), eq(String.class)))
                     .thenReturn(new ResponseEntity<>("ok", HttpStatus.OK));
 
@@ -209,7 +203,7 @@ class AlertEngineTest {
 
             // Then
             ArgumentCaptor<AlertHistory> captor = ArgumentCaptor.forClass(AlertHistory.class);
-            verify(alertHistoryMapper).insert(captor.capture());
+            verify(monitoringRepository).insertAlertHistory(captor.capture());
             AlertHistory history = captor.getValue();
             assertThat(history.getActualValue()).isEqualTo(8000.0);
             assertThat(history.getThreshold()).isEqualTo(5000.0);
@@ -222,8 +216,8 @@ class AlertEngineTest {
         void shouldRecordAlertHistory() {
             // Given
             AlertRule rule = createRule("GT", 5000, 1, 0);
-            when(alertRuleMapper.selectList(any())).thenReturn(List.of(rule));
-            when(metricsSnapshotMapper.selectList(any())).thenReturn(List.of(createSnapshot(8000)));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
+            when(monitoringRepository.findLatestMetrics(anyString(), anyInt(), any())).thenReturn(List.of(createSnapshot(8000)));
             when(restTemplate.exchange(anyString(), any(), any(), eq(String.class)))
                     .thenReturn(new ResponseEntity<>("ok", HttpStatus.OK));
 
@@ -231,7 +225,7 @@ class AlertEngineTest {
             service.evaluateAlerts();
 
             // Then
-            verify(alertHistoryMapper).insert((AlertHistory) any());
+            verify(monitoringRepository).insertAlertHistory((AlertHistory) any());
         }
 
         @Test
@@ -240,8 +234,8 @@ class AlertEngineTest {
         void shouldUpdateLastFiredAt() {
             // Given
             AlertRule rule = createRule("GT", 5000, 1, 0);
-            when(alertRuleMapper.selectList(any())).thenReturn(List.of(rule));
-            when(metricsSnapshotMapper.selectList(any())).thenReturn(List.of(createSnapshot(8000)));
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(List.of(rule));
+            when(monitoringRepository.findLatestMetrics(anyString(), anyInt(), any())).thenReturn(List.of(createSnapshot(8000)));
             when(restTemplate.exchange(anyString(), any(), any(), eq(String.class)))
                     .thenReturn(new ResponseEntity<>("ok", HttpStatus.OK));
 
@@ -249,7 +243,7 @@ class AlertEngineTest {
             service.evaluateAlerts();
 
             // Then
-            verify(alertRuleMapper).update(isNull(), any());
+            verify(monitoringRepository).updateAlertRuleLastFired(any(), any());
         }
     }
 
@@ -263,14 +257,14 @@ class AlertEngineTest {
             // Given
             AlertRule rule = createRule("GT", 5000, 1, 0);
             rule.setEnabled(false);
-            when(alertRuleMapper.selectList(any())).thenReturn(Collections.emptyList());
+            when(monitoringRepository.findEnabledAlertRules()).thenReturn(Collections.emptyList());
 
             // When
             service.evaluateAlerts();
 
             // Then
-            verify(metricsSnapshotMapper, never()).selectList(any());
-            verify(alertHistoryMapper, never()).insert((AlertHistory) any());
+            verify(monitoringRepository, never()).findLatestMetrics(anyString(), anyInt(), any());
+            verify(monitoringRepository, never()).insertAlertHistory((AlertHistory) any());
         }
     }
 }

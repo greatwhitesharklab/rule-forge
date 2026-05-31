@@ -1,9 +1,8 @@
-package com.ruleforge.console.app.connector;
+package com.ruleforge.decision.connector;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.ruleforge.console.app.entity.Datasource;
-import com.ruleforge.console.app.entity.DatasourceLog;
-import com.ruleforge.console.app.mapper.DatasourceLogMapper;
+import com.ruleforge.decision.entity.Datasource;
+import com.ruleforge.decision.entity.DatasourceLog;
+import com.ruleforge.decision.repository.DatasourceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -32,14 +31,14 @@ import static org.mockito.Mockito.*;
 class AdvanceAiConnectorTest {
 
     @Mock private AdvanceAiTokenManager tokenManager;
-    @Mock private DatasourceLogMapper datasourceLogMapper;
+    @Mock private DatasourceRepository datasourceRepository;
     @Mock private RestTemplate restTemplate;
 
     private AdvanceAiConnector connector;
 
     @BeforeEach
     void setUp() {
-        connector = new AdvanceAiConnector(tokenManager, datasourceLogMapper, restTemplate);
+        connector = new AdvanceAiConnector(tokenManager, datasourceRepository, restTemplate);
     }
 
     private Datasource buildDatasource() {
@@ -223,7 +222,7 @@ class AdvanceAiConnectorTest {
             Datasource ds = buildDatasource();
             String cachedResponse = "{\"code\":\"SUCCESS\",\"data\":{\"GD_X_19\":0.456}}";
             DatasourceLog cachedLog = buildCachedLog(cachedResponse);
-            when(datasourceLogMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(cachedLog);
+            when(datasourceRepository.findCachedLog(anyLong(), anyString(), anyString())).thenReturn(cachedLog);
 
             Map<String, String> context = new HashMap<>();
 
@@ -245,12 +244,12 @@ class AdvanceAiConnectorTest {
         void shouldCallApiAndLogWhenCacheMiss() {
             // Given
             Datasource ds = buildDatasource();
-            when(datasourceLogMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+            when(datasourceRepository.findCachedLog(anyLong(), anyString(), anyString())).thenReturn(null);
             when(tokenManager.getAccessToken(ds)).thenReturn("test-token");
             String apiResponse = "{\"code\":\"SUCCESS\",\"data\":{\"GD_X_1\":0.5}}";
             when(restTemplate.exchange(anyString(), any(), any(), eq(String.class)))
                     .thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
-            when(datasourceLogMapper.insert(any(DatasourceLog.class))).thenReturn(1);
+            doNothing().when(datasourceRepository).insertDatasourceLog(any(DatasourceLog.class));
 
             Map<String, String> context = new HashMap<>();
 
@@ -263,7 +262,7 @@ class AdvanceAiConnectorTest {
 
             // 日志被记录
             ArgumentCaptor<DatasourceLog> logCaptor = ArgumentCaptor.forClass(DatasourceLog.class);
-            verify(datasourceLogMapper).insert(logCaptor.capture());
+            verify(datasourceRepository).insertDatasourceLog(logCaptor.capture());
             DatasourceLog logged = logCaptor.getValue();
             assertThat(logged.getDataSource()).isEqualTo("ADVANCE_AI");
             assertThat(logged.getStatus()).isEqualTo("SUCCESS");
