@@ -3,7 +3,7 @@ from __future__ import annotations
 import typer
 
 from . import __version__
-from .commands import file, package, project, rule, test, variable
+from .commands import file, package, project, rule, simulation, test, variable
 
 app = typer.Typer(
     name="rf",
@@ -16,6 +16,7 @@ app.add_typer(file.app, name="file")
 app.add_typer(rule.app, name="rule")
 app.add_typer(test.app, name="test")
 app.add_typer(package.app, name="package")
+app.add_typer(simulation.app, name="simulation")
 app.add_typer(variable.app, name="variable")
 
 

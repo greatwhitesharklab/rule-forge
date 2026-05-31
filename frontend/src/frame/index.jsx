@@ -21,6 +21,7 @@ import MonitoringPanel from '@/frame/panels/MonitoringPanel.jsx';
 import DatasourcePanel from '@/datasource/index.jsx';
 import PlaceholderPanel from '@/frame/panels/PlaceholderPanel.jsx';
 import ReleasePanel from '@/release/index.jsx';
+import SimulationPanel from '@/simulation/index.jsx';
 import Loading from '@/components/loading/component/Loading.jsx';
 import * as event from '@/frame/event.js';
 import * as componentEvent from '@/components/componentEvent.js';
@@ -34,6 +35,8 @@ function SidePanelSwitcher({activePanel, store, eventObj}) {
             return <DatasourcePanel/>;
         case 'release':
             return <ReleasePanel/>;
+        case 'simulation':
+            return <SimulationPanel/>;
         case 'ai':
             return <PlaceholderPanel panelId="ai"/>;
         case 'settings':

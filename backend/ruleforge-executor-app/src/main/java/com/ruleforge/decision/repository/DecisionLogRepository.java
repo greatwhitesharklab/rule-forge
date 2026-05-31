@@ -93,6 +93,12 @@ public interface DecisionLogRepository {
      */
     List<ShadowRuleLog> findShadowRuleLogsByFlowLogId(Long flowLogId);
 
+    /**
+     * Find decision flow logs by rule package path and time range.
+     * Used by simulation to load historical decision logs for replay.
+     */
+    List<DecisionFlowLog> findFlowLogsByPackageAndTimeRange(String rulePackagePath, String startTime, String endTime, int limit);
+
     // ===== Shadow decision logs =====
 
     /**

@@ -172,3 +172,46 @@ class RuleForgeClient:
 
     def generate_variable_library(self) -> Any:
         return self._post("/variableeditor/generateVariableLibrary")
+
+    # ---- Simulation ----
+
+    def start_simulation(
+        self,
+        project: str,
+        package_id: str,
+        files: str,
+        start_time: str,
+        end_time: str,
+        flow_id: str | None = None,
+    ) -> Any:
+        body: dict[str, Any] = {
+            "project": project,
+            "packageId": package_id,
+            "files": files,
+            "startTime": start_time,
+            "endTime": end_time,
+        }
+        if flow_id:
+            body["flowId"] = flow_id
+        return self._post("/simulation/startSimulation", body=body)
+
+    def simulation_progress(self, run_id: int) -> Any:
+        resp = self._get("/simulation/simulationProgress", params={"runId": run_id})
+        return json.loads(resp)
+
+    def simulation_results(self, run_id: int, page: int = 1, size: int = 20) -> Any:
+        resp = self._get("/simulation/simulationResults", params={"runId": run_id, "page": page, "size": size})
+        return json.loads(resp)
+
+    def list_simulation_runs(self, rule_package_path: str, page: int = 1, size: int = 20) -> Any:
+        resp = self._get("/simulation/simulationRuns", params={"rulePackagePath": rule_package_path, "page": page, "size": size})
+        return json.loads(resp)
+
+    def simulation_stats(self, rule_package_path: str, start_time: str | None = None, end_time: str | None = None) -> Any:
+        params: dict[str, Any] = {"rulePackagePath": rule_package_path}
+        if start_time:
+            params["startTime"] = start_time
+        if end_time:
+            params["endTime"] = end_time
+        resp = self._get("/simulation/simulationStats", params=params)
+        return json.loads(resp)

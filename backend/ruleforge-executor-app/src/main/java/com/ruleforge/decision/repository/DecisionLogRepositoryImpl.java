@@ -89,6 +89,17 @@ public class DecisionLogRepositoryImpl implements DecisionLogRepository {
         return shadowRuleLogMapper.selectList(wrapper);
     }
 
+    @Override
+    public List<DecisionFlowLog> findFlowLogsByPackageAndTimeRange(String rulePackagePath, String startTime, String endTime, int limit) {
+        LambdaQueryWrapper<DecisionFlowLog> wrapper = new LambdaQueryWrapper<DecisionFlowLog>()
+                .eq(DecisionFlowLog::getRulePackagePath, rulePackagePath)
+                .ge(startTime != null, DecisionFlowLog::getCreatedAt, startTime)
+                .le(endTime != null, DecisionFlowLog::getCreatedAt, endTime)
+                .orderByDesc(DecisionFlowLog::getId)
+                .last("LIMIT " + limit);
+        return flowLogMapper.selectList(wrapper);
+    }
+
     // ===== Decision logs =====
 
     @Override

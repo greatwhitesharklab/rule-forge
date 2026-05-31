@@ -13,6 +13,7 @@ export const CREATE_NEW_FILE = 'create_new_file';
 export const LOAD_CHILDREN_END = 'load_children_end'; // 子菜单加载完成的action类型
 export const SET_ACTIVE_PANEL = 'set_active_panel';
 export const SET_MONITORING_TAB = 'set_monitoring_tab';
+export const SET_SIMULATION_TAB = 'set_simulation_tab';
 
 export function setActivePanel(panel) {
     return {type: SET_ACTIVE_PANEL, panel};
@@ -20,6 +21,10 @@ export function setActivePanel(panel) {
 
 export function setMonitoringTab(tab) {
     return {type: SET_MONITORING_TAB, tab};
+}
+
+export function setSimulationTab(tab) {
+    return {type: SET_SIMULATION_TAB, tab};
 }
 
 const FILE_TYPE_MAP = {

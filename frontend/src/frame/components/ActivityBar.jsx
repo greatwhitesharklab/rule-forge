@@ -7,6 +7,7 @@ const PANELS = [
     {id: 'monitoring', icon: 'glyphicon glyphicon-signal', title: '监控告警'},
     {id: 'datasource', icon: 'glyphicon glyphicon-cloud', title: '数据源'},
     {id: 'release', icon: 'glyphicon glyphicon-tag', title: '版本发布'},
+    {id: 'simulation', icon: 'glyphicon glyphicon-play-circle', title: '规则仿真'},
     {id: 'ai', icon: 'glyphicon glyphicon-education', title: '智能分析'},
 ];
 

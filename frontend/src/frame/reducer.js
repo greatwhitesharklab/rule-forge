@@ -2,12 +2,14 @@ import * as ACTIONS from './action.js';
 import datasourceReducer from '@/datasource/reducer';
 import releaseReducer from '@/release/reducer';
 
-function ui(state = {activePanel: 'rules', monitoringTab: 'overview'}, action) {
+function ui(state = {activePanel: 'rules', monitoringTab: 'overview', simulationTab: 'configure'}, action) {
     switch (action.type) {
         case ACTIONS.SET_ACTIVE_PANEL:
             return {...state, activePanel: action.panel};
         case ACTIONS.SET_MONITORING_TAB:
             return {...state, monitoringTab: action.tab};
+        case ACTIONS.SET_SIMULATION_TAB:
+            return {...state, simulationTab: action.tab};
         default:
             return state;
     }
