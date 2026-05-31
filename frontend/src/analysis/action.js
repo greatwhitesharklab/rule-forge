@@ -32,7 +32,7 @@ export function loadFlowTimeseries(startTime, endTime, rulePackagePath, flowId, 
         if (flowId) params.append('flowId', flowId);
         if (isGray !== null && isGray !== undefined) params.append('isGray', isGray);
 
-        fetch(window._server + '/analysis/flow/timeseries?' + params.toString())
+        return fetch(window._server + '/analysis/flow/timeseries?' + params.toString())
             .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
             .then(data => dispatch({type: LOAD_FLOW_TIMESERIES_COMPLETED, data}))
             .catch(err => {
@@ -49,7 +49,7 @@ export function loadPackageSummary(startTime, endTime) {
             startTime: toISO(startTime),
             endTime: toISO(endTime)
         });
-        fetch(window._server + '/analysis/flow/packages-summary?' + params.toString())
+        return fetch(window._server + '/analysis/flow/packages-summary?' + params.toString())
             .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
             .then(data => dispatch({type: LOAD_PACKAGE_SUMMARY_COMPLETED, data}))
             .catch(err => {
@@ -69,7 +69,7 @@ export function loadRejectDistribution(startTime, endTime, rulePackagePath, limi
         });
         if (rulePackagePath) params.append('rulePackagePath', rulePackagePath);
 
-        fetch(window._server + '/analysis/flow/reject-distribution?' + params.toString())
+        return fetch(window._server + '/analysis/flow/reject-distribution?' + params.toString())
             .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
             .then(data => dispatch({type: LOAD_REJECT_DISTRIBUTION_COMPLETED, data}))
             .catch(err => {
@@ -88,7 +88,7 @@ export function loadRuleCoverage(rulePackagePath, startTime, endTime) {
         });
         if (rulePackagePath) params.append('rulePackagePath', rulePackagePath);
 
-        fetch(window._server + '/analysis/rule/coverage?' + params.toString())
+        return fetch(window._server + '/analysis/rule/coverage?' + params.toString())
             .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
             .then(data => dispatch({type: LOAD_RULE_COVERAGE_COMPLETED, data}))
             .catch(err => {
@@ -107,7 +107,7 @@ export function loadRuleFireFrequency(startTime, endTime, rulePackagePath) {
         });
         if (rulePackagePath) params.append('rulePackagePath', rulePackagePath);
 
-        fetch(window._server + '/analysis/rule/fire-frequency?' + params.toString())
+        return fetch(window._server + '/analysis/rule/fire-frequency?' + params.toString())
             .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
             .then(data => dispatch({type: LOAD_RULE_FIRE_FREQUENCY_COMPLETED, data}))
             .catch(err => {
@@ -127,7 +127,7 @@ export function loadAnomalies(currentTime, baselineDays, sigmaThreshold, rulePac
         if (currentTime) params.append('currentTime', toISO(currentTime));
         if (rulePackagePath) params.append('rulePackagePath', rulePackagePath);
 
-        fetch(window._server + '/analysis/anomaly/detect?' + params.toString())
+        return fetch(window._server + '/analysis/anomaly/detect?' + params.toString())
             .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
             .then(data => dispatch({type: LOAD_ANOMALIES_COMPLETED, data}))
             .catch(err => {
@@ -140,7 +140,7 @@ export function loadAnomalies(currentTime, baselineDays, sigmaThreshold, rulePac
 export function loadAnalysisPackages() {
     return function (dispatch) {
         dispatch({type: LOAD_ANALYSIS_PACKAGES});
-        fetch(window._server + '/analysis/packages')
+        return fetch(window._server + '/analysis/packages')
             .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
             .then(data => dispatch({type: LOAD_ANALYSIS_PACKAGES_COMPLETED, data}))
             .catch(err => {

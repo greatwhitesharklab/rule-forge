@@ -5,6 +5,7 @@ import thunk from 'redux-thunk';
 import {createRoot} from 'react-dom/client';
 import reducer from './reducer.js';
 import * as action from './action.js';
+import {getStartTime, getGranularity} from './helpers.js';
 
 const echarts = window.echarts;
 const store = createStore(reducer, applyMiddleware(thunk));
@@ -22,23 +23,6 @@ const TABS = [
     {id: 'coverage', label: '规则覆盖', icon: 'glyphicon glyphicon-tasks'},
     {id: 'anomaly', label: '偏差检测', icon: 'glyphicon glyphicon-warning-sign'}
 ];
-
-function getStartTime(range) {
-    const now = new Date();
-    switch (range) {
-        case '1h': return new Date(now.getTime() - 3600000);
-        case '6h': return new Date(now.getTime() - 6 * 3600000);
-        case '24h': return new Date(now.getTime() - 24 * 3600000);
-        case '7d': return new Date(now.getTime() - 7 * 86400000);
-        case '30d': return new Date(now.getTime() - 30 * 86400000);
-        default: return new Date(now.getTime() - 24 * 3600000);
-    }
-}
-
-function getGranularity(range) {
-    if (range === '30d' || range === '7d') return 'daily';
-    return 'hourly';
-}
 
 // ========== Chart Components ==========
 

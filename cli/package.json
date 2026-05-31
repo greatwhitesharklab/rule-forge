@@ -5,8 +5,14 @@
   "bin": {
     "ruleforge": "./bin/ruleforge.js"
   },
+  "scripts": {
+    "test": "vitest run"
+  },
   "dependencies": {
     "commander": "^12.0.0",
     "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.7"
   }
 }
