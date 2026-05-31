@@ -13,7 +13,7 @@
 </div>
 
 > **⚠️ 项目状态：活跃开发中**
-> 本项目已完成监控告警、上游数据源管理，正在进行规则版本与发布管理阶段。
+> 本项目已完成监控告警、上游数据源管理、规则版本与发布管理（含灰度发布、陪跑对比），正在进行下游 Agent 分析阶段。
 
 ---
 
@@ -26,24 +26,27 @@
 - 🔥 **热部署** — 规则动态更新，无需重启服务
 - 🔌 **上游数据源管理** — REST API、JDBC、Advance AI 多类型数据源接入，可视化配置
 - 📊 **监控与告警** — 决策执行全链路可观测，Micrometer + Prometheus 指标采集
+- 🎯 **灰度发布** — 应用层灰度路由（用户比例、随机百分比、白名单），灰度结果写入日志
+- 🔄 **陪跑对比** — 流量重放到影子规则包，自动对比主/陪跑差异（4 维度 × 4 级严重度）
 - ☕ **标准 Java** — 纯 Java 实现，Spring Boot 4.0，易于集成
 
 ## 📦 模块结构
 
 ```
 ⚙️  ruleforge-core            规则引擎核心（RETE 算法、规则解析、知识库）
+📦  ruleforge-decision        共享决策模块（数据源、灰度策略、陪跑配置）
 🖥️  ruleforge-console         编辑器业务（REST API、项目管理、知识包管理）
 🚀  ruleforge-executor        执行器业务（规则执行、知识包接收）
-🌐  ruleforge-console-app     可部署的编辑器应用 → 端口 8081
-⚡  ruleforge-executor-app    可部署的执行器应用 → 端口 8082
+🌐  ruleforge-console-app     可部署的编辑器应用 → 端口 8180
+⚡  ruleforge-executor-app    可部署的执行器应用 → 端口 8280
 🎨  frontend                  React 可视化规则设计器
 ```
 
 依赖链：
 
 ```
-core ← console ← console-app
-core ← executor ← executor-app
+core ← decision ← console ← console-app
+core ← executor ← executor-app ← decision
 ```
 
 ## 🚀 快速开始
