@@ -49,12 +49,14 @@ class ReleasePanel extends Component {
                 this.props.dispatch(action.loadNodes());
             } else if (tab === 'gray') {
                 this.props.dispatch(action.loadGrayStrategies());
+            } else if (tab === 'shadow') {
+                this.props.dispatch(action.loadShadowConfigs());
             }
         }
     }
 
     render() {
-        const {activeTab, environments, approvals, deploymentHistory, environmentsLoading, grayStrategies, grayStrategiesLoading} = this.props;
+        const {activeTab, environments, approvals, deploymentHistory, environmentsLoading, grayStrategies, grayStrategiesLoading, shadowConfigs, shadowConfigsLoading, shadowComparisons, shadowComparisonsLoading, shadowStats} = this.props;
         const {projectName} = this.state;
 
         const tabs = [
@@ -63,6 +65,7 @@ class ReleasePanel extends Component {
             {id: 'history', label: '部署历史', icon: 'glyphicon glyphicon-time'},
             {id: 'nodes', label: '节点管理', icon: 'glyphicon glyphicon-hdd'},
             {id: 'gray', label: '灰度策略', icon: 'glyphicon glyphicon-random'},
+            {id: 'shadow', label: '陪跑配置', icon: 'glyphicon glyphicon-duplicate'},
         ];
 
         return (
@@ -106,6 +109,8 @@ class ReleasePanel extends Component {
                         this.renderNodes(this.props.nodes)
                     ) : activeTab === 'gray' ? (
                         this.renderGrayStrategies(grayStrategies, grayStrategiesLoading)
+                    ) : activeTab === 'shadow' ? (
+                        this.renderShadowPanel(shadowConfigs, shadowConfigsLoading, shadowComparisons, shadowComparisonsLoading, shadowStats)
                     ) : (
                         this.renderHistory(deploymentHistory)
                     )}
@@ -489,6 +494,153 @@ class ReleasePanel extends Component {
                         </button>
                     </div>
                 </div>
+            </div>
+        );
+    }
+
+    renderShadowPanel(configs, configsLoading, comparisons, comparisonsLoading, stats) {
+        return (
+            <div>
+                {this.renderShadowConfigs(configs, configsLoading)}
+                <div style={{marginTop: 20}}>
+                    {this.renderShadowComparisons(comparisons, comparisonsLoading, stats)}
+                </div>
+            </div>
+        );
+    }
+
+    renderShadowConfigs(configs, loading) {
+        if (loading) return <div style={{textAlign: 'center', padding: 20}}>加载中...</div>;
+
+        return (
+            <div>
+                <h6 style={{fontWeight: 600, marginBottom: 10}}>陪跑配置</h6>
+                {(!configs || configs.length === 0) ? (
+                    <div style={{textAlign: 'center', padding: 20, color: '#999'}}>暂无陪跑配置</div>
+                ) : (
+                    <table className="table table-bordered table-hover" style={{fontSize: 12}}>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>主规则包</th>
+                                <th>陪跑规则包</th>
+                                <th>陪跑流程ID</th>
+                                <th>采样率(%)</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {configs.map(config => (
+                                <tr key={config.id}>
+                                    <td>{config.id}</td>
+                                    <td style={{maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis'}} title={config.mainRulePackagePath}>{config.mainRulePackagePath}</td>
+                                    <td style={{maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis'}} title={config.shadowRulePackagePath}>{config.shadowRulePackagePath}</td>
+                                    <td>{config.shadowFlowId || '同主流程'}</td>
+                                    <td>{config.sampleRate}</td>
+                                    <td>
+                                        <span style={{color: config.enabled ? '#52c41a' : '#999', cursor: 'pointer'}}
+                                              onClick={() => this.props.dispatch(action.toggleShadowConfig(config.id, !config.enabled))}>
+                                            {config.enabled ? '启用' : '停用'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button className="btn btn-danger btn-xs" onClick={() => this.props.dispatch(action.deleteShadowConfig(config.id))}>删除</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+
+                {/* 创建表单 */}
+                <div style={{marginTop: 10, padding: 10, background: '#f9f9f9', borderRadius: 4, border: '1px solid #eee'}}>
+                    <h6 style={{fontWeight: 600, marginBottom: 8}}>创建陪跑配置</h6>
+                    <div style={{display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8}}>
+                        <input id="shadow-main-path" placeholder="主规则包路径" style={{flex: 1, minWidth: 150, padding: '4px 8px', fontSize: 12, border: '1px solid #ddd', borderRadius: 3}}/>
+                        <input id="shadow-shadow-path" placeholder="陪跑规则包路径" style={{flex: 1, minWidth: 150, padding: '4px 8px', fontSize: 12, border: '1px solid #ddd', borderRadius: 3}}/>
+                        <input id="shadow-flow-id" placeholder="陪跑流程ID(可选)" style={{width: 120, padding: '4px 8px', fontSize: 12, border: '1px solid #ddd', borderRadius: 3}}/>
+                        <input id="shadow-sample-rate" placeholder="采样率(%)" type="number" min="0" max="100" style={{width: 80, padding: '4px 8px', fontSize: 12, border: '1px solid #ddd', borderRadius: 3}}/>
+                    </div>
+                    <button className="btn btn-primary btn-sm" onClick={() => {
+                        const mainPath = document.getElementById('shadow-main-path').value;
+                        const shadowPath = document.getElementById('shadow-shadow-path').value;
+                        const flowId = document.getElementById('shadow-flow-id').value;
+                        const sampleRate = document.getElementById('shadow-sample-rate').value;
+                        if (!mainPath || !shadowPath) {
+                            window.bootbox.alert('请填写主规则包路径和陪跑规则包路径');
+                            return;
+                        }
+                        this.props.dispatch(action.createShadowConfig({
+                            mainRulePackagePath: mainPath,
+                            shadowRulePackagePath: shadowPath,
+                            shadowFlowId: flowId || null,
+                            sampleRate: sampleRate ? parseInt(sampleRate) : 100
+                        }));
+                    }}>
+                        <span className="glyphicon glyphicon-plus" style={{marginRight: 4}}/>
+                        创建配置
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    renderShadowComparisons(comparisons, loading, stats) {
+        const severityColors = {HIGH: '#f5222d', MEDIUM: '#fa8c16', LOW: '#1890ff', NONE: '#52c41a'};
+
+        return (
+            <div>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10}}>
+                    <h6 style={{fontWeight: 600, margin: 0}}>陪跑对比结果</h6>
+                    {stats && (
+                        <div style={{display: 'flex', gap: 15, fontSize: 12, color: '#666'}}>
+                            <span>总对比: <b>{stats.totalComparisons}</b></span>
+                            <span>差异: <b style={{color: stats.totalDivergent > 0 ? '#f5222d' : '#52c41a'}}>{stats.totalDivergent}</b></span>
+                            <span>差异率: <b>{stats.divergenceRate}%</b></span>
+                        </div>
+                    )}
+                </div>
+
+                {loading ? (
+                    <div style={{textAlign: 'center', padding: 20}}>加载中...</div>
+                ) : (!comparisons || comparisons.length === 0) ? (
+                    <div style={{textAlign: 'center', padding: 20, color: '#999'}}>暂无对比数据</div>
+                ) : (
+                    <table className="table table-bordered table-hover" style={{fontSize: 12}}>
+                        <thead>
+                            <tr>
+                                <th>用户ID</th>
+                                <th>订单号</th>
+                                <th>主流程耗时</th>
+                                <th>陪跑耗时</th>
+                                <th>状态一致</th>
+                                <th>结果一致</th>
+                                <th>差异级别</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {comparisons.map(comp => (
+                                <tr key={comp.id}>
+                                    <td>{comp.userId}</td>
+                                    <td>{comp.orderNo}</td>
+                                    <td>{comp.mainTotalTimeMs}ms</td>
+                                    <td>{comp.shadowTotalTimeMs}ms</td>
+                                    <td style={{color: comp.statusMatch ? '#52c41a' : '#f5222d'}}>{comp.statusMatch ? '✓' : '✗'}</td>
+                                    <td style={{color: comp.resultMatch ? '#52c41a' : '#f5222d'}}>{comp.resultMatch ? '✓' : '✗'}</td>
+                                    <td>
+                                        <span style={{padding: '2px 6px', borderRadius: 3, color: '#fff',
+                                            background: severityColors[comp.divergenceSeverity] || '#999', fontSize: 11}}>
+                                            {comp.divergenceSeverity}
+                                        </span>
+                                    </td>
+                                    <td>{comp.createdAt}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
         );
     }

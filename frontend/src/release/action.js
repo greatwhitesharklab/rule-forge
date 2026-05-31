@@ -8,6 +8,12 @@ const LOAD_NODES = 'LOAD_NODES';
 const LOAD_NODES_COMPLETED = 'LOAD_NODES_COMPLETED';
 const LOAD_GRAY_STRATEGIES = 'LOAD_GRAY_STRATEGIES';
 const LOAD_GRAY_STRATEGIES_COMPLETED = 'LOAD_GRAY_STRATEGIES_COMPLETED';
+const LOAD_SHADOW_CONFIGS = 'LOAD_SHADOW_CONFIGS';
+const LOAD_SHADOW_CONFIGS_COMPLETED = 'LOAD_SHADOW_CONFIGS_COMPLETED';
+const LOAD_SHADOW_COMPARISONS = 'LOAD_SHADOW_COMPARISONS';
+const LOAD_SHADOW_COMPARISONS_COMPLETED = 'LOAD_SHADOW_COMPARISONS_COMPLETED';
+const LOAD_SHADOW_STATS = 'LOAD_SHADOW_STATS';
+const LOAD_SHADOW_STATS_COMPLETED = 'LOAD_SHADOW_STATS_COMPLETED';
 const SET_TAB = 'release_set_tab';
 
 export function loadEnvironments(projectName) {
@@ -203,6 +209,97 @@ export function setTab(tab) {
     return {type: SET_TAB, tab};
 }
 
+// ===== Shadow (陪跑) actions =====
+
+export function loadShadowConfigs() {
+    return function (dispatch) {
+        dispatch({type: LOAD_SHADOW_CONFIGS});
+        fetch(window._server + '/shadow/configs')
+        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        .then(data => dispatch({type: LOAD_SHADOW_CONFIGS_COMPLETED, data}))
+        .catch(err => {
+            console.error('加载陪跑配置失败', err);
+            dispatch({type: LOAD_SHADOW_CONFIGS_COMPLETED, data: []});
+        });
+    };
+}
+
+export function createShadowConfig(config) {
+    return function (dispatch) {
+        fetch(window._server + '/shadow/configs', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(config)
+        })
+        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        .then(() => {
+            window.bootbox.alert('陪跑配置创建成功');
+            dispatch(loadShadowConfigs());
+        })
+        .catch(err => {
+            console.error('创建陪跑配置失败', err);
+            window.bootbox.alert('创建失败');
+        });
+    };
+}
+
+export function deleteShadowConfig(id) {
+    return function (dispatch) {
+        window.bootbox.confirm('确认删除该陪跑配置？', (ok) => {
+            if (!ok) return;
+            fetch(window._server + '/shadow/configs/' + id, {method: 'DELETE'})
+            .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+            .then(() => dispatch(loadShadowConfigs()))
+            .catch(err => console.error('删除陪跑配置失败', err));
+        });
+    };
+}
+
+export function toggleShadowConfig(id, enabled) {
+    return function (dispatch) {
+        fetch(window._server + '/shadow/configs/' + id + '/toggle', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({enabled})
+        })
+        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        .then(() => dispatch(loadShadowConfigs()))
+        .catch(err => console.error('切换陪跑配置状态失败', err));
+    };
+}
+
+export function loadShadowComparisons(rulePackagePath, startTime, endTime, page, size) {
+    return function (dispatch) {
+        dispatch({type: LOAD_SHADOW_COMPARISONS});
+        const params = new URLSearchParams({rulePackagePath, page: page || 1, size: size || 20});
+        if (startTime) params.append('startTime', startTime);
+        if (endTime) params.append('endTime', endTime);
+        fetch(window._server + '/shadow/comparisons?' + params.toString())
+        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        .then(data => dispatch({type: LOAD_SHADOW_COMPARISONS_COMPLETED, data}))
+        .catch(err => {
+            console.error('加载陪跑对比失败', err);
+            dispatch({type: LOAD_SHADOW_COMPARISONS_COMPLETED, data: []});
+        });
+    };
+}
+
+export function loadShadowStats(rulePackagePath, startTime, endTime) {
+    return function (dispatch) {
+        dispatch({type: LOAD_SHADOW_STATS});
+        const params = new URLSearchParams({rulePackagePath});
+        if (startTime) params.append('startTime', startTime);
+        if (endTime) params.append('endTime', endTime);
+        fetch(window._server + '/shadow/stats?' + params.toString())
+        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        .then(data => dispatch({type: LOAD_SHADOW_STATS_COMPLETED, data}))
+        .catch(err => {
+            console.error('加载陪跑统计失败', err);
+            dispatch({type: LOAD_SHADOW_STATS_COMPLETED, data: null});
+        });
+    };
+}
+
 export function loadGrayStrategies(projectId, packageId) {
     return function (dispatch) {
         dispatch({type: LOAD_GRAY_STRATEGIES});
@@ -270,5 +367,8 @@ export {
     LOAD_DEPLOYMENT_HISTORY, LOAD_DEPLOYMENT_HISTORY_COMPLETED,
     LOAD_NODES, LOAD_NODES_COMPLETED,
     LOAD_GRAY_STRATEGIES, LOAD_GRAY_STRATEGIES_COMPLETED,
+    LOAD_SHADOW_CONFIGS, LOAD_SHADOW_CONFIGS_COMPLETED,
+    LOAD_SHADOW_COMPARISONS, LOAD_SHADOW_COMPARISONS_COMPLETED,
+    LOAD_SHADOW_STATS, LOAD_SHADOW_STATS_COMPLETED,
     SET_TAB
 };

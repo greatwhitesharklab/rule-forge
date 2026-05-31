@@ -13,6 +13,7 @@ import com.ruleforge.decision.entity.ShadowConfig;
 import com.ruleforge.decision.lazy.LazyEntityFactory;
 import com.ruleforge.decision.lazy.LazyGeneralEntity;
 import com.ruleforge.decision.service.IRuleVariableDefService;
+import com.ruleforge.decision.service.IShadowComparisonService;
 import com.ruleforge.decision.service.IShadowDecisionLogService;
 import com.ruleforge.decision.service.IShadowExecutionService;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,7 @@ public class ShadowExecutionServiceImpl implements IShadowExecutionService {
     private final LazyEntityFactory lazyEntityFactory;
     private final IRuleVariableDefService ruleVariableDefService;
     private final IShadowDecisionLogService shadowDecisionLogService;
+    private final IShadowComparisonService shadowComparisonService;
     private final RuntimeService flowableRuntimeService;
 
     @Override
@@ -142,7 +144,7 @@ public class ShadowExecutionServiceImpl implements IShadowExecutionService {
                     mainFlowLogId, userId, shadowFlowId, totalExecutionTime);
 
             // 11. 保存陪跑日志
-            shadowDecisionLogService.saveShadowLog(
+            Long shadowFlowLogId = shadowDecisionLogService.saveShadowLog(
                     mainFlowLogId,
                     userId,
                     orderNo,
@@ -165,6 +167,11 @@ public class ShadowExecutionServiceImpl implements IShadowExecutionService {
                     null,  // errorMessage
                     null   // errorStackTrace
             );
+
+            // 12. 触发自动对比
+            if (shadowFlowLogId != null) {
+                shadowComparisonService.compareAndSave(mainFlowLogId, shadowFlowLogId);
+            }
 
         } catch (Exception e) {
             log.error("陪跑执行失败: mainFlowLogId={}, userId={}, shadowRulePackagePath={}",
@@ -200,7 +207,7 @@ public class ShadowExecutionServiceImpl implements IShadowExecutionService {
 
             // 保存失败日志
             try {
-                shadowDecisionLogService.saveShadowLog(
+                Long shadowFlowLogId = shadowDecisionLogService.saveShadowLog(
                         mainFlowLogId,
                         userId,
                         orderNo,
@@ -223,6 +230,11 @@ public class ShadowExecutionServiceImpl implements IShadowExecutionService {
                         e.getMessage(),
                         stackTrace
                 );
+
+                // 失败时也触发对比（状态差异会是 HIGH）
+                if (shadowFlowLogId != null) {
+                    shadowComparisonService.compareAndSave(mainFlowLogId, shadowFlowLogId);
+                }
             } catch (Exception logEx) {
                 log.error("陪跑日志保存失败: mainFlowLogId={}", mainFlowLogId, logEx);
             }

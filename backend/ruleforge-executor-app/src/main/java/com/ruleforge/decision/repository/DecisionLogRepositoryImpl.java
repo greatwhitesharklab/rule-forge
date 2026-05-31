@@ -1,5 +1,6 @@
 package com.ruleforge.decision.repository;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ruleforge.decision.entity.DecisionFlowLog;
 import com.ruleforge.decision.entity.DecisionFlowParams;
 import com.ruleforge.decision.entity.DecisionMessageLog;
@@ -41,6 +42,52 @@ public class DecisionLogRepositoryImpl implements DecisionLogRepository {
     private final ShadowNodeLogMapper shadowNodeLogMapper;
     private final ShadowRuleLogMapper shadowRuleLogMapper;
     private final ShadowMessageLogMapper shadowMessageLogMapper;
+
+    // ===== Query methods (for shadow comparison) =====
+
+    @Override
+    public DecisionFlowLog findFlowLogById(Long id) {
+        return flowLogMapper.selectById(id);
+    }
+
+    @Override
+    public DecisionFlowParams findFlowParamsByFlowLogId(Long flowLogId) {
+        LambdaQueryWrapper<DecisionFlowParams> wrapper = new LambdaQueryWrapper<DecisionFlowParams>()
+                .eq(DecisionFlowParams::getFlowLogId, flowLogId)
+                .last("LIMIT 1");
+        return flowParamsMapper.selectOne(wrapper);
+    }
+
+    @Override
+    public ShadowFlowLog findShadowFlowLogByMainFlowLogId(Long mainFlowLogId) {
+        LambdaQueryWrapper<ShadowFlowLog> wrapper = new LambdaQueryWrapper<ShadowFlowLog>()
+                .eq(ShadowFlowLog::getMainFlowLogId, mainFlowLogId)
+                .orderByDesc(ShadowFlowLog::getId)
+                .last("LIMIT 1");
+        return shadowFlowLogMapper.selectOne(wrapper);
+    }
+
+    @Override
+    public ShadowFlowParams findShadowFlowParamsByFlowLogId(Long flowLogId) {
+        LambdaQueryWrapper<ShadowFlowParams> wrapper = new LambdaQueryWrapper<ShadowFlowParams>()
+                .eq(ShadowFlowParams::getFlowLogId, flowLogId)
+                .last("LIMIT 1");
+        return shadowFlowParamsMapper.selectOne(wrapper);
+    }
+
+    @Override
+    public List<DecisionRuleLog> findRuleLogsByFlowLogId(Long flowLogId) {
+        LambdaQueryWrapper<DecisionRuleLog> wrapper = new LambdaQueryWrapper<DecisionRuleLog>()
+                .eq(DecisionRuleLog::getFlowLogId, flowLogId);
+        return ruleLogMapper.selectList(wrapper);
+    }
+
+    @Override
+    public List<ShadowRuleLog> findShadowRuleLogsByFlowLogId(Long flowLogId) {
+        LambdaQueryWrapper<ShadowRuleLog> wrapper = new LambdaQueryWrapper<ShadowRuleLog>()
+                .eq(ShadowRuleLog::getFlowLogId, flowLogId);
+        return shadowRuleLogMapper.selectList(wrapper);
+    }
 
     // ===== Decision logs =====
 

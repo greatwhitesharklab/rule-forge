@@ -12,9 +12,9 @@ import java.util.Map;
 public interface IShadowDecisionLogService {
 
     /**
-     * 保存陪跑决策流日志
+     * 保存陪跑决策流日志，返回 shadowFlowLogId
      */
-    void saveShadowLog(
+    Long saveShadowLog(
             Long mainFlowLogId,
             String userId,
             String orderNo,

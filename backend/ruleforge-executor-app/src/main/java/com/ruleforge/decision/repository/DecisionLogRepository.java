@@ -61,6 +61,38 @@ public interface DecisionLogRepository {
      */
     void batchInsertNodeLogs(List<DecisionNodeLog> entities);
 
+    // ===== Query methods (for shadow comparison) =====
+
+    /**
+     * Find a decision flow log by ID.
+     */
+    DecisionFlowLog findFlowLogById(Long id);
+
+    /**
+     * Find decision flow params by flow log ID.
+     */
+    DecisionFlowParams findFlowParamsByFlowLogId(Long flowLogId);
+
+    /**
+     * Find shadow flow log by main flow log ID.
+     */
+    ShadowFlowLog findShadowFlowLogByMainFlowLogId(Long mainFlowLogId);
+
+    /**
+     * Find shadow flow params by shadow flow log ID.
+     */
+    ShadowFlowParams findShadowFlowParamsByFlowLogId(Long flowLogId);
+
+    /**
+     * Find decision rule logs by flow log ID.
+     */
+    List<DecisionRuleLog> findRuleLogsByFlowLogId(Long flowLogId);
+
+    /**
+     * Find shadow rule logs by shadow flow log ID.
+     */
+    List<ShadowRuleLog> findShadowRuleLogsByFlowLogId(Long flowLogId);
+
     // ===== Shadow decision logs =====
 
     /**

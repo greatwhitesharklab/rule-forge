@@ -45,7 +45,7 @@ public class ShadowDecisionLogServiceImpl implements IShadowDecisionLogService {
 
     @Override
     @Transactional
-    public void saveShadowLog(
+    public Long saveShadowLog(
             Long mainFlowLogId,
             String userId,
             String orderNo,
@@ -126,7 +126,7 @@ public class ShadowDecisionLogServiceImpl implements IShadowDecisionLogService {
         decisionLogRepository.insertShadowFlowParams(flowParams);
 
         if (response == null) {
-            return;
+            return flowLogId;
         }
 
         // 3. 收集所有规则日志 + 消息日志，用批量 INSERT
@@ -178,6 +178,8 @@ public class ShadowDecisionLogServiceImpl implements IShadowDecisionLogService {
 
         log.info("陪跑日志保存成功: shadowFlowLogId={}, mainFlowLogId={}, userId={}, flowId={}, ruleLogs={}, msgLogs={}",
                 flowLogId, mainFlowLogId, userId, flowId, allRuleLogs.size(), allMsgLogs.size());
+
+        return flowLogId;
     }
 
     private ShadowRuleLog buildRuleLog(Long flowLogId, String userId, int ruleNodeIndex,
