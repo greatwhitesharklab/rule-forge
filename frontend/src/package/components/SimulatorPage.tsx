@@ -1,0 +1,185 @@
+import {Component} from 'react';
+import Grid from '../../components/grid/component/Grid.jsx';
+import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
+import * as event from '../event.js';
+import * as action from '../action.js';
+import {
+    ResourcePackage,
+    SimulatorCategory,
+    SimulatorVariable,
+} from '../action.js';
+
+interface SimulatorPageProps {}
+
+interface SimulatorPageState {
+    visible: boolean;
+    title: string;
+    simulatorCategoryData: SimulatorCategory[];
+    simulatorCategoryRow: SimulatorCategory | SimulatorVariable[] | Record<string, unknown>;
+    testResultinfo: string;
+    project: string;
+    packageId: string;
+    files: string;
+}
+
+export default class SimulatorPage extends Component<SimulatorPageProps, SimulatorPageState> {
+    constructor(props: SimulatorPageProps) {
+        super(props);
+        this.state = {
+            visible: false,
+            title: '',
+            simulatorCategoryData: [],
+            simulatorCategoryRow: [],
+            testResultinfo: '',
+            project: '',
+            packageId: '',
+            files: ''
+        };
+    }
+
+    componentDidMount() {
+        event.eventEmitter.on(event.OPEN_SIMULATOR_DIALOG, (rowData: ResourcePackage) => {
+            const resourceItems = rowData.resourceItems;
+            if (!resourceItems || resourceItems.length === 0) {
+                window.bootbox.alert("知识包[" + rowData.name + "]下未定义具体的文件，不能进行仿真测试!");
+                return;
+            }
+            this.setState({project: rowData.project || '', packageId: rowData.id})
+            let files = "";
+            resourceItems.forEach((item, index) => {
+                if (index > 0) {
+                    files += ';';
+                }
+                files += item.path + "," + item.version;
+            });
+
+            action.loadSimulatorCategoryData(files, function (this: SimulatorPage, simulatorCategoryData: SimulatorCategory[]) {
+                const ce = window.parent.componentEvent;
+                ce.eventEmitter.emit(ce.HIDE_LOADING);
+                (window as any).simulatorCategoryData = simulatorCategoryData;
+                this.setState({
+                    simulatorCategoryData,
+                    simulatorCategoryRow: (simulatorCategoryData.length > 0 ? simulatorCategoryData[0] : [])
+                })
+            }.bind(this));
+            this.setState({files, title: "对知识包[" + rowData.name + "]进行仿真测试"});
+            this.setState({visible: true});
+        });
+
+        event.eventEmitter.on(event.HIDE_SIMULATOR_DIALOG, () => {
+            this.setState({visible: false});
+        });
+
+        event.eventEmitter.on(event.REFRESH_SIMULATOR_DATA, (result: { info: string; data: SimulatorCategory[] }) => {
+            const info = result.info;
+            const data = result.data;
+            action.buildSimulatorVariableEditorType(data);
+            this.setState({
+                simulatorCategoryData: data,
+                simulatorCategoryRow: (data.length > 0 ? data[0] : {}),
+                testResultinfo: '测试结果：' + info
+            });
+        });
+    }
+
+    componentWillUnmount() {
+        event.eventEmitter.removeAllListeners(event.OPEN_SIMULATOR_DIALOG);
+        event.eventEmitter.removeAllListeners(event.HIDE_SIMULATOR_DIALOG);
+        event.eventEmitter.removeAllListeners(event.REFRESH_SIMULATOR_DATA);
+    }
+
+    render() {
+        if (this.state.simulatorCategoryData.length > 0) {
+            const masterHeaders = [
+                {id: 'tm-name', name: 'name', label: '类型名称', filterable: true}
+            ];
+            const slaveHeaders = [
+                {id: 'ts-defaultValue', name: 'defaultValue', label: '值', editable: true, width: '200px'},
+                {id: 'ts-label', name: 'label', filterable: true, label: '标题'},
+                {id: 'ts-type', name: 'type', label: '数据类型', width: '100px'}
+            ];
+            const body = (
+                <div style={{minHeight: '400px'}}>
+                    <div style={{
+                        padding: '8px',
+                        marginBottom: '5px',
+                        border: 'solid 1px rgb(219, 215, 215)',
+                        borderRadius: '5px'
+                    }}>
+                        <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
+                            <button className="btn btn-primary" type="button" onClick={() => {
+                                const ce = window.parent.componentEvent;
+                                ce.eventEmitter.emit(ce.SHOW_LOADING);
+                                action.doTest({
+                                    'project': this.state.project,
+                                    'packageId': this.state.packageId,
+                                    'files': this.state.files,
+                                    'data': [this.state.simulatorCategoryData]
+                                }, function (this: SimulatorPage, result: Record<string, unknown>) {
+                                    const info = '测试结果：' + result.info;
+                                    window.bootbox.alert(info as string);
+                                    const data = result.data as SimulatorCategory[];
+                                    action.buildSimulatorVariableEditorType(data);
+                                    this.setState({
+                                        simulatorCategoryData: data,
+                                        simulatorCategoryRow: (data.length > 0 ? data[0] : {}),
+                                        testResultinfo: info
+                                    });
+                                    ce.eventEmitter.emit(ce.HIDE_LOADING);
+                                }.bind(this));
+                            }}><i className="glyphicon glyphicon-flash"/> 测试决策包
+                            </button>
+                        </div>
+                        <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
+                            <button className="btn btn-info" type="button" onClick={() => {
+                                const ce = window.parent.componentEvent;
+                                ce.eventEmitter.emit(ce.SHOW_LOADING);
+                                event.eventEmitter.emit(event.OPEN_FLOW_DIALOG, {
+                                    project: this.state.project,
+                                    packageId: this.state.packageId,
+                                    files: this.state.files,
+                                    data: this.state.simulatorCategoryData
+                                });
+                            }}><i className="glyphicon glyphicon-random"/> 测试决策流
+                            </button>
+                        </div>
+                        <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
+                            <button className="btn btn-success" type="button" onClick={() => {
+                                event.eventEmitter.emit(event.OPEN_RETE_DIAGRAM_DIALOG, this.state.files);
+                            }}><i className="glyphicon glyphicon-tree-conifer"/> 查看Rete树
+                            </button>
+                        </div>
+                        <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
+                            <button className="btn btn-warning" type="button" onClick={() => {
+                                action.exportExcelTemplate(this.state.files);
+                            }}><i className="glyphicon glyphicon-download"/> 下载Excel测试数据模版
+                            </button>
+                            <button className="btn btn-danger" type="button" onClick={() => {
+                                event.eventEmitter.emit(event.OPEN_IMPORT_EXCEL_DIALOG, this.state.files);
+                            }}><i className="glyphicon glyphicon-upload"/> 上传Excel测试数据
+                            </button>
+                        </div>
+                    </div>
+                    <div className="row" style={{margin: 0}}>
+                        <div className="col-xs-3 col-md-3" style={{paddingLeft: 0, paddingRight: '5px'}}>
+                            <Grid selectFirst={true} headers={masterHeaders} rows={this.state.simulatorCategoryData}
+                                  rowClick={(rowData: SimulatorCategory, rowIndex: number) => {
+                                      const data = this.state.simulatorCategoryData;
+                                      setTimeout(function (this: SimulatorPage) {
+                                          this.setState({simulatorCategoryRow: data[rowIndex]});
+                                      }.bind(this), 10);
+                                  }}/>
+                        </div>
+                        <div className="col-xs-9 col-md-9" style={{padding: 0}}>
+                            <Grid headers={slaveHeaders} rows={(this.state.simulatorCategoryRow as SimulatorCategory).variables || []}
+                                  uniqueKey={true}/>
+                        </div>
+                    </div>
+                </div>
+            );
+            return (<CommonDialog visible={this.state.visible} title={this.state.title} body={body} large={true} buttons={[]} onClose={() => this.setState({visible: false})}/>);
+        } else {
+            return (<CommonDialog visible={this.state.visible} title={this.state.title} body={[]} large={true} buttons={[]} onClose={() => this.setState({visible: false})}/>);
+        }
+    }
+}
