@@ -42,7 +42,8 @@ import '../decisiontable/CellCondition.js';
 
 import CrossTable from './CrossTable.js';
 import ExcelImportDialog from './ExcelImportDialog.js';
-import {getParameter, ajaxSave, buildProjectNameFromFile, loadEditorData} from '../../Utils.js';
+import {getParameter, buildProjectNameFromFile, loadEditorData} from '../../Utils.js';
+import {save} from '../../api/client.js';
 import React from 'react';
 import {createRoot} from 'react-dom/client';
 import ResourceVersionDialogComponent from '../common/ResourceVersionDialogComponent.tsx';
@@ -83,22 +84,22 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isNewVersion) {
             bootbox.prompt('请输入新版本描述.', function (comment) {
                 if (comment) {
-                    ajaxSave(saveUrl, {
+                    save(saveUrl, {
                         content: xml,
                         file: file!,
                         newVersion: String(isNewVersion),
                         versionComment: comment
-                    }, function () {
+                    }).then(function () {
                         toolbarApi.clearDirty();
                     });
                 }
             });
         } else {
-            ajaxSave(saveUrl, {
+            save(saveUrl, {
                 content: xml,
                 file: file!,
                 newVersion: String(isNewVersion)
-            }, function () {
+            }).then(function () {
                 toolbarApi.clearDirty();
             });
         }

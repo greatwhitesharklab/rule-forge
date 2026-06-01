@@ -4,7 +4,6 @@ import {
     getParameter,
     buildProjectNameFromFile,
     handleResponseError,
-    ajaxSave,
     nextIFrameId,
 } from './Utils.js';
 import { setupMockBootbox, teardownMockBootbox } from './__test_utils__/mockBootbox.js';
@@ -171,94 +170,6 @@ describe('Utils - handleResponseError', () => {
         expect((window as any).bootbox.alert).toHaveBeenCalledWith(
             "<span style='color: red'>服务端错误：detail</span>"
         );
-    });
-});
-
-describe('Utils - ajaxSave', () => {
-    let mockBootbox: any;
-    let fetchMock: any;
-
-    beforeEach(() => {
-        mockBootbox = setupMockBootbox();
-        fetchMock = vi.fn();
-        global.fetch = fetchMock;
-        (window as any)._server = '';
-    });
-
-    afterEach(() => {
-        teardownMockBootbox();
-        (global as any).fetch = undefined;
-        delete (window as any)._server;
-    });
-
-    it('GIVEN a successful response with status true WHEN ajaxSave is called THEN it should invoke callback with result', async () => {
-        const callback = vi.fn();
-        const result = { status: true, data: 'ok' };
-        fetchMock.mockResolvedValue({
-            ok: true,
-            json: vi.fn().mockResolvedValue(result),
-        });
-
-        ajaxSave('/save', { key: 'val' }, callback);
-        await new Promise(resolve => setTimeout(resolve, 0));
-
-        expect(callback).toHaveBeenCalledWith(result);
-    });
-
-    it('GIVEN a successful response with status false WHEN ajaxSave is called THEN it should alert error message', async () => {
-        const callback = vi.fn();
-        fetchMock.mockResolvedValue({
-            ok: true,
-            json: vi.fn().mockResolvedValue({ status: false, message: 'Save failed' }),
-        });
-
-        ajaxSave('/save', { key: 'val' }, callback);
-        await new Promise(resolve => setTimeout(resolve, 0));
-
-        expect(callback).not.toHaveBeenCalled();
-        expect((window as any).bootbox.alert).toHaveBeenCalledWith('Save failed');
-    });
-
-    it('GIVEN a failed HTTP response WHEN ajaxSave is called THEN it should call handleResponseError', async () => {
-        const callback = vi.fn();
-        fetchMock.mockResolvedValue({
-            ok: false,
-            status: 500,
-            text: vi.fn().mockResolvedValue('Error'),
-        });
-
-        ajaxSave('/save', { key: 'val' }, callback);
-        await new Promise(resolve => setTimeout(resolve, 0));
-
-        expect(callback).not.toHaveBeenCalled();
-        // handleResponseError alerts for 500 with text
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
-    });
-
-    it('GIVEN a network error WHEN ajaxSave is called THEN it should alert generic error', async () => {
-        const callback = vi.fn();
-        fetchMock.mockRejectedValue(new Error('Network error'));
-
-        ajaxSave('/save', { key: 'val' }, callback);
-        await new Promise(resolve => setTimeout(resolve, 0));
-
-        expect(callback).not.toHaveBeenCalled();
-        expect((window as any).bootbox.alert).toHaveBeenCalledWith(
-            "<span style='color: red'>服务端出错</span>"
-        );
-    });
-
-    it('GIVEN a successful response with status false and no message WHEN ajaxSave is called THEN it should alert default message', async () => {
-        const callback = vi.fn();
-        fetchMock.mockResolvedValue({
-            ok: true,
-            json: vi.fn().mockResolvedValue({ status: false }),
-        });
-
-        ajaxSave('/save', { key: 'val' }, callback);
-        await new Promise(resolve => setTimeout(resolve, 0));
-
-        expect((window as any).bootbox.alert).toHaveBeenCalledWith('保存失败');
     });
 });
 

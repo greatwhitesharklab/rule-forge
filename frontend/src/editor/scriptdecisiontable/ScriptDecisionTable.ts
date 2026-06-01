@@ -8,7 +8,7 @@ import HandsontableModule from 'handsontable';
 const Handsontable = (HandsontableModule as any).default || HandsontableModule;
 
 import { getParameter } from '../../Utils.js';
-import { save, saveNewVersion } from '../../api/client.js';
+import { save, saveNewVersion, formPost } from '../../api/client.js';
 import '../../../node_modules/codemirror/addon/hint/show-hint.js';
 import '../../../node_modules/codemirror/addon/mode/simple.js';
 import './then_mode.js';
@@ -220,7 +220,7 @@ export class ScriptDecisionTable {
             }
         }
 
-        self.load();
+        self.load().catch(function () {});
         (window as any).ht = self;
         const config: Record<string, any> = {
             'licenseKey': 'non-commercial-and-evaluation',
@@ -981,44 +981,37 @@ export class ScriptDecisionTable {
 
     // ---- Loading ----
 
-    load(callback?: () => void): void {
+    async load(callback?: () => void): Promise<void> {
         const self = this;
         const files = self.getRequestParameter('file');
-        const url = window._server + '/common/loadXml';
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', url, false);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.send(new URLSearchParams({ files }).toString());
-        if (xhr.status === 200) {
-            const data = JSON.parse(xhr.responseText);
-            const decisionTable = data[0];
-            const libraries = decisionTable.libraries || [];
-            libraries.forEach(function (library: { type: string; path: string }): void {
-                const type = library.type,
-                    path = library.path;
-                switch (type) {
-                    case 'Constant':
-                        constantLibraries.push(path);
-                        break;
-                    case 'Action':
-                        actionLibraries.push(path);
-                        break;
-                    case 'Variable':
-                        variableLibraries.push(path);
-                        break;
-                    case 'Parameter':
-                        parameterLibraries.push(path);
-                        break;
-                }
-            });
-            self.decisionTable = decisionTable;
-            refreshActionLibraries();
-            refreshConstantLibraries();
-            refreshVariableLibraries();
-            refreshParameterLibraries();
-            if (callback) {
-                callback();
+        const data = await formPost<any[]>('/common/loadXml', { files: files! });
+        const decisionTable = data[0];
+        const libraries = decisionTable.libraries || [];
+        libraries.forEach(function (library: { type: string; path: string }): void {
+            const type = library.type,
+                path = library.path;
+            switch (type) {
+                case 'Constant':
+                    constantLibraries.push(path);
+                    break;
+                case 'Action':
+                    actionLibraries.push(path);
+                    break;
+                case 'Variable':
+                    variableLibraries.push(path);
+                    break;
+                case 'Parameter':
+                    parameterLibraries.push(path);
+                    break;
             }
+        });
+        self.decisionTable = decisionTable;
+        refreshActionLibraries();
+        refreshConstantLibraries();
+        refreshVariableLibraries();
+        refreshParameterLibraries();
+        if (callback) {
+            callback();
         }
     }
 

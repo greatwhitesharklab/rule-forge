@@ -8,7 +8,7 @@ import HandsontableModule from 'handsontable';
 const Handsontable = (HandsontableModule as any).default || HandsontableModule;
 
 import { getParameter } from '../../Utils.js';
-import { save, saveNewVersion } from '../../api/client.js';
+import { save, saveNewVersion, formPost } from '../../api/client.js';
 import * as event from '../../components/componentEvent.js';
 import {
     constantLibraries,
@@ -316,7 +316,7 @@ export class DecisionTable {
             }
         }
 
-        self.load();
+        self.load().catch(function () {});
         (window as any).ht = self;
         const config: Record<string, any> = {
             'licenseKey': 'non-commercial-and-evaluation',
@@ -1134,71 +1134,64 @@ export class DecisionTable {
 
     // ---- Loading ----
 
-    load(callback?: () => void): void {
+    async load(callback?: () => void): Promise<void> {
         const self = this;
         const files = getParameter('file');
-        const url = window._server + '/common/loadXml';
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', url, false);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.send(new URLSearchParams({ files }).toString());
-        if (xhr.status === 200) {
-            const data = JSON.parse(xhr.responseText);
-            const decisionTable = data[0];
-            self.remark.setData(decisionTable['remark']);
-            const salience = decisionTable['salience'];
-            if (salience) {
-                self.addProperty(new ((window as unknown as { ruleforge: RuleforgeNamespace }).ruleforge).RuleProperty(self, 'salience', salience, 1));
-            }
-            const loop = decisionTable['loop'];
-            if (loop != null) {
-                self.addProperty(new ((window as unknown as { ruleforge: RuleforgeNamespace }).ruleforge).RuleProperty(self, 'loop', loop, 3));
-            }
-            const effectiveDate = decisionTable['effectiveDate'];
-            if (effectiveDate) {
-                self.addProperty(new ((window as unknown as { ruleforge: RuleforgeNamespace }).ruleforge).RuleProperty(self, 'effective-date', effectiveDate, 2));
-            }
-            const expiresDate = decisionTable['expiresDate'];
-            if (expiresDate) {
-                self.addProperty(new ((window as unknown as { ruleforge: RuleforgeNamespace }).ruleforge).RuleProperty(self, 'expires-date', expiresDate, 2));
-            }
-            const enabled = decisionTable['enabled'];
-            if (enabled != null) {
-                self.addProperty(new ((window as unknown as { ruleforge: RuleforgeNamespace }).ruleforge).RuleProperty(self, 'enabled', enabled, 3));
-            }
-            const debug = decisionTable['debug'];
-            if (debug != null) {
-                self.addProperty(new ((window as unknown as { ruleforge: RuleforgeNamespace }).ruleforge).RuleProperty(self, 'debug', debug, 3));
-            }
+        const data = await formPost<any[]>('/common/loadXml', { files });
+        const decisionTable = data[0];
+        self.remark.setData(decisionTable['remark']);
+        const salience = decisionTable['salience'];
+        if (salience) {
+            self.addProperty(new ((window as unknown as { ruleforge: RuleforgeNamespace }).ruleforge).RuleProperty(self, 'salience', salience, 1));
+        }
+        const loop = decisionTable['loop'];
+        if (loop != null) {
+            self.addProperty(new ((window as unknown as { ruleforge: RuleforgeNamespace }).ruleforge).RuleProperty(self, 'loop', loop, 3));
+        }
+        const effectiveDate = decisionTable['effectiveDate'];
+        if (effectiveDate) {
+            self.addProperty(new ((window as unknown as { ruleforge: RuleforgeNamespace }).ruleforge).RuleProperty(self, 'effective-date', effectiveDate, 2));
+        }
+        const expiresDate = decisionTable['expiresDate'];
+        if (expiresDate) {
+            self.addProperty(new ((window as unknown as { ruleforge: RuleforgeNamespace }).ruleforge).RuleProperty(self, 'expires-date', expiresDate, 2));
+        }
+        const enabled = decisionTable['enabled'];
+        if (enabled != null) {
+            self.addProperty(new ((window as unknown as { ruleforge: RuleforgeNamespace }).ruleforge).RuleProperty(self, 'enabled', enabled, 3));
+        }
+        const debug = decisionTable['debug'];
+        if (debug != null) {
+            self.addProperty(new ((window as unknown as { ruleforge: RuleforgeNamespace }).ruleforge).RuleProperty(self, 'debug', debug, 3));
+        }
 
-            const libraries = decisionTable.libraries || [];
-            libraries.forEach(function (library: { type: string; path: string }): void {
-                const type = library.type;
-                const path = library.path;
-                switch (type) {
-                    case 'Constant':
-                        constantLibraries.push(path);
-                        break;
-                    case 'Action':
-                        actionLibraries.push(path);
-                        break;
-                    case 'Variable':
-                        variableLibraries.push(path);
-                        break;
-                    case 'Parameter':
-                        parameterLibraries.push(path);
-                        break;
-                }
-            });
-            self.decisionTable = decisionTable;
-            refreshActionLibraries();
-            refreshConstantLibraries();
-            refreshVariableLibraries();
-            refreshParameterLibraries();
-            refreshFunctionLibraries();
-            if (callback) {
-                callback();
+        const libraries = decisionTable.libraries || [];
+        libraries.forEach(function (library: { type: string; path: string }): void {
+            const type = library.type;
+            const path = library.path;
+            switch (type) {
+                case 'Constant':
+                    constantLibraries.push(path);
+                    break;
+                case 'Action':
+                    actionLibraries.push(path);
+                    break;
+                case 'Variable':
+                    variableLibraries.push(path);
+                    break;
+                case 'Parameter':
+                    parameterLibraries.push(path);
+                    break;
             }
+        });
+        self.decisionTable = decisionTable;
+        refreshActionLibraries();
+        refreshConstantLibraries();
+        refreshVariableLibraries();
+        refreshParameterLibraries();
+        refreshFunctionLibraries();
+        if (callback) {
+            callback();
         }
     }
 
