@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 
 # Load environment variables
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | grep -v '^$' | xargs)
+    set -a && source .env && set +a
     echo "Loaded .env"
 else
     echo "Warning: .env not found, using defaults from .env.example"

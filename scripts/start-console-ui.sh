@@ -1,5 +1,5 @@
 #!/bin/bash
-# Start RuleForge Console UI (React dev server)
+# Start RuleForge Console UI (Vite dev server)
 
 set -e
 cd "$(dirname "$0")/.."
@@ -17,4 +17,4 @@ if [ ! -d "node_modules" ]; then
     echo "Installing dependencies..."
     npm install
 fi
-npm start
+npm run dev
