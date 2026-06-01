@@ -5,6 +5,7 @@ const TIP = '请输入值';
 interface SimpleValueWidgetProps {
     initialData?: { content?: string };
     onDirty?: () => void;
+    ref?: React.Ref<any>;
 }
 
 interface SimpleValueWidgetState {

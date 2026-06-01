@@ -2,6 +2,7 @@ import {Component} from 'react';
 import * as ACTIONS from '../action.js';
 import * as componentEvent from '../../components/componentEvent.js';
 import Tree from '../../components/tree/component/Tree.jsx';
+import {formPost} from '../../api/client.js';
 
 interface FileTypeFilter {
     type: string;
@@ -149,7 +150,7 @@ export default class SidebarToolbar extends Component<SidebarToolbarProps, Sideb
 
     handleLogout = (e: React.MouseEvent) => {
         e.preventDefault();
-        fetch(window._server + '/frame/logout', {method: 'POST'}).then(function () {
+        formPost('/frame/logout', {}).then(function () {
             window.location.href = 'html/login.html';
         });
     };

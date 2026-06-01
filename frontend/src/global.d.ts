@@ -7,11 +7,12 @@
 // ---- Window extensions ----
 
 interface BootboxStatic {
-    alert(message: string, callback?: () => void): void;
-    alert(options: { title?: string; message: string }): void;
-    confirm(message: string, callback: (result: boolean) => void): void;
-    prompt(message: string, callback: (result: string) => void): void;
-    dialog(options: Record<string, unknown>): void;
+    alert(message: string, callback?: () => void): unknown;
+    alert(options: { title?: string; message: string; callback?: () => void }): unknown;
+    confirm(message: string, callback: (result: boolean) => void): unknown;
+    prompt(message: string, callback: (result: string | null) => void): unknown;
+    dialog(options: Record<string, unknown>): unknown;
+    setDefaults(): void;
 }
 
 interface TreeNodeData {
@@ -54,11 +55,13 @@ interface UserInfo {
 // ---- RuleForge menu namespace (loaded from public/js/menu.js) ----
 
 interface MenuItemConfig {
-    name: string;
+    name?: string;
     label: string;
     icon?: string;
     datatype?: string;
     act?: string;
+    defaultValue?: string | boolean;
+    editorType?: number;
     parent?: MenuItemConfig;
     subMenu?: { menuItems: MenuItemConfig[] };
     variables?: unknown[];
@@ -80,10 +83,24 @@ interface MenuConstructor {
     new (config: MenuConfig): MenuInstance;
 }
 
+// MsgBox - Global confirm dialog utility (loaded from bundled legacy code)
+declare const MsgBox: {
+    confirm(message: string, callback: () => void): void;
+    alert(message: string, callback?: () => void): void;
+};
+
+// ---- ruleforge backward-compat global namespace ----
+// Legacy prototype-based classes register themselves here during migration.
+// As files are converted to ES modules, they still assign to this object
+// so that unconverted consumers (ruleforge.XXX) keep working.
+declare const ruleforge: Record<string, any>;
+
 declare namespace RuleForge {
     namespace menu {
         const Menu: MenuConstructor;
     }
+    function alert(message: string): void;
+    function setDomContent(container: HTMLElement, text: string): void;
 }
 
 // ---- Component event module type ----
@@ -119,7 +136,7 @@ declare module '*.css' {
 // ---- CodeMirror declaration ----
 
 interface CodeMirrorEditor {
-    setSize(width: string, height: string): void;
+    setSize(width: string, height: string | number): void;
     setValue(content: string): void;
     getValue(): string;
     refresh(): void;
@@ -127,11 +144,43 @@ interface CodeMirrorEditor {
     on(event: string, handler: (...args: any[]) => void): void;
     setOption(option: string, value: unknown): void;
     getOption(option: string): unknown;
+    getCursor(start?: string): CodeMirror.Position;
+    getTokenAt(pos: CodeMirror.Position, precise?: boolean): CodeMirror.Token;
+    getModeAt(pos: CodeMirror.Position): any;
+    getMode(): any;
+    startState(): any;
+    getStateAfter(line?: number): any;
+    showHint(options?: Record<string, unknown>): void;
+    replaceSelection(replacement: string): void;
+    _library?: any;
 }
 
 declare namespace CodeMirror {
+    interface Position {
+        line: number;
+        ch: number;
+    }
+
+    interface Token {
+        start: number;
+        end: number;
+        string: string;
+        type: string | null;
+        state: any;
+    }
+
     function fromTextArea(textarea: HTMLTextAreaElement, options?: Record<string, unknown>): CodeMirrorEditor;
     type Editor = CodeMirrorEditor;
+    var Pos: { (line: number, ch: number): Position };
+    var Pass: {};
+    var commands: Record<string, (cm: CodeMirrorEditor) => void>;
+    var hint: Record<string, any>;
+    function innerMode(mode: any, state: any): { state: any; mode: any };
+    function getMode(config: any, mode: string | any): any;
+    function copyState(mode: any, state: any): any;
+    function defineSimpleMode(name: string, spec: Record<string, any>): void;
+    function defineMode(name: string, factory: (config: any, parserConfig: any) => any, ...deps: string[]): void;
+    function registerHelper(type: string, name: string, value: any): void;
 }
 
 declare module 'codemirror' {
@@ -190,11 +239,15 @@ interface Window {
     componentEvent: import('@/components/componentEvent.js').ComponentEventModule;
     refEvent: unknown;
 
+    // Server URL override (used by ResourceListDialogComponent)
+    ruleforgeServer?: string;
+
     // Library caches (set by editor entry points)
     _ruleforgeEditorActionLibraries: unknown[];
     _ruleforgeEditorConstantLibraries: unknown[];
     _ruleforgeEditorParameterLibraries: unknown[];
     _ruleforgeEditorVariableLibraries: unknown[];
+    _ruleforgeEditorFunctionLibraries?: unknown[];
 
     // Clipboard state (cut/copy file operations)
     ___cutFileData: TreeNodeData | null;
@@ -203,9 +256,17 @@ interface Window {
     // Dirty flag callbacks
     _setDirty: (() => void) | undefined;
     setDirty: ((dirty: boolean) => void) | undefined;
+    cancelDirty: (() => void) | undefined;
 
     // Dirty state
     _dirty: boolean;
+
+    // Widget registration arrays (used by scorecard editors)
+    _VariableValueArray: Array<{ initMenu?(data: unknown[]): void }>;
+    _ParameterValueArray: Array<{ initMenu?(data: unknown[]): void }>;
+
+    // Current selection state for complex scorecard
+    _currentConditionCell: any;
 
     // Simulator category data (used in Cell editor)
     simulatorCategoryData: SimulatorCategoryItem[] | undefined;

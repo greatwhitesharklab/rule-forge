@@ -101,7 +101,7 @@ mvn compile
 | 层 | 技术 |
 |----|------|
 | ☕ 后端 | Java 17 · Spring Boot 4.0.6 · MyBatis-Plus · MySQL · ANTLR4 · RETE · Flowable 8 |
-| 🎨 前端 | React · bpmn-js |
+| 🎨 前端 | TypeScript · React · Vite 8 · Ant Design 5 · bpmn-js |
 | ✅ 测试 | JUnit 5 · Mockito · AssertJ · Vitest · Playwright |
 | 🐳 部署 | Docker |
 

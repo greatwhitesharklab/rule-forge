@@ -1,4 +1,5 @@
 import {formatDate} from '../Utils.js';
+import {formPost, jsonPost, httpGet} from '../api/client.js';
 
 export const LOAD_MASTER_COMPLETED = 'load_master_completed';
 export const LOAD_SLAVE_COMPLETE = 'load_slave_completed';
@@ -193,19 +194,11 @@ export function save(newVersion: boolean, project: string, associatedFiles?: str
 // 发布测试
 export function refreshKnowledgeCache(project: string, packageConfig: PackageConfig, currentPackage: ResourcePackage): void {
     console.log('发布测试', currentPackage)
-    const url = window._server + "/frame/fileVersions";
-    fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({
-            path: '/' + project + '/___res__package__file__',
-            project: project,
-            packageId: currentPackage.id,
-            page: '-1'
-        }).toString()
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
+    formPost('/frame/fileVersions', {
+        path: '/' + project + '/___res__package__file__',
+        project: project,
+        packageId: currentPackage.id,
+        page: '-1'
     }).then(function (res: { files?: FileVersion[] }) {
         const files = res ? res.files || [] : [];
         let pushVersionOption = '<option value="">请选择</option>'
@@ -373,16 +366,6 @@ export function refreshKnowledgeCache(project: string, packageConfig: PackageCon
                 changeTestPassVersion(project)
             };
         }, 1000)
-    }).catch(function (response: Response) {
-        if (response && response.status === 401) {
-            window.bootbox.alert("权限不足，不能进行此操作.");
-        } else if (response && response.text) {
-            response.text().then(function(text: string) {
-                window.bootbox.alert("<span style='color: red'>服务端错误：" + text + "</span>");
-            });
-        } else {
-            window.bootbox.alert("<span style='color: red'>服务端出错</span>");
-        }
     });
 }
 
@@ -392,18 +375,10 @@ function changeTestPassVersion(project: string): void {
     const testPassVersion = (document.getElementById('test-pass-version') as HTMLSelectElement).value;
     const testContrastVersion = (document.getElementById('test-contrast-version') as HTMLSelectElement).value;
     if (!testPassVersion || !testContrastVersion) return
-    const diffUrl = window._server + '/packageeditor/getPackageDiff';
-    fetch(diffUrl, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({
-            project,
-            originVersion: testContrastVersion,
-            targetVersion: testPassVersion
-        }).toString()
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
+    formPost('/packageeditor/getPackageDiff', {
+        project,
+        originVersion: testContrastVersion,
+        targetVersion: testPassVersion
     }).then(function (diffRes: { data?: string }) {
         const diffData = diffRes.data || ''
         let diffContent = ''
@@ -415,27 +390,12 @@ function changeTestPassVersion(project: string): void {
                 `
         }
         document.getElementById('testDiffContent')!.innerHTML = diffContent
-    }).catch(function (response: Response) {
-        if (response && response.status === 401) {
-            alert('权限不足，不能进行此操作.');
-        } else {
-            alert('服务端错误，操作失败!');
-        }
     });
 }
 
 function pushTest(project: string, rate: string, targetVersion: string, originVersion: string, startTime: string, endTime: string, title: string, remark: string, packageId: string): void {
-    fetch(window._server + '/packageeditor/refreshKnowledgeCache', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({project, rate, originVersion, targetVersion, startTime, endTime, title, remark, packageId}).toString()
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (data: unknown) {
+    formPost('/packageeditor/refreshKnowledgeCache', {project, rate, originVersion, targetVersion, startTime, endTime, title, remark, packageId}).then(function (data: unknown) {
         window.bootbox.alert(data as string);
-    }).catch(function () {
-        alert('发布知识包失败！');
     });
 
 }
@@ -459,19 +419,11 @@ export function apply(project: string, packageConfig: PackageConfig, currentPack
 // 发起审批
 export function applyNewVersion(data: ResourcePackage[], project: string, packageConfig: PackageConfig, currentPackage: ResourcePackage): ApplyCompletedAction {
     const projectArray = project.split(':');
-    const url = window._server + "/frame/fileVersions";
-    fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({
-            path: '/' + project + '/___res__package__file__',
-            project: project,
-            packageId: currentPackage.id,
-            page: '-1'
-        }).toString()
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
+    formPost('/frame/fileVersions', {
+        path: '/' + project + '/___res__package__file__',
+        project: project,
+        packageId: currentPackage.id,
+        page: '-1'
     }).then(function (res: { files?: FileVersion[] }) {
         const files = res ? res.files || [] : [];
         let pushVersionOption = '<option value="">请选择</option>'
@@ -692,16 +644,6 @@ export function applyNewVersion(data: ResourcePackage[], project: string, packag
                 changePassVersion(project)
             };
         }, 1000)
-    }).catch(function (response: Response) {
-        if (response && response.status === 401) {
-            window.bootbox.alert("权限不足，不能进行此操作.");
-        } else if (response && response.text) {
-            response.text().then(function(text: string) {
-                window.bootbox.alert("<span style='color: red'>服务端错误：" + text + "</span>");
-            });
-        } else {
-            window.bootbox.alert("<span style='color: red'>服务端出错</span>");
-        }
     });
     return {type: APPLY_COMPLETED};
 }
@@ -712,18 +654,10 @@ function changePassVersion(project: string): void {
     const passVersion = (document.getElementById('pass-version') as HTMLSelectElement).value;
     const contrastVersion = (document.getElementById('contrast-version') as HTMLSelectElement).value;
     if (!passVersion || !contrastVersion) return
-    const diffUrl = window._server + '/packageeditor/getPackageDiff';
-    fetch(diffUrl, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({
-            project,
-            originVersion: contrastVersion,
-            targetVersion: passVersion
-        }).toString()
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
+    formPost('/packageeditor/getPackageDiff', {
+        project,
+        originVersion: contrastVersion,
+        targetVersion: passVersion
     }).then(function (diffRes: { data?: string }) {
         const diffData = diffRes.data || ''
         let diffContent = ''
@@ -735,12 +669,6 @@ function changePassVersion(project: string): void {
                 `
         }
         document.getElementById('diffContent')!.innerHTML = diffContent
-    }).catch(function (response: Response) {
-        if (response && response.status === 401) {
-            alert('权限不足，不能进行此操作.');
-        } else {
-            alert('服务端错误，操作失败!');
-        }
     });
 }
 
@@ -769,29 +697,15 @@ export function saveData(data: ResourcePackage[], newVersion: boolean, project: 
     xml += '</res-packages>';
     xml = encodeURIComponent(xml);
 
-    const url = window._server + '/packageeditor/saveResourcePackages';
     let postData: Record<string, unknown> = {xml, project, newVersion};
     if(newVersion) {
         postData = {xml, project, newVersion, associatedFiles, versionComment, packageId};
     }
     console.log(postData)
-    fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(postData)
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function () {
+    jsonPost('/packageeditor/saveResourcePackages', postData).then(function () {
         window.bootbox.alert('保存成功!')
         if(callback){
             callback()
-        }
-    }).catch(function (response: Response) {
-        if (response && response.status === 401) {
-            alert("权限不足，不能进行此操作.");
-        } else {
-            alert('服务端错误，操作失败!');
         }
     });
 
@@ -824,45 +738,24 @@ export function updateSlave(data: ResourceItem & { rowIndex: number }): UpdateSl
 
 export function loadMasterData(project: string) {
     return function (dispatch: (action: unknown) => void) {
-        const url = window._server + "/packageeditor/loadPackages";
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({project}).toString()
-        }).then(function(response: Response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then(function (data: ResourcePackage[]) {
+        formPost("/packageeditor/loadPackages", {project}).then(function (data: ResourcePackage[]) {
             dispatch({type: LOAD_MASTER_COMPLETED, masterData: data});
-        }).catch(function () {
-            alert("加载数据失败.");
         });
     }
 }
 
 export function loadPackageConfig(project: string) {
     return function (dispatch: (action: unknown) => void) {
-        const url = window._server + "/packageeditor/loadPackageConfig";
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({project}).toString()
-        }).then(function(response: Response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then(function (data: PackageConfig) {
+        formPost("/packageeditor/loadPackageConfig", {project}).then(function (data: PackageConfig) {
             dispatch({type: LOAD_PACKAGE_CONFIG_COMPLETE, config: data});
-        }).catch(function () {
-            alert("加载数据失败.");
         });
     }
 }
 
 export function startApprovalProcess(formData: FormData, callback: (result: { status: boolean; message?: string }) => void): void {
-    const url = window._server + "/common/startApprovalProcess";
     const ce = window.parent.componentEvent;
 
-    fetch(url, {
+    fetch(window._server + "/common/startApprovalProcess", {
         method: 'POST',
         body: formData
     }).then(function(response: Response) {
@@ -882,45 +775,18 @@ export function startApprovalProcess(formData: FormData, callback: (result: { st
 }
 
 export function loadSimulatorCategoryData(files: string, callback: (data: SimulatorCategory[]) => void): void {
-    const url = window._server + "/packageeditor/loadForTestVariableCategories";
-    fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({files}).toString()
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (data: SimulatorCategory[]) {
+    formPost("/packageeditor/loadForTestVariableCategories", {files}).then(function (data: SimulatorCategory[]) {
         buildSimulatorVariableEditorType(data);
         callback(data);
-    }).catch(function (response: Response) {
+    }).catch(function () {
         const ce = window.parent.componentEvent;
         ce.eventEmitter.emit(ce.HIDE_LOADING);
-        if (response && response.text) {
-            response.text().then(function(text: string) {
-                try {
-                    const jsonResp = JSON.parse(text);
-                    window.bootbox.alert("加载文件[" + files + "]失败原因:" + jsonResp.message);
-                } catch(e) {
-                    window.bootbox.alert("加载文件[" + files + "]失败.");
-                }
-            });
-        } else {
-            window.bootbox.alert("加载文件[" + files + "]失败.");
-        }
+        window.bootbox.alert("加载文件[" + files + "]失败.");
     });
 }
 
 export function loadFlows(files: string, callback: (data: FlowInfo[]) => void): void {
-    const url = window._server + "/packageeditor/loadFlows";
-    fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({files}).toString()
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (data: FlowInfo[]) {
+    formPost("/packageeditor/loadFlows", {files}).then(function (data: FlowInfo[]) {
         callback(data);
     }).catch(function () {
         const ce = window.parent.componentEvent;
@@ -934,39 +800,17 @@ export function loadSlaveData(masterData: ResourcePackage): LoadSlaveCompleteAct
 }
 
 export function doTest(data: Record<string, unknown>, callback: (result: Record<string, unknown>) => void): void {
-    const url = window._server + "/packageeditor/doTest";
-    fetch(url, {
-        method: 'POST',
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(data)
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (result: Record<string, unknown>) {
+    jsonPost("/packageeditor/doTest", data).then(function (result: Record<string, unknown>) {
         callback(result);
-    }).catch(function (response: Response) {
+    }).catch(function () {
         const ce = window.parent.componentEvent;
         ce.eventEmitter.emit(ce.HIDE_LOADING);
-        if (response && response.text) {
-            response.text().then(function(text: string) {
-                window.bootbox.alert("<span style='color: red'>服务端错误：" + text + "</span>");
-            });
-        } else {
-            window.bootbox.alert("<span style='color: red'>服务端出错</span>");
-        }
+        window.bootbox.alert("<span style='color: red'>服务端出错</span>");
     });
 }
 
 export function doBatchTest(data: Record<string, unknown>, callback: (result: Record<string, unknown>) => void): void {
-    const url = window._server + '/packageeditor/doBatchTest';
-    fetch(url, {
-        method: 'POST',
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(data)
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (result: Record<string, unknown>) {
+    jsonPost('/packageeditor/doBatchTest', data).then(function (result: Record<string, unknown>) {
         callback(result);
     }).catch(function () {
         const ce = window.parent.componentEvent;
@@ -980,12 +824,11 @@ export function doBatchTest(data: Record<string, unknown>, callback: (result: Re
  * 替代原有的 iframe + form 提交方式
  */
 export function importExcelData(files: string, file: File, callback: (result: ImportExcelResult) => void): void {
-    const url = window._server + '/packageeditor/importExcelTemplate';
     const formData = new FormData();
     formData.append('file', file);
     formData.append('targetFiles', files);
 
-    fetch(url, {
+    fetch(window._server + '/packageeditor/importExcelTemplate', {
         method: 'POST',
         body: formData
     }).then(function(response: Response) {
@@ -1010,7 +853,6 @@ export function importExcelData(files: string, file: File, callback: (result: Im
  * 发起异步批量测试（使用 sessionId）
  */
 export function startBatchTest(sessionId: string, params: { files: string | null; flowId?: string; project?: string; packageId?: string }, callback: (result: BatchTestProgress) => void): void {
-    const url = window._server + '/packageeditor/doBatchTest';
     const data: Record<string, unknown> = {
         sessionId: sessionId,
         files: params.files
@@ -1025,14 +867,7 @@ export function startBatchTest(sessionId: string, params: { files: string | null
         data.packageId = params.packageId;
     }
 
-    fetch(url, {
-        method: 'POST',
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(data)
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (result: BatchTestProgress) {
+    jsonPost('/packageeditor/doBatchTest', data).then(function (result: BatchTestProgress) {
         callback(result);
     }).catch(function () {
         const ce = window.parent.componentEvent;
@@ -1045,13 +880,7 @@ export function startBatchTest(sessionId: string, params: { files: string | null
  * 轮询批量测试进度
  */
 export function getBatchTestProgress(sessionId: string, callback: (result: BatchTestProgress) => void): void {
-    const url = window._server + '/packageeditor/batchTestProgress?sessionId=' + sessionId;
-    fetch(url, {
-        method: 'GET'
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (result: BatchTestProgress) {
+    httpGet('/packageeditor/batchTestProgress?sessionId=' + sessionId, {silent: true}).then(function (result: BatchTestProgress) {
         callback(result);
     }).catch(function () {
         // 静默失败，下次轮询重试
@@ -1059,15 +888,7 @@ export function getBatchTestProgress(sessionId: string, callback: (result: Batch
 }
 
 export function testFlow(data: Record<string, unknown>, callback: (result: Record<string, unknown>) => void): void {
-    const url = window._server + "/packageeditor/doTest";
-    fetch(url, {
-        method: 'POST',
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(data)
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (result: Record<string, unknown>) {
+    jsonPost("/packageeditor/doTest", data).then(function (result: Record<string, unknown>) {
         callback(result);
     }).catch(function () {
         const ce = window.parent.componentEvent;
@@ -1103,36 +924,14 @@ export function buildSimulatorVariableEditorType(data: SimulatorCategory[]): voi
 }
 
 export function getPackageDiffList(project: string, path: string, callback: (list: DiffItem[]) => void): void {
-    const diffUrl = window._server + '/packageeditor/getPackageDiff';
-    fetch(diffUrl, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({project, path}).toString()
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (res: { data?: DiffItem[] }) {
+    formPost('/packageeditor/getPackageDiff', {project, path}).then(function (res: { data?: DiffItem[] }) {
         callback(res.data || []);
-    }).catch(function (response: Response) {
-        if (response && response.status === 401) {
-            alert("权限不足，不能进行此操作.");
-        } else {
-            alert('服务端错误，操作失败!');
-        }
     });
 }
 
 // 获取文件版本差异
 export function getFileDiff(data: Record<string, string>): void {
-    const diffUrl = window._server + '/packageeditor/getFileDiff';
-    fetch(diffUrl, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams(data).toString()
-    }).then(function(response: Response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (res: { status?: boolean; data?: string }) {
+    formPost('/packageeditor/getFileDiff', data).then(function (res: { status?: boolean; data?: string }) {
         if(res.status) {
             const diffRes = res.data || ''
             const diffContent = `
@@ -1151,12 +950,6 @@ export function getFileDiff(data: Record<string, string>): void {
                 `
             };
             window.bootbox.dialog(options);
-        }
-    }).catch(function (response: Response) {
-        if (response && response.status === 401) {
-            alert("权限不足，不能进行此操作.");
-        } else {
-            alert('服务端错误，操作失败!');
         }
     });
 }

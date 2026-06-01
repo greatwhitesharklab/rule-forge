@@ -2,6 +2,8 @@
  * Agent action types and creators
  */
 
+import {httpGet, jsonPost, httpDelete} from '../api/client.js';
+
 // Action types
 export const SET_SESSIONS = 'agent_set_sessions';
 export const SET_ACTIVE_SESSION = 'agent_set_active_session';
@@ -51,9 +53,7 @@ export interface ToolStatus {
 export function loadSessions(): (dispatch: Function) => Promise<void> {
     return async (dispatch: Function) => {
         try {
-            const resp = await fetch(window._server + '/agent/sessions');
-            if (!resp.ok) return;
-            const sessions: AgentSession[] = await resp.json();
+            const sessions: AgentSession[] = await httpGet<AgentSession[]>('/agent/sessions', {silent: true});
             if (Array.isArray(sessions)) {
                 dispatch({type: SET_SESSIONS, payload: sessions});
             }
@@ -66,12 +66,10 @@ export function loadSessions(): (dispatch: Function) => Promise<void> {
 export function createSession(title?: string, project?: string): (dispatch: Function) => Promise<AgentSession | null> {
     return async (dispatch: Function) => {
         try {
-            const resp = await fetch(window._server + '/agent/sessions', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({title: title || '新对话', project: project || null})
+            const session: AgentSession = await jsonPost<AgentSession>('/agent/sessions', {
+                title: title || '新对话',
+                project: project || null,
             });
-            const session: AgentSession = await resp.json();
             dispatch(loadSessions());
             dispatch({type: SET_ACTIVE_SESSION, payload: session.id});
             return session;
@@ -85,8 +83,7 @@ export function createSession(title?: string, project?: string): (dispatch: Func
 export function loadMessages(sessionId: string): (dispatch: Function) => Promise<void> {
     return async (dispatch: Function) => {
         try {
-            const resp = await fetch(window._server + '/agent/sessions/' + sessionId + '/messages');
-            const messages: AgentMessage[] = await resp.json();
+            const messages: AgentMessage[] = await httpGet<AgentMessage[]>('/agent/sessions/' + sessionId + '/messages', {silent: true});
             dispatch({type: SET_MESSAGES, payload: messages});
         } catch (e) {
             console.error('Failed to load messages', e);
@@ -166,7 +163,7 @@ export function sendMessage(sessionId: string, message: string): (dispatch: Func
 export function deleteSession(sessionId: string): (dispatch: Function) => Promise<void> {
     return async (dispatch: Function) => {
         try {
-            await fetch(window._server + '/agent/sessions/' + sessionId, {method: 'DELETE'});
+            await httpDelete('/agent/sessions/' + sessionId, {silent: true});
             dispatch(loadSessions());
             dispatch({type: SET_ACTIVE_SESSION, payload: null});
         } catch (e) {
@@ -178,8 +175,7 @@ export function deleteSession(sessionId: string): (dispatch: Function) => Promis
 export function loadConfig(): (dispatch: Function) => Promise<void> {
     return async (dispatch: Function) => {
         try {
-            const resp = await fetch(window._server + '/agent/config');
-            const config = await resp.json();
+            const config = await httpGet('/agent/config', {silent: true});
             dispatch({type: SET_CONFIG, payload: config});
         } catch (e) {
             console.error('Failed to load config', e);
@@ -190,13 +186,7 @@ export function loadConfig(): (dispatch: Function) => Promise<void> {
 export function loadStatus(): (dispatch: Function) => Promise<void> {
     return async (dispatch: Function) => {
         try {
-            const resp = await fetch(window._server + '/agent/status');
-            if (!resp.ok) {
-                // Agent API not available — show "unconfigured" state
-                dispatch({type: SET_STATUS, payload: {available: false, toolsCount: 0, vendor: '', model: ''}});
-                return;
-            }
-            const status: AgentStatus = await resp.json();
+            const status: AgentStatus = await httpGet<AgentStatus>('/agent/status', {silent: true});
             dispatch({type: SET_STATUS, payload: status});
         } catch (e) {
             dispatch({type: SET_STATUS, payload: {available: false, toolsCount: 0, vendor: '', model: ''}});

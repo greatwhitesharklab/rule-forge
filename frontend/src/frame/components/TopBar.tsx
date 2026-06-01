@@ -1,5 +1,6 @@
 import {Component} from 'react';
 import * as componentEvent from '@/components/componentEvent.js';
+import {formPost} from '@/api/client.js';
 
 interface TopBarProps {
     dispatch?: (action: unknown) => void;
@@ -36,7 +37,7 @@ export default class TopBar extends Component<TopBarProps, TopBarState> {
 
     _handleLogout(e: React.MouseEvent) {
         e.preventDefault();
-        fetch(window._server + '/frame/logout', {method: 'POST'}).then(function () {
+        formPost('/frame/logout', {}).then(function () {
             window.location.href = 'html/login.html';
         });
     }

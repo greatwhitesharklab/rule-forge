@@ -1,4 +1,4 @@
-import {handleResponseError} from '../Utils.js';
+import {formPost, httpGet} from '../api/client.js';
 
 export const MASTER_LOADED = 'master_loaded';
 export const SLAVE_LOADED = 'slave_loaded';
@@ -36,14 +36,12 @@ export interface UserPermission {
 
 export function loadMasterData() {
     return function (dispatch: Function) {
-        const url = window._server + "/permission/loadResourceSecurityConfigs";
-        fetch(url).then(function (response) {
-            if (!response.ok) throw response;
-            return response.json();
+        httpGet<UserPermission[]>("/permission/loadResourceSecurityConfigs", {
+            errorPrefix: '加载权限信息失败,',
         }).then(function (data: UserPermission[]) {
             dispatch({type: MASTER_LOADED, data});
-        }).catch(function (response) {
-            handleResponseError(response, '加载权限信息失败,');
+        }).catch(function () {
+            // error already handled by client
         });
     }
 };
@@ -80,17 +78,11 @@ export function save(data: UserPermission[]) {
     }
     xml += "</user-permission>";
     xml = encodeURIComponent(xml);
-    const url = window._server + "/permission/saveResourceSecurityConfigs";
-    fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({content: xml}).toString()
-    }).then(function (response) {
-        if (!response.ok) throw response;
-        return response.json();
+    formPost("/permission/saveResourceSecurityConfigs", {content: xml}, {
+        errorPrefix: '服务端错误：',
     }).then(function () {
         window.bootbox.alert('保存成功');
-    }).catch(function (response) {
-        handleResponseError(response, '服务端错误：');
+    }).catch(function () {
+        // error already handled by client
     });
 };

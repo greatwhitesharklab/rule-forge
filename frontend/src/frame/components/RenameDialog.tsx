@@ -3,6 +3,7 @@ import * as event from '../event.js';
 import * as action from '../action.js';
 import * as componentEvent from '../../components/componentEvent.js';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
+import {formPost} from '../../api/client.js';
 
 const NAME_REGEXP = /^(?!_)(?!-)[一-龥_a-zA-Z0-9_-]{1,}$/;
 
@@ -50,12 +51,7 @@ export default class RenameDialog extends Component<RenameDialogProps, RenameDia
             errors.fileName = '名称只能包含中文及英文字母、数字、下划线、中划线,且不能以下划线、中划线开头';
         } else {
             const fullFileName = this.state.parentPath + '/' + value;
-            const resp = await fetch(window._server + '/frame/fileExistCheck', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'fullFileName=' + encodeURIComponent(fullFileName)
-            });
-            const result = await resp.json();
+            const result = await formPost<boolean | { valid?: boolean }>('/frame/fileExistCheck', {fullFileName});
             if (result === false || (typeof result === 'object' && result.valid === false)) {
                 errors.fileName = '文件名已存在';
             }

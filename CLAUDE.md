@@ -71,7 +71,9 @@ Deployable executor with RestTemplate config for console communication.
 - MyBatis-Plus 3.5.9, MySQL, Flyway
 - ANTLR4, Jackson, fastjson2, HikariCP
 - Flowable 8 BPM engine for decision flow execution
-- Frontend: React, bpmn-js for flow designer
+- Frontend: TypeScript, React, Vite 8, Ant Design 5, bpmn-js for flow designer
+- Frontend HTTP: centralized `src/api/client.ts` (formPost, jsonPost, jsonPut, httpGet, httpDelete, save, saveNewVersion)
+- Frontend tests: Vitest unit tests, Playwright E2E tests
 
 ## Development Principles
 

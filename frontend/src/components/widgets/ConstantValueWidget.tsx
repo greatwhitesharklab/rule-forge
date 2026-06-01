@@ -9,6 +9,7 @@ interface ConstantValueWidgetProps {
     };
     libraries?: ConstantLibrary[];
     onDirty?: () => void;
+    ref?: React.Ref<any>;
 }
 
 interface ConstantValueWidgetState {

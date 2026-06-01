@@ -2,10 +2,10 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import * as ACTIONS from '../action.js';
 import {setupMockBootbox, teardownMockBootbox} from '../../__test_utils__/mockBootbox.js';
 
-// Mock ajaxSave from Utils to intercept the module import
-vi.mock('../../Utils.js', () => ({
-    ajaxSave: vi.fn(),
-    handleResponseError: vi.fn(),
+// Mock api/client.js to intercept the module import
+vi.mock('../../api/client.js', () => ({
+    save: vi.fn(),
+    formPost: vi.fn(),
 }));
 
 // Helper to flush async chains
@@ -47,7 +47,6 @@ describe('Parameter Module - Thunks', () => {
 
     afterEach(() => {
         teardownMockBootbox();
-        delete global.fetch;
     });
 
     it('GIVEN valid files WHEN loadData thunk is dispatched THEN it should fetch and dispatch LOAD_DATA_COMPLETED', async () => {
@@ -56,18 +55,13 @@ describe('Parameter Module - Thunks', () => {
             {name: 'param2', label: 'Parameter 2', type: 'Integer'},
         ];
 
-        const mockFetch = vi.fn(() =>
-            Promise.resolve({
-                ok: true,
-                json: () => Promise.resolve(mockResponse),
-            })
-        );
-        global.fetch = mockFetch as unknown as typeof fetch;
+        const { formPost } = await import('../../api/client.js');
+        (formPost as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
         const thunk = ACTIONS.loadData('test-files');
         thunk(dispatch);
 
-        await flushAsync(mockFetch);
+        await flushAsync(formPost as any);
 
         expect(dispatch).toHaveBeenCalledWith({
             type: ACTIONS.LOAD_DATA_COMPLETED,
@@ -76,46 +70,28 @@ describe('Parameter Module - Thunks', () => {
     });
 
     it('GIVEN server error WHEN loadData thunk is dispatched THEN it should handle 401 error', async () => {
-        const mockFetch = vi.fn(() =>
-            Promise.resolve({
-                ok: false,
-                status: 401,
-                text: () => Promise.resolve('Unauthorized'),
-            })
-        );
-        global.fetch = mockFetch as unknown as typeof fetch;
+        const { formPost } = await import('../../api/client.js');
+        (formPost as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('unauthorized'));
 
         const thunk = ACTIONS.loadData('test-files');
         thunk(dispatch);
 
-        await flushAsync(mockFetch);
+        await new Promise(resolve => setTimeout(resolve, 0));
 
-        const lastMsg = mockBootbox.getLastAlertMessage();
-        expect(lastMsg).toBeTruthy();
-        expect(lastMsg).toContain('权限不足');
         expect(dispatch).not.toHaveBeenCalledWith(
             expect.objectContaining({type: ACTIONS.LOAD_DATA_COMPLETED})
         );
     });
 
     it('GIVEN server error WHEN loadData thunk is dispatched THEN it should handle generic error', async () => {
-        const mockFetch = vi.fn(() =>
-            Promise.resolve({
-                ok: false,
-                status: 500,
-                text: () => Promise.resolve('Internal Server Error'),
-            })
-        );
-        global.fetch = mockFetch as unknown as typeof fetch;
+        const { formPost } = await import('../../api/client.js');
+        (formPost as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('server error'));
 
         const thunk = ACTIONS.loadData('test-files');
         thunk(dispatch);
 
-        await flushAsync(mockFetch);
+        await new Promise(resolve => setTimeout(resolve, 0));
 
-        const lastMsg = mockBootbox.getLastAlertMessage();
-        expect(lastMsg).toBeTruthy();
-        expect(lastMsg).toContain('加载数据失败');
         expect(dispatch).not.toHaveBeenCalledWith(
             expect.objectContaining({type: ACTIONS.LOAD_DATA_COMPLETED})
         );
@@ -134,11 +110,9 @@ describe('Parameter Module - saveData Function', () => {
     });
 
     it('GIVEN valid parameter data WHEN saveData is called THEN it should generate correct XML', async () => {
-        const {ajaxSave} = await import('../../Utils.js');
-        (ajaxSave as ReturnType<typeof vi.fn>).mockClear();
-        (ajaxSave as ReturnType<typeof vi.fn>).mockImplementation((_url: string, _postData: unknown, callback?: () => void) => {
-            if (callback) callback();
-        });
+        const {save} = await import('../../api/client.js');
+        (save as ReturnType<typeof vi.fn>).mockClear();
+        (save as ReturnType<typeof vi.fn>).mockResolvedValue({ status: true });
 
         const data = [
             {name: 'param1', label: 'Parameter 1', type: 'String'},
@@ -147,8 +121,8 @@ describe('Parameter Module - saveData Function', () => {
 
         ACTIONS.saveData(data, false, 'parameters.xml');
 
-        expect(ajaxSave).toHaveBeenCalled();
-        const callArgs = (ajaxSave as ReturnType<typeof vi.fn>).mock.calls[0];
+        expect(save).toHaveBeenCalled();
+        const callArgs = (save as ReturnType<typeof vi.fn>).mock.calls[0];
         const postData = callArgs[1] as Record<string, unknown>;
         const xmlContent = decodeURIComponent(postData.content as string);
 
@@ -184,11 +158,9 @@ describe('Parameter Module - saveData Function', () => {
     });
 
     it('GIVEN valid data and newVersion=true WHEN saveData is called THEN it should prompt for version comment', async () => {
-        const {ajaxSave} = await import('../../Utils.js');
-        (ajaxSave as ReturnType<typeof vi.fn>).mockClear();
-        (ajaxSave as ReturnType<typeof vi.fn>).mockImplementation((_url: string, _postData: unknown, callback?: () => void) => {
-            if (callback) callback();
-        });
+        const {save} = await import('../../api/client.js');
+        (save as ReturnType<typeof vi.fn>).mockClear();
+        (save as ReturnType<typeof vi.fn>).mockResolvedValue({ status: true });
 
         window.bootbox.prompt = vi.fn((_msg: string, callback: (result: string) => void) => {
             callback('Test version comment');
@@ -200,17 +172,15 @@ describe('Parameter Module - saveData Function', () => {
 
         ACTIONS.saveData(data, true, 'parameters.xml');
 
-        expect(ajaxSave).toHaveBeenCalled();
-        const callArgs = (ajaxSave as ReturnType<typeof vi.fn>).mock.calls[0];
+        expect(save).toHaveBeenCalled();
+        const callArgs = (save as ReturnType<typeof vi.fn>).mock.calls[0];
         expect(callArgs[1].versionComment).toBe('Test version comment');
     });
 
-    it('GIVEN valid data and newVersion=true WHEN saveData is called and prompt is cancelled THEN it should not call ajaxSave', async () => {
-        const {ajaxSave} = await import('../../Utils.js');
-        (ajaxSave as ReturnType<typeof vi.fn>).mockClear();
-        (ajaxSave as ReturnType<typeof vi.fn>).mockImplementation((_url: string, _postData: unknown, callback?: () => void) => {
-            if (callback) callback();
-        });
+    it('GIVEN valid data and newVersion=true WHEN saveData is called and prompt is cancelled THEN it should not call save', async () => {
+        const {save} = await import('../../api/client.js');
+        (save as ReturnType<typeof vi.fn>).mockClear();
+        (save as ReturnType<typeof vi.fn>).mockResolvedValue({ status: true });
 
         window.bootbox.prompt = vi.fn((_msg: string, callback: (result: string | null) => void) => {
             callback(null);
@@ -222,15 +192,13 @@ describe('Parameter Module - saveData Function', () => {
 
         ACTIONS.saveData(data, true, 'parameters.xml');
 
-        expect(ajaxSave).not.toHaveBeenCalled();
+        expect(save).not.toHaveBeenCalled();
     });
 
-    it('GIVEN valid data and newVersion=false WHEN saveData is called THEN it should call ajaxSave directly', async () => {
-        const {ajaxSave} = await import('../../Utils.js');
-        (ajaxSave as ReturnType<typeof vi.fn>).mockClear();
-        (ajaxSave as ReturnType<typeof vi.fn>).mockImplementation((_url: string, _postData: unknown, callback?: () => void) => {
-            if (callback) callback();
-        });
+    it('GIVEN valid data and newVersion=false WHEN saveData is called THEN it should call save directly', async () => {
+        const {save} = await import('../../api/client.js');
+        (save as ReturnType<typeof vi.fn>).mockClear();
+        (save as ReturnType<typeof vi.fn>).mockResolvedValue({ status: true });
 
         const data = [
             {name: 'param1', label: 'Parameter 1', type: 'String'},
@@ -238,7 +206,7 @@ describe('Parameter Module - saveData Function', () => {
 
         ACTIONS.saveData(data, false, 'parameters.xml');
 
-        expect(ajaxSave).toHaveBeenCalled();
+        expect(save).toHaveBeenCalled();
         expect(window.bootbox.prompt).not.toHaveBeenCalled();
     });
 });

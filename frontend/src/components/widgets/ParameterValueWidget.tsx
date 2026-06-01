@@ -6,6 +6,7 @@ interface ParameterValueWidgetProps {
     libraries?: ParameterVariableGroup[];
     onDirty?: () => void;
     act?: string;
+    ref?: React.Ref<any>;
 }
 
 interface ParameterValueWidgetState {

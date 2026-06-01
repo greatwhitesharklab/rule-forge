@@ -1,4 +1,4 @@
-import {ajaxSave} from '../Utils.js';
+import {save as apiSave, formPost} from '../api/client.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type {Dispatch} from 'redux';
@@ -23,27 +23,9 @@ export function add() {
 
 export function loadData(files: string): ThunkAction {
     return function (dispatch) {
-        const url = window._server + "/xml";
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({files}).toString()
-        }).then(function (response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then(function (data: Array<Record<string, unknown>>) {
+        formPost("/xml", {files}).then(function (data: Array<Record<string, unknown>>) {
             dispatch({type: LOAD_DATA_COMPLETED, data: data[0]});
-        }).catch(function (response: unknown) {
-            if (response && typeof response === 'object' && 'status' in response && (response as { status: number }).status === 401) {
-                window.bootbox.alert("权限不足，不能进行此操作.");
-            } else if (response && typeof response === 'object' && 'text' in response) {
-                (response as { text: () => Promise<string> }).text().then(function (text) {
-                    window.bootbox.alert("<span style='color: red'>加载数据失败,服务端错误：" + text + "</span>");
-                });
-            } else {
-                window.bootbox.alert("<span style='color: red'>加载数据失败,服务端出错</span>");
-            }
-        });
+        }).catch(function () {});
     };
 }
 
@@ -73,19 +55,19 @@ export function saveData(data: ParameterItem[], newVersion: boolean, file: strin
     xml += '</parameter-library>';
     xml = encodeURIComponent(xml);
     const postData: Record<string, string> = {content: xml, file, newVersion: String(newVersion)};
-    const url = window._server + '/common/saveFile';
+    const path = '/common/saveFile';
     if (newVersion) {
         window.bootbox.prompt("请输入新版本描述.", function (versionComment) {
             if (!versionComment) {
                 return;
             }
             postData.versionComment = versionComment;
-            ajaxSave(url, postData, function () {
+            apiSave(path, postData).then(function () {
                 window.bootbox.alert('保存成功!');
             });
         });
     } else {
-        ajaxSave(url, postData, function () {
+        apiSave(path, postData).then(function () {
             window.bootbox.alert('保存成功!');
         });
     }

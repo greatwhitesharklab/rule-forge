@@ -2,6 +2,7 @@ import React, {Component, FormEvent, ChangeEvent, MouseEvent} from 'react';
 import CommonDialog from '../components/dialog/component/CommonDialog.jsx';
 import * as event from './event.js';
 import * as frameEvent from '../frame/event.js';
+import {formPost} from '../api/client.js';
 
 interface ReferenceFile {
     path: string;
@@ -138,14 +139,7 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
     loadProjectNamesFromServer(): void {
         console.log('ReferenceDialog loadProjectNamesFromServer called');
         // Fetch project list directly from server
-        fetch(window._server + '/frame/loadProjects', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({classify: 'true', projectDetail: 'false'}).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then((data: { repo?: { projectNames?: string[] } }) => {
+        formPost<{ repo?: { projectNames?: string[] } }>('/frame/loadProjects', {classify: 'true', projectDetail: 'false'}, { silent: true }).then((data) => {
             if (data && data.repo && data.repo.projectNames) {
                 console.log('ReferenceDialog loaded projectNames from server:', data.repo.projectNames);
                 this.setState({ projectNames: data.repo.projectNames });
@@ -161,14 +155,7 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
             requestData.project = project;
         }
 
-        fetch(window._server + '/common/loadReferenceFiles', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams(requestData).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then((files: ReferenceFile[]) => {
+        formPost<ReferenceFile[]>('/common/loadReferenceFiles', requestData, { silent: true }).then((files) => {
             // Smart decode path: decode if contains %, otherwise use as-is
             const path = data.path.includes('%') ? decodeURIComponent(data.path) : data.path;
             // Check if from ruleset to decide whether to include info

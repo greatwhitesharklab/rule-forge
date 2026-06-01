@@ -7,6 +7,7 @@ interface FunctionPropertyWidgetProps {
         label?: string;
     };
     onDirty?: () => void;
+    ref?: React.Ref<any>;
 }
 
 interface FunctionPropertyWidgetState {

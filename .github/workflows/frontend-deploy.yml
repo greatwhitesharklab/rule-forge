@@ -1,0 +1,100 @@
+name: Frontend Build & Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (optional, default: timestamp)'
+        required: false
+        type: string
+      build_only:
+        description: 'Build image only (without deployment)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  IMAGE_NAME: ruleforge-console-ui
+
+jobs:
+  build-and-deploy:
+    runs-on: [self-hosted, linux, x64, sit-336]
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate version tag
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
+          fi
+          echo "commit_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg BUILD_VERSION=${{ steps.version.outputs.tag }} \
+            --build-arg BUILD_COMMIT=${{ steps.version.outputs.commit_sha }} \
+            --build-arg BUILD_DATE=${{ steps.version.outputs.build_date }} \
+            -t ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }} \
+            -t ${{ env.IMAGE_NAME }}:latest \
+            -t ${{ env.IMAGE_NAME }}:sit-latest \
+            .
+
+      - name: Stop old container
+        if: github.event.inputs.build_only != 'true'
+        run: |
+          if docker ps -a --format '{{.Names}}' | grep -q ruleforge-console-ui; then
+            docker compose down || true
+          fi
+
+      - name: Start new container
+        if: github.event.inputs.build_only != 'true'
+        env:
+          BUILD_VERSION: ${{ steps.version.outputs.tag }}
+        run: |
+          docker compose up -d
+
+          echo "Waiting for container to start..."
+          sleep 5
+
+          for i in $(seq 1 30); do
+            if docker inspect --format='{{.State.Health.Status}}' ruleforge-console-ui 2>/dev/null | grep -q healthy; then
+              echo "Container is healthy!"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "Health check timeout, checking logs..."
+              docker logs ruleforge-console-ui
+            fi
+            sleep 1
+          done
+
+      - name: Clean up old images
+        run: |
+          docker images ${{ env.IMAGE_NAME }} --format "{{.ID}} {{.Tag}}" \
+            | grep -v latest \
+            | tail -n +6 \
+            | awk '{print $1}' \
+            | xargs -r docker rmi || true
+
+      - name: Summary
+        run: |
+          echo "### ${{ github.event.inputs.build_only == 'true' && '📦 Build' || '🎉 Deployment' }} Complete!" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Version**: ${{ steps.version.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Commit**: ${{ steps.version.outputs.commit_sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Build Date**: ${{ steps.version.outputs.build_date }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ github.event.inputs.build_only }}" != "true" ]; then
+            echo "- **Port**: \${CONSOLE_PORT:-8080} → 80" >> "$GITHUB_STEP_SUMMARY"
+            echo "- **Deployed by**: ${{ github.actor }}" >> "$GITHUB_STEP_SUMMARY"
+          fi

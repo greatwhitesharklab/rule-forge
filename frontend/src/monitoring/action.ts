@@ -1,5 +1,7 @@
 import {ThunkDispatch} from 'redux-thunk';
 
+import {httpGet, jsonPost, jsonPut, httpDelete} from '../api/client.js';
+
 import {MonitoringState} from './reducer.js';
 
 export const LOAD_METRICS = 'monitoring_load_metrics';
@@ -92,12 +94,8 @@ export function loadMetrics(metricName: string, startTime: Date, endTime: Date, 
         if (endTime) params.append('endTime', endTime.toISOString());
         if (packageName) params.append('tags', JSON.stringify({package: packageName}));
 
-        fetch(window._server + '/monitoring/metrics?' + params.toString())
-            .then(resp => {
-                if (!resp.ok) throw resp;
-                return resp.json();
-            })
-            .then((data: MetricsData) => dispatch({type: LOAD_METRICS_COMPLETED, data}))
+        httpGet<MetricsData>('/monitoring/metrics?' + params.toString(), {silent: true})
+            .then((data) => dispatch({type: LOAD_METRICS_COMPLETED, data}))
             .catch(err => {
                 console.error('加载指标失败', err);
                 dispatch({type: LOAD_METRICS_COMPLETED, data: {timestamps: [], series: {}}});
@@ -108,12 +106,8 @@ export function loadMetrics(metricName: string, startTime: Date, endTime: Date, 
 export function loadPackages() {
     return function (dispatch: MonitoringDispatch) {
         dispatch({type: LOAD_PACKAGES});
-        fetch(window._server + '/monitoring/metrics/packages')
-            .then(resp => {
-                if (!resp.ok) throw resp;
-                return resp.json();
-            })
-            .then((data: string[]) => dispatch({type: LOAD_PACKAGES_COMPLETED, data}))
+        httpGet<string[]>('/monitoring/metrics/packages', {silent: true})
+            .then((data) => dispatch({type: LOAD_PACKAGES_COMPLETED, data}))
             .catch(err => {
                 console.error('加载规则包列表失败', err);
                 dispatch({type: LOAD_PACKAGES_COMPLETED, data: []});
@@ -124,12 +118,8 @@ export function loadPackages() {
 export function loadAlertRules() {
     return function (dispatch: MonitoringDispatch) {
         dispatch({type: LOAD_ALERT_RULES});
-        fetch(window._server + '/monitoring/alerts')
-            .then(resp => {
-                if (!resp.ok) throw resp;
-                return resp.json();
-            })
-            .then((data: AlertRule[]) => dispatch({type: LOAD_ALERT_RULES_COMPLETED, data}))
+        httpGet<AlertRule[]>('/monitoring/alerts', {silent: true})
+            .then((data) => dispatch({type: LOAD_ALERT_RULES_COMPLETED, data}))
             .catch(err => {
                 console.error('加载告警规则失败', err);
                 dispatch({type: LOAD_ALERT_RULES_COMPLETED, data: []});
@@ -139,20 +129,14 @@ export function loadAlertRules() {
 
 export function saveAlertRule(rule: AlertRule, callback?: () => void) {
     return function (dispatch: MonitoringDispatch) {
-        const url = rule.id
-            ? window._server + '/monitoring/alerts/' + rule.id
-            : window._server + '/monitoring/alerts';
-        const method = rule.id ? 'PUT' : 'POST';
+        const path = rule.id
+            ? '/monitoring/alerts/' + rule.id
+            : '/monitoring/alerts';
+        const doSave = rule.id
+            ? jsonPut(path, rule, {silent: true})
+            : jsonPost(path, rule, {silent: true});
 
-        fetch(url, {
-            method,
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(rule)
-        })
-            .then(resp => {
-                if (!resp.ok) throw resp;
-                return resp.json();
-            })
+        doSave
             .then(() => {
                 dispatch(loadAlertRules());
                 if (callback) callback();
@@ -163,11 +147,8 @@ export function saveAlertRule(rule: AlertRule, callback?: () => void) {
 
 export function deleteAlertRule(id: number) {
     return function (dispatch: MonitoringDispatch) {
-        fetch(window._server + '/monitoring/alerts/' + id, {method: 'DELETE'})
-            .then(resp => {
-                if (!resp.ok) throw resp;
-                dispatch(loadAlertRules());
-            })
+        httpDelete('/monitoring/alerts/' + id, {silent: true})
+            .then(() => dispatch(loadAlertRules()))
             .catch(err => console.error('删除告警规则失败', err));
     };
 }
@@ -180,12 +161,8 @@ export function loadAlertHistory(alertRuleId?: number, startTime?: Date, endTime
         if (startTime) params.append('startTime', startTime.toISOString());
         if (endTime) params.append('endTime', endTime.toISOString());
 
-        fetch(window._server + '/monitoring/alerts/history?' + params.toString())
-            .then(resp => {
-                if (!resp.ok) throw resp;
-                return resp.json();
-            })
-            .then((data: AlertHistoryEntry[]) => dispatch({type: LOAD_ALERT_HISTORY_COMPLETED, data}))
+        httpGet<AlertHistoryEntry[]>('/monitoring/alerts/history?' + params.toString(), {silent: true})
+            .then((data) => dispatch({type: LOAD_ALERT_HISTORY_COMPLETED, data}))
             .catch(err => {
                 console.error('加载告警历史失败', err);
                 dispatch({type: LOAD_ALERT_HISTORY_COMPLETED, data: []});

@@ -1,4 +1,4 @@
-import {ajaxSave, handleResponseError} from '../Utils.js';
+import {save as apiSave, formPost} from '../api/client.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type {Dispatch} from 'redux';
@@ -84,12 +84,12 @@ export function saveData(data: ConstantCategory[], newVersion: boolean, file: st
                 return;
             }
             postData.versionComment = versionComment;
-            ajaxSave(url, postData, function () {
+            apiSave(url, postData).then(function () {
                 window.bootbox.alert('保存成功!');
             });
         });
     } else {
-        ajaxSave(url, postData, function () {
+        apiSave(url, postData).then(function () {
             window.bootbox.alert('保存成功!');
         });
     }
@@ -113,18 +113,10 @@ export function addSlave() {
 
 export function loadMasterData(files: string): ThunkAction {
     return function (dispatch) {
-        const url = window._server + "/xml";
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({files}).toString()
-        }).then(function (response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then(function (data: Array<{ categories: ConstantCategory[] }>) {
+        formPost<Array<{ categories: ConstantCategory[] }>>("/xml", {files}).then(function (data) {
             dispatch({type: LOAD_MASTER_COMPLETED, masterData: data[0].categories});
-        }).catch(function (response: unknown) {
-            handleResponseError(response, '服务端错误：');
+        }).catch(function () {
+            // Error handled by api/client.js (shows bootbox alert)
         });
     };
 }

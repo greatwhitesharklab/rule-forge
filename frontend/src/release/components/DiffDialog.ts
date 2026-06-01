@@ -1,22 +1,17 @@
 import {html as diff2htmlRender, Diff2HtmlConfig} from 'diff2html';
+import {formPost} from '../../api/client.js';
 
 const DiffDialog = {
     show(projectName: string, fromVersion: string, toVersion: string, filePath?: string) {
-        const params = new URLSearchParams({fromVersion, toVersion});
+        const params: Record<string, string> = {fromVersion, toVersion};
         const endpoint = filePath ? 'getFileDiffStructured' : 'getPackageDiffStructured';
         if (filePath) {
-            params.append('filePath', filePath);
+            params.filePath = filePath;
         } else {
-            params.append('project', projectName);
+            params.project = projectName;
         }
 
-        fetch(window._server + '/packageeditor/' + endpoint, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: params.toString()
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
-        .then(data => {
+        formPost('/packageeditor/' + endpoint, params).then(data => {
             const diffs = Array.isArray(data) ? data : data ? [data] : [];
             const content = diffs.filter(Boolean).map((d: any) => d.patch || '').join('\n');
 

@@ -1,5 +1,6 @@
 import type {Dispatch} from 'redux';
 import type {TimeRange} from './helpers';
+import {httpGet} from '../api/client.js';
 
 // ========== Action type constants ==========
 
@@ -131,8 +132,7 @@ export function loadFlowTimeseries(
         if (flowId) params.append('flowId', flowId);
         if (isGray !== null && isGray !== undefined) params.append('isGray', String(isGray));
 
-        return fetch(window._server + '/analysis/flow/timeseries?' + params.toString())
-            .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        return httpGet<FlowTimeseriesData>('/analysis/flow/timeseries?' + params.toString(), {silent: true})
             .then((data: FlowTimeseriesData) => dispatch({type: LOAD_FLOW_TIMESERIES_COMPLETED, data}))
             .catch(err => {
                 console.error('加载时间序列失败', err);
@@ -148,8 +148,7 @@ export function loadPackageSummary(startTime: Date, endTime: Date) {
             startTime: toISO(startTime),
             endTime: toISO(endTime)
         });
-        return fetch(window._server + '/analysis/flow/packages-summary?' + params.toString())
-            .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        return httpGet<PackageSummaryRow[]>('/analysis/flow/packages-summary?' + params.toString(), {silent: true})
             .then((data: PackageSummaryRow[]) => dispatch({type: LOAD_PACKAGE_SUMMARY_COMPLETED, data}))
             .catch(err => {
                 console.error('加载包汇总失败', err);
@@ -173,8 +172,7 @@ export function loadRejectDistribution(
         });
         if (rulePackagePath) params.append('rulePackagePath', rulePackagePath);
 
-        return fetch(window._server + '/analysis/flow/reject-distribution?' + params.toString())
-            .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        return httpGet<RejectDistributionRow[]>('/analysis/flow/reject-distribution?' + params.toString(), {silent: true})
             .then((data: RejectDistributionRow[]) => dispatch({type: LOAD_REJECT_DISTRIBUTION_COMPLETED, data}))
             .catch(err => {
                 console.error('加载拒绝码分布失败', err);
@@ -196,8 +194,7 @@ export function loadRuleCoverage(
         });
         if (rulePackagePath) params.append('rulePackagePath', rulePackagePath);
 
-        return fetch(window._server + '/analysis/rule/coverage?' + params.toString())
-            .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        return httpGet<RuleCoverageData>('/analysis/rule/coverage?' + params.toString(), {silent: true})
             .then((data: RuleCoverageData) => dispatch({type: LOAD_RULE_COVERAGE_COMPLETED, data}))
             .catch(err => {
                 console.error('加载规则覆盖率失败', err);
@@ -219,8 +216,7 @@ export function loadRuleFireFrequency(
         });
         if (rulePackagePath) params.append('rulePackagePath', rulePackagePath);
 
-        return fetch(window._server + '/analysis/rule/fire-frequency?' + params.toString())
-            .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        return httpGet<HotRule[]>('/analysis/rule/fire-frequency?' + params.toString(), {silent: true})
             .then((data: HotRule[]) => dispatch({type: LOAD_RULE_FIRE_FREQUENCY_COMPLETED, data}))
             .catch(err => {
                 console.error('加载规则触发频率失败', err);
@@ -244,8 +240,7 @@ export function loadAnomalies(
         if (currentTime) params.append('currentTime', toISO(currentTime));
         if (rulePackagePath) params.append('rulePackagePath', rulePackagePath);
 
-        return fetch(window._server + '/analysis/anomaly/detect?' + params.toString())
-            .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        return httpGet<AnomalyRecord[]>('/analysis/anomaly/detect?' + params.toString(), {silent: true})
             .then((data: AnomalyRecord[]) => dispatch({type: LOAD_ANOMALIES_COMPLETED, data}))
             .catch(err => {
                 console.error('加载偏差检测失败', err);
@@ -257,8 +252,7 @@ export function loadAnomalies(
 export function loadAnalysisPackages() {
     return function (dispatch: Dispatch<AnalysisAction>) {
         dispatch({type: LOAD_ANALYSIS_PACKAGES});
-        return fetch(window._server + '/analysis/packages')
-            .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        return httpGet<string[]>('/analysis/packages', {silent: true})
             .then((data: string[]) => dispatch({type: LOAD_ANALYSIS_PACKAGES_COMPLETED, data}))
             .catch(err => {
                 console.error('加载规则包列表失败', err);

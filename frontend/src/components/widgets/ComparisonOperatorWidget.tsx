@@ -32,6 +32,7 @@ export {OPERATORS};
 interface ComparisonOperatorWidgetProps {
     onSelect?: (operatorName: string) => void;
     onMenuHide?: () => void;
+    ref?: React.Ref<any>;
 }
 
 interface ComparisonOperatorWidgetState {

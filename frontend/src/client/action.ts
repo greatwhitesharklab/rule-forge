@@ -1,4 +1,4 @@
-import {handleResponseError} from '../Utils.js';
+import {formPost} from '../api/client.js';
 
 export const ADD = 'add';
 export const DEL = 'del';
@@ -6,16 +6,12 @@ export const LOADED_DATA = 'loaded_data';
 
 export function loadData(project: string | null) {
     return function (dispatch: (a: unknown) => void) {
-        fetch(window._server + '/clientconfig/loadData?project=' + project, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-        }).then(function (response) {
-            if (!response.ok) throw response;
-            return response.json();
+        formPost('/clientconfig/loadData', {project: project || ''}, {
+            errorPrefix: '服务端错误：',
         }).then(function (data) {
             dispatch({type: LOADED_DATA, data});
-        }).catch(function (response) {
-            handleResponseError(response, '服务端错误：');
+        }).catch(function () {
+            // error already handled by client
         });
     };
 }
@@ -39,17 +35,12 @@ export function save(data: Array<{ name?: string; client?: string }>, project: s
     }
     xml += "</client-config>";
     xml = encodeURIComponent(xml);
-    fetch(window._server + '/clientconfig/save', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({project: project || '', content: xml}).toString()
-    }).then(function (response) {
-        if (!response.ok) throw response;
-        return response.json();
+    formPost('/clientconfig/save', {project: project || '', content: xml}, {
+        errorPrefix: '保存失败，服务端错误：',
     }).then(function () {
         window.bootbox.alert('保存成功!');
-    }).catch(function (response) {
-        handleResponseError(response, '保存失败，服务端错误：');
+    }).catch(function () {
+        // error already handled by client
     });
 }
 

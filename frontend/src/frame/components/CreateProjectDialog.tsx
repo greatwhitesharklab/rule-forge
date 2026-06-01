@@ -3,6 +3,7 @@ import Dialog from '../../components/dialog/component/Dialog.jsx';
 import * as componentEvent from '../../components/componentEvent.js';
 import * as event from '../event.js';
 import * as action from '../action.js';
+import {formPost} from '../../api/client.js';
 
 const NAME_REGEXP = /^(?!_)(?!-)[一-龥_a-zA-Z0-9_-]{1,}$/;
 
@@ -46,12 +47,7 @@ export default class CreateProjectDialog extends Component<CreateProjectDialogPr
         } else if (!NAME_REGEXP.test(value)) {
             errors.newProjectName = '名称只能包含中文及英文字母、数字、下划线、中划线,且不能以下划线、中划线开头';
         } else {
-            const resp = await fetch(window._server + '/frame/projectExistCheck', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'newProjectName=' + encodeURIComponent(value)
-            });
-            const result = await resp.json();
+            const result = await formPost<boolean | { valid?: boolean }>('/frame/projectExistCheck', {newProjectName: value});
             if (result === false || (typeof result === 'object' && result.valid === false)) {
                 errors.newProjectName = '项目已存在';
             }

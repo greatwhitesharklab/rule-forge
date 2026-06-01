@@ -1,4 +1,4 @@
-import {ajaxSave} from '../Utils.js';
+import {save as apiSave, formPost} from '../api/client.js';
 
 export const LOAD_MASTER_COMPLETED = 'load_master_completed';
 export const LOAD_SLAVE_COMPLETE = 'load_slave_completed';
@@ -105,12 +105,12 @@ export function saveData(data: VariableCategory[], newVersion: boolean, file: st
                 return;
             }
             postData.versionComment = versionComment;
-            ajaxSave(url, postData, function () {
+            apiSave(url, postData).then(function () {
                 window.bootbox.alert('保存成功!');
             })
         });
     } else {
-        ajaxSave(url, postData, function () {
+        apiSave(url, postData).then(function () {
             window.bootbox.alert('保存成功!');
         })
     }
@@ -139,48 +139,20 @@ export function addSlave() {
 
 export function generateFields(rowIndex: number, clazz: string) {
     return function (dispatch: Function) {
-        let url = window._server + '/variableeditor/generateFields';
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({clazz}).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then(function (result) {
+        formPost('/variableeditor/generateFields', {clazz}).then(function (result) {
             dispatch({rowIndex, variables: result, type: GENERATED_FIELDS});
-        }).catch(function (response) {
-            if (response && response.text) {
-                response.text().then(function(text: string) {
-                    window.bootbox.alert("<span style='color: red'>生成字段失败,服务端错误：" + text + "</span>");
-                });
-            } else {
-                window.bootbox.alert("<span style='color: red'>生成字段失败,服务端出错</span>");
-            }
+        }).catch(function () {
+            // Error handled by api/client.js (shows bootbox alert)
         });
     }
 }
 
 export function loadMasterData(files: string) {
     return function (dispatch: Function) {
-        var url = window._server + "/xml";
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({files}).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then(function (data: VariableCategory[][]) {
+        formPost<VariableCategory[][]>("/xml", {files}).then(function (data) {
             dispatch({type: LOAD_MASTER_COMPLETED, masterData: data[0]});
-        }).catch(function (response: Response) {
-            if (response && response.text) {
-                response.text().then(function(text) {
-                    window.bootbox.alert("<span style='color: red'>加载数据失败,服务端错误：" + text + "</span>");
-                });
-            } else {
-                window.bootbox.alert("<span style='color: red'>加载数据失败,服务端出错</span>");
-            }
+        }).catch(function () {
+            // Error handled by api/client.js (shows bootbox alert)
         });
     }
 }

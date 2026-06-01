@@ -2,6 +2,7 @@ import '../bootbox.js';
 import '../css/tailwind-base.css';
 import React, {Component, ChangeEvent, FormEvent} from 'react';
 import {createRoot} from 'react-dom/client';
+import {formPost} from '../api/client.js';
 
 interface LoginState {
     username: string;
@@ -17,14 +18,7 @@ class LoginPage extends Component<object, LoginState> {
         e.preventDefault();
         this.setState({loading: true, error: ''});
         const {username, password} = this.state;
-        fetch(window._server + '/frame/login', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({username, password}).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then((result: { status: boolean }) => {
+        formPost<{ status: boolean }>('/frame/login', {username, password}, { silent: true }).then((result) => {
             this.setState({loading: false});
             if (result.status) {
                 const redirect = new URLSearchParams(window.location.search).get('redirect') || 'frame.html';

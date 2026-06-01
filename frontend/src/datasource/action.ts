@@ -1,6 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type {Dispatch} from 'redux';
 
+import {httpGet, jsonPost, jsonPut, httpDelete} from '../api/client.js';
+
 /* Thunk action type — redux-thunk middleware allows dispatching functions.
  * We type the inner dispatch as simple Dispatch to keep annotations lightweight. */
 type ThunkAction = (dispatch: (a: unknown) => void) => void;
@@ -43,16 +45,10 @@ interface TestConnectionResult {
     message?: string;
 }
 
-const BASE = window._server + '/datasource';
-
 export function loadDatasources(): ThunkAction {
     return function (dispatch) {
         dispatch({type: LOAD_DATASOURCES});
-        fetch(BASE)
-            .then(resp => {
-                if (!resp.ok) throw resp;
-                return resp.json();
-            })
+        httpGet<DatasourceItem[]>('/datasource', {silent: true})
             .then(data => dispatch({type: LOAD_DATASOURCES_COMPLETED, data}))
             .catch(err => {
                 console.error('加载数据源列表失败', err);
@@ -63,15 +59,7 @@ export function loadDatasources(): ThunkAction {
 
 export function createDatasource(datasource: DatasourceItem): ThunkAction {
     return function (dispatch) {
-        fetch(BASE, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(datasource)
-        })
-            .then(resp => {
-                if (!resp.ok) throw resp;
-                return resp.json();
-            })
+        jsonPost('/datasource', datasource, {silent: true})
             .then(() => dispatch(loadDatasources()))
             .catch(err => console.error('创建数据源失败', err));
     };
@@ -79,15 +67,7 @@ export function createDatasource(datasource: DatasourceItem): ThunkAction {
 
 export function updateDatasource(id: number, datasource: DatasourceItem): ThunkAction {
     return function (dispatch) {
-        fetch(BASE + '/' + id, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(datasource)
-        })
-            .then(resp => {
-                if (!resp.ok) throw resp;
-                return resp.json();
-            })
+        jsonPut('/datasource/' + id, datasource, {silent: true})
             .then(() => dispatch(loadDatasources()))
             .catch(err => console.error('更新数据源失败', err));
     };
@@ -95,10 +75,7 @@ export function updateDatasource(id: number, datasource: DatasourceItem): ThunkA
 
 export function deleteDatasource(id: number): ThunkAction {
     return function (dispatch) {
-        fetch(BASE + '/' + id, {method: 'DELETE'})
-            .then(resp => {
-                if (!resp.ok) throw resp;
-            })
+        httpDelete('/datasource/' + id, {silent: true})
             .then(() => dispatch(loadDatasources()))
             .catch(err => console.error('删除数据源失败', err));
     };
@@ -106,11 +83,7 @@ export function deleteDatasource(id: number): ThunkAction {
 
 export function testConnection(id: number) {
     return function (): Promise<TestConnectionResult> {
-        return fetch(BASE + '/' + id + '/test', {method: 'POST'})
-            .then(resp => {
-                if (!resp.ok) throw resp;
-                return resp.json();
-            })
+        return jsonPost<TestConnectionResult>('/datasource/' + id + '/test', null, {silent: true})
             .catch(err => {
                 console.error('测试连接失败', err);
                 return {success: false, message: '请求失败'};
@@ -121,11 +94,7 @@ export function testConnection(id: number) {
 export function loadEntityMappings(): ThunkAction {
     return function (dispatch) {
         dispatch({type: LOAD_ENTITY_MAPPINGS});
-        fetch(BASE + '/entity-mapping')
-            .then(resp => {
-                if (!resp.ok) throw resp;
-                return resp.json();
-            })
+        httpGet<EntityMapping[]>('/datasource/entity-mapping', {silent: true})
             .then(data => dispatch({type: LOAD_ENTITY_MAPPINGS_COMPLETED, data}))
             .catch(err => {
                 console.error('加载实体映射失败', err);
@@ -136,14 +105,7 @@ export function loadEntityMappings(): ThunkAction {
 
 export function saveEntityMapping(clazz: string, datasourceId: number): ThunkAction {
     return function (dispatch) {
-        fetch(BASE + '/entity-mapping', {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({clazz, datasourceId})
-        })
-            .then(resp => {
-                if (!resp.ok) throw resp;
-            })
+        jsonPut('/datasource/entity-mapping', {clazz, datasourceId}, {silent: true})
             .then(() => dispatch(loadEntityMappings()))
             .catch(err => console.error('保存实体映射失败', err));
     };
@@ -152,11 +114,7 @@ export function saveEntityMapping(clazz: string, datasourceId: number): ThunkAct
 export function loadFieldMappings(datasourceId: number, clazz: string): ThunkAction {
     return function (dispatch) {
         dispatch({type: LOAD_FIELD_MAPPINGS});
-        fetch(BASE + '/' + datasourceId + '/field-mappings?clazz=' + encodeURIComponent(clazz))
-            .then(resp => {
-                if (!resp.ok) throw resp;
-                return resp.json();
-            })
+        httpGet<FieldMapping[]>('/datasource/' + datasourceId + '/field-mappings?clazz=' + encodeURIComponent(clazz), {silent: true})
             .then(data => dispatch({type: LOAD_FIELD_MAPPINGS_COMPLETED, data}))
             .catch(err => {
                 console.error('加载字段映射失败', err);

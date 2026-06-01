@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {httpGet, formPost, jsonPut} from '../../api/client.js';
 
 interface ConfigPanelProps {
     dispatch: (action: unknown) => void;
@@ -39,9 +40,7 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
 
     async loadConfig() {
         try {
-            const resp = await fetch(window._server + '/agent/config');
-            if (!resp.ok) return;
-            const config = await resp.json();
+            const config = await httpGet('/agent/config');
             if (typeof config === 'object' && config !== null) {
                 this.setState({
                     vendor: config['llm.vendor'] || '',
@@ -60,9 +59,7 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
 
     async loadVendors() {
         try {
-            const resp = await fetch(window._server + '/agent/vendors');
-            if (!resp.ok) return;
-            const vendors: VendorInfo[] = await resp.json();
+            const vendors: VendorInfo[] = await httpGet('/agent/vendors');
             if (Array.isArray(vendors)) {
                 this.setState({vendors});
             }
@@ -74,7 +71,7 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
     handleVendorChange = async (vendorId: string) => {
         this.setState({vendor: vendorId});
         try {
-            await fetch(window._server + '/agent/vendors/' + vendorId + '/apply', {method: 'POST'});
+            await formPost('/agent/vendors/' + vendorId + '/apply', {});
             this.loadConfig();
         } catch (e) {
             console.error('Failed to apply vendor', e);
@@ -84,18 +81,14 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
     handleSave = async () => {
         const {vendor, apiKey, baseUrl, model, temperature, maxTokens, systemPrompt} = this.state;
         try {
-            await fetch(window._server + '/agent/config', {
-                method: 'PUT',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    'llm.vendor': vendor,
-                    'llm.api_key': apiKey,
-                    'llm.base_url': baseUrl,
-                    'llm.model': model,
-                    'llm.temperature': temperature,
-                    'llm.max_tokens': maxTokens,
-                    'system_prompt': systemPrompt,
-                })
+            await jsonPut('/agent/config', {
+                'llm.vendor': vendor,
+                'llm.api_key': apiKey,
+                'llm.base_url': baseUrl,
+                'llm.model': model,
+                'llm.temperature': temperature,
+                'llm.max_tokens': maxTokens,
+                'system_prompt': systemPrompt,
             });
             window.bootbox.alert('配置已保存');
         } catch (e) {
@@ -106,8 +99,7 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
     handleTest = async () => {
         this.setState({testing: true, testResult: null});
         try {
-            const resp = await fetch(window._server + '/agent/config/test-connection', {method: 'POST'});
-            const result = await resp.json();
+            const result = await formPost<{ success: boolean; message?: string }>('/agent/config/test-connection', {});
             this.setState({testResult: result.success ? '✅ 连接成功' : '❌ ' + result.message});
         } catch (e) {
             this.setState({testResult: '❌ 连接失败: ' + (e as Error).message});

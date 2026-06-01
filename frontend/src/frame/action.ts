@@ -1,5 +1,5 @@
 import Styles from '../Styles.js';
-import {handleResponseError} from '../Utils.js';
+import {formPost} from '../api/client.js';
 import * as event from './event.js';
 import * as componentEvent from '../components/componentEvent.js';
 
@@ -34,76 +34,51 @@ export function setSimulationTab(tab: string) {
 
 export function createNewFile(newFileName: string, fileType: string, parentNodeData: TreeNodeData) {
     return function (dispatch: Function) {
-        const url = window._server + '/frame/createFile';
         const fileName = newFileName + "." + fileType;
-        const path = parentNodeData.fullPath + "/" + fileName;
         const serverType = FILE_TYPE_MAP[fileType] || fileType;
 
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({path: encodeURI(parentNodeData.fullPath + "/" + fileName), type: serverType}).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
+        formPost('/frame/createFile', {
+            path: encodeURI(parentNodeData.fullPath + "/" + fileName),
+            type: serverType
         }).then(function () {
             event.eventEmitter.emit(event.CLOSE_CREATE_FILE_DIALOG);
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
             dispatch(loadData(true, window._projectName, null, null, [parentNodeData.fullPath]));
-        }).catch(function (response) {
+        }).catch(function () {
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-            handleResponseError(response, '服务端错误：');
         });
     };
 }
 
 export function rename(path: string, newPath: string) {
     return function (dispatch: Function) {
-        const url = window._server + '/frame/fileRename';
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({
-                path: path,
-                newPath: newPath,
-                classify: String(window._classify),
-                projectName: window._projectName || '',
-                types: window._types || ''
-            }).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
+        formPost('/frame/fileRename', {
+            path: path,
+            newPath: newPath,
+            classify: String(window._classify),
+            projectName: window._projectName || '',
+            types: window._types || ''
         }).then(function (data: { repo: { rootFile: TreeNodeData } }) {
             const rootFile = data.repo.rootFile;
             buildData(rootFile, 1);
             dispatch({data: rootFile, type: LOAD_END});
             event.eventEmitter.emit(event.HIDE_RENAME_DIALOG);
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        }).catch(function (response) {
-            handleResponseError(response, '服务端错误：');
+        }).catch(function () {
         });
     };
 }
 
 export function createNewProject(newProjectName: string) {
     return function (dispatch: Function) {
-        const url = window._server + '/frame/createProject';
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({newProjectName: newProjectName}).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then(function () {
+        formPost('/frame/createProject', {newProjectName: newProjectName}).then(function () {
             window._projectName = newProjectName;
             dispatch(loadData(true, newProjectName));
             event.eventEmitter.emit(event.PROJECT_SELECT, newProjectName);
             event.eventEmitter.emit(event.PROJECT_FILTER_CHANGE, newProjectName);
             event.eventEmitter.emit(event.CLOSE_NEW_PROJECT_DIALOG);
-        }).catch(function (response) {
+        }).catch(function () {
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-            handleResponseError(response, '服务端错误：');
         });
     };
 }
@@ -111,26 +86,17 @@ export function createNewProject(newProjectName: string) {
 export function createNewFolder(newFolderName: string, parentNodeData: TreeNodeData) {
     const fullFolderName = parentNodeData.fullPath + '/' + newFolderName;
     return function (dispatch: Function) {
-        const url = window._server + '/frame/createFolder';
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({
-                fullFolderName: fullFolderName,
-                classify: String(window._classify),
-                projectName: window._projectName || '',
-                types: window._types || '',
-            }).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
+        formPost('/frame/createFolder', {
+            fullFolderName: fullFolderName,
+            classify: String(window._classify),
+            projectName: window._projectName || '',
+            types: window._types || '',
         }).then(function () {
             event.eventEmitter.emit(event.CLOSE_CREATE_FOLDER_DIALOG);
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
             dispatch(loadData(true, window._projectName, null));
-        }).catch(function (response) {
+        }).catch(function () {
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-            handleResponseError(response, '服务端错误：');
         });
     };
 }
@@ -141,20 +107,12 @@ export function fileRename(itemData: TreeNodeData, newName: string) {
         var namePos = fullPath.lastIndexOf(itemData.name);
         var basePath = fullPath.substring(0, namePos);
         var newFullPath = basePath + newName;
-        var url = window._server + "/frame/fileRename";
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({
-                path: fullPath,
-                newPath: newFullPath,
-                classify: String(window._classify),
-                projectName: window._projectName || '',
-                types: window._types || ''
-            }).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
+        formPost('/frame/fileRename', {
+            path: fullPath,
+            newPath: newFullPath,
+            classify: String(window._classify),
+            projectName: window._projectName || '',
+            types: window._types || ''
         }).then(function (data: { repo: { rootFile: TreeNodeData } }) {
             const pos = newName.indexOf('.');
             if (pos !== -1) {
@@ -168,31 +126,21 @@ export function fileRename(itemData: TreeNodeData, newName: string) {
             }
             event.eventEmitter.emit(event.CLOSE_UPDATE_PROJECT_DIALOG);
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        }).catch(function (response) {
+        }).catch(function () {
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-            handleResponseError(response, '服务端错误：');
         });
     };
 }
 
 function moveFile(path: string, newPath: string, dispatch: Function) {
-    var url = window._server + "/frame/fileRename";
-    fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({path, newPath, classify: String(window._classify), projectName: window._projectName || '', types: window._types || ''}).toString()
-    }).then(function(response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (data: { repo: { rootFile: TreeNodeData } }) {
+    formPost('/frame/fileRename', {path, newPath, classify: String(window._classify), projectName: window._projectName || '', types: window._types || ''}).then(function (data: { repo: { rootFile: TreeNodeData } }) {
         const rootFile = data.repo.rootFile;
         buildData(rootFile, 1);
         dispatch({data: rootFile, type: LOAD_END});
         event.eventEmitter.emit(event.CLOSE_UPDATE_PROJECT_DIALOG);
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-    }).catch(function (response) {
+    }).catch(function () {
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        handleResponseError(response, '服务端错误：');
     });
 }
 
@@ -221,7 +169,6 @@ export function loadData(classify?: boolean | null, projectName?: string | null,
     }
     const requestId = ++_loadDataRequestId;
     return function (dispatch: Function) {
-        const url = window._server + '/frame/loadProjects';
         const params: Record<string, string> = {};
         if (classify !== undefined && classify !== null) params.classify = String(classify);
         if (projectName !== undefined && projectName !== null) params.projectName = projectName;
@@ -229,14 +176,7 @@ export function loadData(classify?: boolean | null, projectName?: string | null,
         if (searchFileName !== undefined && searchFileName !== null) params.searchFileName = searchFileName;
         params.projectDetail = 'true';
 
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams(params).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then(function (data: {
+        formPost('/frame/loadProjects', params).then(function (data: {
             classify: boolean;
             repo: { rootFile: TreeNodeData; publicResource: TreeNodeData; projectNames: string[] };
             user: { import: boolean; export: boolean };
@@ -317,9 +257,8 @@ export function loadData(classify?: boolean | null, projectName?: string | null,
                     });
                 }
             }
-        }).catch(function (response) {
+        }).catch(function () {
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-            handleResponseError(response, '加载数据失败,');
         });
     };
 }
@@ -330,20 +269,12 @@ export function loadData(classify?: boolean | null, projectName?: string | null,
 export function loadChildren(parentNodeData: TreeNodeData, classify: boolean, projectName: string | null, types: string | null) {
     componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
     return function (dispatch: Function) {
-        const url = window._server + '/frame/loadProjects';
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({
-                classify: String(classify),
-                projectName: projectName || '',
-                types: types || '',
-                parentPath: parentNodeData.fullPath,
-                loadChildren: 'true'
-            }).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
+        formPost('/frame/loadProjects', {
+            classify: String(classify),
+            projectName: projectName || '',
+            types: types || '',
+            parentPath: parentNodeData.fullPath,
+            loadChildren: 'true'
         }).then(function (data: {
             repo: { rootFile: TreeNodeData; publicResource: TreeNodeData };
             user: { import: boolean; export: boolean };
@@ -384,9 +315,8 @@ export function loadChildren(parentNodeData: TreeNodeData, classify: boolean, pr
                     type: LOAD_CHILDREN_END
                 });
             }
-        }).catch(function (response) {
+        }).catch(function () {
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-            handleResponseError(response, '加载子菜单失败,');
         });
     };
 }
@@ -1050,19 +980,11 @@ function buildPasteMenuItem(): ContextMenuItem {
                 if (!copy) {
                     moveFile(oldFullPath, newFullPath, _dispatch);
                 } else {
-                    fetch(window._server + '/frame/copyFile', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                        body: new URLSearchParams({newFullPath, oldFullPath}).toString()
-                    }).then(function(response) {
-                        if (!response.ok) throw response;
-                        return response.json();
-                    }).then(function (data: { repo: { rootFile: TreeNodeData } }) {
+                    formPost('/frame/copyFile', {newFullPath, oldFullPath}).then(function (data: { repo: { rootFile: TreeNodeData } }) {
                         const rootFile = data.repo.rootFile;
                         buildData(rootFile, 1);
                         _dispatch({data: rootFile, type: LOAD_END});
-                    }).catch(function (response) {
-                        handleResponseError(response, '复制文件操作失败,');
+                    }).catch(function () {
                     });
                 }
             });
@@ -1141,121 +1063,68 @@ function buildFileContextMenu(): ContextMenuItem[] {
 
 export function lockFile(file: string, dispatch: Function) {
     componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
-    var url = window._server + "/frame/lockFile";
-    fetch(url, {
-        method: "POST",
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({file}).toString()
-    }).then(function(response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (data: { repo: { rootFile: TreeNodeData } }) {
+    formPost("/frame/lockFile", {file}).then(function (data: { repo: { rootFile: TreeNodeData } }) {
         const rootFile = data.repo.rootFile;
         buildData(rootFile, 1);
         dispatch({data: rootFile, type: LOAD_END});
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
         window.bootbox.alert('锁定成功!');
-    }).catch(function (response) {
+    }).catch(function () {
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        handleResponseError(response, '服务端错误：');
     });
 }
 
 export function unlockFile(file: string, dispatch: Function) {
     componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
-    var url = window._server + "/frame/unlockFile";
-    fetch(url, {
-        method: "POST",
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({file}).toString()
-    }).then(function(response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (data: { repo: { rootFile: TreeNodeData } }) {
+    formPost("/frame/unlockFile", {file}).then(function (data: { repo: { rootFile: TreeNodeData } }) {
         const rootFile = data.repo.rootFile;
         buildData(rootFile, 1);
         dispatch({data: rootFile, type: LOAD_END});
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
         window.bootbox.alert('解锁成功!');
-    }).catch(function (response) {
+    }).catch(function () {
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        handleResponseError(response, '服务端错误：');
     });
 }
 
 export function saveFileSource(file: string, content: string) {
     const encodedContent = encodeURIComponent(content);
-    var url = window._server + "/common/saveFile";
-    fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({file, content: encodedContent}).toString()
-    }).then(function(response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function () {
+    formPost("/common/saveFile", {file, content: encodedContent}).then(function () {
         window.bootbox.alert('保存成功!');
-    }).catch(function (response) {
-        handleResponseError(response, '服务端错误：');
+    }).catch(function () {
     });
 }
 
 export function seeFileSource(data: TreeNodeData) {
-    var url = window._server + "/frame/fileSource";
     const params: Record<string, string> = {path: data.fullPath};
     // Include gitTag for version-aware reading
     if (window._currentGitTag) {
         params.gitTag = window._currentGitTag;
     }
-    fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams(params).toString()
-    }).then(function(response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (result: { content: string }) {
+    formPost("/frame/fileSource", params).then(function (result: { content: string }) {
         event.eventEmitter.emit(event.OPEN_SOURCE_DIALOG, data.fullPath, result.content);
-    }).catch(function (response) {
-        handleResponseError(response, '服务端错误：');
+    }).catch(function () {
     });
 }
 
 export function seeFileVersions(data: TreeNodeData & { rpp?: string; page?: number }) {
-    var url = window._server + "/frame/fileVersions";
-    fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({path: data.fullPath, project: data['rpp'] || '', page: String(data.page || 1)}).toString()
-    }).then(function(response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (res: { files: TreeNodeData[]; count: number }) {
+    formPost("/frame/fileVersions", {path: data.fullPath, project: data['rpp'] || '', page: String(data.page || 1)}).then(function (res: { files: TreeNodeData[]; count: number }) {
         const files = res.files;
         const num = res.count;
         event.eventEmitter.emit(event.OPEN_FILE_VERSION_DIALOG, {files, data, num});
-    }).catch(function (response) {
-        handleResponseError(response, '服务端错误：');
+    }).catch(function () {
     });
 }
 
 function projectDelete(item: TreeNodeData, dispatch: Function, isFolder?: boolean) {
     componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
     setTimeout(function () {
-        var url = window._server + "/frame/deleteProject";
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({
-                isFolder: String(!!isFolder),
-                path: item.fullPath,
-                classify: String(window._classify),
-                projectName: window._projectName || '',
-                types: window._types || ''
-            }).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
+        formPost("/frame/deleteProject", {
+            isFolder: String(!!isFolder),
+            path: item.fullPath,
+            classify: String(window._classify),
+            projectName: window._projectName || '',
+            types: window._types || ''
         }).then(function () {
             if (!isFolder) {
                 dispatch({data: item, type: DEL});
@@ -1264,9 +1133,8 @@ function projectDelete(item: TreeNodeData, dispatch: Function, isFolder?: boolea
                 dispatch({data: item, type: DEL});
             }
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        }).catch(function (response) {
+        }).catch(function () {
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-            handleResponseError(response, '服务端错误：');
         });
     }, 150);
 }
@@ -1274,20 +1142,12 @@ function projectDelete(item: TreeNodeData, dispatch: Function, isFolder?: boolea
 function fileDelete(item: TreeNodeData, dispatch: Function, isFolder?: boolean) {
     componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
     setTimeout(function () {
-        var url = window._server + "/frame/deleteFile";
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({
-                isFolder: String(!!isFolder),
-                path: item.fullPath,
-                classify: String(window._classify),
-                projectName: window._projectName || '',
-                types: window._types || ''
-            }).toString()
-        }).then(function(response) {
-            if (!response.ok) throw response;
-            return response.json();
+        formPost("/frame/deleteFile", {
+            isFolder: String(!!isFolder),
+            path: item.fullPath,
+            classify: String(window._classify),
+            projectName: window._projectName || '',
+            types: window._types || ''
         }).then(function () {
             if (!isFolder) {
                 dispatch({data: item, type: DEL});
@@ -1296,9 +1156,8 @@ function fileDelete(item: TreeNodeData, dispatch: Function, isFolder?: boolean) 
                 dispatch({data: item, type: DEL});
             }
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        }).catch(function (response) {
+        }).catch(function () {
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-            handleResponseError(response, '服务端错误：');
         });
     }, 150);
 }

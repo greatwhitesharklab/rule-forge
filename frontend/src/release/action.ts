@@ -1,4 +1,5 @@
 import {Dispatch} from 'redux';
+import {formPost, jsonPost, jsonPut, httpGet, httpDelete} from '../api/client.js';
 
 // Action type constants
 const LOAD_ENVIRONMENTS = 'release_load_environments';
@@ -121,12 +122,7 @@ interface AppState {
 export function loadEnvironments(projectName: string) {
     return function (dispatch: AppDispatch) {
         dispatch({type: LOAD_ENVIRONMENTS});
-        fetch(window._server + '/deployment/environments', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({projectName}).toString()
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        formPost('/deployment/environments', {projectName})
         .then(data => dispatch({type: LOAD_ENVIRONMENTS_COMPLETED, data}))
         .catch(err => {
             console.error('加载环境信息失败', err);
@@ -138,12 +134,7 @@ export function loadEnvironments(projectName: string) {
 export function loadApprovals(projectName: string) {
     return function (dispatch: AppDispatch) {
         dispatch({type: LOAD_APPROVALS});
-        fetch(window._server + '/approval/listByProject', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({projectName}).toString()
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        formPost('/approval/listByProject', {projectName})
         .then(data => dispatch({type: LOAD_APPROVALS_COMPLETED, data}))
         .catch(err => {
             console.error('加载审批列表失败', err);
@@ -154,12 +145,7 @@ export function loadApprovals(projectName: string) {
 
 export function approveTask(taskId: string, approveRemark: string) {
     return function (dispatch: AppDispatch, getState: () => AppState) {
-        fetch(window._server + '/approval/approve', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({taskId, approveRemark: approveRemark || ''}).toString()
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        formPost('/approval/approve', {taskId, approveRemark: approveRemark || ''})
         .then(() => {
             const state = getState();
             dispatch(loadApprovals(state.release && state.release.projectName || ''));
@@ -170,12 +156,7 @@ export function approveTask(taskId: string, approveRemark: string) {
 
 export function rejectTask(taskId: string, approveRemark: string) {
     return function () {
-        fetch(window._server + '/approval/reject', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({taskId, approveRemark: approveRemark || ''}).toString()
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        formPost('/approval/reject', {taskId, approveRemark: approveRemark || ''})
         .then(() => {
             window.bootbox.alert('已驳回');
         })
@@ -186,14 +167,9 @@ export function rejectTask(taskId: string, approveRemark: string) {
 export function loadDeploymentHistory(projectName: string, packageId?: string) {
     return function (dispatch: AppDispatch) {
         dispatch({type: LOAD_DEPLOYMENT_HISTORY});
-        const params = new URLSearchParams({projectName});
-        if (packageId) params.append('packageId', packageId);
-        fetch(window._server + '/deployment/history', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: params.toString()
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        const params: Record<string, string> = {projectName};
+        if (packageId) params.packageId = packageId;
+        formPost('/deployment/history', params)
         .then(data => dispatch({type: LOAD_DEPLOYMENT_HISTORY_COMPLETED, data}))
         .catch(err => {
             console.error('加载部署历史失败', err);
@@ -204,12 +180,7 @@ export function loadDeploymentHistory(projectName: string, packageId?: string) {
 
 export function promoteVersion(projectName: string, packageId: string, version: string) {
     return function (dispatch: AppDispatch) {
-        fetch(window._server + '/deployment/promote', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({projectName, packageId, version}).toString()
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        formPost<ApiResponse>('/deployment/promote', {projectName, packageId, version})
         .then((result: ApiResponse) => {
             if (result.status) {
                 window.bootbox.alert('发布成功');
@@ -221,19 +192,13 @@ export function promoteVersion(projectName: string, packageId: string, version: 
         })
         .catch(err => {
             console.error('发布失败', err);
-            window.bootbox.alert('发布失败');
         });
     };
 }
 
 export function rollbackVersion(projectName: string, packageId: string, targetVersion: string, execEnv?: string) {
     return function (dispatch: AppDispatch) {
-        fetch(window._server + '/deployment/rollback', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({projectName, packageId, targetVersion, execEnv: execEnv || 'prod'}).toString()
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        formPost<ApiResponse>('/deployment/rollback', {projectName, packageId, targetVersion, execEnv: execEnv || 'prod'})
         .then((result: ApiResponse) => {
             if (result.status) {
                 window.bootbox.alert('回滚成功');
@@ -245,7 +210,6 @@ export function rollbackVersion(projectName: string, packageId: string, targetVe
         })
         .catch(err => {
             console.error('回滚失败', err);
-            window.bootbox.alert('回滚失败');
         });
     };
 }
@@ -253,14 +217,9 @@ export function rollbackVersion(projectName: string, packageId: string, targetVe
 export function loadNodes(execEnv?: string) {
     return function (dispatch: AppDispatch) {
         dispatch({type: LOAD_NODES});
-        const params = new URLSearchParams();
-        if (execEnv) params.append('execEnv', execEnv);
-        fetch(window._server + '/deployment/listNodes', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: params.toString()
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        const params: Record<string, string> = {};
+        if (execEnv) params.execEnv = execEnv;
+        formPost('/deployment/listNodes', params)
         .then(data => dispatch({type: LOAD_NODES_COMPLETED, data}))
         .catch(err => {
             console.error('加载节点列表失败', err);
@@ -271,12 +230,7 @@ export function loadNodes(execEnv?: string) {
 
 export function updateNodeGroup(nodeId: string, nodeGroup: string) {
     return function (dispatch: AppDispatch) {
-        fetch(window._server + '/deployment/updateNodeGroup', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({nodeId, nodeGroup}).toString()
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        formPost('/deployment/updateNodeGroup', {nodeId, nodeGroup})
         .then(() => {
             dispatch(loadNodes());
         })
@@ -286,12 +240,7 @@ export function updateNodeGroup(nodeId: string, nodeGroup: string) {
 
 export function deployToGroup(projectName: string, packageId: string, version: string, execEnv: string, nodeGroup: string) {
     return function (dispatch: AppDispatch) {
-        fetch(window._server + '/deployment/deployToGroup', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({projectName, packageId, version, execEnv: execEnv || 'prod', nodeGroup}).toString()
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        formPost<ApiResponse>('/deployment/deployToGroup', {projectName, packageId, version, execEnv: execEnv || 'prod', nodeGroup})
         .then((result: ApiResponse) => {
             if (result.status) {
                 window.bootbox.alert('灰度部署成功');
@@ -302,7 +251,6 @@ export function deployToGroup(projectName: string, packageId: string, version: s
         })
         .catch(err => {
             console.error('灰度部署失败', err);
-            window.bootbox.alert('灰度部署失败');
         });
     };
 }
@@ -316,8 +264,7 @@ export function setTab(tab: string): ReleaseAction {
 export function loadShadowConfigs() {
     return function (dispatch: AppDispatch) {
         dispatch({type: LOAD_SHADOW_CONFIGS});
-        fetch(window._server + '/shadow/configs')
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        httpGet('/shadow/configs')
         .then(data => dispatch({type: LOAD_SHADOW_CONFIGS_COMPLETED, data}))
         .catch(err => {
             console.error('加载陪跑配置失败', err);
@@ -328,19 +275,13 @@ export function loadShadowConfigs() {
 
 export function createShadowConfig(config: Partial<ShadowConfig>) {
     return function (dispatch: AppDispatch) {
-        fetch(window._server + '/shadow/configs', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(config)
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        jsonPost('/shadow/configs', config)
         .then(() => {
             window.bootbox.alert('陪跑配置创建成功');
             dispatch(loadShadowConfigs());
         })
         .catch(err => {
             console.error('创建陪跑配置失败', err);
-            window.bootbox.alert('创建失败');
         });
     };
 }
@@ -349,8 +290,7 @@ export function deleteShadowConfig(id: string) {
     return function (dispatch: AppDispatch) {
         window.bootbox.confirm('确认删除该陪跑配置？', (ok) => {
             if (!ok) return;
-            fetch(window._server + '/shadow/configs/' + id, {method: 'DELETE'})
-            .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+            httpDelete('/shadow/configs/' + id)
             .then(() => dispatch(loadShadowConfigs()))
             .catch(err => console.error('删除陪跑配置失败', err));
         });
@@ -359,12 +299,7 @@ export function deleteShadowConfig(id: string) {
 
 export function toggleShadowConfig(id: string, enabled: boolean) {
     return function (dispatch: AppDispatch) {
-        fetch(window._server + '/shadow/configs/' + id + '/toggle', {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({enabled})
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        jsonPut('/shadow/configs/' + id + '/toggle', {enabled})
         .then(() => dispatch(loadShadowConfigs()))
         .catch(err => console.error('切换陪跑配置状态失败', err));
     };
@@ -376,8 +311,7 @@ export function loadShadowComparisons(rulePackagePath: string, startTime?: strin
         const params = new URLSearchParams({rulePackagePath, page: String(page || 1), size: String(size || 20)});
         if (startTime) params.append('startTime', startTime);
         if (endTime) params.append('endTime', endTime);
-        fetch(window._server + '/shadow/comparisons?' + params.toString())
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        httpGet('/shadow/comparisons?' + params.toString())
         .then(data => dispatch({type: LOAD_SHADOW_COMPARISONS_COMPLETED, data}))
         .catch(err => {
             console.error('加载陪跑对比失败', err);
@@ -392,8 +326,7 @@ export function loadShadowStats(rulePackagePath: string, startTime?: string, end
         const params = new URLSearchParams({rulePackagePath});
         if (startTime) params.append('startTime', startTime);
         if (endTime) params.append('endTime', endTime);
-        fetch(window._server + '/shadow/stats?' + params.toString())
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        httpGet('/shadow/stats?' + params.toString())
         .then(data => dispatch({type: LOAD_SHADOW_STATS_COMPLETED, data}))
         .catch(err => {
             console.error('加载陪跑统计失败', err);
@@ -408,8 +341,7 @@ export function loadGrayStrategies(projectId?: string, packageId?: string) {
         const params = new URLSearchParams();
         if (projectId) params.append('projectId', projectId);
         if (packageId) params.append('packageId', packageId);
-        fetch(window._server + '/gray/strategies?' + params.toString())
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        httpGet('/gray/strategies?' + params.toString())
         .then(data => dispatch({type: LOAD_GRAY_STRATEGIES_COMPLETED, data}))
         .catch(err => {
             console.error('加载灰度策略失败', err);
@@ -420,19 +352,13 @@ export function loadGrayStrategies(projectId?: string, packageId?: string) {
 
 export function createGrayStrategy(strategy: Partial<GrayStrategy>) {
     return function (dispatch: AppDispatch) {
-        fetch(window._server + '/gray/strategies', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(strategy)
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        jsonPost('/gray/strategies', strategy)
         .then(() => {
             window.bootbox.alert('策略创建成功');
             dispatch(loadGrayStrategies(strategy.projectId, strategy.packageId));
         })
         .catch(err => {
             console.error('创建灰度策略失败', err);
-            window.bootbox.alert('创建失败');
         });
     };
 }
@@ -441,8 +367,7 @@ export function deleteGrayStrategy(id: string, projectId: string, packageId: str
     return function (dispatch: AppDispatch) {
         window.bootbox.confirm('确认删除该灰度策略？', (ok) => {
             if (!ok) return;
-            fetch(window._server + '/gray/strategies/' + id, {method: 'DELETE'})
-            .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+            httpDelete('/gray/strategies/' + id)
             .then(() => dispatch(loadGrayStrategies(projectId, packageId)))
             .catch(err => console.error('删除灰度策略失败', err));
         });
@@ -451,12 +376,7 @@ export function deleteGrayStrategy(id: string, projectId: string, packageId: str
 
 export function toggleGrayStrategy(id: string, enabled: boolean, projectId: string, packageId: string) {
     return function (dispatch: AppDispatch) {
-        fetch(window._server + '/gray/strategies/' + id + '/toggle', {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({enabled})
-        })
-        .then(resp => { if (!resp.ok) throw resp; return resp.json(); })
+        jsonPut('/gray/strategies/' + id + '/toggle', {enabled})
         .then(() => dispatch(loadGrayStrategies(projectId, packageId)))
         .catch(err => console.error('切换灰度策略状态失败', err));
     };

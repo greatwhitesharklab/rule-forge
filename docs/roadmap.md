@@ -184,12 +184,14 @@ Bootstrap 3.4.1 已过时，UI 影响产品形象和用户体验。Webpack 5 构
 ### 已实现
 
 - **Webpack → Vite 8** — 构建时间 ~25s → ~1s
-- **JavaScript → TypeScript** — 渐进迁移（strict: false），~120 源文件已转换
+- **JavaScript → TypeScript** — 全量迁移（strict: false），~120 源文件已转换
 - **Ant Design 5** — 安装 + 主题配置（#1677ff 匹配设计令牌）+ AntdProvider
+- **集中式 HTTP 客户端** — `src/api/client.ts`，统一 ~150 个 fetch/ajaxSave/XHR 调用
 - **已迁移模块**: login, reference, datasource, client, constant, parameter, variable,
   action, permission, resource, release, simulation, monitoring, analysis, package,
-  components/ (Grid, Tree, Dialog, Splitter, Menu, Widgets), frame/ (root shell)
-- **待后续迭代**: editor/*, scorecard/, flow-bpmn/ (~131 files)
+  components/ (Grid, Tree, Dialog, Splitter, Menu, Widgets), frame/ (root shell),
+  editor/*, scorecard/, flow-bpmn/
+- **Playwright E2E 测试** — Phase 5-7 覆盖
 
 ---
 

@@ -43,29 +43,6 @@ export function handleResponseError(response: Response | { status?: number; text
     }
 }
 
-export function ajaxSave(url: string, parameters: Record<string, string>, callback: (result: Record<string, unknown>) => void): void {
-    fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams(parameters).toString()
-    }).then(function (response) {
-        if (!response.ok) {
-            handleResponseError(response);
-            return;
-        }
-        return response.json();
-    }).then(function (result: Record<string, unknown> | null) {
-        if (!result) return;
-        if (result.status) {
-            callback(result);
-        } else {
-            window.bootbox.alert((result.message as string) || '保存失败');
-        }
-    }).catch(function () {
-        window.bootbox.alert("<span style='color: red'>服务端出错</span>");
-    });
-}
-
 export function formatDate(date: Date | number | string, format: string): string {
     if (typeof date === 'number') {
         date = new Date(date);
@@ -86,46 +63,6 @@ export function formatDate(date: Date | number | string, format: string): string
         if (new RegExp("(" + k + ")").test(format))
             format = format.replace(RegExp.$1, (RegExp.$1.length === 1) ? ("" + o[k]) : (("00" + o[k]).substring(("" + o[k]).length)));
     return format;
-}
-
-export function saveNewVersion(url: string, postData: { file: string; content: string }, cb: () => void): void {
-    fetch(window._server + '/common/checkFileDirty', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({
-            filePath: postData.file,
-            content: postData.content
-        }).toString()
-    }).then(function (response) {
-        if (!response.ok) {
-            handleResponseError(response);
-            return;
-        }
-        return response.json();
-    }).then(function (res: Record<string, unknown> | null) {
-        if (!res) return;
-        if (res.status) {
-            if (res.data) {
-                let decodedFileName = decodeURIComponent(postData.file);
-                if (decodedFileName.includes('%')) {
-                    decodedFileName = decodeURIComponent(decodedFileName);
-                }
-                window.bootbox.confirm(`是否对【${decodedFileName}】生成新版本？`, function (result: boolean) {
-                    if (result) {
-                        ajaxSave(url, postData, function () {
-                            cb();
-                        })
-                    }
-                })
-            } else {
-                window.bootbox.alert("与最新版本无差异，无需生成新版本.");
-            }
-        } else {
-            window.bootbox.alert("<span style='color: red'>服务端出错</span>");
-        }
-    }).catch(function () {
-        window.bootbox.alert("<span style='color: red'>服务端出错</span>");
-    });
 }
 
 interface Library {
@@ -156,20 +93,14 @@ interface EditorData {
     [key: string]: unknown;
 }
 
+import { formPost } from './api/client.js';
+
 export function loadEditorData(file: string, extraParams?: Record<string, string>): Promise<EditorData> {
-    var url = window._server + '/common/loadXml';
     var params: Record<string, string> = {files: file};
     if (extraParams) {
         Object.assign(params, extraParams);
     }
-    return fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams(params).toString()
-    }).then(function (response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (data: EditorData[]) {
+    return formPost<EditorData[]>('/common/loadXml', params).then(function (data) {
         var editorData = data[0];
         if (editorData.libraries) {
             loadLibraries(editorData.libraries);

@@ -7,6 +7,7 @@ interface VariableValueWidgetProps {
     onDirty?: () => void;
     onFunctionPropertyUpdate?: (variables: VariableItem[]) => void;
     act?: string;
+    ref?: React.Ref<any>;
 }
 
 interface VariableValueWidgetState {

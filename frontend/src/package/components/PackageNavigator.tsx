@@ -1,4 +1,5 @@
 import {useState, useEffect} from 'react';
+import {formPost} from '../../api/client.js';
 
 interface PackageItem {
     id: string;
@@ -45,15 +46,7 @@ export default function PackageNavigator({project, onFileSelect, onVersionChange
     useEffect(() => {
         if (!project) return;
         setLoading(true);
-        const url = window._server + '/packageeditor/loadPackages';
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({project}).toString()
-        }).then(r => {
-            if (!r.ok) throw r;
-            return r.json();
-        }).then((data: PackageItem[]) => {
+        formPost('/packageeditor/loadPackages', {project}).then((data: PackageItem[]) => {
             setPackages(data || []);
             setLoading(false);
         }).catch(err => {
@@ -65,15 +58,7 @@ export default function PackageNavigator({project, onFileSelect, onVersionChange
     // Load branches
     useEffect(() => {
         if (!project) return;
-        const url = window._server + '/packageeditor/listBranches';
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({project}).toString()
-        }).then(r => {
-            if (!r.ok) throw r;
-            return r.json();
-        }).then((data: { branches?: string[] }) => {
+        formPost('/packageeditor/listBranches', {project}).then((data: { branches?: string[] }) => {
             setBranches(data.branches || []);
         }).catch(err => {
             console.error('Failed to load branches:', err);
@@ -83,18 +68,10 @@ export default function PackageNavigator({project, onFileSelect, onVersionChange
     function loadPackageTree(packageId: string, version?: string) {
         if (!project || !packageId) return;
         setLoading(true);
-        const url = window._server + '/packageeditor/loadPackageTree';
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({
-                project,
-                packageId,
-                version: version || ''
-            }).toString()
-        }).then(r => {
-            if (!r.ok) throw r;
-            return r.json();
+        formPost('/packageeditor/loadPackageTree', {
+            project,
+            packageId,
+            version: version || ''
         }).then((data: { versions?: VersionInfo[]; currentVersion?: string; resourceItems?: ResourceItemInfo[]; gitTag?: string }) => {
             setVersions(data.versions || []);
             setCurrentVersion(data.currentVersion || null);

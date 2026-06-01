@@ -1,5 +1,5 @@
 import Styles from '../Styles.js';
-import { handleResponseError } from '../Utils.js';
+import { formPost, jsonPost } from '../api/client.js';
 
 let __ui_id = 1;
 
@@ -9,31 +9,13 @@ export function uniqueID(): string {
 
 // todo unused function
 export function refactorContent(file: Record<string, string>, callback: () => void): void {
-    const url = window._server + "/common/refactorContent";
-    fetch(url, {
-        method: "POST",
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(file).toString()
-    }).then(function (response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function () {
+    formPost('/common/refactorContent', file, { silent: true }).then(function () {
         callback();
-    }).catch(function (response: Response | { status?: number; text?: () => Promise<string> }) {
-        handleResponseError(response, '服务端错误：');
     });
 }
 
 export function loadFileVersions(file: string, callback: (files: TreeNodeData[]) => void): void {
-    const url = window._server + '/frame/fileVersions';
-    fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ path: file }).toString()
-    }).then(function (response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (data: { files?: TreeNodeData[] }) {
+    formPost<{ files?: TreeNodeData[] }>('/frame/fileVersions', { path: file }, { silent: true }).then(function (data) {
         if (data && data.files && data.files.length) {
             buildData(data.files);
             callback(data.files);
@@ -46,21 +28,13 @@ export function loadFileVersions(file: string, callback: (files: TreeNodeData[])
 }
 
 export function loadResourceTreeData(data: Record<string, string | boolean | undefined>, callback: (data: TreeNodeData) => void): void {
-    const url = window._server + '/common/loadResourceTreeData';
     const filtered: Record<string, string> = {};
     Object.keys(data).forEach(function (key) {
         if (data[key] !== undefined && data[key] !== null) {
             filtered[key] = String(data[key]);
         }
     });
-    fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(filtered).toString()
-    }).then(function (response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (data: TreeNodeData) {
+    formPost<TreeNodeData>('/common/loadResourceTreeData', filtered, { silent: true }).then(function (data) {
         buildData(data);
         callback(data);
     }).catch(function () {
@@ -70,15 +44,7 @@ export function loadResourceTreeData(data: Record<string, string | boolean | und
 
 // 获取测试规则集
 export function loadTestRuleSets(file: string, version: string, callback: (rules: unknown[]) => void): void {
-    const url = window._server + '/common/loadXml';
-    fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ files: `${file}:${version}` }).toString()
-    }).then(function (response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (data: Array<{ rules?: unknown[] }>) {
+    formPost<Array<{ rules?: unknown[] }>>('/common/loadXml', { files: `${file}:${version}` }, { silent: true }).then(function (data) {
         const ruleset = data[0] || {};
         const rules = ruleset["rules"] || [];
         console.log('获取规则集', rules);
@@ -91,15 +57,7 @@ export function loadTestRuleSets(file: string, version: string, callback: (rules
 
 // 选择版本和规则测试集后获取数据源
 export function loadVariableCategories(params: Record<string, unknown>, callback: (data: unknown[]) => void): void {
-    const url = window._server + '/test/variableCategories/load';
-    fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params)
-    }).then(function (response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (data: unknown[]) {
+    jsonPost<unknown[]>('/test/variableCategories/load', params, { silent: true }).then(function (data) {
         callback(data);
     }).catch(function () {
         window.bootbox.alert('加载资源失败.');
@@ -109,15 +67,7 @@ export function loadVariableCategories(params: Record<string, unknown>, callback
 
 // 根据订单号获取数据源
 export function searchForAppId(appId: string, projectId: string, callback: (data: unknown[]) => void): void {
-    const url = window._server + '/test/data/appId';
-    fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ appId, projectId }).toString()
-    }).then(function (response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (res: { status?: boolean; data?: unknown[]; msg?: string }) {
+    formPost<{ status?: boolean; data?: unknown[]; msg?: string }>('/test/data/appId', { appId, projectId }, { silent: true }).then(function (res) {
         if (res.status) {
             callback(res.data || []);
         } else {
@@ -132,15 +82,7 @@ export function searchForAppId(appId: string, projectId: string, callback: (data
 
 // 开始测试
 export function beginTest(postData: Record<string, unknown>, type: string, callback: (data: unknown[], success: boolean) => void): void {
-    const url = window._server + '/test/fast';
-    fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(postData)
-    }).then(function (response) {
-        if (!response.ok) throw response;
-        return response.json();
-    }).then(function (res: { status?: boolean; data?: unknown[]; msg?: string }) {
+    jsonPost<{ status?: boolean; data?: unknown[]; msg?: string }>('/test/fast', postData, { silent: true }).then(function (res) {
         if (res.status) {
             callback(res.data || [], true);
         } else {

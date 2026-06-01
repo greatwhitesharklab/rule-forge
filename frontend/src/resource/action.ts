@@ -1,4 +1,4 @@
-import {ajaxSave} from '../Utils.js';
+import {save as apiSave, formPost} from '../api/client.js';
 import * as componentEvent from '../components/componentEvent.js';
 
 export const LOAD_MASTER_COMPLETED = 'load_master_completed';
@@ -30,25 +30,10 @@ export interface ResourceCategory {
 
 export function loadMasterData(files: string) {
     return function (dispatch: Function) {
-        var url = window._server + "/xml";
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({files}).toString()
-        }).then(function (response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then(function (data: ResourceCategory[][]) {
+        formPost<ResourceCategory[][]>("/xml", {files}).then(function (data) {
             dispatch({type: LOAD_MASTER_COMPLETED, masterData: data[0]});
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        }).catch(function (response: Response) {
-            if (response && response.text) {
-                response.text().then(function (text) {
-                    window.bootbox.alert("<span style='color: red'>加载数据失败,服务端错误：" + text + "</span>");
-                });
-            } else {
-                window.bootbox.alert("<span style='color: red'>加载数据失败,服务端出错</span>");
-            }
+        }).catch(function () {
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
         });
     }
@@ -66,25 +51,10 @@ export function reFresh(file: string) {
 
 export function addVariable(data: Record<string, string>, file: string) {
     return function (dispatch: Function) {
-        var url = window._server + "/common/addVariable";
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams(data).toString()
-        }).then(function (response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then(function (data) {
+        formPost("/common/addVariable", data).then(function () {
             dispatch(generateVariableLibrary(file));
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        }).catch(function (response: Response) {
-            if (response && response.text) {
-                response.text().then(function (text) {
-                    window.bootbox.alert("<span style='color: red'>保存数据失败,服务端错误：" + text + "</span>");
-                });
-            } else {
-                window.bootbox.alert("<span style='color: red'>保存数据失败,服务端出错</span>");
-            }
+        }).catch(function () {
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
         });
     }
@@ -92,27 +62,13 @@ export function addVariable(data: Record<string, string>, file: string) {
 
 export function generateVariableLibrary(file?: string) {
     return function (dispatch: Function) {
-        let url = window._server + '/variableeditor/generateVariableLibrary';
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-        }).then(function (response) {
-            if (!response.ok) throw response;
-            return response.json();
-        }).then(function (data: { variableCategories: ResourceCategory[] }) {
+        formPost<{ variableCategories: ResourceCategory[] }>('/variableeditor/generateVariableLibrary', {}).then(function (data) {
             dispatch({type: LOAD_MASTER_COMPLETED, masterData: data.variableCategories});
             if (file) {
                 dispatch({type: SAVE, file, newVersion: false});
             }
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        }).catch(function (response: Response) {
-            if (response && response.text) {
-                response.text().then(function (text) {
-                    window.bootbox.alert("<span style='color: red'>生成字段失败,服务端错误：" + text + "</span>");
-                });
-            } else {
-                window.bootbox.alert("<span style='color: red'>生成字段失败,服务端出错</span>");
-            }
+        }).catch(function () {
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
         });
     }
@@ -168,12 +124,12 @@ export function saveData(data: ResourceCategory[], newVersion: boolean, file: st
                 return;
             }
             postData.versionComment = versionComment;
-            ajaxSave(url, postData, function () {
+            apiSave(url, postData).then(function () {
                 // window.bootbox.alert('保存成功!');
             })
         });
     } else {
-        ajaxSave(url, postData, function () {
+        apiSave(url, postData).then(function () {
             // window.bootbox.alert('保存成功!');
         })
     }
