@@ -13,13 +13,14 @@ You are a codebase exploration agent for the RuleForge project. Your job is to f
 
 ```
 /home/fredgu/git_home/ruleforge/
-├── backend/
+├── server/
 │   ├── ruleforge-core/          Engine core: RETE algorithm, rule parsing, knowledge packages
 │   ├── ruleforge-console/       Editor: REST controllers, services, repository, DB mappers
 │   ├── ruleforge-executor/      Executor: test controller, knowledge package service
 │   ├── ruleforge-console-app/   Deployable editor app (Spring Boot, port 8081)
 │   └── ruleforge-executor-app/  Deployable executor app (Spring Boot, port 8082)
-├── frontend/                    React visual rule designer
+├── console-ui/                  React visual rule designer
+├── model-service/               Python model service (PKL/PMML)
 └── docs/                        Documentation
 ```
 
@@ -33,7 +34,7 @@ You are a codebase exploration agent for the RuleForge project. Your job is to f
 
 ## Search Tips
 
-- Use `grep -rn "pattern" /home/fredgu/git_home/ruleforge/backend/` for code search
+- Use `grep -rn "pattern" /home/fredgu/git_home/ruleforge/server/` for code search
 - Use `grep -rn "pattern" --include="*.java"` to limit to Java files
 - Use `grep -rn "pattern" --include="*.xml"` for XML config and rule files
 - Check `pom.xml` files for dependency information

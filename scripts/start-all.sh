@@ -1,5 +1,5 @@
 #!/bin/bash
-# Start all RuleForge services (Console + Executor + Frontend)
+# Start all RuleForge services (Console + Executor + Console UI)
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -14,20 +14,20 @@ else
 fi
 
 echo "Starting all RuleForge services..."
-echo "  Console:  http://localhost:${CONSOLE_PORT:-8081}"
-echo "  Executor: http://localhost:${EXECUTOR_PORT:-8082}"
-echo "  Frontend: http://localhost:3000"
+echo "  Console:   http://localhost:${CONSOLE_PORT:-8081}"
+echo "  Executor:  http://localhost:${EXECUTOR_PORT:-8082}"
+echo "  Console UI: http://localhost:3000"
 echo ""
 
-# Start backend services in background
-"$SCRIPT_DIR/start-backend.sh" &
-BACKEND_PID=$!
+# Start server (Console + Executor) in background
+"$SCRIPT_DIR/start-server.sh" &
+SERVER_PID=$!
 
-# Start frontend
-"$SCRIPT_DIR/start-frontend.sh" &
-FRONTEND_PID=$!
+# Start console UI
+"$SCRIPT_DIR/start-console-ui.sh" &
+UI_PID=$!
 
 # Handle shutdown
-trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit" INT TERM
+trap "kill $SERVER_PID $UI_PID 2>/dev/null; exit" INT TERM
 
 wait

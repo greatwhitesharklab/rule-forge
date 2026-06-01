@@ -13,7 +13,7 @@
 </div>
 
 > **⚠️ 项目状态：活跃开发中**
-> Phase 1-4 已完成（监控告警、数据源管理、版本发布、Agent 分析），Phase 5-12 规划中。详见 [路线图](docs/roadmap.md) 和 [更新日志](CHANGELOG.md)。
+> Phase 1-7 已完成（监控告警、数据源、版本发布、Agent 分析、规则仿真、前端 TS 迁移、AI 助手），Phase 8-12 规划中。详见 [路线图](docs/roadmap.md) 和 [更新日志](CHANGELOG.md)。
 
 ---
 
@@ -63,7 +63,7 @@ cp .env.example .env
 ### 2️⃣ 编译
 
 ```bash
-cd backend
+cd server
 mvn compile
 ```
 
@@ -71,13 +71,13 @@ mvn compile
 
 ```bash
 # 🎯 使用启动脚本（推荐）
-./scripts/start-backend.sh    # Console + Executor
-./scripts/start-frontend.sh   # Frontend
+./scripts/start-server.sh       # Console + Executor
+./scripts/start-console-ui.sh   # Console UI
 
 # 或单独启动
-./scripts/start-console.sh    # 仅编辑器
-./scripts/start-executor.sh   # 仅执行器
-./scripts/start-all.sh        # 全部服务 🚀
+./scripts/start-console.sh      # 仅编辑器
+./scripts/start-executor.sh     # 仅执行器
+./scripts/start-all.sh          # 全部服务 🚀
 ```
 
 - **Editor API** — http://localhost:8081
@@ -109,11 +109,11 @@ mvn compile
 
 ```bash
 # 后端单元测试
-cd backend
+cd server
 mvn test
 
 # 前端单元测试
-cd frontend
+cd console-ui
 npm test
 
 # 前端 E2E 测试（需要启动后端服务）

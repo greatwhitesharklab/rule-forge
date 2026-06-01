@@ -12,7 +12,7 @@ else
     echo "Warning: .env not found, using defaults from .env.example"
 fi
 
-cd backend
+cd server
 
 # Install dependencies to local repo (needed for spring-boot:run)
 if [ ! -f "$HOME/.m2/repository/com/ruleforge/ruleforge-executor/3.5.3-SNAPSHOT/ruleforge-executor-3.5.3-SNAPSHOT.jar" ]; then

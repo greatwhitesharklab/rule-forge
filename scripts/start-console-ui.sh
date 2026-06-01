@@ -1,5 +1,5 @@
 #!/bin/bash
-# Start RuleForge Frontend (React dev server)
+# Start RuleForge Console UI (React dev server)
 
 set -e
 cd "$(dirname "$0")/.."
@@ -10,8 +10,8 @@ if [ -f .env ]; then
     echo "Loaded .env"
 fi
 
-echo "Starting Frontend dev server..."
-cd frontend
+echo "Starting Console UI dev server..."
+cd console-ui
 
 if [ ! -d "node_modules" ]; then
     echo "Installing dependencies..."

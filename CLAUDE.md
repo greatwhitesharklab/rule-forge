@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build Commands
 
-Maven-based Java 17 project, Spring Boot 4.0.6. Run from `backend/`:
+Maven-based Java 17 project, Spring Boot 4.0.6. Run from `server/`:
 
 ```bash
 mvn compile                       # Compile all modules
@@ -12,7 +12,7 @@ mvn compile -pl ruleforge-core    # Compile single module with deps (-am)
 mvn clean package -DskipTests     # Package without tests
 ```
 
-Frontend is in `frontend/`, check its package.json for npm commands.
+Frontend is in `console-ui/`, check its package.json for npm commands.
 
 ## Project Architecture
 

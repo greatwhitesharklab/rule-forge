@@ -22,7 +22,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: frontend
+        working-directory: console-ui
 
     steps:
       - name: Checkout code

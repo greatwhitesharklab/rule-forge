@@ -1,5 +1,5 @@
 #!/bin/bash
-# Start RuleForge Console + Executor
+# Start RuleForge Server (Console + Executor)
 
 set -e
 cd "$(dirname "$0")/.."
@@ -12,7 +12,7 @@ else
     echo "Warning: .env not found, using defaults from .env.example"
 fi
 
-cd backend
+cd server
 
 # Install dependencies to local repo
 echo "Installing dependencies to local Maven repo..."

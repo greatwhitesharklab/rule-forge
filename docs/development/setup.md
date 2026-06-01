@@ -12,7 +12,7 @@
 ### 编译
 
 ```bash
-cd backend
+cd server
 
 # 编译全部模块
 mvn compile
@@ -44,10 +44,10 @@ mvn clean package -DskipTests
 ## 前端
 
 ```bash
-cd frontend
+cd console-ui
 npm install
 ```
 
-具体命令参考 `frontend/package.json`。
+具体命令参考 `console-ui/package.json`。
 
 前端使用 React + bpmn-js 构建可视化规则设计器。
