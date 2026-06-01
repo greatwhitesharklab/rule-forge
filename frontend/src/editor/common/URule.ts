@@ -148,6 +148,11 @@ export function refreshFunctionLibraries(): void {
     });
 }
 
+// --- Initialize ruleforge global namespace (used by unconverted prototype classes) ---
+if (!(window as unknown as Record<string, unknown>).ruleforge) {
+    (window as unknown as Record<string, unknown>).ruleforge = {};
+}
+
 // --- Backward-compatible window globals ---
 
 (window as unknown as Record<string, unknown>)._ConstantValueArray = constantValueArray;

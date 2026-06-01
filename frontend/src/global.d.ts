@@ -55,11 +55,13 @@ interface UserInfo {
 // ---- RuleForge menu namespace (loaded from public/js/menu.js) ----
 
 interface MenuItemConfig {
-    name: string;
+    name?: string;
     label: string;
     icon?: string;
     datatype?: string;
     act?: string;
+    defaultValue?: string | boolean;
+    editorType?: number;
     parent?: MenuItemConfig;
     subMenu?: { menuItems: MenuItemConfig[] };
     variables?: unknown[];
