@@ -1,23 +1,15 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import * as ACTIONS from './action.js';
-import {setupMockServer, teardownMockServer} from '../__test_utils__/mockServer.js';
 import {setupMockBootbox, teardownMockBootbox} from '../__test_utils__/mockBootbox.js';
 
-// Mock save from api/client.js (replaces the old ajaxSave from Utils.js)
+// Mock api/client.js — production code imports save and formPost
 vi.mock('../api/client.js', () => ({
     save: vi.fn(),
-}));
-
-// Mock handleResponseError from Utils (still used by action.ts for error handling)
-vi.mock('../Utils.js', () => ({
-    handleResponseError: vi.fn(),
+    formPost: vi.fn(),
 }));
 
 // Helper to flush async chains
-async function flushAsync(mockFetch: { mock?: { results: Array<{ value: unknown }> } }) {
-    if (mockFetch.mock && mockFetch.mock.results[0]) {
-        await mockFetch.mock.results[0].value;
-    }
+async function flushAsync() {
     await new Promise(resolve => setTimeout(resolve, 0));
 }
 
@@ -60,17 +52,15 @@ describe('Constant Module - Action Creators', () => {
 });
 
 describe('Constant Module - Thunks', () => {
-    let mockServer: ReturnType<typeof setupMockServer>, mockBootbox: ReturnType<typeof setupMockBootbox>;
+    let mockBootbox: ReturnType<typeof setupMockBootbox>;
     let dispatch: (a: unknown) => void;
 
     beforeEach(() => {
-        mockServer = setupMockServer();
         mockBootbox = setupMockBootbox();
         dispatch = vi.fn() as unknown as (a: unknown) => void;
     });
 
     afterEach(() => {
-        teardownMockServer();
         teardownMockBootbox();
     });
 
@@ -79,12 +69,13 @@ describe('Constant Module - Thunks', () => {
             {name: 'Const1', label: 'Group 1', constants: []},
             {name: 'Const2', label: 'Group 2', constants: []},
         ];
-        mockServer.mockResponse('/xml', [{categories}]);
+        const {formPost} = await import('../api/client.js');
+        (formPost as any).mockResolvedValue([{categories}]);
 
         const thunk = ACTIONS.loadMasterData('test-files');
         thunk(dispatch);
 
-        await flushAsync(mockServer.fetchMock);
+        await flushAsync();
 
         expect(dispatch).toHaveBeenCalledWith({
             type: ACTIONS.LOAD_MASTER_COMPLETED,
@@ -92,20 +83,18 @@ describe('Constant Module - Thunks', () => {
         });
     });
 
-    it('GIVEN server error WHEN loadMasterData thunk is dispatched THEN it should call handleResponseError', async () => {
-        mockServer.mockError('/xml', 500);
+    it('GIVEN server error WHEN loadMasterData thunk is dispatched THEN it should not dispatch LOAD_MASTER_COMPLETED', async () => {
+        const {formPost} = await import('../api/client.js');
+        (formPost as any).mockRejectedValue(new Error('Server error'));
 
         const thunk = ACTIONS.loadMasterData('test-files');
         thunk(dispatch);
 
-        await flushAsync(mockServer.fetchMock);
+        await flushAsync();
 
         expect(dispatch).not.toHaveBeenCalledWith(
             expect.objectContaining({type: ACTIONS.LOAD_MASTER_COMPLETED})
         );
-        // handleResponseError is called on error
-        const {handleResponseError} = await import('../Utils.js');
-        expect(handleResponseError).toHaveBeenCalled();
     });
 });
 

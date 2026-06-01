@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as ACTIONS from './action.js';
-import { setupMockServer, teardownMockServer } from '../__test_utils__/mockServer.js';
 import { setupMockBootbox, teardownMockBootbox } from '../__test_utils__/mockBootbox.js';
 
 // Mock componentEvent module used by action.js
@@ -10,16 +9,14 @@ vi.mock('../components/componentEvent.js', () => ({
     HIDE_LOADING: 'HIDE_LOADING',
 }));
 
-// Mock save from api/client.js (replaces the old ajaxSave from Utils.js)
+// Mock api/client.js — production code imports save and formPost
 vi.mock('../api/client.js', () => ({
     save: vi.fn(),
+    formPost: vi.fn(),
 }));
 
 // Helper to flush async chains
-async function flushAsync(mockFetch: ReturnType<typeof vi.fn>) {
-    if (mockFetch.mock && mockFetch.mock.results[0]) {
-        await mockFetch.mock.results[0].value;
-    }
+async function flushAsync() {
     await new Promise(resolve => setTimeout(resolve, 0));
 }
 
@@ -46,16 +43,14 @@ describe('Resource Module - Action Creators', () => {
 });
 
 describe('Resource Module - Thunks', () => {
-    let mockServer: ReturnType<typeof setupMockServer>, dispatch: ReturnType<typeof vi.fn>, mockBootbox: ReturnType<typeof setupMockBootbox>;
+    let dispatch: ReturnType<typeof vi.fn>, mockBootbox: ReturnType<typeof setupMockBootbox>;
 
     beforeEach(() => {
-        mockServer = setupMockServer();
         mockBootbox = setupMockBootbox();
         dispatch = vi.fn();
     });
 
     afterEach(() => {
-        teardownMockServer();
         teardownMockBootbox();
     });
 
@@ -64,12 +59,13 @@ describe('Resource Module - Thunks', () => {
             { name: 'Category1', type: 'type1', clazz: 'clazz1', variables: [] },
             { name: 'Category2', type: 'type2', clazz: 'clazz2', variables: [] },
         ];
-        mockServer.mockResponse('/xml', [masterData]);
+        const { formPost } = await import('../api/client.js');
+        (formPost as any).mockResolvedValue([masterData]);
 
         const thunk = ACTIONS.loadMasterData('test-files');
         thunk(dispatch);
 
-        await flushAsync(mockServer.fetchMock);
+        await flushAsync();
 
         expect(dispatch).toHaveBeenCalledWith({
             type: ACTIONS.LOAD_MASTER_COMPLETED,
@@ -80,12 +76,13 @@ describe('Resource Module - Thunks', () => {
     });
 
     it('GIVEN server error WHEN loadMasterData thunk is dispatched THEN it should handle error', async () => {
-        mockServer.mockError('/xml', 500);
+        const { formPost } = await import('../api/client.js');
+        (formPost as any).mockRejectedValue(new Error('Server error'));
 
         const thunk = ACTIONS.loadMasterData('test-files');
         thunk(dispatch);
 
-        await flushAsync(mockServer.fetchMock);
+        await flushAsync();
 
         expect(dispatch).not.toHaveBeenCalledWith(
             expect.objectContaining({ type: ACTIONS.LOAD_MASTER_COMPLETED })
@@ -98,12 +95,13 @@ describe('Resource Module - Thunks', () => {
         const variableCategories = [
             { name: 'Category1', type: 'type1', clazz: 'clazz1', variables: [] }
         ];
-        mockServer.mockResponse('/variableeditor/generateVariableLibrary', { variableCategories });
+        const { formPost } = await import('../api/client.js');
+        (formPost as any).mockResolvedValue({ variableCategories });
 
         const thunk = ACTIONS.generateVariableLibrary('test-file.xml');
         thunk(dispatch);
 
-        await flushAsync(mockServer.fetchMock);
+        await flushAsync();
 
         expect(dispatch).toHaveBeenCalledWith({
             type: ACTIONS.LOAD_MASTER_COMPLETED,
@@ -117,12 +115,13 @@ describe('Resource Module - Thunks', () => {
         const variableCategories = [
             { name: 'Category1', type: 'type1', clazz: 'clazz1', variables: [] }
         ];
-        mockServer.mockResponse('/variableeditor/generateVariableLibrary', { variableCategories });
+        const { formPost } = await import('../api/client.js');
+        (formPost as any).mockResolvedValue({ variableCategories });
 
         const thunk = ACTIONS.generateVariableLibrary('test-file.xml');
         thunk(dispatch);
 
-        await flushAsync(mockServer.fetchMock);
+        await flushAsync();
 
         expect(dispatch).toHaveBeenCalledWith({
             type: ACTIONS.SAVE,
@@ -132,12 +131,13 @@ describe('Resource Module - Thunks', () => {
     });
 
     it('GIVEN server error WHEN generateVariableLibrary thunk is dispatched THEN it should handle error', async () => {
-        mockServer.mockError('/variableeditor/generateVariableLibrary', 500);
+        const { formPost } = await import('../api/client.js');
+        (formPost as any).mockRejectedValue(new Error('Server error'));
 
         const thunk = ACTIONS.generateVariableLibrary('test-file.xml');
         thunk(dispatch);
 
-        await flushAsync(mockServer.fetchMock);
+        await flushAsync();
 
         expect(dispatch).not.toHaveBeenCalledWith(
             expect.objectContaining({ type: ACTIONS.LOAD_MASTER_COMPLETED })
@@ -147,12 +147,15 @@ describe('Resource Module - Thunks', () => {
     });
 
     it('GIVEN valid data and file WHEN addVariable thunk is dispatched THEN it should add variable and regenerate library', async () => {
-        mockServer.mockResponse('/common/addVariable', {});
-        mockServer.mockResponse('/variableeditor/generateVariableLibrary', {
-            variableCategories: [
-                { name: 'Category1', type: 'type1', clazz: 'clazz1', variables: [] }
-            ]
-        });
+        const variableCategories = [
+            { name: 'Category1', type: 'type1', clazz: 'clazz1', variables: [] }
+        ];
+        const { formPost } = await import('../api/client.js');
+        // First call: addVariable resolves with anything
+        // Second call: generateVariableLibrary resolves with variableCategories
+        (formPost as any)
+            .mockResolvedValueOnce({})                     // addVariable
+            .mockResolvedValueOnce({ variableCategories }); // generateVariableLibrary
 
         // Create a dispatch that handles thunks (like redux-thunk middleware)
         const dispatch = vi.fn(async (act: unknown) => {
@@ -165,17 +168,7 @@ describe('Resource Module - Thunks', () => {
         const thunk = ACTIONS.addVariable(data, 'test-file.xml');
         thunk(dispatch);
 
-        // Wait for first fetch (addVariable)
-        if (mockServer.fetchMock.mock.results[0]) {
-            await mockServer.fetchMock.mock.results[0].value;
-        }
-        await new Promise(resolve => setTimeout(resolve, 0));
-
-        // Wait for second fetch (generateVariableLibrary)
-        if (mockServer.fetchMock.mock.results[1]) {
-            await mockServer.fetchMock.mock.results[1].value;
-        }
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await flushAsync();
 
         expect(dispatch).toHaveBeenCalledWith({
             type: ACTIONS.LOAD_MASTER_COMPLETED,
@@ -188,13 +181,14 @@ describe('Resource Module - Thunks', () => {
     });
 
     it('GIVEN server error WHEN addVariable thunk is dispatched THEN it should handle error', async () => {
-        mockServer.mockError('/common/addVariable', 500);
+        const { formPost } = await import('../api/client.js');
+        (formPost as any).mockRejectedValue(new Error('Server error'));
 
         const data = { name: 'newVar', label: 'New Variable', type: 'String' };
         const thunk = ACTIONS.addVariable(data, 'test-file.xml');
         thunk(dispatch);
 
-        await flushAsync(mockServer.fetchMock);
+        await flushAsync();
 
         const { eventEmitter } = await import('../components/componentEvent.js');
         expect(eventEmitter.emit).toHaveBeenCalledWith('HIDE_LOADING');

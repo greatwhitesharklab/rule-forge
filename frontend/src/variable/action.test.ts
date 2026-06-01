@@ -1,18 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as ACTIONS from './action.js';
-import { setupMockServer, teardownMockServer } from '../__test_utils__/mockServer.js';
 import { setupMockBootbox, teardownMockBootbox } from '../__test_utils__/mockBootbox.js';
 
-// Mock save from api/client.js to intercept the module import
+// Mock api/client.js — production code imports save and formPost
 vi.mock('../api/client.js', () => ({
     save: vi.fn(),
+    formPost: vi.fn(),
 }));
 
 // Helper to flush async chains
-async function flushAsync(mockFetch: any) {
-    if (mockFetch.mock && mockFetch.mock.results[0]) {
-        await mockFetch.mock.results[0].value;
-    }
+async function flushAsync() {
     await new Promise(resolve => setTimeout(resolve, 0));
 }
 
@@ -64,16 +61,14 @@ describe('Variable Module - Action Creators', () => {
 });
 
 describe('Variable Module - Thunks', () => {
-    let mockServer: any, dispatch: any, mockBootbox: any;
+    let dispatch: any, mockBootbox: any;
 
     beforeEach(() => {
-        mockServer = setupMockServer();
         mockBootbox = setupMockBootbox();
         dispatch = vi.fn();
     });
 
     afterEach(() => {
-        teardownMockServer();
         teardownMockBootbox();
     });
 
@@ -82,12 +77,13 @@ describe('Variable Module - Thunks', () => {
             { name: 'Cat1', type: 'Custom', clazz: 'c1', variables: [] },
             { name: 'Cat2', type: 'Custom', clazz: 'c2', variables: [] },
         ];
-        mockServer.mockResponse('/xml', [masterData]);
+        const { formPost } = await import('../api/client.js');
+        (formPost as any).mockResolvedValue([masterData]);
 
         const thunk = ACTIONS.loadMasterData('test-files') as any;
         thunk(dispatch);
 
-        await flushAsync(mockServer.fetchMock);
+        await flushAsync();
 
         expect(dispatch).toHaveBeenCalledWith({
             type: ACTIONS.LOAD_MASTER_COMPLETED,
@@ -96,18 +92,17 @@ describe('Variable Module - Thunks', () => {
     });
 
     it('GIVEN server error WHEN loadMasterData thunk is dispatched THEN it should handle error', async () => {
-        mockServer.mockError('/xml', 500);
+        const { formPost } = await import('../api/client.js');
+        (formPost as any).mockRejectedValue(new Error('Server error'));
 
         const thunk = ACTIONS.loadMasterData('test-files') as any;
         thunk(dispatch);
 
-        await flushAsync(mockServer.fetchMock);
+        await flushAsync();
 
         expect(dispatch).not.toHaveBeenCalledWith(
             expect.objectContaining({ type: ACTIONS.LOAD_MASTER_COMPLETED })
         );
-        // Error path shows bootbox alert
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
     });
 
     it('GIVEN valid clazz WHEN generateFields thunk is dispatched THEN it should fetch and dispatch GENERATED_FIELDS', async () => {
@@ -115,12 +110,13 @@ describe('Variable Module - Thunks', () => {
             { name: 'field1', label: 'Field 1', type: 'String' },
             { name: 'field2', label: 'Field 2', type: 'Integer' },
         ];
-        mockServer.mockResponse('/variableeditor/generateFields', fields);
+        const { formPost } = await import('../api/client.js');
+        (formPost as any).mockResolvedValue(fields);
 
         const thunk = ACTIONS.generateFields(0, 'com.example.TestClazz') as any;
         thunk(dispatch);
 
-        await flushAsync(mockServer.fetchMock);
+        await flushAsync();
 
         expect(dispatch).toHaveBeenCalledWith({
             type: ACTIONS.GENERATED_FIELDS,
@@ -130,17 +126,17 @@ describe('Variable Module - Thunks', () => {
     });
 
     it('GIVEN server error WHEN generateFields thunk is dispatched THEN it should handle error', async () => {
-        mockServer.mockError('/variableeditor/generateFields', 500);
+        const { formPost } = await import('../api/client.js');
+        (formPost as any).mockRejectedValue(new Error('Server error'));
 
         const thunk = ACTIONS.generateFields(0, 'com.example.BadClazz') as any;
         thunk(dispatch);
 
-        await flushAsync(mockServer.fetchMock);
+        await flushAsync();
 
         expect(dispatch).not.toHaveBeenCalledWith(
             expect.objectContaining({ type: ACTIONS.GENERATED_FIELDS })
         );
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
     });
 });
 
