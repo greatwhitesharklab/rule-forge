@@ -1,0 +1,13 @@
+{
+  "name": "贷款产品匹配表",
+  "type": "decision-table",
+  "inputs": ["creditScore", "loanAmount"],
+  "outputs": ["productCode", "productName", "maxAmount", "rate"],
+  "rules": [
+    {"creditScore": ">=80", "loanAmount": "<=1000000", "productCode": "P001", "productName": "优享贷", "maxAmount": 1000000, "rate": 0.038},
+    {"creditScore": ">=80", "loanAmount": ">1000000", "productCode": "P002", "productName": "精英贷", "maxAmount": 3000000, "rate": 0.042},
+    {"creditScore": ">=60 AND <80", "loanAmount": "<=500000", "productCode": "P003", "productName": "标准贷", "maxAmount": 500000, "rate": 0.048},
+    {"creditScore": ">=60 AND <80", "loanAmount": ">500000", "productCode": "P004", "productName": "成长贷", "maxAmount": 1000000, "rate": 0.052},
+    {"creditScore": "<60", "loanAmount": "ANY", "productCode": "N/A", "productName": "不适用", "maxAmount": 0, "rate": 0}
+  ]
+}

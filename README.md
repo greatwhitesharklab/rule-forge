@@ -2,34 +2,85 @@
 
 # RuleForge
 
-**基于 RETE 算法的高性能 Java 规则引擎**
+**面向金融场景的智能决策引擎**
 
-🚀 多类型规则定义 · 🎨 可视化设计器 · 🔥 热部署 · ⚡ 高性能执行
+确定性规则 + ML 模型推理 — 每个决策可审计、可解释、可追溯
 
 [![Java](https://img.shields.io/badge/Java-17-blue.svg)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.6-green.svg)](https://spring.io/projects/spring-boot)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg)](https://www.typescriptlang.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](LICENSE)
 
 </div>
 
 > **⚠️ 项目状态：活跃开发中**
-> Phase 1-7 已完成（监控告警、数据源、版本发布、Agent 分析、规则仿真、前端 TS 迁移、AI 助手），Phase 8-12 规划中。详见 [路线图](docs/roadmap.md) 和 [更新日志](CHANGELOG.md)。
+> Phase 1-11 已完成，Phase 12+ 规划中。详见 [路线图](docs/roadmap.md) 和 [更新日志](CHANGELOG.md)。
 
 ---
 
-## ✨ 特性
+## ✨ 为什么选择 RuleForge
 
-- 🧩 **多类型规则定义** — 向导式规则集、脚本式规则集、决策表、决策树、评分卡、决策流
-- 🎨 **可视化设计器** — 基于 React + bpmn-js 的 Web 规则编辑器，所见即所得
+| | |
+|---|---|
+| **AI + 规则混合** | 确定性规则引擎 + ML 模型推理，每个决策可审计可解释 |
+| **金融场景优先** | 信贷审批、反欺诈、信用评分等开箱即用的业务模板 |
+| **可视化全生命周期** | 编辑 → 版本管理 → 灰度发布 → 影子测试 → 监控告警 |
+| **高性能 RETE** | 生产级规则匹配算法，毫秒级响应，支持热部署 |
+
+## 💰 金融场景
+
+| 场景 | 说明 |
+|------|------|
+| 🏦 **小微信贷审批** | 多维度风控规则 + 评分卡，自动化审批决策 |
+| 🛡️ **反欺诈交易检测** | 实时规则匹配 + 模型推理，毫秒级风险识别 |
+| 📊 **信用评分卡** | 可配置评分模型，支持 A/B 卡对比与灰度发布 |
+| 🏥 **保险理赔** | 决策流编排 + 规则集联动，智能理赔审核 |
+
+## 📐 架构
+
+```
+┌─────────────┐     ┌──────────────┐
+│  Console UI  │────▶│ Console App  │ (编辑器, 端口 8180)
+│  (React)     │     │  (Spring)    │
+└─────────────┘     └──────┬───────┘
+                           │
+                 ┌─────────┴─────────┐
+                 ▼                   ▼
+         ┌──────────────┐   ┌──────────────┐
+         │ Executor App │   │ Model Service│
+         │ (执行, 8280) │   │ (ML,  8501) │
+         └──────┬───────┘   └──────────────┘
+                ▼
+         ┌──────────────┐
+         │    MySQL     │
+         │ (规则存储)    │
+         └──────────────┘
+```
+
+## 🧩 特性
+
+### AI & 金融
+
+- 🤖 **AI 助手** — 自然语言创建规则、智能分析决策日志
+- 🧠 **ML 模型推理** — PKL 模型热加载，规则 + 模型混合决策
+- 🏦 **金融业务模板** — 信贷审批、反欺诈等场景开箱即用
+- 🎯 **灰度发布** — 用户比例、随机百分比、白名单策略，灰度结果写入日志
+- 🔄 **陪跑对比** — 流量重放到影子规则包，自动对比主/陪跑差异（4 维度 × 4 级严重度）
+
+### 规则引擎
+
 - ⚡ **RETE 算法** — 高性能规则匹配与执行引擎
+- 🧩 **多类型规则** — 向导式规则集、脚本式规则集、决策表、决策树、评分卡、决策流
 - 🔄 **Flowable 8 BPM** — 基于 Flowable 8 的 BPMN 2.0 决策流引擎
 - 🔥 **热部署** — 规则动态更新，无需重启服务
-- 🔌 **上游数据源管理** — REST API、JDBC、Advance AI 多类型数据源接入，可视化配置
+
+### 可视化 & 运维
+
+- 🎨 **可视化设计器** — 基于 React + bpmn-js 的 Web 规则编辑器，所见即所得
+- 🔌 **数据源管理** — REST API、JDBC、Advance AI 多类型数据源接入
 - 📊 **监控与告警** — 决策执行全链路可观测，Micrometer + Prometheus 指标采集
-- 🎯 **灰度发布** — 应用层灰度路由（用户比例、随机百分比、白名单），灰度结果写入日志
-- 🔄 **陪跑对比** — 流量重放到影子规则包，自动对比主/陪跑差异（4 维度 × 4 级严重度）
 - 🤖 **Agent 分析** — 决策日志聚合、规则覆盖率、偏差检测，CLI + Skills 供外部 Agent 调用
-- ☕ **标准 Java** — 纯 Java 实现，Spring Boot 4.0，易于集成
 
 ## 📦 模块结构
 
@@ -53,21 +104,33 @@ core ← executor ← executor-app ← decision
 
 ## 🚀 快速开始
 
-### 1️⃣ 配置
+### 方式一：Docker Compose（推荐）
+
+```bash
+git clone https://github.com/FredGoo/rule-forge.git
+cd rule-forge
+docker compose up
+```
+
+启动后打开 http://localhost 即可访问编辑器界面。
+
+### 方式二：手动构建
+
+#### 1️⃣ 配置
 
 ```bash
 cp .env.example .env
 # 编辑 .env，填入数据库连接信息
 ```
 
-### 2️⃣ 编译
+#### 2️⃣ 编译
 
 ```bash
 cd server
 mvn compile
 ```
 
-### 3️⃣ 启动
+#### 3️⃣ 启动
 
 ```bash
 # 🎯 使用启动脚本（推荐）
@@ -80,8 +143,8 @@ mvn compile
 ./scripts/start-all.sh          # 全部服务 🚀
 ```
 
-- **Editor API** — http://localhost:8081
-- **Executor API** — http://localhost:8082
+- **Editor API** — http://localhost:8180
+- **Executor API** — http://localhost:8280
 - **Frontend** — http://localhost:3000
 
 ## 📑 规则类型
@@ -102,8 +165,9 @@ mvn compile
 |----|------|
 | ☕ 后端 | Java 17 · Spring Boot 4.0.6 · MyBatis-Plus · MySQL · ANTLR4 · RETE · Flowable 8 |
 | 🎨 前端 | TypeScript · React · Vite 8 · Ant Design 5 · bpmn-js |
+| 🧠 AI/ML | PKL Model Service · Python · Agent 分析 |
 | ✅ 测试 | JUnit 5 · Mockito · AssertJ · Vitest · Playwright |
-| 🐳 部署 | Docker |
+| 🐳 部署 | Docker · Docker Compose |
 
 ## ✅ 测试
 
@@ -124,6 +188,7 @@ npx playwright test
 
 | 文档 | 说明 |
 |------|------|
+| 📖 [在线文档](https://fredgoo.github.io/rule-forge/) | VitePress 文档站点 |
 | 🏗️ [架构概览](docs/architecture/overview.md) | 模块结构、依赖链、执行流程 |
 | ⚙️ [RETE 引擎](docs/architecture/rete-engine.md) | RETE 算法实现、会话生命周期 |
 | 🌐 [Console API](docs/api/console-api.md) | 编辑器 REST API 参考 |

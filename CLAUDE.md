@@ -14,6 +14,22 @@ mvn clean package -DskipTests     # Package without tests
 
 Frontend is in `console-ui/`, check its package.json for npm commands.
 
+Docs site is in `docs-site/` (VitePress):
+
+```bash
+cd docs-site
+npm install          # Install VitePress
+npm run dev          # Dev server (localhost:5173)
+npm run build        # Production build
+```
+
+Docker Compose full stack:
+
+```bash
+docker compose up -d              # Start all 5 services
+docker compose logs -f console-app # View logs
+```
+
 ## Project Architecture
 
 ```

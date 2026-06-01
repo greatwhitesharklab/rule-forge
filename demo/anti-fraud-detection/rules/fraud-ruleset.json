@@ -1,0 +1,42 @@
+{
+  "name": "反欺诈交易规则集",
+  "type": "ruleset",
+  "description": "基于 ML 模型输出的欺诈概率，结合业务规则进行最终决策",
+  "rules": [
+    {
+      "id": "F001",
+      "name": "高概率欺诈-直接拒绝",
+      "priority": 100,
+      "condition": "fraudProbability > 0.8",
+      "action": "decision = 'REJECT'; reason = 'AI模型判定欺诈概率极高'; riskLevel = 'HIGH'"
+    },
+    {
+      "id": "F002",
+      "name": "中概率欺诈+大额交易-拒绝",
+      "priority": 90,
+      "condition": "fraudProbability > 0.5 AND transactionAmount > 10000",
+      "action": "decision = 'REJECT'; reason = '中大额交易+中等欺诈风险'; riskLevel = 'HIGH'"
+    },
+    {
+      "id": "F003",
+      "name": "中概率欺诈+小额交易-人工审核",
+      "priority": 80,
+      "condition": "fraudProbability > 0.5 AND transactionAmount <= 10000",
+      "action": "decision = 'MANUAL_REVIEW'; reason = '小额交易但存在欺诈风险'; riskLevel = 'MEDIUM'"
+    },
+    {
+      "id": "F004",
+      "name": "低概率欺诈+新设备-人工审核",
+      "priority": 70,
+      "condition": "fraudProbability > 0.3 AND isNewDevice == true",
+      "action": "decision = 'MANUAL_REVIEW'; reason = '新设备存在一定风险'; riskLevel = 'LOW'"
+    },
+    {
+      "id": "F005",
+      "name": "低风险-通过",
+      "priority": 60,
+      "condition": "fraudProbability <= 0.3",
+      "action": "decision = 'APPROVE'; reason = '交易正常'; riskLevel = 'NONE'"
+    }
+  ]
+}

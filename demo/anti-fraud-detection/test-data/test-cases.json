@@ -1,0 +1,115 @@
+{
+  "description": "反欺诈交易检测测试用例集",
+  "testCases": [
+    {
+      "id": "TC001",
+      "name": "正常日间小额交易",
+      "input": {
+        "transactionId": "TXN001", "transactionAmount": 256.5, "frequency1h": 2,
+        "avgAmount7d": 320, "merchantRiskScore": 0.1, "ipCountryMatch": 1,
+        "deviceAgeDays": 365, "hourOfDay": 14, "distanceFromHome": 3.2,
+        "isNewDevice": false, "isNewMerchant": false
+      },
+      "expectedOutput": {"decision": "APPROVE"}
+    },
+    {
+      "id": "TC002",
+      "name": "深夜大额异常交易",
+      "input": {
+        "transactionId": "TXN002", "transactionAmount": 50000, "frequency1h": 15,
+        "avgAmount7d": 800, "merchantRiskScore": 0.7, "ipCountryMatch": 0,
+        "deviceAgeDays": 5, "hourOfDay": 3, "distanceFromHome": 800,
+        "isNewDevice": true, "isNewMerchant": true
+      },
+      "expectedOutput": {"decision": "REJECT"}
+    },
+    {
+      "id": "TC003",
+      "name": "境外IP+高频交易",
+      "input": {
+        "transactionId": "TXN003", "transactionAmount": 8000, "frequency1h": 12,
+        "avgAmount7d": 500, "merchantRiskScore": 0.5, "ipCountryMatch": 0,
+        "deviceAgeDays": 200, "hourOfDay": 22, "distanceFromHome": 1200,
+        "isNewDevice": false, "isNewMerchant": true
+      },
+      "expectedOutput": {"decision": "REJECT"}
+    },
+    {
+      "id": "TC004",
+      "name": "新设备中等金额",
+      "input": {
+        "transactionId": "TXN004", "transactionAmount": 3000, "frequency1h": 3,
+        "avgAmount7d": 1500, "merchantRiskScore": 0.3, "ipCountryMatch": 1,
+        "deviceAgeDays": 10, "hourOfDay": 15, "distanceFromHome": 50,
+        "isNewDevice": true, "isNewMerchant": false
+      },
+      "expectedOutput": {"decision": "MANUAL_REVIEW"}
+    },
+    {
+      "id": "TC005",
+      "name": "常见商户正常消费",
+      "input": {
+        "transactionId": "TXN005", "transactionAmount": 128, "frequency1h": 1,
+        "avgAmount7d": 150, "merchantRiskScore": 0.05, "ipCountryMatch": 1,
+        "deviceAgeDays": 500, "hourOfDay": 12, "distanceFromHome": 2,
+        "isNewDevice": false, "isNewMerchant": false
+      },
+      "expectedOutput": {"decision": "APPROVE"}
+    },
+    {
+      "id": "TC006",
+      "name": "可疑中等交易-新商户",
+      "input": {
+        "transactionId": "TXN006", "transactionAmount": 6000, "frequency1h": 8,
+        "avgAmount7d": 400, "merchantRiskScore": 0.6, "ipCountryMatch": 1,
+        "deviceAgeDays": 100, "hourOfDay": 20, "distanceFromHome": 200,
+        "isNewDevice": false, "isNewMerchant": true
+      },
+      "expectedOutput": {"decision": "REJECT"}
+    },
+    {
+      "id": "TC007",
+      "name": "低额高频-疑似盗刷",
+      "input": {
+        "transactionId": "TXN007", "transactionAmount": 500, "frequency1h": 20,
+        "avgAmount7d": 300, "merchantRiskScore": 0.4, "ipCountryMatch": 0,
+        "deviceAgeDays": 2, "hourOfDay": 1, "distanceFromHome": 500,
+        "isNewDevice": true, "isNewMerchant": true
+      },
+      "expectedOutput": {"decision": "REJECT"}
+    },
+    {
+      "id": "TC008",
+      "name": "旅行中正常消费",
+      "input": {
+        "transactionId": "TXN008", "transactionAmount": 2500, "frequency1h": 2,
+        "avgAmount7d": 2000, "merchantRiskScore": 0.15, "ipCountryMatch": 0,
+        "deviceAgeDays": 300, "hourOfDay": 16, "distanceFromHome": 800,
+        "isNewDevice": false, "isNewMerchant": true
+      },
+      "expectedOutput": {"decision": "APPROVE"}
+    },
+    {
+      "id": "TC009",
+      "name": "大额新设备交易",
+      "input": {
+        "transactionId": "TXN009", "transactionAmount": 15000, "frequency1h": 4,
+        "avgAmount7d": 1200, "merchantRiskScore": 0.3, "ipCountryMatch": 1,
+        "deviceAgeDays": 15, "hourOfDay": 10, "distanceFromHome": 30,
+        "isNewDevice": true, "isNewMerchant": false
+      },
+      "expectedOutput": {"decision": "MANUAL_REVIEW"}
+    },
+    {
+      "id": "TC010",
+      "name": "老客户日常消费",
+      "input": {
+        "transactionId": "TXN010", "transactionAmount": 88, "frequency1h": 1,
+        "avgAmount7d": 120, "merchantRiskScore": 0.02, "ipCountryMatch": 1,
+        "deviceAgeDays": 700, "hourOfDay": 9, "distanceFromHome": 1.5,
+        "isNewDevice": false, "isNewMerchant": false
+      },
+      "expectedOutput": {"decision": "APPROVE"}
+    }
+  ]
+}

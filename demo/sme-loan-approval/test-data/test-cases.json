@@ -1,0 +1,95 @@
+{
+  "description": "小微信贷审批测试用例集",
+  "testCases": [
+    {
+      "id": "TC001",
+      "name": "优质客户-大额贷款",
+      "input": {
+        "applicantId": "APP001", "name": "张伟", "age": 32, "monthlyIncome": 120000,
+        "businessYears": 6, "creditHistory": "good", "debtRatio": 0.15, "loanAmount": 2000000, "loanTerm": 36
+      },
+      "expectedOutput": {"result": "APPROVE", "creditScore": 80}
+    },
+    {
+      "id": "TC002",
+      "name": "优质客户-小额贷款",
+      "input": {
+        "applicantId": "APP002", "name": "李明", "age": 28, "monthlyIncome": 95000,
+        "businessYears": 4, "creditHistory": "good", "debtRatio": 0.25, "loanAmount": 800000, "loanTerm": 24
+      },
+      "expectedOutput": {"result": "APPROVE", "creditScore": 75}
+    },
+    {
+      "id": "TC003",
+      "name": "高负债率-直接拒绝",
+      "input": {
+        "applicantId": "APP003", "name": "王强", "age": 45, "monthlyIncome": 50000,
+        "businessYears": 8, "creditHistory": "good", "debtRatio": 0.75, "loanAmount": 500000, "loanTerm": 12
+      },
+      "expectedOutput": {"result": "REJECT"}
+    },
+    {
+      "id": "TC004",
+      "name": "低信用分-拒绝",
+      "input": {
+        "applicantId": "APP004", "name": "赵刚", "age": 23, "monthlyIncome": 20000,
+        "businessYears": 0.5, "creditHistory": "bad", "debtRatio": 0.55, "loanAmount": 300000, "loanTerm": 12
+      },
+      "expectedOutput": {"result": "REJECT", "creditScore": 26}
+    },
+    {
+      "id": "TC005",
+      "name": "中等信用-人工审核",
+      "input": {
+        "applicantId": "APP005", "name": "孙丽", "age": 38, "monthlyIncome": 45000,
+        "businessYears": 2, "creditHistory": "minor", "debtRatio": 0.35, "loanAmount": 400000, "loanTerm": 24
+      },
+      "expectedOutput": {"result": "MANUAL_REVIEW", "creditScore": 52}
+    },
+    {
+      "id": "TC006",
+      "name": "新企业大额-人工审核",
+      "input": {
+        "applicantId": "APP006", "name": "周杰", "age": 30, "monthlyIncome": 80000,
+        "businessYears": 0.5, "creditHistory": "good", "debtRatio": 0.1, "loanAmount": 800000, "loanTerm": 36
+      },
+      "expectedOutput": {"result": "MANUAL_REVIEW"}
+    },
+    {
+      "id": "TC007",
+      "name": "中等信用-标准产品",
+      "input": {
+        "applicantId": "APP007", "name": "吴芳", "age": 40, "monthlyIncome": 60000,
+        "businessYears": 5, "creditHistory": "good", "debtRatio": 0.3, "loanAmount": 400000, "loanTerm": 12
+      },
+      "expectedOutput": {"result": "APPROVE", "creditScore": 70}
+    },
+    {
+      "id": "TC008",
+      "name": "无信用记录-人工审核",
+      "input": {
+        "applicantId": "APP008", "name": "郑新", "age": 26, "monthlyIncome": 35000,
+        "businessYears": 2, "creditHistory": "none", "debtRatio": 0.15, "loanAmount": 200000, "loanTerm": 12
+      },
+      "expectedOutput": {"result": "MANUAL_REVIEW", "creditScore": 50}
+    },
+    {
+      "id": "TC009",
+      "name": "老年高收入-通过",
+      "input": {
+        "applicantId": "APP009", "name": "钱华", "age": 52, "monthlyIncome": 200000,
+        "businessYears": 10, "creditHistory": "good", "debtRatio": 0.2, "loanAmount": 5000000, "loanTerm": 60
+      },
+      "expectedOutput": {"result": "APPROVE", "creditScore": 83}
+    },
+    {
+      "id": "TC010",
+      "name": "轻微逾期-人工审核",
+      "input": {
+        "applicantId": "APP010", "name": "陈刚", "age": 35, "monthlyIncome": 55000,
+        "businessYears": 3, "creditHistory": "minor", "debtRatio": 0.45, "loanAmount": 600000, "loanTerm": 24
+      },
+      "expectedOutput": {"result": "MANUAL_REVIEW", "creditScore": 52}
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 讨论区
+    url: https://github.com/FredGoo/rule-forge/discussions
+    about: 使用讨论区进行问答、想法分享和展示
+  - name: 📖 文档
+    url: https://fredgoo.github.io/rule-forge/
+    about: 查看完整文档和使用指南

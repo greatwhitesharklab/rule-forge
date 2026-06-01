@@ -1,0 +1,136 @@
+# RuleForge 全栈部署配置
+# 使用方式: docker compose up
+# 访问地址: http://localhost (Console UI)
+version: '3.8'
+
+services:
+  # ================================
+  # MySQL 数据库
+  # ================================
+  mysql:
+    image: mysql:8.0
+    container_name: ruleforge-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+      TZ: Asia/Shanghai
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/init-sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-ruleforge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ruleforge
+
+  # ================================
+  # Console App — 编辑器后端 (端口 8180)
+  # ================================
+  console-app:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.console
+    container_name: ruleforge-console
+    environment:
+      CONSOLE_PORT: "8180"
+      SERVER_PORT: "8180"
+      APP_DB_URL: jdbc:mysql://mysql:3306/app_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      APP_DB_USERNAME: root
+      APP_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
+      RF_DB_URL: jdbc:mysql://mysql:3306/ruleforge_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      RF_DB_USERNAME: root
+      RF_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
+      EXECUTOR_URL: http://executor-app:8280
+      RF_REPO_DIR: /app/data/riskruleforge
+      JAVA_OPTS: "-Xmx2048m -Xms512m -XX:+UseG1GC -XX:+UseContainerSupport"
+    volumes:
+      - console_data:/app/data
+      - console_logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ruleforge
+
+  # ================================
+  # Executor App — 规则执行器 (端口 8280)
+  # ================================
+  executor-app:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.executor
+    container_name: ruleforge-executor
+    environment:
+      EXECUTOR_PORT: "8280"
+      SERVER_PORT: "8280"
+      RF_DB_URL: jdbc:mysql://mysql:3306/ruleforge_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      RF_DB_USERNAME: root
+      RF_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
+      CONSOLE_URL: http://console-app:8180
+      JAVA_OPTS: "-Xmx1024m -Xms256m -XX:+UseG1GC -XX:+UseContainerSupport"
+    volumes:
+      - executor_logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ruleforge
+
+  # ================================
+  # Model Service — ML 模型推理服务 (端口 8501)
+  # ================================
+  model-service:
+    build:
+      context: ./model-service
+      dockerfile: Dockerfile
+    container_name: ruleforge-model-service
+    environment:
+      PORT: "8501"
+      LOG_LEVEL: INFO
+    volumes:
+      - model_data:/app/models
+    networks:
+      - ruleforge
+
+  # ================================
+  # Console UI — 前端可视化界面 (端口 80)
+  # ================================
+  console-ui:
+    build:
+      context: ./console-ui
+      dockerfile: Dockerfile
+    container_name: ruleforge-console-ui
+    ports:
+      - "${CONSOLE_UI_PORT:-80}:80"
+    depends_on:
+      - console-app
+    networks:
+      - ruleforge
+
+# ================================
+# 持久化卷
+# ================================
+volumes:
+  mysql_data:
+    driver: local
+  console_data:
+    driver: local
+  console_logs:
+    driver: local
+  executor_logs:
+    driver: local
+  model_data:
+    driver: local
+
+# ================================
+# 网络
+# ================================
+networks:
+  ruleforge:
+    driver: bridge

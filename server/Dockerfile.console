@@ -1,0 +1,63 @@
+# ================================
+# RuleForge Console App - 多阶段构建
+# ================================
+
+# 第一阶段：Maven 构建
+FROM maven:3.9-eclipse-temurin-17 AS builder
+
+WORKDIR /build
+
+# 先复制 POM 文件，利用 Docker 缓存加速依赖下载
+COPY pom.xml .
+COPY ruleforge-core/pom.xml ruleforge-core/
+COPY ruleforge-decision/pom.xml ruleforge-decision/
+COPY ruleforge-console/pom.xml ruleforge-console/
+COPY ruleforge-executor/pom.xml ruleforge-executor/
+COPY ruleforge-console-app/pom.xml ruleforge-console-app/
+
+# 下载依赖（仅 POM 变化时重新执行）
+RUN mvn dependency:go-offline -B -pl ruleforge-console-app -am
+
+# 复制源代码
+COPY ruleforge-core/ ruleforge-core/
+COPY ruleforge-decision/ ruleforge-decision/
+COPY ruleforge-console/ ruleforge-console/
+COPY ruleforge-console-app/ ruleforge-console-app/
+
+# 构建（跳过测试）
+RUN mvn clean package -DskipTests -B -pl ruleforge-console-app -am
+
+# ================================
+# 第二阶段：运行环境
+# ================================
+FROM eclipse-temurin:17-jre AS runtime
+
+# 安装必要工具
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# 创建应用用户
+RUN groupadd -r ruleforge && useradd -r -g ruleforge ruleforge
+
+WORKDIR /app
+
+# 环境变量
+ENV JAVA_OPTS="-Xmx2048m -Xms512m -XX:+UseG1GC -XX:+UseContainerSupport" \
+    CONSOLE_PORT=8180
+
+# 复制构建产物和启动脚本
+COPY --from=builder /build/ruleforge-console-app/target/ruleforge-console-app.jar /app/app.jar
+COPY docker/entrypoint.sh /app/entrypoint.sh
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
+# 创建数据和日志目录
+RUN mkdir -p /app/data /app/logs && chown -R ruleforge:ruleforge /app
+
+USER ruleforge
+
+EXPOSE 8180
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+    CMD curl -f http://localhost:${CONSOLE_PORT}/actuator/health || exit 1
+
+ENTRYPOINT ["/app/entrypoint.sh"]

@@ -1,0 +1,18 @@
+{
+  "name": "applicant",
+  "label": "贷款申请人",
+  "fields": [
+    {"name": "applicantId", "label": "申请人ID", "type": "string"},
+    {"name": "name", "label": "姓名", "type": "string"},
+    {"name": "age", "label": "年龄", "type": "integer"},
+    {"name": "monthlyIncome", "label": "月收入(元)", "type": "decimal"},
+    {"name": "businessYears", "label": "经营年限", "type": "decimal"},
+    {"name": "creditHistory", "label": "信用记录", "type": "string", "enums": ["none", "good", "minor", "bad"]},
+    {"name": "debtRatio", "label": "资产负债率", "type": "decimal"},
+    {"name": "loanAmount", "label": "申请金额(元)", "type": "decimal"},
+    {"name": "loanTerm", "label": "贷款期限(月)", "type": "integer"},
+    {"name": "creditScore", "label": "信用评分(计算得出)", "type": "integer", "output": true},
+    {"name": "result", "label": "审批结果(计算得出)", "type": "string", "output": true},
+    {"name": "reason", "label": "审批原因(计算得出)", "type": "string", "output": true}
+  ]
+}

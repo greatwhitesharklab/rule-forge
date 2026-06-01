@@ -1,0 +1,41 @@
+/* RuleForge 自定义主题 */
+
+:root {
+  --rf-primary: #1a73e8;
+  --rf-primary-light: #4a9af5;
+  --rf-bg-dark: #0f172a;
+}
+
+/* 首页 Hero 区域 */
+.VPHomeHero .name {
+  background: linear-gradient(135deg, var(--rf-primary), #6366f1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Feature 卡片 */
+.VPFeature {
+  border-radius: 12px;
+}
+
+.VPFeature .icon {
+  color: var(--rf-primary);
+}
+
+/* 代码块 */
+.vp-doc div[class*='language-'] {
+  border-radius: 8px;
+}
+
+/* 自定义容器 */
+.custom-block.tip {
+  border-color: var(--rf-primary);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .VPHomeHero .text {
+    font-size: 1.2rem;
+  }
+}

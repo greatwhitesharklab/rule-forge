@@ -1,0 +1,65 @@
+{
+  "name": "小微信用评分卡",
+  "type": "scorecard",
+  "version": "1.0",
+  "description": "基于申请人信息的综合信用评分，满分100分",
+  "attributes": [
+    {
+      "name": "age",
+      "label": "年龄",
+      "ranges": [
+        {"min": 20, "max": 25, "score": 10, "label": "20-25岁"},
+        {"min": 25, "max": 35, "score": 25, "label": "25-35岁"},
+        {"min": 35, "max": 45, "score": 20, "label": "35-45岁"},
+        {"min": 45, "max": 55, "score": 15, "label": "45-55岁"},
+        {"min": 55, "max": 65, "score": 8, "label": "55岁以上"}
+      ]
+    },
+    {
+      "name": "monthlyIncome",
+      "label": "月收入(元)",
+      "ranges": [
+        {"min": 0, "max": 30000, "score": 5, "label": "3万以下"},
+        {"min": 30000, "max": 80000, "score": 20, "label": "3-8万"},
+        {"min": 80000, "max": 150000, "score": 30, "label": "8-15万"},
+        {"min": 150000, "max": 999999999, "score": 35, "label": "15万以上"}
+      ]
+    },
+    {
+      "name": "businessYears",
+      "label": "经营年限",
+      "ranges": [
+        {"min": 0, "max": 1, "score": 5, "label": "不满1年"},
+        {"min": 1, "max": 3, "score": 15, "label": "1-3年"},
+        {"min": 3, "max": 5, "score": 20, "label": "3-5年"},
+        {"min": 5, "max": 999, "score": 30, "label": "5年以上"}
+      ]
+    },
+    {
+      "name": "creditHistory",
+      "label": "信用记录",
+      "ranges": [
+        {"value": "none", "score": 10, "label": "无记录"},
+        {"value": "good", "score": 30, "label": "良好"},
+        {"value": "minor", "score": 15, "label": "轻微逾期"},
+        {"value": "bad", "score": 3, "label": "不良"}
+      ]
+    },
+    {
+      "name": "debtRatio",
+      "label": "资产负债率",
+      "ranges": [
+        {"min": 0, "max": 0.2, "score": 25, "label": "20%以下"},
+        {"min": 0.2, "max": 0.4, "score": 20, "label": "20%-40%"},
+        {"min": 0.4, "max": 0.6, "score": 12, "label": "40%-60%"},
+        {"min": 0.6, "max": 1.0, "score": 3, "label": "60%以上"}
+      ]
+    }
+  ],
+  "scoreMapping": {
+    "excellent": {"min": 80, "label": "优秀"},
+    "good": {"min": 60, "label": "良好"},
+    "fair": {"min": 40, "label": "一般"},
+    "poor": {"min": 0, "label": "较差"}
+  }
+}

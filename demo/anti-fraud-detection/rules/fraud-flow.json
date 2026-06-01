@@ -1,0 +1,20 @@
+{
+  "name": "反欺诈交易检测流程",
+  "type": "decision-flow",
+  "description": "AI+规则混合决策流程：ML模型预测 → 规则引擎决策 → 输出",
+  "nodes": [
+    {"id": "start", "type": "start", "label": "交易接入"},
+    {"id": "ml-predict", "type": "model-prediction", "ref": "fraud_detection_v1", "label": "ML欺诈概率预测", "output": "fraudProbability"},
+    {"id": "rule-decision", "type": "ruleset", "ref": "fraud-ruleset", "label": "规则引擎决策"},
+    {"id": "end-approve", "type": "end", "label": "交易通过"},
+    {"id": "end-review", "type": "end", "label": "人工审核"},
+    {"id": "end-reject", "type": "end", "label": "交易拒绝"}
+  ],
+  "edges": [
+    {"from": "start", "to": "ml-predict"},
+    {"from": "ml-predict", "to": "rule-decision"},
+    {"from": "rule-decision", "to": "end-approve", "condition": "decision == 'APPROVE'"},
+    {"from": "rule-decision", "to": "end-review", "condition": "decision == 'MANUAL_REVIEW'"},
+    {"from": "rule-decision", "to": "end-reject", "condition": "decision == 'REJECT'"}
+  ]
+}

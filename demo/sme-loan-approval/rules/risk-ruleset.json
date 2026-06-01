@@ -1,0 +1,41 @@
+{
+  "name": "贷款风险规则集",
+  "type": "ruleset",
+  "rules": [
+    {
+      "id": "R001",
+      "name": "高负债拒绝",
+      "priority": 100,
+      "condition": "debtRatio > 0.7",
+      "action": "result = 'REJECT'; reason = '资产负债率超过70%'"
+    },
+    {
+      "id": "R002",
+      "name": "新企业大额贷款人工审核",
+      "priority": 90,
+      "condition": "businessYears < 1 AND loanAmount > 500000",
+      "action": "result = 'MANUAL_REVIEW'; reason = '新成立企业申请大额贷款'"
+    },
+    {
+      "id": "R003",
+      "name": "低信用分拒绝",
+      "priority": 80,
+      "condition": "creditScore < 40",
+      "action": "result = 'REJECT'; reason = '信用评分过低'"
+    },
+    {
+      "id": "R004",
+      "name": "中等信用分人工审核",
+      "priority": 70,
+      "condition": "creditScore >= 40 AND creditScore < 60",
+      "action": "result = 'MANUAL_REVIEW'; reason = '信用评分中等，需人工审核'"
+    },
+    {
+      "id": "R005",
+      "name": "高信用分通过",
+      "priority": 60,
+      "condition": "creditScore >= 60",
+      "action": "result = 'APPROVE'; reason = '信用评分良好'"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "小微信贷审批流程",
+  "type": "decision-flow",
+  "description": "完整的贷款审批决策流程：评分 → 风险评估 → 产品匹配 → 额度计算",
+  "nodes": [
+    {"id": "start", "type": "start", "label": "开始"},
+    {"id": "scorecard", "type": "scorecard", "ref": "credit-scorecard", "label": "信用评分", "output": "creditScore"},
+    {"id": "risk-check", "type": "exclusive-gateway", "label": "风险检查"},
+    {"id": "risk-rules", "type": "ruleset", "ref": "risk-ruleset", "label": "风险规则"},
+    {"id": "product-match", "type": "decision-table", "ref": "product-table", "label": "产品匹配"},
+    {"id": "quota-calc", "type": "action", "label": "额度计算"},
+    {"id": "end-approve", "type": "end", "label": "审批通过"},
+    {"id": "end-review", "type": "end", "label": "人工审核"},
+    {"id": "end-reject", "type": "end", "label": "拒绝"}
+  ],
+  "edges": [
+    {"from": "start", "to": "scorecard"},
+    {"from": "scorecard", "to": "risk-check"},
+    {"from": "risk-check", "to": "end-reject", "condition": "result == 'REJECT'"},
+    {"from": "risk-check", "to": "end-review", "condition": "result == 'MANUAL_REVIEW'"},
+    {"from": "risk-check", "to": "product-match", "condition": "result == 'APPROVE'"},
+    {"from": "product-match", "to": "quota-calc"},
+    {"from": "quota-calc", "to": "end-approve"}
+  ]
+}
