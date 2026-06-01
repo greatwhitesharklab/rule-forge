@@ -501,7 +501,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._icon = Styles.frameStyle.getRuleIcon();
             data._style = Styles.frameStyle.getRuleIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/ruleset-editor.html";
+            data.editorPath = "/html/editor.html?type=ruleset";
             break;
         case "project":
             data._icon = Styles.frameStyle.getProjectIcon();
@@ -572,7 +572,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                     }
                 }
             ];
-            data.editorPath = "/html/package-editor.html";
+            data.editorPath = "/html/editor.html?type=package";
             break;
         case "lib":
             data._icon = Styles.frameStyle.getLibIcon();
@@ -583,25 +583,25 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._icon = Styles.frameStyle.getActionIcon();
             data._style = Styles.frameStyle.getActionIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/action-editor.html";
+            data.editorPath = "/html/editor.html?type=action";
             break;
         case "parameter":
             data._icon = Styles.frameStyle.getParameterIcon();
             data._style = Styles.frameStyle.getParameterIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/parameter-editor.html";
+            data.editorPath = "/html/editor.html?type=parameter";
             break;
         case "constant":
             data._icon = Styles.frameStyle.getConstantIcon();
             data._style = Styles.frameStyle.getConstantIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/constant-editor.html";
+            data.editorPath = "/html/editor.html?type=constant";
             break;
         case "variable":
             data._icon = Styles.frameStyle.getVariableIcon();
             data._style = Styles.frameStyle.getVariableIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/variable-editor.html";
+            data.editorPath = "/html/editor.html?type=variable";
             break;
         case "ruleLib":
             data._icon = Styles.frameStyle.getRuleLibIcon();
@@ -737,49 +737,49 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             let menus: ContextMenuItem[] = buildFileContextMenu();
             menus.splice(0, 1);
             data.contextMenu = menus;
-            data.editorPath = "/html/ul-editor.html";
+            data.editorPath = "/html/editor.html?type=ul";
             break;
         case "decisionTable":
             data._icon = Styles.frameStyle.getDecisionTableIcon();
             data._style = Styles.frameStyle.getDecisionTableIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/decision-table-editor.html";
+            data.editorPath = "/html/editor.html?type=decisiontable";
             break;
         case "scriptDecisionTable":
             data._icon = Styles.frameStyle.getScriptDecisionTableIcon();
             data._style = Styles.frameStyle.getScriptDecisionTableIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/script-decision-table-editor.html";
+            data.editorPath = "/html/editor.html?type=scriptdecisiontable";
             break;
         case "decisionTree":
             data._icon = Styles.frameStyle.getDecisionTreeIcon();
             data._style = Styles.frameStyle.getDecisionTreeIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/decision-tree-editor.html";
+            data.editorPath = "/html/editor.html?type=decisiontree";
             break;
         case "flow":
             data._icon = Styles.frameStyle.getFlowIcon();
             data._style = Styles.frameStyle.getFlowIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/flow-bpmn-editor.html";
+            data.editorPath = "/html/editor.html?type=flowbpmn";
             break;
         case "scorecard":
             data._icon = Styles.frameStyle.getScorecardIcon();
             data._style = Styles.frameStyle.getScorecardIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/score-card-editor.html";
+            data.editorPath = "/html/editor.html?type=scorecard";
             break;
         case "complexscorecard":
             data._icon = Styles.frameStyle.getComplexScorecardIcon();
             data._style = Styles.frameStyle.getComplexScorecardIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/complexscorecard-editor.html";
+            data.editorPath = "/html/editor.html?type=complexscorecard";
             break;
         case "crosstab":
             data._icon = Styles.frameStyle.getCrossDecisionTableIcon();
             data._style = Styles.frameStyle.getCrossDecisionTableIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/crosstab-editor.html";
+            data.editorPath = "/html/editor.html?type=crosstab";
             break;
     }
     // Ensure container types have a children array so they render as folders

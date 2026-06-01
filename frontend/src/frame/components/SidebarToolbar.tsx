@@ -143,7 +143,7 @@ export default class SidebarToolbar extends Component<SidebarToolbarProps, Sideb
             id: 'security_config_',
             name: '资源权限配置',
             fullPath: 'security_config_',
-            path: './html/permission-config-editor.html'
+            path: './html/editor.html?type=permission'
         });
     };
 

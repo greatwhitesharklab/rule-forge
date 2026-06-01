@@ -146,7 +146,7 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                 <li>
                     <span id={spanId} onContextMenu={this._handleContextMenu} onClick={(e) => {
                         if (isFile) {
-                            const editorBasePath = this.props.treeType === 'public' ? '/html/resource-editor.html' : data.editorPath;
+                            const editorBasePath = this.props.treeType === 'public' ? '/html/editor.html?type=resource' : data.editorPath;
 
                             let url = '.' + editorBasePath + "?file=" + data.fullPath;
                             let fullPath = data.fullPath;

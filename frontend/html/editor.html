@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Editor</title>
+    <script type="text/javascript">
+        window._server = "../api";
+        window._editorType = new URLSearchParams(window.location.search).get('type') || '';
+    </script>
+    <script type="text/javascript">
+    (function() {
+        var T = window._editorType;
+
+        // Title mapping
+        var titles = {
+            variable: '变量编辑器', constant: '常量编辑器', parameter: '参数编辑器',
+            action: '动作编辑器', package: '知识包编辑器', client: '客户端推送配置',
+            permission: '权限配置', resource: '公共资源编辑器', monitoring: '监控仪表盘',
+            analysis: '决策分析', ruleset: '决策集编辑器', decisiontable: '决策表编辑器',
+            scriptdecisiontable: '脚本式决策表编辑器', decisiontree: '决策树编辑器',
+            crosstab: '交叉决策表编辑器', complexscorecard: '复杂评分卡编辑器',
+            flowbpmn: '决策流设计器', scorecard: '评分卡编辑器', ul: '脚本编辑器'
+        };
+        document.title = titles[T] || 'Editor';
+
+        // Body style per editor type
+        var bodyStyles = {
+            decisiontable: 'font-size:12px;overflow:auto',
+            scriptdecisiontable: 'font-size:12px',
+            decisiontree: 'font-size:12px',
+            ruleset: 'font-size:12px',
+            crosstab: 'font-size:12px;margin:5px',
+            complexscorecard: 'font-size:12px;overflow:auto',
+            scorecard: 'margin:3px',
+            monitoring: 'font-size:12px;overflow:auto',
+            analysis: 'font-size:12px;overflow:auto'
+        };
+        if (bodyStyles[T]) document.body.setAttribute('style', bodyStyles[T]);
+
+        // Extra CSS for complexscorecard (bootstrap + user-select)
+        if (T === 'complexscorecard') {
+            var bsLink = document.createElement('link');
+            bsLink.rel = 'stylesheet';
+            bsLink.href = '../lib/bootstrap.min.css';
+            document.head.appendChild(bsLink);
+            var csStyle = document.createElement('style');
+            csStyle.textContent = 'body{-webkit-touch-callout:none;-webkit-user-select:none;-khtml-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}table tr:hover{background:#fcf8e3}';
+            document.head.appendChild(csStyle);
+        }
+        // user-select for crosstab
+        if (T === 'crosstab') {
+            var ctStyle = document.createElement('style');
+            ctStyle.textContent = 'body{-webkit-touch-callout:none;-webkit-user-select:none;-khtml-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}';
+            document.head.appendChild(ctStyle);
+        }
+
+        // DOM structure per editor type
+        var dom = '';
+        switch (T) {
+            // Simple container only
+            case 'variable': case 'constant': case 'parameter':
+            case 'action': case 'package': case 'client':
+            case 'permission': case 'resource':
+            case 'monitoring': case 'analysis':
+                dom = '<div id="container"></div>';
+                break;
+
+            // toolbar + container(navbar-before) + dialog
+            case 'ruleset':
+                dom = '<div id="toolbarContainer"></div><div id="container"><div id="navbar-before"></div></div><div id="dialogContainer"></div>';
+                break;
+
+            // container(navbar-before) + dialog
+            case 'decisiontable': case 'scriptdecisiontable':
+                dom = '<div id="container"><div id="navbar-before"></div></div><div id="dialogContainer"></div>';
+                break;
+
+            // container(navbar-before) + toolbar + dialog
+            case 'decisiontree':
+                dom = '<div id="container"><div id="navbar-before"></div></div><div id="toolbarContainer"></div><div id="dialogContainer"></div>';
+                break;
+
+            // toolbar + container + dialog
+            case 'crosstab':
+                dom = '<div id="toolbarContainer"></div><div id="container"></div><div id="dialogContainer"></div>';
+                break;
+
+            // bootstrap + toolbar + container(navbar-before) + dialog
+            case 'complexscorecard':
+                dom = '<div id="toolbarContainer"></div><div id="container"><div id="navbar-before"></div></div><div id="dialogContainer"></div>';
+                break;
+
+            // toolbar + container(special height) + dialog
+            case 'flowbpmn':
+                dom = '<div id="toolbarContainer"></div><div id="container" style="width:100%;height:calc(100vh - 45px)"></div><div id="dialogContainer"></div>';
+                break;
+
+            // toolbar + tableContainer + actionContainer + dialog
+            case 'scorecard':
+                dom = '<div id="toolbarContainer"></div><div id="tableContainer" style="margin-top:5px;margin-left:3px"></div><div id="actionContainer"></div><div id="dialogContainer"></div>';
+                break;
+
+            // toolbar + textarea + dialog
+            case 'ul':
+                dom = '<div id="toolbarContainer"></div><textarea id="codeEditor"></textarea><div id="dialogContainer"></div>';
+                break;
+        }
+        if (dom) document.body.insertAdjacentHTML('afterbegin', dom);
+    })();
+    </script>
+    <script type="module" src="../src/editor/bootstrap.tsx"></script>
+</head>
+<body>
+</body>
+</html>

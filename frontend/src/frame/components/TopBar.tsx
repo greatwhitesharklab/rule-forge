@@ -75,7 +75,7 @@ export default class TopBar extends Component<TopBarProps, TopBarState> {
                                         id: 'security_config_',
                                         name: '资源权限配置',
                                         fullPath: 'security_config_',
-                                        path: './html/permission-config-editor.html'
+                                        path: './html/editor.html?type=permission'
                                     });
                                 }}>
                                     <i className="rf rf-authority" style={{width: 16, fontSize: 12}}/>
