@@ -70,6 +70,16 @@ lazy-load:
   base-url: ${LAZY_LOAD_BASE_URL:}
   timeout: 5000
 
+# Agent (AI 助手) 配置
+agent:
+  enabled: ${AGENT_ENABLED:false}
+  llm:
+    base-url: ${LLM_BASE_URL:https://api.openai.com/v1}
+    api-key: ${LLM_API_KEY:}
+    model: ${LLM_MODEL:gpt-4o}
+    max-tokens: ${LLM_MAX_TOKENS:4096}
+    temperature: ${LLM_TEMPERATURE:0.7}
+
 logging:
   file:
     name: ${LOG_FILE:/tmp/ruleforge-console.log}

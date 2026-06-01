@@ -21,6 +21,7 @@ import DatasourcePanel from '@/datasource/index.tsx';
 import PlaceholderPanel from '@/frame/panels/PlaceholderPanel.jsx';
 import ReleasePanel from '@/release/index.tsx';
 import SimulationPanel from '@/simulation/index.tsx';
+import AgentPanel from '@/agent/index.tsx';
 import Loading from '@/components/loading/component/Loading.tsx';
 import * as event from '@/frame/event.js';
 import * as componentEvent from '@/components/componentEvent.js';
@@ -44,7 +45,7 @@ function SidePanelSwitcher({activePanel, store, eventObj}: SidePanelSwitcherProp
         case 'simulation':
             return <SimulationPanel/>;
         case 'ai':
-            return <PlaceholderPanel panelId="ai"/>;
+            return <AgentPanel/>;
         case 'settings':
             return <PlaceholderPanel panelId="settings"/>;
         default:

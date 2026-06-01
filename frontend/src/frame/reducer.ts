@@ -1,6 +1,7 @@
 import * as ACTIONS from './action.js';
 import datasourceReducer from '@/datasource/reducer.ts';
 import releaseReducer from '@/release/reducer';
+import agentReducer from '@/agent/reducer';
 
 interface DataMapEntry {
     parent: { children?: TreeNodeData[] } | null;
@@ -260,5 +261,6 @@ export default function rootReducer(state: FrameState = {}, action: { type: stri
     const uiState = ui(state.ui, action);
     const datasourceState = datasourceReducer(state.datasource as any, action);
     const releaseState = releaseReducer(state.release as any, action);
-    return {...treeState, ui: uiState, datasource: datasourceState, release: releaseState};
+    const agentState = agentReducer(state.agent as any, action);
+    return {...treeState, ui: uiState, datasource: datasourceState, release: releaseState, agent: agentState};
 }
