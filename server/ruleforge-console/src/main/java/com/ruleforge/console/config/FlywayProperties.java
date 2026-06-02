@@ -31,9 +31,13 @@ public class FlywayProperties {
     private boolean baselineOnMigrate = true;
 
     /**
-     * 基线版本
+     * 基线版本。
+     *
+     * <p>生产环境如果 gr_* 表结构已被外部脚本初始化,可设回 "3.0.0" 让 V3.0.0
+     * 被当作基线跳过;开发/测试/CI 环境设为 "0",让 V3.0.0 也执行,
+     * 否则 V3.1.3 等迁移会 alter 不到 V3.0.0 应该创建的表。
      */
-    private String baselineVersion = "3.0.0";
+    private String baselineVersion = "0";
 
     /**
      * 基线描述
