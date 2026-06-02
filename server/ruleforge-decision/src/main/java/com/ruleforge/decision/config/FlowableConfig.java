@@ -12,8 +12,8 @@ public class FlowableConfig implements EngineConfigurationConfigurer<SpringProce
 
     private final DataSource ruleforgeDataSource;
 
-    public FlowableConfig(@Qualifier("ruleforgeDataSource") DataSource ruleforgeDataSource) {
-        this.ruleforgeDataSource = ruleforgeDataSource;
+    public FlowableConfig(@Qualifier("flowable") DataSource flowableDataSource) {
+        this.ruleforgeDataSource = flowableDataSource;
     }
 
     @Override
