@@ -49,12 +49,6 @@
 
         <dependency>
             <groupId>com.ruleforge</groupId>
-            <artifactId>ruleforge-executor</artifactId>
-            <version>5.0.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.ruleforge</groupId>
             <artifactId>ruleforge-decision</artifactId>
             <version>5.0.0</version>
         </dependency>
