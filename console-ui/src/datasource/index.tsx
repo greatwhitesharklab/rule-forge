@@ -74,6 +74,99 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
         setTimeout(() => this.setState({testResult: null}), 3000);
     };
 
+    /**
+     * V5.8.0: 批量测试入口(FLOW+DATASOURCE 模式)
+     * 1. bootbox.prompt 让用户填 entityIds(逗号分隔)和 flowId
+     * 2. 调 startBatchTest(subjectType=FLOW, inputSourceType=DATASOURCE, ...)
+     * 3. 成功后 emit OPEN_BATCH_TEST_DIALOG 让全局 BatchTestDialog 弹起来轮询
+     */
+    handleBatchTest = async (ds: DatasourceItem) => {
+        // 弹窗:让用户填 entityIds 和 flowId
+        const html = `
+            <div style="text-align:left;padding:0 8px">
+                <label>Entity 主键(逗号分隔,比如 "1,2,3,100,200")</label>
+                <textarea id="bb-entity-ids" class="form-control" rows="3" placeholder="e.g. 1,2,3,100,200"></textarea>
+                <label style="margin-top:10px">主键字段名(默认 id)</label>
+                <input id="bb-id-field" class="form-control" value="id" />
+                <label style="margin-top:10px">Flow ID(待测决策流,比如 "loan-approval")</label>
+                <input id="bb-flow-id" class="form-control" placeholder="e.g. loan-approval" />
+            </div>
+        `;
+        window.bootbox.dialog({
+            title: '批量测试 - ' + ds.name + ' (V5.8.0 FLOW+DATASOURCE)',
+            message: html,
+            closeButton: true,
+            buttons: {
+                cancel: { label: '取消', className: 'btn-default' },
+                confirm: {
+                    label: '开始',
+                    className: 'btn-primary',
+                    callback: () => {
+                        const idsText = (document.getElementById('bb-entity-ids') as HTMLTextAreaElement).value.trim();
+                        const idField = (document.getElementById('bb-id-field') as HTMLInputElement).value.trim() || 'id';
+                        const flowId = (document.getElementById('bb-flow-id') as HTMLInputElement).value.trim();
+                        if (!idsText) {
+                            window.bootbox.alert('请输入 entityIds');
+                            return false;
+                        }
+                        if (!flowId) {
+                            window.bootbox.alert('请输入 Flow ID');
+                            return false;
+                        }
+                        const valueList = idsText.split(/[,\s]+/).filter((s: string) => s.length > 0);
+                        this.startBatchTestDs(ds, idField, valueList, flowId);
+                        return true;
+                    }
+                }
+            }
+        });
+    };
+
+    /**
+     * 调后端 startBatchTest + emit dialog 事件
+     */
+    startBatchTestDs = async (ds: DatasourceItem, idField: string, valueList: string[], flowId: string) => {
+        const ce = (window as any).parent?.componentEvent || (window as any).componentEvent;
+        const ev = (window as any).parent?.event || (window as any).event;
+
+        try {
+            const resp = await fetch((window as any)._server + '/batchtest/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subjectType: 'FLOW',
+                    subjectId: null,  // TODO: resolve flowId → subjectId
+                    inputSourceType: 'DATASOURCE',
+                    inputSourceId: ds.id,
+                    inputConfig: {
+                        datasourceId: ds.id,
+                        clazz: '',
+                        valueList,
+                        inputField: idField
+                    },
+                    project: '',
+                    packageId: '',
+                    flowId
+                })
+            });
+            const result = await resp.json();
+
+            if (result.sessionId) {
+                // 触发全局 BatchTestDialog(已挂在 frame 顶层)
+                // skipStart: true 表示 session 已经在外面 start 了,dialog 只轮询
+                ev.eventEmitter.emit(ev.OPEN_BATCH_TEST_DIALOG, {
+                    sessionId: result.sessionId,
+                    data: { subjectType: 'FLOW', inputSourceType: 'DATASOURCE', skipStart: true }
+                });
+                if (ce) ce.eventEmitter.emit(ce.SHOW_LOADING);
+            } else {
+                window.bootbox.alert('启动失败: ' + (result.error || JSON.stringify(result)));
+            }
+        } catch (e: any) {
+            window.bootbox.alert('请求失败: ' + e.message);
+        }
+    };
+
     handleSave = () => {
         const {formDatasource} = this.state;
         if (!formDatasource || !formDatasource.name || !formDatasource.type) return;
@@ -196,6 +289,11 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
                                     {' '}
                                     <button className="btn btn-xs btn-success" onClick={() => this.handleTest(ds.id!)}>
                                         <i className="glyphicon glyphicon-signal"></i> 测试
+                                    </button>
+                                    {' '}
+                                    {/* V5.8.0: 批量测试按钮 — FLOW+DATASOURCE 模式,调三方 API 拉真实数据测决策流 */}
+                                    <button className="btn btn-xs btn-primary" onClick={() => this.handleBatchTest(ds)}>
+                                        <i className="glyphicon glyphicon-flash"></i> 批量测试
                                     </button>
                                     {' '}
                                     <button className="btn btn-xs btn-danger" onClick={() => this.handleDelete(ds.id!)}>

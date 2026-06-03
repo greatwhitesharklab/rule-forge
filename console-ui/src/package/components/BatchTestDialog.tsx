@@ -79,7 +79,16 @@ export default class BatchTestDialog extends Component<BatchTestDialogProps, Bat
     }
 
     startBatchTest() {
-        const {files, sessionId} = this.state;
+        const {files, sessionId, data} = this.state;
+
+        // V5.8.0: 外部已经 start 的情况(DatasourcePanel 调 FLOW+DATASOURCE 模式),
+        // 直接进入轮询就行,不再调老 action.startBatchTest
+        if ((data as any)?.skipStart === true && sessionId) {
+            this.setState({status: 'RUNNING', polling: true});
+            this.startPolling(sessionId);
+            return;
+        }
+
         if (!sessionId) {
             window.bootbox.alert('请先导入 Excel 数据');
             return;
