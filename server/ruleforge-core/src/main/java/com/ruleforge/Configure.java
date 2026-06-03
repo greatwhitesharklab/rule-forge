@@ -25,6 +25,8 @@ public class Configure {
     }
 
     public static String getDateFormat() {
-        return dateFormat;
+        // 单元测试 / 非 Spring 上下文下没人调 setDateFormat(),dateFormat 为 null。
+        // 兜底返回 setDateFormat 默认值,避免 BuildRulesVisitor 等下游 NPE。
+        return dateFormat != null ? dateFormat : "yyyy-MM-dd HH:mm:ss";
     }
 }

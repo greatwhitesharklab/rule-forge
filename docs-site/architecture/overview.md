@@ -28,11 +28,11 @@ RuleForge 采用编辑器-执行器分离架构，支持水平扩展：
 | 模块 | 说明 |
 |------|------|
 | ruleforge-core | 规则引擎核心（RETE 算法、规则解析、知识库） |
-| ruleforge-decision | 共享决策模块（数据源、灰度策略、陪跑配置） |
-| ruleforge-console | 编辑器业务（REST API、项目管理、知识包管理） |
-| ruleforge-executor | 执行器业务（规则执行、知识包接收） |
-| ruleforge-console-app | 可部署的编辑器应用 |
-| ruleforge-executor-app | 可部署的执行器应用 |
+| ruleforge-decision | 共享决策模块（数据源、灰度策略、陪跑配置）。在 console-app 和 executor-app 中都作为嵌套 jar 引用 |
+| ruleforge-console-app | 可部署的编辑器应用（Spring Boot，业务代码合入） |
+| ruleforge-executor-app | 可部署的执行器应用（Spring Boot，业务代码合入） |
+
+> 2026-05 历史变更:原独立的 `ruleforge-console` / `ruleforge-executor` 子模块已合入 `console-app` / `executor-app`(commit `5f01ebe5` / `f963fd5`),Maven 4 模块结构精简到当前 4 个。
 
 依赖链：
 

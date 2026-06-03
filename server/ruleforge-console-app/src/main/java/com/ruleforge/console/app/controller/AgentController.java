@@ -20,7 +20,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/${ruleforgeV2.root.path}/agent")
+@RequestMapping("/${ruleforge.root.path}/agent")
 @RequiredArgsConstructor
 public class AgentController {
 

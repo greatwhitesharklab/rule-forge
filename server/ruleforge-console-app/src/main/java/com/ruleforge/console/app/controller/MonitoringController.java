@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
-@RequestMapping("/${ruleforgeV2.root.path}/monitoring")
+@RequestMapping("/${ruleforge.root.path}/monitoring")
 @RequiredArgsConstructor
 public class MonitoringController {
 

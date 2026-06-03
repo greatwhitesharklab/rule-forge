@@ -1,7 +1,12 @@
 # RuleForge 全栈部署配置
 # 使用方式: docker compose up
 # 访问地址: http://localhost (Console UI)
-version: '3.8'
+#
+# 启动加速原则:
+# - JVM 解释执行优先(JIT 后台异步),首屏更快
+# - MySQL 关掉一切 dev 用不上的特性(perf schema / binlog / DNS 反解)
+# - 显式 depends_on + service_healthy,容器按"业务就绪"顺序起来,不等空进程
+# - init: true 让容器 PID 1 走 tini,信号处理正确,关闭更快
 
 services:
   # ================================
@@ -10,6 +15,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: ruleforge-mysql
+    init: true
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
       MYSQL_CHARACTER_SET_SERVER: utf8mb4
@@ -20,11 +26,26 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/init-sql:/docker-entrypoint-initdb.d
+    # 启动加速:
+    #   --skip-name-resolve         关 client DNS 反解,容器连 MySQL 每次握手省 ~5-50ms
+    #   --innodb-buffer-pool-size   显式指定 buffer pool,免去启动期探测 host RAM
+    #   --innodb-flush-log-at-trx-commit=2  dev 模式可接受的小延迟换吞吐;生产去掉
+    #   --skip-log-bin              dev 不需要 binlog,关掉省 init + 写入开销
+    #   --performance-schema=OFF    关 perf schema,启动期省 ~500ms(无监控诉求)
+    command:
+      - --skip-name-resolve
+      - --innodb-buffer-pool-size=512M
+      - --innodb-flush-log-at-trx-commit=2
+      - --skip-log-bin
+      - --performance-schema=OFF
     healthcheck:
+      # mysqladmin ping 本身就快 (~50ms)。interval 2s 让 console 尽快能连上 mysql。
+      # start_period 给 init SQL 跑完 30s 缓冲(冷启动 + 3 个数据库 init),
+      # retries 5 = 10s 总等待。
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-ruleforge}"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+      interval: 2s
+      timeout: 2s
+      retries: 5
       start_period: 30s
     networks:
       - ruleforge
@@ -37,6 +58,7 @@ services:
       context: ./server
       dockerfile: Dockerfile.console
     container_name: ruleforge-console
+    init: true
     environment:
       CONSOLE_PORT: "8180"
       SERVER_PORT: "8180"
@@ -46,9 +68,16 @@ services:
       RF_DB_URL: jdbc:mysql://mysql:3306/ruleforge_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       RF_DB_USERNAME: root
       RF_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
+      # Flowable 独立库 (commit 2)
+      FLOWABLE_DB_URL: jdbc:mysql://mysql:3306/flowable_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      FLOWABLE_DB_USERNAME: root
+      FLOWABLE_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
       EXECUTOR_URL: http://executor-app:8280
       RF_REPO_DIR: /app/data/riskruleforge
-      JAVA_OPTS: "-Xmx2048m -Xms512m -XX:+UseG1GC -XX:+UseContainerSupport"
+      # JVM 启动加速:
+      #   -XX:TieredStopAtLevel=1        跳过 C2 JIT,首次请求走解释执行,JIT 后台异步发生(冷启动省 1-3s)
+      #   -XX:+ExitOnOutOfMemoryError    OOM 时容器立即退出而非苟活,配合 restart policy 起新实例
+      JAVA_OPTS: "-Xmx2048m -Xms512m -XX:+UseG1GC -XX:+UseContainerSupport -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError"
     volumes:
       - console_data:/app/data
       - console_logs:/app/logs
@@ -66,14 +95,19 @@ services:
       context: ./server
       dockerfile: Dockerfile.executor
     container_name: ruleforge-executor
+    init: true
     environment:
       EXECUTOR_PORT: "8280"
       SERVER_PORT: "8280"
       RF_DB_URL: jdbc:mysql://mysql:3306/ruleforge_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       RF_DB_USERNAME: root
       RF_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
+      # Flowable 独立库 (commit 2)
+      FLOWABLE_DB_URL: jdbc:mysql://mysql:3306/flowable_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      FLOWABLE_DB_USERNAME: root
+      FLOWABLE_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
       CONSOLE_URL: http://console-app:8180
-      JAVA_OPTS: "-Xmx1024m -Xms256m -XX:+UseG1GC -XX:+UseContainerSupport"
+      JAVA_OPTS: "-Xmx1024m -Xms256m -XX:+UseG1GC -XX:+UseContainerSupport -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError"
     volumes:
       - executor_logs:/app/logs
     depends_on:
@@ -90,6 +124,7 @@ services:
       context: ./model-service
       dockerfile: Dockerfile
     container_name: ruleforge-model-service
+    init: true
     environment:
       PORT: "8501"
       LOG_LEVEL: INFO
@@ -106,10 +141,15 @@ services:
       context: ./console-ui
       dockerfile: Dockerfile
     container_name: ruleforge-console-ui
+    init: true
     ports:
       - "${CONSOLE_UI_PORT:-80}:80"
+    # 等 console-app 的 healthcheck(/actuator/health)通过再起 nginx,
+    # 避免首屏用户在 console Spring Boot 还在初始化时撞 502。
+    # console-app 的 HEALTHCHECK 写在 Dockerfile.console(start-period 30s,interval 15s)
     depends_on:
-      - console-app
+      console-app:
+        condition: service_healthy
     networks:
       - ruleforge
 

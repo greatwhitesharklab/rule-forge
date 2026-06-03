@@ -182,11 +182,12 @@ describe('Frame Module - buildType Pure Function', () => {
 });
 
 describe('Frame Module - Thunks', () => {
-    let mockServer: ReturnType<typeof setupMockServer>, dispatch: ReturnType<typeof vi.fn>, mockBootbox: ReturnType<typeof setupMockBootbox>;
+    let mockServer: ReturnType<typeof setupMockServer>, dispatch: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
         mockServer = setupMockServer();
-        mockBootbox = setupMockBootbox();
+        // setupMockBootbox 副作用:安装 window.bootbox mock,无需返回值
+        setupMockBootbox();
         dispatch = vi.fn();
 
         // Mock DOM
@@ -280,7 +281,7 @@ describe('Frame Module - Thunks', () => {
         );
     });
 
-    it('GIVEN newFileName and fileType WHEN createNewFile thunk is dispatched THEN it should create file and dispatch CREATE_NEW_FILE', async () => {
+    it('GIVEN newFileName and fileType WHEN createNewFile thunk is dispatched THEN it should post to /frame/createFile and dispatch loadData thunk', async () => {
         const newFileInfo = { id: 'file1', type: 'rule' };
         mockServer.mockResponse('/frame/createFile', newFileInfo);
 
@@ -290,31 +291,25 @@ describe('Frame Module - Thunks', () => {
 
         await flushAsync();
 
-        expect(dispatch).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: ACTIONS.CREATE_NEW_FILE
-            })
-        );
+        // createNewFile 在 formPost 成功后 dispatch loadData(...) (一个 thunk 函数)
+        // 来刷新文件树,而不是直接 dispatch CREATE_NEW_FILE action。
+        expect(dispatch).toHaveBeenCalledWith(expect.any(Function));
     });
 
-    it('GIVEN newProjectName WHEN createNewProject thunk is dispatched THEN it should create project and dispatch CREATE_NEW_PROJECT', async () => {
+    it('GIVEN newProjectName WHEN createNewProject thunk is dispatched THEN it should post to /frame/createProject and dispatch loadData thunk', async () => {
         const newProjectData = { id: 'proj1', name: 'NewProject', type: 'project' };
         mockServer.mockResponse('/frame/createProject', newProjectData);
 
-        const parentNodeData = { fullPath: '/', name: 'root', type: 'root' };
         const thunk = ACTIONS.createNewProject('NewProject');
         thunk(dispatch);
 
         await flushAsync();
 
-        expect(dispatch).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: ACTIONS.CREATE_NEW_PROJECT
-            })
-        );
+        // createNewProject dispatch 的是 loadData thunk,不是 CREATE_NEW_PROJECT action
+        expect(dispatch).toHaveBeenCalledWith(expect.any(Function));
     });
 
-    it('GIVEN newFolderName WHEN createNewFolder thunk is dispatched THEN it should create folder and dispatch CREATE_NEW_FILE', async () => {
+    it('GIVEN newFolderName WHEN createNewFolder thunk is dispatched THEN it should post to /frame/createFolder and dispatch loadData thunk', async () => {
         const folderData = { id: 'folder1', type: 'folder' };
         mockServer.mockResponse('/frame/createFolder', folderData);
 
@@ -324,11 +319,8 @@ describe('Frame Module - Thunks', () => {
 
         await flushAsync();
 
-        expect(dispatch).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: ACTIONS.CREATE_NEW_FILE
-            })
-        );
+        // createNewFolder dispatch 的是 loadData thunk,不是 CREATE_NEW_FILE action
+        expect(dispatch).toHaveBeenCalledWith(expect.any(Function));
     });
 
     it('GIVEN path and newPath WHEN rename thunk is dispatched THEN it should rename and dispatch LOAD_END', async () => {

@@ -1,10 +1,12 @@
 package com.ruleforge.runtime.cache;
 
 import com.ruleforge.runtime.KnowledgePackage;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Component
 public class MemoryKnowledgeCache implements KnowledgeCache {
 
     private final Map<String, KnowledgePackage> map = new ConcurrentHashMap<>();

@@ -133,14 +133,20 @@ mvn compile
 #### 3️⃣ 启动
 
 ```bash
-# 🎯 使用启动脚本（推荐）
-./scripts/start-server.sh       # Console + Executor
-./scripts/start-console-ui.sh   # Console UI
+# 1) 本地 mvn 编译 + docker build 镜像(增量,几秒)
+./scripts/build-images.sh
 
-# 或单独启动
-./scripts/start-console.sh      # 仅编辑器
-./scripts/start-executor.sh     # 仅执行器
-./scripts/start-all.sh          # 全部服务 🚀
+# 2a) Docker 全栈启动(推荐)
+./scripts/dev-up.sh             # 启动 — 保留 MySQL 数据
+./scripts/dev-up.sh --clean     # 启动 — 清数据卷重新 init
+./scripts/dev-up.sh --logs      # 启动 + tail 关键日志
+./scripts/dev-up.sh --stop      # 只停不起
+
+# 2b) Java 本地跑(其它容器化)
+./scripts/dev-local.sh console  # 本地跑 console,MySQL/UI/Model 用 docker
+./scripts/dev-local.sh executor # 本地跑 executor
+./scripts/dev-local.sh all      # 本地跑 console + executor
+./scripts/dev-local.sh --stop   # 停本地 Java 进程
 ```
 
 - **Editor API** — http://localhost:8180

@@ -15,7 +15,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/${ruleforgeV2.root.path}/shadow")
+@RequestMapping("/${ruleforge.root.path}/shadow")
 @RequiredArgsConstructor
 public class ShadowConfigController {
 

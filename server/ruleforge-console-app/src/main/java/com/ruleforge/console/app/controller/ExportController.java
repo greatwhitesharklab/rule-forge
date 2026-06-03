@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @RestController
-@RequestMapping("/${ruleforgeV2.root.path}/export")
+@RequestMapping("/${ruleforge.root.path}/export")
 @RequiredArgsConstructor
 public class ExportController {
 

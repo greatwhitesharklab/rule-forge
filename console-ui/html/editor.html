@@ -8,6 +8,14 @@
         window._server = "../api";
         window._editorType = new URLSearchParams(window.location.search).get('type') || '';
     </script>
+</head>
+<body>
+    <!--
+      原来这段 DOM 注入脚本写在 <head> 里,执行时 <body> 还没建,document.body 为 null
+      → setAttribute / insertAdjacentHTML 抛错 → editor 页所有容器(#container / #toolbarContainer /
+      #dialogContainer)都没创建 → Playwright 测全部挂。
+      移到 </body> 前(此时 body 已就绪)即可。
+    -->
     <script type="text/javascript">
     (function() {
         var T = window._editorType;
@@ -106,7 +114,5 @@
     })();
     </script>
     <script type="module" src="../src/editor/bootstrap.tsx"></script>
-</head>
-<body>
 </body>
 </html>

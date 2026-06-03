@@ -4,6 +4,10 @@ server:
 spring:
   main:
     allow-circular-references: true
+    # 启动加速:关掉 banner 解析打印 + JMX 注册,各省 ~100-300ms
+    banner-mode: off
+  jmx:
+    enabled: false
   application:
     name: ruleforge-console
   datasource:
@@ -37,6 +41,19 @@ spring:
         validation-timeout: 3000
         connection-test-query: SELECT 1
         pool-name: UruleCloudSqlCP
+    # Flowable 独立库 — 避免和 Flyway 抢 ruleforge_db(详见 commit 2)
+    flowable:
+      jdbcUrl: ${FLOWABLE_DB_URL:jdbc:mysql://localhost:3306/flowable_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true}
+      username: ${FLOWABLE_DB_USERNAME:root}
+      password: ${FLOWABLE_DB_PASSWORD:}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      hikari:
+        maximum-pool-size: 5
+        minimum-idle: 1
+        connection-timeout: 60000
+        idle-timeout: 300000
+        max-lifetime: 1200000
+        pool-name: FlowableCloudSqlCP
   servlet:
     multipart:
       max-file-size: 50MB
@@ -60,7 +77,9 @@ ruleforge:
     retention-days: ${MONITORING_RETENTION_DAYS:30}
 
 flowable:
-  datasource: ruleforge
+  # 改用独立库 (见 spring.datasource.flowable),不让 Flowable 自 init 脚本
+  # 跟 Flyway 管理的 ruleforge_db 抢同一张 schema
+  datasource: flowable
   database-schema-update: true
   async-executor-activate: false
 
@@ -88,3 +107,26 @@ logging:
     com.ruleforge: DEBUG
     org.springframework.jdbc: DEBUG
     com.zaxxer.hikari: DEBUG
+
+# Actuator — /actuator/health 给 docker HEALTHCHECK 探活,prometheus 给
+# Phase 1 监控(详见 CHANGELOG 5.0.0)暴露指标
+management:
+  endpoints:
+    web:
+      exposure:
+        # 显式列出: health 给容器探活,info/metrics/prometheus 给运维面板
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      # dev 模式直接展示子组件状态方便排查;生产建议 when-authorized
+      show-details: always
+      probes:
+        enabled: true   # 启用 /actuator/health/liveness 和 /readiness(K8s 风格)
+  health:
+    db:
+      enabled: true    # 检查 HikariCP 能不能拿到连接
+    diskspace:
+      enabled: true
+  info:
+    env:
+      enabled: true    # /actuator/info 暴露 build/git/env 信息

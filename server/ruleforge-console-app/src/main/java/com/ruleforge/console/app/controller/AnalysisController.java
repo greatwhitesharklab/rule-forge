@@ -16,7 +16,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/${ruleforgeV2.root.path}/analysis")
+@RequestMapping("/${ruleforge.root.path}/analysis")
 @RequiredArgsConstructor
 public class AnalysisController {
 

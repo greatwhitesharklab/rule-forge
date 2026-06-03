@@ -15,7 +15,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/${ruleforgeV2.root.path}/simulation")
+@RequestMapping("/${ruleforge.root.path}/simulation")
 @RequiredArgsConstructor
 public class SimulationController {
 

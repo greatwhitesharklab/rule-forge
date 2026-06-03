@@ -19,7 +19,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/${ruleforgeV2.root.path}/datasource")
+@RequestMapping("/${ruleforge.root.path}/datasource")
 @RequiredArgsConstructor
 public class DatasourceController {
 

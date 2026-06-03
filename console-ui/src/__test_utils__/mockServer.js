@@ -1,7 +1,9 @@
 import { vi } from 'vitest';
 
 export function setupMockServer() {
-    window._server = '';
+    // 不要清成空串,否则 node 24 内置 fetch 拒绝相对 URL。
+    // 复用 setup 文件已设的 'http://localhost'。
+    window._server = window._server || 'http://localhost';
     const mockResponses = new Map();
     const fetchMock = vi.fn(async (url, options) => {
         for (const [pattern, handler] of mockResponses.entries()) {

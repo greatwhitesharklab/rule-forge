@@ -49,8 +49,14 @@ mvn clean package -DskipTests
 ### 4. 启动服务
 
 ```bash
-# 使用启动脚本
-./scripts/start-all.sh
+# 1) 本地 mvn 编译 + docker build 镜像
+./scripts/build-images.sh
+
+# 2) Docker 全栈启动
+./scripts/dev-up.sh             # 保留 MySQL 数据
+./scripts/dev-up.sh --clean     # 清数据卷重新 init
+./scripts/dev-up.sh --logs      # 启动 + tail 关键日志
+./scripts/dev-up.sh --stop      # 只停不起
 
 # 或手动启动
 cd server

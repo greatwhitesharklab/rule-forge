@@ -1,5 +1,6 @@
 # Stage 1: 构建阶段
-FROM node:18-alpine AS builder
+# Vite 8 需要 Node 20+(用到 CustomEvent 等 Web API),node:18-alpine 跑 npm run build 报 'CustomEvent is not defined'
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -7,7 +8,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # 安装所有依赖（包括 devDependencies，用于构建）
-RUN npm install
+# --legacy-peer-deps: react-redux 8.x 的 @types/react peer 范围没覆盖 18.3.x
+RUN npm install --legacy-peer-deps
 
 # 复制源代码
 COPY . .

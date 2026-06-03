@@ -15,7 +15,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/${ruleforgeV2.root.path}/gray")
+@RequestMapping("/${ruleforge.root.path}/gray")
 @RequiredArgsConstructor
 public class GrayStrategyController {
 

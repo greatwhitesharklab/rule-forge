@@ -35,7 +35,8 @@ export default defineConfig({
             '/api': {
                 target: 'http://127.0.0.1:8180',
                 changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/api/, '/ruleforgeV2'),
+                // /api/* → /ruleforge/* (commit 06c59925 重命名,原 /ruleforgeV2 删了)
+                rewrite: (path) => path.replace(/^\/api/, '/ruleforge'),
             },
         },
     },

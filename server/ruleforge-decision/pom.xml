@@ -35,6 +35,18 @@
             <version>3.5.9</version>
         </dependency>
 
+        <!-- Flyway: 用作 Flowable 初始化(详见 FlowableFlywayConfig) -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>11.14.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <version>11.14.1</version>
+        </dependency>
+
         <!-- Spring -->
         <dependency>
             <groupId>org.springframework</groupId>

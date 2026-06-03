@@ -46,7 +46,10 @@ mvn compile
 
 ```bash
 # 后端
-./scripts/start-server.sh
+./scripts/build-images.sh    # 本地 mvn 编译 + docker build
+./scripts/dev-up.sh         # Docker 全栈启动
+# 或本地跑 Java(其它容器化):
+./scripts/dev-local.sh console
 
 # 前端（新终端）
 cd console-ui
