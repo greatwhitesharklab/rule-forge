@@ -78,7 +78,16 @@ test.describe('Login Flow', () => {
     // When:   user clicks the submit button
     // Then:   the button text should immediately change to "登录中..."
     //  And:   after the request completes, the button should revert
+    //  (Flaky fix: 用 page.route() 给 /api/frame/login 注入 200ms 延迟,
+    //  让 "登录中..." loading 状态可被 observe。本机后端 <50ms 就响应了,
+    //  之前靠时间窗撞运气,现在稳定慢 200ms。)
     test('should show loading state while logging in', async ({ page }) => {
+        // 注入 200ms 延迟,让 loading state 可观察
+        await page.route('**/api/frame/login', async (route) => {
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            await route.continue();
+        });
+
         await page.locator('input[type="text"]').first().fill('admin');
         await page.locator('input[type="password"]').first().fill('admin');
 
