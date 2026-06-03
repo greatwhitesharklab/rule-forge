@@ -48,7 +48,13 @@ public class BatchTestMapperTest {
                     error_count INT DEFAULT 0,
                     progress DOUBLE DEFAULT 0,
                     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    -- V5.8.0 多态化:subject × input_source 二维
+                    subject_type      VARCHAR(32)  NOT NULL DEFAULT 'FLOW',
+                    subject_id        BIGINT,
+                    input_source_type VARCHAR(32)  NOT NULL DEFAULT 'FILE',
+                    input_source_id   BIGINT,
+                    input_payload     TEXT
                 )
             """);
             stmt.execute("""
@@ -59,7 +65,11 @@ public class BatchTestMapperTest {
                     input_data TEXT NOT NULL,
                     output_data TEXT,
                     error_message VARCHAR(500),
-                    status VARCHAR(20) DEFAULT 'PENDING'
+                    status VARCHAR(20) DEFAULT 'PENDING',
+                    -- V5.8.0 新增执行指标
+                    latency_ms  BIGINT,
+                    http_status INT,
+                    error_code  VARCHAR(64)
                 )
             """);
             conn.commit();
@@ -231,8 +241,8 @@ public class BatchTestMapperTest {
             try (SqlSession session = sqlSessionFactory.openSession(true)) {
                 BatchTestRowMapper mapper = session.getMapper(BatchTestRowMapper.class);
 
-                // 更新第 2 行
-                mapper.updateResult(row2, "SUCCESS", "{\"结果\":\"通过\"}", null);
+                // 更新第 2 行(V5.8.0:新增 latencyMs / httpStatus / errorCode 三个参数,这里是 SUCCESS 所以都传 null)
+                mapper.updateResult(row2, "SUCCESS", "{\"结果\":\"通过\"}", null, 42L, null, null);
 
                 // 验证第 2 行
                 Map<String, Object> updated = mapper.selectMapById(row2);
@@ -263,7 +273,8 @@ public class BatchTestMapperTest {
             try (SqlSession session = sqlSessionFactory.openSession(true)) {
                 BatchTestRowMapper mapper = session.getMapper(BatchTestRowMapper.class);
 
-                mapper.updateResult(rowId, "ERROR", null, "类型转换失败");
+                // V5.8.0: 加 latencyMs / httpStatus / errorCode;ERROR 时填 errorCode
+                mapper.updateResult(rowId, "ERROR", null, "类型转换失败", 15L, null, "TYPE_CAST_ERROR");
 
                 Map<String, Object> loaded = mapper.selectMapById(rowId);
                 assertThat(ciStr(loaded, "status")).isEqualTo("ERROR");

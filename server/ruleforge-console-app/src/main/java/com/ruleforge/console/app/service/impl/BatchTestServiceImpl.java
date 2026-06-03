@@ -107,6 +107,7 @@ public class BatchTestServiceImpl implements BatchTestService {
         for (Map<String, Object> rowMap : rowMaps) {
             Long rowId = ((Number) rowMap.get("id")).longValue();
             String inputData = (String) rowMap.get("input_data");
+            long start = System.currentTimeMillis();
 
             try {
                 // 反序列化输入数据
@@ -115,18 +116,24 @@ public class BatchTestServiceImpl implements BatchTestService {
                 // 执行测试
                 SaveProcessItemDto result = testService.doFlowTest(knowledgePackage, flowId, row, flowMap);
 
-                // 序列化输出并更新行
+                // 序列化输出并更新行(latencyMs=差值,httpStatus=null=非 DATASOURCE,errorCode=null=成功)
                 String outputJson = serializeRow(row);
-                rowMapper.updateResult(rowId, BatchTestRowEntity.STATUS_SUCCESS, outputJson, null);
+                long latency = System.currentTimeMillis() - start;  // 用外层 start 计时
+                rowMapper.updateResult(rowId, BatchTestRowEntity.STATUS_SUCCESS, outputJson, null,
+                        latency, null, null);
 
             } catch (RuleException e) {
                 errorCount++;
                 log.error("批量测试行 {} 执行失败: {}", rowId, e.getTipMsg());
-                rowMapper.updateResult(rowId, BatchTestRowEntity.STATUS_ERROR, null, e.getTipMsg());
+                long latency = System.currentTimeMillis() - start;
+                rowMapper.updateResult(rowId, BatchTestRowEntity.STATUS_ERROR, null, e.getTipMsg(),
+                        latency, null, e.getLabel());
             } catch (Exception e) {
                 errorCount++;
                 log.error("批量测试行 {} 执行异常", rowId, e);
-                rowMapper.updateResult(rowId, BatchTestRowEntity.STATUS_ERROR, null, e.getMessage());
+                long latency = System.currentTimeMillis() - start;
+                rowMapper.updateResult(rowId, BatchTestRowEntity.STATUS_ERROR, null, e.getMessage(),
+                        latency, null, "INTERNAL_ERROR");
             }
 
             processedCount++;

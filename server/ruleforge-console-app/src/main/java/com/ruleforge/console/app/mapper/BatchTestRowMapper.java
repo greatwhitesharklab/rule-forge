@@ -25,9 +25,13 @@ public interface BatchTestRowMapper extends BaseMapper<BatchTestRowEntity> {
     List<Map<String, Object>> countByStatus(@Param("sessionId") Long sessionId);
 
     @Update("UPDATE nd_batch_test_row SET status = #{status}, output_data = #{outputData}, " +
-            "error_message = #{errorMessage} WHERE id = #{id}")
+            "error_message = #{errorMessage}, latency_ms = #{latencyMs}, " +
+            "http_status = #{httpStatus}, error_code = #{errorCode} WHERE id = #{id}")
     int updateResult(@Param("id") Long id,
                      @Param("status") String status,
                      @Param("outputData") String outputData,
-                     @Param("errorMessage") String errorMessage);
+                     @Param("errorMessage") String errorMessage,
+                     @Param("latencyMs") Long latencyMs,
+                     @Param("httpStatus") Integer httpStatus,
+                     @Param("errorCode") String errorCode);
 }
