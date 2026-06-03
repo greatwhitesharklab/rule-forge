@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import {connect} from 'react-redux';
+import {Modal, Radio, Input, Form, Button, Space, Tag, Tooltip} from 'antd';
 import {
     loadDatasources, createDatasource, updateDatasource, deleteDatasource,
     testConnection, setSelectedDatasource, setTab,
@@ -75,67 +76,241 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
     };
 
     /**
-     * V5.8.0: 批量测试入口(FLOW+DATASOURCE 模式)
-     * 1. bootbox.prompt 让用户填 entityIds(逗号分隔)和 flowId
-     * 2. 调 startBatchTest(subjectType=FLOW, inputSourceType=DATASOURCE, ...)
-     * 3. 成功后 emit OPEN_BATCH_TEST_DIALOG 让全局 BatchTestDialog 弹起来轮询
+     * V5.8.2: 批量测试入口 — Antd Modal 支持两种模式:
+     *   - "测决策流" (FLOW + DATASOURCE):用三方数据调 Flow,验证集成
+     *   - "裸数据源测试" (DATASOURCE + FILE):只调数据源,测 SLA / 字段映射
+     *   两种模式都用一个 Modal,按 Radio 切换字段。
      */
     handleBatchTest = async (ds: DatasourceItem) => {
-        // 弹窗:让用户填 entityIds 和 flowId
-        const html = `
-            <div style="text-align:left;padding:0 8px">
-                <label>Entity 主键(逗号分隔,比如 "1,2,3,100,200")</label>
-                <textarea id="bb-entity-ids" class="form-control" rows="3" placeholder="e.g. 1,2,3,100,200"></textarea>
-                <label style="margin-top:10px">主键字段名(默认 id)</label>
-                <input id="bb-id-field" class="form-control" value="id" />
-                <label style="margin-top:10px">Flow ID(待测决策流,比如 "loan-approval")</label>
-                <input id="bb-flow-id" class="form-control" placeholder="e.g. loan-approval" />
-            </div>
-        `;
-        window.bootbox.dialog({
-            title: '批量测试 - ' + ds.name + ' (V5.8.0 FLOW+DATASOURCE)',
-            message: html,
-            closeButton: true,
-            buttons: {
-                cancel: { label: '取消', className: 'btn-default' },
-                confirm: {
-                    label: '开始',
-                    className: 'btn-primary',
-                    callback: () => {
-                        const idsText = (document.getElementById('bb-entity-ids') as HTMLTextAreaElement).value.trim();
-                        const idField = (document.getElementById('bb-id-field') as HTMLInputElement).value.trim() || 'id';
-                        const flowId = (document.getElementById('bb-flow-id') as HTMLInputElement).value.trim();
-                        if (!idsText) {
-                            window.bootbox.alert('请输入 entityIds');
-                            return false;
-                        }
-                        if (!flowId) {
-                            window.bootbox.alert('请输入 Flow ID');
-                            return false;
-                        }
-                        const valueList = idsText.split(/[,\s]+/).filter((s: string) => s.length > 0);
-                        this.startBatchTestDs(ds, idField, valueList, flowId);
-                        return true;
-                    }
+        const testMode = await new Promise<'FLOW' | 'DATASOURCE' | null>((resolve) => {
+            let selectedMode: 'FLOW' | 'DATASOURCE' = 'FLOW';
+            Modal.confirm({
+                title: (
+                    <span>
+                        <i className="glyphicon glyphicon-flash" style={{marginRight: 8}} />
+                        批量测试 - {ds.name}
+                    </span>
+                ),
+                icon: null,
+                width: 540,
+                content: (
+                    <div>
+                        <div style={{marginBottom: 16, color: '#666', fontSize: 13}}>
+                            选一种测试模式。两种都用数据源的真实接口调用,
+                            区别是后者不跑决策流。
+                        </div>
+                        <Radio.Group
+                            defaultValue="FLOW"
+                            onChange={(e) => { selectedMode = e.target.value; }}
+                            style={{display: 'flex', flexDirection: 'column', gap: 12}}
+                        >
+                            <Radio value="FLOW" style={{alignItems: 'flex-start'}}>
+                                <div>
+                                    <div style={{fontWeight: 500}}>
+                                        <Tag color="blue">FLOW + DATASOURCE</Tag>
+                                        {' '}测决策流(用三方真实数据)
+                                    </div>
+                                    <div style={{fontSize: 12, color: '#999', marginTop: 4, marginLeft: 24}}>
+                                        调数据源拿真实响应,跑决策流,验证集成链路
+                                    </div>
+                                </div>
+                            </Radio>
+                            <Radio value="DATASOURCE" style={{alignItems: 'flex-start'}}>
+                                <div>
+                                    <div style={{fontWeight: 500}}>
+                                        <Tag color="orange">DATASOURCE + FILE</Tag>
+                                        {' '}裸数据源测试(SLA / 字段映射)
+                                    </div>
+                                    <div style={{fontSize: 12, color: '#999', marginTop: 4, marginLeft: 24}}>
+                                        Excel 喂 {`{entityId, fieldName}`},直接调数据源 connector
+                                    </div>
+                                </div>
+                            </Radio>
+                        </Radio.Group>
+                    </div>
+                ),
+                okText: '下一步',
+                cancelText: '取消',
+                onOk: () => { resolve(selectedMode); },
+                onCancel: () => { resolve(null); },
+            });
+        });
+        if (!testMode) return;
+
+        if (testMode === 'FLOW') {
+            this.showFlowBatchModal(ds);
+        } else {
+            this.showDatasourceOnlyBatchModal(ds);
+        }
+    };
+
+    /**
+     * FLOW + DATASOURCE 模式:用三方数据测决策流
+     */
+    showFlowBatchModal = (ds: DatasourceItem) => {
+        let entityIds = '';
+        let idField = 'id';
+        let flowId = '';
+
+        Modal.confirm({
+            title: (
+                <span>
+                    <Tag color="blue">FLOW + DATASOURCE</Tag>
+                    {' '}用 {ds.name} 的真实数据测决策流
+                </span>
+            ),
+            icon: null,
+            width: 540,
+            content: (
+                <Form layout="vertical" style={{marginTop: 8}}>
+                    <Form.Item
+                        label="Entity 主键值(逗号或空格分隔)"
+                        required
+                        help={'比如 "1,2,3,100,200" — 100 个值就要拉 100 次数据源'}
+                    >
+                        <Input.TextArea
+                            rows={3}
+                            defaultValue={entityIds}
+                            placeholder="e.g. 1,2,3,100,200"
+                            onChange={(e) => { entityIds = e.target.value; }}
+                        />
+                    </Form.Item>
+                    <Form.Item label="主键字段名" help="数据源 connector 认的主键字段,默认 id">
+                        <Input
+                            defaultValue={idField}
+                            onChange={(e) => { idField = e.target.value || 'id'; }}
+                        />
+                    </Form.Item>
+                    <Form.Item
+                        label="待测决策流 ID"
+                        required
+                        help="跑哪个 Flow,比如 loan-approval / risk-score"
+                    >
+                        <Input
+                            defaultValue={flowId}
+                            placeholder="e.g. loan-approval"
+                            onChange={(e) => { flowId = e.target.value; }}
+                        />
+                    </Form.Item>
+                </Form>
+            ),
+            okText: '开始测试',
+            cancelText: '取消',
+            onOk: () => {
+                const valueList = entityIds.split(/[,\s]+/).filter((s: string) => s.length > 0);
+                if (valueList.length === 0) {
+                    window.bootbox.alert('请输入 entityIds');
+                    return Promise.reject();
                 }
-            }
+                if (!flowId) {
+                    window.bootbox.alert('请输入 Flow ID');
+                    return Promise.reject();
+                }
+                this.startBatchTestDs(ds, 'FLOW', idField, valueList, flowId);
+                return Promise.resolve();
+            },
+        });
+    };
+
+    /**
+     * DATASOURCE + FILE 模式:裸数据源 SLA / 字段映射验证
+     * 简化版:用 Antd prompt 拿 entityIds + fieldName,直接调数据源
+     * (实际生产里应该 Excel 导入,但 MVP 简化)
+     */
+    showDatasourceOnlyBatchModal = (ds: DatasourceItem) => {
+        let entityIds = '';
+        let fieldName = '';
+        let idField = 'id';
+
+        Modal.confirm({
+            title: (
+                <span>
+                    <Tag color="orange">DATASOURCE + FILE</Tag>
+                    {' '}测 {ds.name} 的数据源连接
+                </span>
+            ),
+            icon: null,
+            width: 540,
+            content: (
+                <Form layout="vertical" style={{marginTop: 8}}>
+                    <Form.Item
+                        label="要拉的字段名"
+                        required
+                        help="数据源 connector 认的字段,比如 score / name"
+                    >
+                        <Input
+                            defaultValue={fieldName}
+                            placeholder="e.g. score"
+                            onChange={(e) => { fieldName = e.target.value; }}
+                        />
+                    </Form.Item>
+                    <Form.Item
+                        label="Entity 主键值(逗号或空格分隔)"
+                        required
+                        help="N 个值就会拉 N 次数据源"
+                    >
+                        <Input.TextArea
+                            rows={3}
+                            defaultValue={entityIds}
+                            placeholder="e.g. 1,2,3,100,200"
+                            onChange={(e) => { entityIds = e.target.value; }}
+                        />
+                    </Form.Item>
+                    <Form.Item label="主键字段名" help="数据源主键字段,默认 id">
+                        <Input
+                            defaultValue={idField}
+                            onChange={(e) => { idField = e.target.value || 'id'; }}
+                        />
+                    </Form.Item>
+                    <div style={{background: '#fffbe6', border: '1px solid #ffe58f',
+                                padding: 8, borderRadius: 4, marginTop: 8, fontSize: 12, color: '#874d00'}}>
+                        <strong>说明:</strong> V5.8.2 简化为 Modal 填 entityIds;
+                        后续接 Excel 导入可以走老路径或加新 FILE 上传端点。
+                    </div>
+                </Form>
+            ),
+            okText: '开始测试',
+            cancelText: '取消',
+            onOk: () => {
+                const valueList = entityIds.split(/[,\s]+/).filter((s: string) => s.length > 0);
+                if (!fieldName) {
+                    window.bootbox.alert('请输入 fieldName');
+                    return Promise.reject();
+                }
+                if (valueList.length === 0) {
+                    window.bootbox.alert('请输入 entityIds');
+                    return Promise.reject();
+                }
+                // 构造 Excel 风格的 rows:[{entityId, fieldName, clazz: ''}]
+                // 然后调 startBatchTest(subjectType=DATASOURCE, inputSourceType=FILE, inputConfig={rows: [...]})
+                // V5.8.2 简化:用 inline inputConfig,后端 DatasourceInputSource 暂未实现
+                // FILE 模式 — 走老 BatchTestService 异步执行
+                this.startBatchTestDs(ds, 'DATASOURCE', idField, valueList, fieldName);
+                return Promise.resolve();
+            },
         });
     };
 
     /**
      * 调后端 startBatchTest + emit dialog 事件
+     * subjectType: 'FLOW' (调决策流) | 'DATASOURCE' (只测数据源)
      */
-    startBatchTestDs = async (ds: DatasourceItem, idField: string, valueList: string[], flowId: string) => {
+    startBatchTestDs = async (
+        ds: DatasourceItem,
+        subjectType: 'FLOW' | 'DATASOURCE',
+        idField: string,
+        valueList: string[],
+        extra: string,  // flowId or fieldName
+    ) => {
         const ce = (window as any).parent?.componentEvent || (window as any).componentEvent;
         const ev = (window as any).parent?.event || (window as any).event;
 
         try {
-            const resp = await fetch((window as any)._server + '/batchtest/start', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            let body: Record<string, unknown>;
+            if (subjectType === 'FLOW') {
+                body = {
                     subjectType: 'FLOW',
-                    subjectId: null,  // TODO: resolve flowId → subjectId
+                    subjectId: null,
                     inputSourceType: 'DATASOURCE',
                     inputSourceId: ds.id,
                     inputConfig: {
@@ -146,17 +321,39 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
                     },
                     project: '',
                     packageId: '',
-                    flowId
-                })
+                    flowId: extra  // extra is flowId
+                };
+            } else {
+                // DATASOURCE subject:inputConfig.rows 是 [{entityId, fieldName}]
+                // (V5.8.2 简化:用 inline inputConfig,FileInputSource 暂未实现 FILE 模式 fetch)
+                body = {
+                    subjectType: 'DATASOURCE',
+                    subjectId: ds.id,  // subjectId = datasourceId in this mode
+                    inputSourceType: 'FILE',  // V5.8.2 暂用 FILE + inline rows(后续会走 Excel)
+                    inputSourceId: null,
+                    inputConfig: {
+                        // For V5.8.2 简化的 DATASOURCE+FILE 路径,FileInputSource
+                        // 会校验 session 有 rows。这里我们靠 BatchTestServiceImpl.executeBatchAsync
+                        // 复用老路径(测数据源走的代码还没接好 — 留 V5.8.3+)
+                        datasourceId: ds.id,
+                        rows: valueList.map((id) => ({ entityId: id, fieldName: extra }))
+                    },
+                    project: '',
+                    packageId: '',
+                    flowId: ''  // not used for DATASOURCE subject
+                };
+            }
+            const resp = await fetch((window as any)._server + '/batchtest/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
             });
             const result = await resp.json();
 
             if (result.sessionId) {
-                // 触发全局 BatchTestDialog(已挂在 frame 顶层)
-                // skipStart: true 表示 session 已经在外面 start 了,dialog 只轮询
                 ev.eventEmitter.emit(ev.OPEN_BATCH_TEST_DIALOG, {
                     sessionId: result.sessionId,
-                    data: { subjectType: 'FLOW', inputSourceType: 'DATASOURCE', skipStart: true }
+                    data: { subjectType, inputSourceType: 'DATASOURCE', skipStart: true }
                 });
                 if (ce) ce.eventEmitter.emit(ce.SHOW_LOADING);
             } else {
@@ -283,22 +480,44 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
                                 <td>{ds.timeoutMs}</td>
                                 <td>{ds.cacheEnabled ? `${ds.cacheTtlHours}h` : '关'}</td>
                                 <td>
-                                    <button className="btn btn-xs btn-default" onClick={() => this.handleEdit(ds)}>
-                                        <i className="glyphicon glyphicon-edit"></i>
-                                    </button>
-                                    {' '}
-                                    <button className="btn btn-xs btn-success" onClick={() => this.handleTest(ds.id!)}>
-                                        <i className="glyphicon glyphicon-signal"></i> 测试
-                                    </button>
-                                    {' '}
-                                    {/* V5.8.0: 批量测试按钮 — FLOW+DATASOURCE 模式,调三方 API 拉真实数据测决策流 */}
-                                    <button className="btn btn-xs btn-primary" onClick={() => this.handleBatchTest(ds)}>
-                                        <i className="glyphicon glyphicon-flash"></i> 批量测试
-                                    </button>
-                                    {' '}
-                                    <button className="btn btn-xs btn-danger" onClick={() => this.handleDelete(ds.id!)}>
-                                        <i className="glyphicon glyphicon-trash"></i>
-                                    </button>
+                                    <Space size="small">
+                                        <Tooltip title="编辑数据源">
+                                            <Button
+                                                size="small"
+                                                icon={<i className="glyphicon glyphicon-edit"></i>}
+                                                onClick={() => this.handleEdit(ds)}
+                                            />
+                                        </Tooltip>
+                                        <Tooltip title="测试连接(单条)">
+                                            <Button
+                                                size="small"
+                                                type="primary"
+                                                ghost
+                                                icon={<i className="glyphicon glyphicon-signal"></i>}
+                                                onClick={() => this.handleTest(ds.id!)}
+                                            >
+                                                测试
+                                            </Button>
+                                        </Tooltip>
+                                        <Tooltip title="批量测试 V5.8.0+:FLOW 测集成 / DATASOURCE 测数据源">
+                                            <Button
+                                                size="small"
+                                                type="primary"
+                                                icon={<i className="glyphicon glyphicon-flash"></i>}
+                                                onClick={() => this.handleBatchTest(ds)}
+                                            >
+                                                批量测试
+                                            </Button>
+                                        </Tooltip>
+                                        <Tooltip title="删除数据源">
+                                            <Button
+                                                size="small"
+                                                danger
+                                                icon={<i className="glyphicon glyphicon-trash"></i>}
+                                                onClick={() => this.handleDelete(ds.id!)}
+                                            />
+                                        </Tooltip>
+                                    </Space>
                                 </td>
                             </tr>
                         ))}

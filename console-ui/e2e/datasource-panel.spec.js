@@ -245,7 +245,7 @@ test.describe('Datasource Panel', () => {
 
         // When: Click test button
         const row = p.locator('table tbody tr').filter({hasText: 'E2E测试连接数据源'}).first();
-        await row.locator('button.btn-success:has-text("测试")').click();
+        await row.locator('button.ant-btn:has-text("测试")').first().click();
 
         // Then: Alert banner appears with result
         const alert = p.locator('.alert');
