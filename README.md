@@ -39,24 +39,45 @@
 
 ## 📐 架构
 
+```mermaid
+graph TB
+    subgraph Client["浏览器"]
+        UI["Console UI<br/>React + Vite + Ant Design 5<br/>(nginx :80 / vite dev :3000)"]
+    end
+
+    subgraph Backend["后端服务"]
+        ConsoleApp["Console App<br/>Spring Boot 4.0.6 :8180<br/>编辑器后端 + REST API<br/>(@/actuator/health)"]
+        ExecutorApp["Executor App<br/>Spring Boot 4.0.6 :8280<br/>规则执行 + 知识包接收<br/>(@/actuator/health)"]
+        ModelService["Model Service<br/>Python FastAPI :8501<br/>PKL 模型推理"]
+    end
+
+    DB[("MySQL 8.0<br/>app_db / ruleforge_db / flowable_db<br/>HikariCP × 3 连接池")]
+
+    UI -->|REST| ConsoleApp
+    UI -.->|REST<br/>规则执行| ExecutorApp
+    ConsoleApp -->|读写规则 / 项目 / 日志| DB
+    ExecutorApp -->|加载知识包 / 写决策日志| DB
+    ExecutorApp -->|PKL 推理| ModelService
+    ConsoleApp -.->|可选:模型预测| ModelService
+
+    classDef client fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    classDef backend fill:#fff3e0,stroke:#f57c00,color:#e65100
+    classDef db fill:#f3e5f5,stroke:#7b1fa2,color:#4a148c
+    class UI client
+    class ConsoleApp,ExecutorApp,ModelService backend
+    class DB db
 ```
-┌─────────────┐     ┌──────────────┐
-│  Console UI  │────▶│ Console App  │ (编辑器, 端口 8180)
-│  (React)     │     │  (Spring)    │
-└─────────────┘     └──────┬───────┘
-                           │
-                 ┌─────────┴─────────┐
-                 ▼                   ▼
-         ┌──────────────┐   ┌──────────────┐
-         │ Executor App │   │ Model Service│
-         │ (执行, 8280) │   │ (ML,  8501) │
-         └──────┬───────┘   └──────────────┘
-                ▼
-         ┌──────────────┐
-         │    MySQL     │
-         │ (规则存储)    │
-         └──────────────┘
-```
+
+**端口速查**
+
+| 服务 | 端口 | 健康检查 |
+|------|------|----------|
+| Console UI (vite dev) | 3000 | — |
+| Console UI (docker nginx) | 80 | wget / |
+| Console App | 8180 | /actuator/health |
+| Executor App | 8280 | /actuator/health |
+| Model Service | 8501 | /health |
+| MySQL | 3306 | mysqladmin ping |
 
 ## 🧩 特性
 
@@ -87,19 +108,31 @@
 ```
 ⚙️  ruleforge-core            规则引擎核心（RETE 算法、规则解析、知识库）
 📦  ruleforge-decision        共享决策模块（数据源、灰度策略、陪跑配置）
-🖥️  ruleforge-console         编辑器业务（REST API、项目管理、知识包管理）
-🚀  ruleforge-executor        执行器业务（规则执行、知识包接收）
 🌐  ruleforge-console-app     可部署的编辑器应用 → 端口 8180
 ⚡  ruleforge-executor-app    可部署的执行器应用 → 端口 8280
-🎨  frontend                  React 可视化规则设计器
+🎨  console-ui                React + Vite + Ant Design 5 可视化设计器
 🖥️  cli                       RuleForge CLI（Agent 命令行接口）
+🐍  model-service             Python FastAPI 微服务（PKL 模型推理）
 ```
+
+> 历史说明:原 `ruleforge-console` / `ruleforge-executor` 子模块已合入 `console-app` / `executor-app`(commits `5f01ebe5` / `f963fd5`);原 `frontend/` 目录已重命名为 `console-ui/`(commit `06c59925`)。
 
 依赖链：
 
-```
-core ← decision ← console ← console-app
-core ← executor ← executor-app ← decision
+```mermaid
+graph LR
+    core["ruleforge-core<br/>RETE / 解析 / 知识库"]
+    decision["ruleforge-decision<br/>数据源 / 灰度 / 陪跑"]
+    console["ruleforge-console-app<br/>编辑器应用 :8180"]
+    executor["ruleforge-executor-app<br/>执行器应用 :8280"]
+
+    core --> decision
+    decision --> console
+    core --> executor
+    decision --> executor
+
+    classDef module fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    class core,decision,console,executor module
 ```
 
 ## 🚀 快速开始
