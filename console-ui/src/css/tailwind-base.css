@@ -26,6 +26,30 @@
     --rf-font-size-sm: 12px;
     --rf-radius-sm: 4px;
     --rf-radius-base: 6px;
+    /* V5.9.0: 间距 token — 让所有 panel/card 用同一组值 */
+    --rf-space-xs: 4px;
+    --rf-space-sm: 8px;
+    --rf-space-md: 16px;
+    --rf-space-lg: 24px;
+    --rf-space-xl: 32px;
+    /* V5.9.0: 阴影 token — 跟 Antd 一致,1/2/3 层叠 */
+    --rf-shadow-sm: 0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.02);
+    --rf-shadow-md: 0 6px 16px rgba(0,0,0,0.08), 0 3px 6px rgba(0,0,0,0.12), 0 9px 28px rgba(0,0,0,0.05);
+    /* V5.9.0: focus ring — 全站统一蓝色光圈,可达性 */
+    --rf-focus-ring: 0 0 0 2px rgba(22,119,255,0.2);
+    --rf-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* V5.9.0: 全局 box-sizing reset — 防止 padding/border 撑大容器,这是 Antd/Bootstrap 都能正确
+   嵌套的前提(老代码很多 .col-* 用固定 width + padding 会算错) */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* V5.9.0: focus-visible 统一 — 键盘 tab 时显示蓝色光圈,鼠标点击不显示 */
+:focus { outline: none; }
+:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus-ring);
+    transition: box-shadow 0.15s;
 }
 
 body {
@@ -37,6 +61,7 @@ body {
     background: var(--rf-bg-base);
     line-height: 1.5714;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 a { color: var(--rf-primary); transition: color 0.2s; }
@@ -209,7 +234,8 @@ a:hover { color: var(--rf-primary-hover); }
 .toolbar .btn { font-size: 12px; padding: 4px 12px; height: 28px; border-radius: 6px; }
 
 /* ========== Panel ========== */
-.panel { border-radius: 8px; border: 1px solid #f0f0f0; box-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.02); }
+/* V5.9.0: 改用 --rf-shadow-sm token 统一阴影 */
+.panel { border-radius: 8px; border: 1px solid #f0f0f0; box-shadow: var(--rf-shadow-sm); }
 .panel-heading { border-radius: 8px 8px 0 0; background: #fff; border-bottom: 1px solid #f0f0f0; font-weight: 500; color: rgba(0,0,0,0.88); padding: 10px 16px; }
 .panel-body { padding: 16px; }
 
@@ -244,10 +270,42 @@ a:hover { color: var(--rf-primary-hover); }
 @keyframes rf-spin { to { transform: rotate(360deg); } }
 
 /* ========== Scrollbar ========== */
+/* V5.9.0: 统一细滚动条 (Chrome/Safari/Edge 用 -webkit-,Firefox 用 scrollbar-*) */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+html { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.15) transparent; }
+
+/* ========== V5.9.0 工具类 ========== */
+/* 间距 token 短写 — 跟 --rf-space-* 对应,让 panel/页面统一用同一组值 */
+.rf-p-xs { padding: var(--rf-space-xs); }
+.rf-p-sm { padding: var(--rf-space-sm); }
+.rf-p-md { padding: var(--rf-space-md); }
+.rf-p-lg { padding: var(--rf-space-lg); }
+.rf-px-md { padding-left: var(--rf-space-md); padding-right: var(--rf-space-md); }
+.rf-py-sm { padding-top: var(--rf-space-sm); padding-bottom: var(--rf-space-sm); }
+.rf-mt-sm { margin-top: var(--rf-space-sm); }
+.rf-mt-md { margin-top: var(--rf-space-md); }
+.rf-mb-sm { margin-bottom: var(--rf-space-sm); }
+.rf-mb-md { margin-bottom: var(--rf-space-md); }
+/* 卡片 — 跟 .panel 类似但更轻,给 Antd Card / 自定义 card 用 */
+.rf-card {
+    background: var(--rf-bg-container);
+    border: 1px solid var(--rf-border-split);
+    border-radius: var(--rf-radius-base);
+    box-shadow: var(--rf-shadow-sm);
+    transition: var(--rf-transition);
+}
+.rf-card:hover { box-shadow: var(--rf-shadow-md); }
+/* 文本截断 */
+.rf-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* 通用过渡(hover/active 用) */
+.rf-trans { transition: var(--rf-transition); }
 
 /* ========== V5.9.0 Antd 5 Modal 全局统一 ========== */
 /* Modal 垂直居中 (Antd 默认 top:100px,这里覆盖) */
