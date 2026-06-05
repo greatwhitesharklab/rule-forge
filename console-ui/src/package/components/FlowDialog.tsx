@@ -1,6 +1,7 @@
 import {Component} from 'react';
 import * as event from '../event.js';
 import * as action from '../action.js';
+import {alert} from '@/utils/modal';
 import {
     FlowInfo,
     SimulatorCategory,
@@ -81,7 +82,7 @@ export default class FlowDialog extends Component<FlowDialogProps, FlowDialogSta
                         }, function (result: Record<string, unknown>) {
                             event.eventEmitter.emit(event.REFRESH_SIMULATOR_DATA, result);
                             ce.eventEmitter.emit(ce.HIDE_LOADING);
-                            window.bootbox.alert("决策流[" + flowId + "]执行完成，" + result.info);
+                            alert("决策流[" + flowId + "]执行完成，" + result.info);
                         });
                     }
                 },
@@ -124,7 +125,7 @@ export default class FlowDialog extends Component<FlowDialogProps, FlowDialogSta
                             }, function (testResult: Record<string, unknown>) {
                                 ce.eventEmitter.emit(ce.HIDE_LOADING);
                                 const errorList = testResult['errorList'];
-                                window.bootbox.alert(JSON.stringify(errorList));
+                                alert(JSON.stringify(errorList));
 
                                 const datetime = new Date();
                                 const filePrefix = '' + datetime.getFullYear() + (datetime.getMonth() + 1) + datetime.getDate()

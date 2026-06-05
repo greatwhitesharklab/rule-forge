@@ -7,6 +7,7 @@ import * as event from '../event.js';
 import type {ActionMethod} from '../action.js';
 import type {ActionRootState} from '../reducer.js';
 
+import {alert} from '@/utils/modal';
 interface SelectMethodDialogProps {
     data: ActionMethod[];
     dispatch: Function;
@@ -49,7 +50,7 @@ class SelectMethodDialog extends Component<SelectMethodDialogProps, SelectMethod
                     style: {fontSize: '18px', color: '#337ab7', padding: '0px 4px', cursor: 'pointer'},
                     click: (_rowIndex: number, rowData: ActionMethod) => {
                         dispatch(action.addSlave(rowData));
-                        window.bootbox.alert('添加成功.');
+                        alert('添加成功.');
                     }
                 }
             ]

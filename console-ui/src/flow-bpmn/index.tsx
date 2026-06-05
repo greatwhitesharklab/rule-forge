@@ -1,4 +1,3 @@
-import '../bootbox.js';
 import '../css/iconfont.css';
 import '../css/tailwind-base.css';
 import React, {createElement} from 'react';
@@ -11,10 +10,11 @@ import {save, saveNewVersion, formPost} from '../api/client.js';
 import * as event from '../components/componentEvent.js';
 import * as componentEvent from '../components/componentEvent.js';
 
+import {alert} from '@/utils/modal';
 document.addEventListener('DOMContentLoaded', function () {
     const file = getParameter('file');
     if (!file || file.length < 1) {
-        window.bootbox.alert('当前编辑器未指定具体文件！');
+        alert('当前编辑器未指定具体文件！');
         return;
     }
     window._project = buildProjectNameFromFile(file);
@@ -46,14 +46,14 @@ document.addEventListener('DOMContentLoaded', function () {
             if (newVersion) {
                 saveNewVersion(url, {file, content: encodeURIComponent(xml)}).then(function () {
                     event.eventEmitter.emit(event.HIDE_LOADING);
-                    window.bootbox.alert('保存成功!');
+                    alert('保存成功!');
                 }).catch(function () {
                     event.eventEmitter.emit(event.HIDE_LOADING);
                 });
             } else {
                 save(url, postData).then(function () {
                     event.eventEmitter.emit(event.HIDE_LOADING);
-                    window.bootbox.alert('保存成功!');
+                    alert('保存成功!');
                 });
             }
         });
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         editorRef.saveXML().then(function (xml: string) {
                             if (!xml) return;
                             formPost('/flow/deploy', {file: file}).then(function (data: any) {
-                                window.bootbox.alert('部署成功! Deployment ID: ' + (data.deploymentId || ''));
+                                alert('部署成功! Deployment ID: ' + (data.deploymentId || ''));
                             }).catch(function (response: any) {
                                 handleResponseError(response, '部署失败：');
                             });

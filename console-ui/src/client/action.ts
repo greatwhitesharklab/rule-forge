@@ -1,5 +1,6 @@
 import {formPost} from '../api/client.js';
 
+import {alert} from '@/utils/modal';
 export const ADD = 'add';
 export const DEL = 'del';
 export const LOADED_DATA = 'loaded_data';
@@ -30,7 +31,7 @@ export function save(data: Array<{ name?: string; client?: string }>, project: s
         xml += `<item name="${item.name}" client="${item.client}"/>`;
     }
     if (error) {
-        window.bootbox.alert(error);
+        alert(error);
         return;
     }
     xml += "</client-config>";
@@ -38,7 +39,7 @@ export function save(data: Array<{ name?: string; client?: string }>, project: s
     formPost('/clientconfig/save', {project: project || '', content: xml}, {
         errorPrefix: '保存失败，服务端错误：',
     }).then(function () {
-        window.bootbox.alert('保存成功!');
+        alert('保存成功!');
     }).catch(function () {
         // error already handled by client
     });

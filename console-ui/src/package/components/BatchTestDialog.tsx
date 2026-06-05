@@ -3,6 +3,7 @@ import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
 
+import {alert} from '@/utils/modal';
 interface BatchTestDialogProps {}
 
 interface BatchTestDialogState {
@@ -90,7 +91,7 @@ export default class BatchTestDialog extends Component<BatchTestDialogProps, Bat
         }
 
         if (!sessionId) {
-            window.bootbox.alert('请先导入 Excel 数据');
+            alert('请先导入 Excel 数据');
             return;
         }
 
@@ -124,12 +125,12 @@ export default class BatchTestDialog extends Component<BatchTestDialogProps, Bat
                     const ce = window.parent.componentEvent;
                     ce.eventEmitter.emit(ce.HIDE_LOADING);
                     if (progress.status === 'COMPLETED') {
-                        window.bootbox.alert(
+                        alert(
                             '批量测试完成！共 ' + progress.totalRows + ' 行，成功 ' +
                             (progress.successCount || 0) + ' 行，失败 ' + (progress.errorCount || 0) + ' 行'
                         );
                     } else {
-                        window.bootbox.alert('批量测试执行失败');
+                        alert('批量测试执行失败');
                     }
                 }
             });

@@ -5,6 +5,7 @@
 import TreeNode from './TreeNode.js';
 import { ConditionLeft } from './ConditionLeft.js';
 
+import {confirm} from '@/utils/modal';
 declare const ruleforge: any;
 
 export class VariableTreeNode extends TreeNode {
@@ -42,7 +43,7 @@ export class VariableTreeNode extends TreeNode {
                 name: 'delete',
                 label: '删除',
                 onClick() {
-                    window.bootbox.confirm('真的要删除当前节点？', function (result: boolean) {
+                    confirm('真的要删除当前节点？', function (result: boolean) {
                         if (result) self.delete();
                     });
                 }

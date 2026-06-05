@@ -74,6 +74,9 @@ services:
       FLOWABLE_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
       EXECUTOR_URL: http://executor-app:8280
       RF_REPO_DIR: /app/data/riskruleforge
+      # V5.9.x: Git-first 存储 — 注入 GitConfig.base 路径。容器里用 /app/data/git
+      # (跟 repository.dir 同根,走 console_data volume 持久化)
+      GIT_BASE: /app/data/git
       # JVM 启动加速:
       #   -XX:TieredStopAtLevel=1        跳过 C2 JIT,首次请求走解释执行,JIT 后台异步发生(冷启动省 1-3s)
       #   -XX:+ExitOnOutOfMemoryError    OOM 时容器立即退出而非苟活,配合 restart policy 起新实例
@@ -84,6 +87,9 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    # 本地 Playwright E2E 用 — vite dev proxy 走 127.0.0.1:8180
+    ports:
+      - "${CONSOLE_PORT:-8180}:8180"
     networks:
       - ruleforge
 
@@ -113,6 +119,9 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    # 本地 Playwright E2E 用
+    ports:
+      - "${EXECUTOR_PORT:-8280}:8280"
     networks:
       - ruleforge
 

@@ -3,6 +3,7 @@ import Grid from '../../components/grid/component/Grid.jsx';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
+import {alert} from '@/utils/modal';
 import {
     ResourcePackage,
     SimulatorCategory,
@@ -41,7 +42,7 @@ export default class SimulatorPage extends Component<SimulatorPageProps, Simulat
         event.eventEmitter.on(event.OPEN_SIMULATOR_DIALOG, (rowData: ResourcePackage) => {
             const resourceItems = rowData.resourceItems;
             if (!resourceItems || resourceItems.length === 0) {
-                window.bootbox.alert("知识包[" + rowData.name + "]下未定义具体的文件，不能进行仿真测试!");
+                alert("知识包[" + rowData.name + "]下未定义具体的文件，不能进行仿真测试!");
                 return;
             }
             this.setState({project: rowData.project || '', packageId: rowData.id})
@@ -117,7 +118,7 @@ export default class SimulatorPage extends Component<SimulatorPageProps, Simulat
                                     'data': [this.state.simulatorCategoryData]
                                 }, function (this: SimulatorPage, result: Record<string, unknown>) {
                                     const info = '测试结果：' + result.info;
-                                    window.bootbox.alert(info as string);
+                                    alert(info as string);
                                     const data = result.data as SimulatorCategory[];
                                     action.buildSimulatorVariableEditorType(data);
                                     this.setState({

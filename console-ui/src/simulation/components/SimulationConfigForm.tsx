@@ -1,6 +1,7 @@
 import React, {Component, ChangeEvent, ReactNode} from 'react';
 import {startSimulation, SimulationStartResult} from '../action.js';
 
+import {alert} from '@/utils/modal';
 interface SimulationConfigFormState {
     project: string;
     packageId: string;
@@ -40,7 +41,7 @@ class SimulationConfigForm extends Component<SimulationConfigFormProps, Simulati
     handleSubmit() {
         const state = this.state;
         if (!state.project || !state.packageId || !state.files || !state.startTime || !state.endTime) {
-            window.bootbox.alert('请填写所有必填字段');
+            alert('请填写所有必填字段');
             return;
         }
         this.setState({submitting: true});
@@ -56,7 +57,7 @@ class SimulationConfigForm extends Component<SimulationConfigFormProps, Simulati
         }, function (data: SimulationStartResult) {
             self.setState({submitting: false});
             if (data.error) {
-                window.bootbox.alert(data.message || '启动仿真失败');
+                alert(data.message || '启动仿真失败');
             } else {
                 if (self.props.onStarted) {
                     self.props.onStarted(data);

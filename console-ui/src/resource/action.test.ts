@@ -1,7 +1,41 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as ACTIONS from './action.js';
-import { setupMockBootbox, teardownMockBootbox } from '../__test_utils__/mockBootbox.js';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
+vi.mock('@/utils/modal', () => mocks);
 
+import * as ACTIONS from './action.js';
 // Mock componentEvent module used by action.js
 vi.mock('../components/componentEvent.js', () => ({
     eventEmitter: { emit: vi.fn() },
@@ -43,15 +77,13 @@ describe('Resource Module - Action Creators', () => {
 });
 
 describe('Resource Module - Thunks', () => {
-    let dispatch: ReturnType<typeof vi.fn>, mockBootbox: ReturnType<typeof setupMockBootbox>;
+    let dispatch: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
-        mockBootbox = setupMockBootbox();
         dispatch = vi.fn();
     });
 
     afterEach(() => {
-        teardownMockBootbox();
     });
 
     it('GIVEN valid files WHEN loadMasterData thunk is dispatched THEN it should fetch and dispatch LOAD_MASTER_COMPLETED', async () => {
@@ -196,14 +228,11 @@ describe('Resource Module - Thunks', () => {
 });
 
 describe('Resource Module - saveData Function', () => {
-    let mockBootbox: ReturnType<typeof setupMockBootbox>;
-
     beforeEach(() => {
-        mockBootbox = setupMockBootbox();
+        clearModalMockState();
     });
 
     afterEach(() => {
-        teardownMockBootbox();
     });
 
     it('GIVEN valid category data WHEN saveData is called THEN it should generate correct XML', async () => {
@@ -269,7 +298,7 @@ describe('Resource Module - saveData Function', () => {
         (save as any).mockClear();
         (save as any).mockResolvedValue({ status: true });
 
-        window.bootbox.prompt = vi.fn((msg: string, callback: (result: string | null) => void) => {
+        mocks.prompt.mockImplementation((msg: string, callback: (result: string | null) => void) => {
             callback('Test version comment');
         });
 
@@ -284,7 +313,7 @@ describe('Resource Module - saveData Function', () => {
 
         ACTIONS.saveData(data, true, 'variables.xml');
 
-        expect(window.bootbox.prompt).toHaveBeenCalled();
+        expect(mocks.prompt).toHaveBeenCalled();
         expect(save).toHaveBeenCalled();
         const callArgs = (save as any).mock.calls[0];
         expect(callArgs[1].versionComment).toBe('Test version comment');
@@ -295,7 +324,7 @@ describe('Resource Module - saveData Function', () => {
         (save as any).mockClear();
         (save as any).mockResolvedValue({ status: true });
 
-        window.bootbox.prompt = vi.fn((msg: string, callback: (result: string | null) => void) => {
+        mocks.prompt.mockImplementation((msg: string, callback: (result: string | null) => void) => {
             callback(null); // User cancels
         });
 
@@ -310,7 +339,7 @@ describe('Resource Module - saveData Function', () => {
 
         ACTIONS.saveData(data, true, 'variables.xml');
 
-        expect(window.bootbox.prompt).toHaveBeenCalled();
+        expect(mocks.prompt).toHaveBeenCalled();
         expect(save).not.toHaveBeenCalled();
     });
 
@@ -330,7 +359,7 @@ describe('Resource Module - saveData Function', () => {
 
         ACTIONS.saveData(data, false, 'variables.xml');
 
-        expect(window.bootbox.prompt).not.toHaveBeenCalled();
+        expect(mocks.prompt).not.toHaveBeenCalled();
         expect(save).toHaveBeenCalled();
     });
 

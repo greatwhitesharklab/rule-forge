@@ -32,7 +32,9 @@ COPY docker/entrypoint.sh /app/entrypoint.sh
 RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 # 数据/日志目录
-RUN mkdir -p /app/data /app/logs && chown -R ruleforge:ruleforge /app
+# V5.9.x: Git 存储基目录 (ruleforge.git.base 配 GIT_BASE env 默认 /opt/data,
+# 在容器里改成 /app/data/git 跟 repository.dir 同根 + 走 volume 持久化)
+RUN mkdir -p /app/data /app/data/git /app/logs && chown -R ruleforge:ruleforge /app
 
 USER ruleforge
 

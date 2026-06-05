@@ -1,4 +1,3 @@
-import '../bootbox.js';
 import '../css/tailwind-base.css';
 import React, {Component, ChangeEvent, FormEvent} from 'react';
 import {createRoot} from 'react-dom/client';

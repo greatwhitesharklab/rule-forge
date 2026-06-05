@@ -10,6 +10,7 @@ import ReferenceDialog from '../../reference/ReferenceDialog.jsx';
 import type {SpringBean, ActionMethod} from '../action.js';
 import type {ActionRootState} from '../reducer.js';
 
+import {alert, confirm} from '@/utils/modal';
 interface ActionEditorProps {
     masterData: SpringBean[];
     masterRowData: SpringBean;
@@ -53,7 +54,7 @@ class ActionEditor extends Component<ActionEditorProps> {
                     click: (_rowIndex: number, rowData: SpringBean) => {
                         let id = rowData.id;
                         if (!id || id.length < 1) {
-                            window.bootbox.alert('请先指定Bean Id');
+                            alert('请先指定Bean Id');
                             return;
                         }
                         event.eventEmitter.emit(event.OPEN_SELECT_METHOD_DIALOG, id);
@@ -64,7 +65,7 @@ class ActionEditor extends Component<ActionEditorProps> {
                     icon: 'glyphicon glyphicon-trash',
                     style: {fontSize: '18px', color: '#d9534f', padding: '0px 4px', cursor: 'pointer'},
                     click: (rowIndex: number) => {
-                        window.bootbox.confirm('真的要删除当前记录？', function (result) {
+                        confirm('真的要删除当前记录？', function (result) {
                             if (!result) return;
                             dispatch(action.deleteMaster(rowIndex));
                             dispatch(action.loadSlaveData({} as SpringBean, -1));
@@ -82,7 +83,7 @@ class ActionEditor extends Component<ActionEditorProps> {
                     icon: 'glyphicon glyphicon-trash',
                     style: {fontSize: '18px', color: '#d9534f', padding: '0px 10px', cursor: 'pointer'},
                     click: (rowIndex: number) => {
-                        window.bootbox.confirm('真的要删除当前记录？', function (result) {
+                        confirm('真的要删除当前记录？', function (result) {
                             if (!result) return;
                             dispatch(action.deleteSlave(rowIndex));
                             dispatch(action.loadMethodData({} as ActionMethod));
@@ -99,7 +100,7 @@ class ActionEditor extends Component<ActionEditorProps> {
                     icon: 'glyphicon glyphicon-trash',
                     style: {fontSize: '18px', color: '#d9534f', padding: '0px 10px', cursor: 'pointer'},
                     click: (rowIndex: number) => {
-                        window.bootbox.confirm('真的要删除当前记录？', function (result) {
+                        confirm('真的要删除当前记录？', function (result) {
                             if (!result) return;
                             dispatch(action.deleteParameter(rowIndex));
                         })
@@ -132,7 +133,7 @@ class ActionEditor extends Component<ActionEditorProps> {
                             <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
                                 <button className="btn btn-info" type="button" onClick={(e) => {
                                     if (!this.currentData) {
-                                        window.bootbox.alert('请先选择一条具体的动作方法');
+                                        alert('请先选择一条具体的动作方法');
                                         return;
                                     }
                                     const title = `动作"${this.masterData!.name}.${this.currentData.name}"`;

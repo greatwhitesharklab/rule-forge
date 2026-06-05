@@ -870,11 +870,17 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
         FileVersionEntity fileVersionEntity = this.fileRepository.findByFilePathForRead(path,
                 (version != null && !version.equalsIgnoreCase("latest")) ? version : null,
                 projectVersion, containSnapshot);
-        if (fileVersionEntity != null) {
+        if (fileVersionEntity != null && fileVersionEntity.getFileContent() != null) {
             log.info(String.format("readFile path: %s, project version: %s, input version: %s, real version: %s containSnapshot：%s", path, projectVersion, version, fileVersionEntity.getVersionNum(), containSnapshot));
             return IOUtils.toInputStream(fileVersionEntity.getFileContent(), StandardCharsets.UTF_8);
         } else {
-            log.info(String.format("readFile none path: %s, input version: %s, containSnapshot：%s", path, version, containSnapshot));
+            // V5.9.x: Git 不可用 + saveFile 不存 content 到 DB (内容走 Git) 时, fileVersionEntity 找到但 content 为 null
+            // 之前会 NPE 跳到 GlobalExceptionHandler 返 400。改返 null 让 caller 决定走 404 (跟 notFound.xml 一致)
+            if (fileVersionEntity != null) {
+                log.info(String.format("readFile path: %s, version: %s found but fileContent is null (Git-first storage fallback), return null", path, version));
+            } else {
+                log.info(String.format("readFile none path: %s, input version: %s, containSnapshot：%s", path, version, containSnapshot));
+            }
             return null;
         }
     }

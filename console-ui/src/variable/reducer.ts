@@ -2,6 +2,7 @@ import * as ACTIONS from './action.js';
 import {combineReducers} from 'redux';
 import type {VariableCategory, VariableItem} from './action.js';
 
+import {alert} from '@/utils/modal';
 interface MasterState {
     data?: VariableCategory[];
 }
@@ -37,7 +38,7 @@ function master(state: MasterState = {}, action: VariableAction): MasterState {
             var newData = [...(state.data || [])];
             for (let masterItem of newData) {
                 if (masterName === masterItem['name']) {
-                    window.bootbox.alert("[" + masterName + "]已经存在，添加失败")
+                    alert("[" + masterName + "]已经存在，添加失败")
                     return state;
                 }
             }

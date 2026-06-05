@@ -26,7 +26,8 @@ export class Remark {
         const container = this.container;
 
         const toolbar = document.createElement('div');
-        toolbar.style.cssText = 'cursor:pointer;color:#777;font-size:12px';
+        // V5.9.0 a11y: #777 (4.1:1 on #f5f5f5) → #595959 (7.5:1) 4.5:1 达标
+        toolbar.style.cssText = 'cursor:pointer;color:#595959;font-size:12px';
         toolbar.textContent = '备注';
 
         this.icon = document.createElement('i');

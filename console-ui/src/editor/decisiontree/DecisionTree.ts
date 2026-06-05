@@ -6,6 +6,7 @@
  */
 
 import { formPost } from '../../api/client.js';
+import {alert} from '@/utils/modal';
 import {
     constantLibraries,
     actionLibraries,
@@ -192,7 +193,7 @@ export default class DecisionTree {
                 self.topNode.initData(treeData['variableTreeNode']);
                 cancelDirty();
             }).catch(function () {
-                window.bootbox.alert('加载文件失败');
+                alert('加载文件失败');
             });
         }
     }

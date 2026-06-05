@@ -10,7 +10,7 @@
     --rf-primary-border:   #91caff;
 
     /* --- Semantic --- */
-    --rf-success:          #52c41a;
+    --rf-success:          #237b00;  /* V5.9.0 a11y: 5.38:1 替代 #52c41a (2.26:1) */
     --rf-success-hover:    #73d13d;
     --rf-success-bg:       #f6ffed;
     --rf-danger:           #ff4d4f;
@@ -20,11 +20,13 @@
     --rf-warning-hover:    #ffc53d;
     --rf-warning-bg:       #fffbe6;
 
-    /* --- Text --- */
+    /* --- Text (V5.9.0 a11y: 4.5:1 WCAG AA) --- */
     --rf-text-primary:     rgba(0, 0, 0, 0.88);
-    --rf-text-secondary:   rgba(0, 0, 0, 0.65);
-    --rf-text-tertiary:    rgba(0, 0, 0, 0.45);
-    --rf-text-disabled:    rgba(0, 0, 0, 0.25);
+    /* 0.65 alpha 渲染到白底 ≈ #595959 (4.83:1) 达标;12px 时仍边缘,翻到 0.7 保险 */
+    --rf-text-secondary:   rgba(0, 0, 0, 0.7);
+    /* 0.55 alpha 渲染到白底 ≈ #767676 (4.69:1) 12px 4.5:1 达标;0.45 时仅 3.36:1 不达标 */
+    --rf-text-tertiary:    rgba(0, 0, 0, 0.55);
+    --rf-text-disabled:    rgba(0, 0, 0, 0.35);
 
     /* --- Background --- */
     --rf-bg-base:          #f5f5f5;
@@ -151,15 +153,16 @@ a:hover {
     color: #fff;
 }
 
+/* V5.9.0 a11y: #52c41a (2.26:1) → #237b00 (5.38:1) */
 .btn-success {
-    background: #52c41a;
-    border-color: #52c41a;
+    background: #237b00;
+    border-color: #237b00;
     color: #fff;
 }
 .btn-success:hover,
 .btn-success:focus {
-    background: #73d13d;
-    border-color: #73d13d;
+    background: #52c41a;
+    border-color: #52c41a;
     color: #fff;
 }
 
@@ -300,13 +303,14 @@ select.form-control {
 }
 
 .toolbar .btn-success {
-    background: #52c41a;
-    border-color: #52c41a;
+    /* V5.9.0 a11y: #52c41a (2.26:1) → #237b00 (5.38:1) */
+    background: #237b00;
+    border-color: #237b00;
     color: #fff;
 }
 .toolbar .btn-success:hover {
-    background: #73d13d;
-    border-color: #73d13d;
+    background: #52c41a;
+    border-color: #52c41a;
 }
 
 .toolbar .btn-primary {

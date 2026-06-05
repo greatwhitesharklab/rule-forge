@@ -1,6 +1,7 @@
 import Cell from './Cell';
 import { generateContainer } from '../editor/common/URule.js';
 
+import {confirm} from '@/utils/modal';
 interface Variable {
     name: string;
     label: string;
@@ -101,7 +102,7 @@ export default class AttributeCell extends Cell {
         del.innerHTML = '<i class="glyphicon glyphicon-remove" style="cursor: pointer" title="删除当前属性行"/>';
         container.appendChild(del);
         del.addEventListener('click', function () {
-            window.bootbox.confirm("真的要删除？", function (result) {
+            confirm("真的要删除？", function (result) {
                 if (!result) return;
                 (_this.row as any).remove();
             });

@@ -9,6 +9,7 @@
 
 import { formPost } from '../../api/client.js';
 
+import {alert} from '@/utils/modal';
 /**
  * Copy cell data to the server-side clipboard.
  *
@@ -31,10 +32,10 @@ export function pasteCellData(type: string, callback: (data: any) => void): void
             if (data) {
                 callback(data);
             } else {
-                window.bootbox.alert('当前没有数据可供粘贴！');
+                alert('当前没有数据可供粘贴！');
             }
         })
         .catch(function () {
-            window.bootbox.alert('粘贴失败');
+            alert('粘贴失败');
         });
 }

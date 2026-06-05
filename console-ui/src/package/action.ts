@@ -1,6 +1,7 @@
 import {formatDate} from '../Utils.js';
 import {formPost, jsonPost, httpGet} from '../api/client.js';
 
+import {alert, dialog, DialogOptions} from '@/utils/modal';
 export const LOAD_MASTER_COMPLETED = 'load_master_completed';
 export const LOAD_SLAVE_COMPLETE = 'load_slave_completed';
 export const LOAD_PACKAGE_CONFIG_COMPLETE = 'load_package_config_completed';
@@ -219,7 +220,7 @@ export function refreshKnowledgeCache(project: string, packageConfig: PackageCon
                 }
             }
         }
-        const options: Record<string, unknown> = {
+        const options: DialogOptions = {
             title: '发布测试',
             message: `
                     <form class='bootbox-form'>
@@ -357,7 +358,7 @@ export function refreshKnowledgeCache(project: string, packageConfig: PackageCon
                 }
             }
         };
-        window.bootbox.dialog(options);
+        dialog(options);
         setTimeout(function () {
             (document.getElementById('test-pass-version') as HTMLSelectElement).onblur = function () {
                 changeTestPassVersion(project)
@@ -395,7 +396,7 @@ function changeTestPassVersion(project: string): void {
 
 function pushTest(project: string, rate: string, targetVersion: string, originVersion: string, startTime: string, endTime: string, title: string, remark: string, packageId: string): void {
     formPost('/packageeditor/refreshKnowledgeCache', {project, rate, originVersion, targetVersion, startTime, endTime, title, remark, packageId}).then(function (data: unknown) {
-        window.bootbox.alert(data as string);
+        alert(data as string);
     });
 
 }
@@ -445,7 +446,7 @@ export function applyNewVersion(data: ResourcePackage[], project: string, packag
             }
         }
 
-        const options: Record<string, unknown> = {
+        const options: DialogOptions = {
             title: '发起审批',
             message: `
                     <form class='bootbox-form'>
@@ -631,7 +632,7 @@ export function applyNewVersion(data: ResourcePackage[], project: string, packag
                 }
             }
         };
-        window.bootbox.dialog(options);
+        dialog(options);
         setTimeout(function () {
             const passEl = document.getElementById('pass-version') as HTMLSelectElement;
             passEl.onblur = function (this: HTMLSelectElement) {
@@ -677,7 +678,7 @@ function pushNewVersion(formData: FormData): void {
     ce.eventEmitter.emit(ce.SHOW_LOADING);
     startApprovalProcess(formData, function (result: { status: boolean; message?: string }) {
         ce.eventEmitter.emit(ce.HIDE_LOADING);
-        window.bootbox.alert('发起审批成功');
+        alert('发起审批成功');
     });
 }
 
@@ -703,7 +704,7 @@ export function saveData(data: ResourcePackage[], newVersion: boolean, project: 
     }
     console.log(postData)
     jsonPost('/packageeditor/saveResourcePackages', postData).then(function () {
-        window.bootbox.alert('保存成功!')
+        alert('保存成功!')
         if(callback){
             callback()
         }
@@ -766,11 +767,11 @@ export function startApprovalProcess(formData: FormData, callback: (result: { st
             callback(result);
         } else {
             ce.eventEmitter.emit(ce.HIDE_LOADING);
-            window.bootbox.alert(result.message || '');
+            alert(result.message || '');
         }
     }).catch(function () {
         ce.eventEmitter.emit(ce.HIDE_LOADING);
-        window.bootbox.alert('发起审批流程失败!');
+        alert('发起审批流程失败!');
     });
 }
 
@@ -781,7 +782,7 @@ export function loadSimulatorCategoryData(files: string, callback: (data: Simula
     }).catch(function () {
         const ce = window.parent.componentEvent;
         ce.eventEmitter.emit(ce.HIDE_LOADING);
-        window.bootbox.alert("加载文件[" + files + "]失败.");
+        alert("加载文件[" + files + "]失败.");
     });
 }
 
@@ -805,7 +806,7 @@ export function doTest(data: Record<string, unknown>, callback: (result: Record<
     }).catch(function () {
         const ce = window.parent.componentEvent;
         ce.eventEmitter.emit(ce.HIDE_LOADING);
-        window.bootbox.alert("<span style='color: red'>服务端出错</span>");
+        alert("<span style='color: red'>服务端出错</span>");
     });
 }
 
@@ -841,10 +842,10 @@ export function importExcelData(files: string, file: File, callback: (result: Im
         ce.eventEmitter.emit(ce.HIDE_LOADING);
         if (response && response.text) {
             response.text().then(function(text: string) {
-                window.bootbox.alert("<span style='color: red'>导入Excel失败：" + text + "</span>");
+                alert("<span style='color: red'>导入Excel失败：" + text + "</span>");
             });
         } else {
-            window.bootbox.alert("<span style='color: red'>导入Excel失败</span>");
+            alert("<span style='color: red'>导入Excel失败</span>");
         }
     });
 }
@@ -872,7 +873,7 @@ export function startBatchTest(sessionId: string, params: { files: string | null
     }).catch(function () {
         const ce = window.parent.componentEvent;
         ce.eventEmitter.emit(ce.HIDE_LOADING);
-        window.bootbox.alert('批量测试操作失败.');
+        alert('批量测试操作失败.');
     });
 }
 
@@ -939,7 +940,7 @@ export function getFileDiff(data: Record<string, string>): void {
                     <pre>${escapeHtml(diffRes)}</pre>
                 </div>
                 `
-            const options: Record<string, unknown> = {
+            const options: DialogOptions = {
                 title: '差异',
                 message: `
                     <form class='bootbox-form'>
@@ -949,7 +950,7 @@ export function getFileDiff(data: Record<string, string>): void {
                     </form>
                 `
             };
-            window.bootbox.dialog(options);
+            dialog(options);
         }
     });
 }

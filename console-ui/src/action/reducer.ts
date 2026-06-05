@@ -3,6 +3,7 @@ import * as ACTIONS from './action.js';
 import {uniqueID} from '../components/componentAction.js';
 import type {SpringBean, ActionMethod} from './action.js';
 
+import {alert} from '@/utils/modal';
 interface MasterState {
     data?: SpringBean[];
 }
@@ -80,7 +81,7 @@ function slave(state: SlaveState = {}, action: ActionModuleAction): SlaveState {
         }
         case ACTIONS.ADD_SLAVE: {
             if (!state.data || !state.data.methods) {
-                window.bootbox.alert('请先指定方法所属的Bean');
+                alert('请先指定方法所属的Bean');
                 return state;
             }
             var newData = Object.assign({}, state.data);
@@ -107,7 +108,7 @@ function method(state: MethodState = {}, action: ActionModuleAction): MethodStat
             return Object.assign({}, {data: {} as ActionMethod});
         case ACTIONS.ADD_PARAMETER: {
             if (!state.data || !state.data.parameters) {
-                window.bootbox.alert('请先指定参数所属的方法');
+                alert('请先指定参数所属的方法');
                 return state;
             }
             var newData = Object.assign({}, state.data);

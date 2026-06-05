@@ -1,12 +1,46 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
+vi.mock('@/utils/modal', () => mocks);
+
 import reducer from '../reducer.js';
 import * as ACTIONS from '../action.js';
 import { PackageState } from '../reducer.js';
-import { setupMockBootbox, teardownMockBootbox } from '../../__test_utils__/mockBootbox.js';
-
 describe('Package Module - Combined Reducer', () => {
     beforeEach(() => {
-        setupMockBootbox();
+        clearModalMockState();
         // Mock window.parent.componentEvent to avoid unhandled rejections
         (window as any).parent = {
             componentEvent: {
@@ -20,7 +54,6 @@ describe('Package Module - Combined Reducer', () => {
     });
 
     afterEach(() => {
-        teardownMockBootbox();
         delete (window as any).parent;
     });
     const initialState: PackageState = {
@@ -72,7 +105,7 @@ describe('Package Module - Combined Reducer', () => {
         const action = { type: ACTIONS.ADD_MASTER, data: duplicatePackage };
         const newState = reducer(existingState, action as any);
 
-        expect(window.bootbox.alert).toHaveBeenCalledWith('当前包采用的编码已存在，添加失败.');
+        expect(mocks.alert).toHaveBeenCalledWith('当前包采用的编码已存在，添加失败.');
         expect(newState).toEqual(existingState);
     });
 

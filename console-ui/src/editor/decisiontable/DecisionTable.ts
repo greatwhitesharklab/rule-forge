@@ -5,6 +5,7 @@
  */
 
 import HandsontableModule from 'handsontable';
+import {alert, dialog} from '@/utils/modal';
 const Handsontable = (HandsontableModule as any).default || HandsontableModule;
 
 import { getParameter } from '../../Utils.js';
@@ -306,12 +307,12 @@ export class DecisionTable {
             if (newVersion) {
                 saveNewVersion(url, { file, content: xml }).then(function () {
                     self.resetState();
-                    window.bootbox.alert('保存成功!');
+                    alert('保存成功!');
                 }).catch(function () {});
             } else {
                 save(url, postData).then(function () {
                     self.resetState();
-                    window.bootbox.alert('保存成功!');
+                    alert('保存成功!');
                 });
             }
         }
@@ -1362,7 +1363,7 @@ export class DecisionTable {
             onClick: function (): void {
                 const colData = self.getCurrentColData();
                 if (!colData.variableCategory) {
-                    window.bootbox.alert('当前条件列未定义对应的参数或变量，不能进行[配置条件]操作.');
+                    alert('当前条件列未定义对应的参数或变量，不能进行[配置条件]操作.');
                     return;
                 }
                 const dialogContent = document.createElement('div');
@@ -1370,9 +1371,9 @@ export class DecisionTable {
                 content.renderTo(dialogContent);
                 const category = colData.variableCategory === 'parameter' ? '参数' : colData.variableCategory;
                 const caption = category + '.' + colData.variableLabel;
-                window.bootbox.dialog({
+                dialog({
                     title: caption,
-                    message: dialogContent,
+                    message: dialogContent.outerHTML,
                     onhide: function (): void {
                         self.renderSelection();
                     }

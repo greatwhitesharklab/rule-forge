@@ -22,7 +22,8 @@ Styles.frameStyle = {
         return _getStyle("resourcePackageIcon", "rf rf-package");
     },
     getResourcePackageIconStyle: function () {
-        return _getStyle("resourcePackageIconStyle", {color: 'rgb(180, 133, 19)'});
+        // V5.9.0 a11y: rgb(180, 133, 19) (3.33:1) → rgb(135, 77, 0) (6.79:1) 保 amber 色相
+        return _getStyle("resourcePackageIconStyle", {color: 'rgb(135, 77, 0)'});
     },
     getLibIcon: function () {
         return _getStyle("libIcon", "rf rf-database");

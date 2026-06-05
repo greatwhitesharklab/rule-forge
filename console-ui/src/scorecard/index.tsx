@@ -1,4 +1,3 @@
-import '../bootbox.js';
 import ScoreCardTable from './ScoreCardTable';
 import '../css/iconfont.css';
 import './scorecard.css';
@@ -51,6 +50,7 @@ import {save} from '../api/client.js';
 
 import KnowledgeTreeDialog from '../components/dialog/component/KnowledgeTreeDialog.jsx';
 
+import {alert} from '@/utils/modal';
 document.addEventListener('DOMContentLoaded', function () {
     const file = getParameter("file");
     if (!file) {
@@ -73,19 +73,19 @@ document.addEventListener('DOMContentLoaded', function () {
             const url = "/common/saveFile";
             if (newVersion) {
                 saveNewVersion(url, { file, content }).then(function () {
-                    window.bootbox.alert("保存成功", function () {
+                    alert("保存成功", function () {
                         toolbarApi.clearDirty();
                     });
                 }).catch(function () {});
             } else {
                 save(url, {content, file, newVersion: String(newVersion)} as unknown as Record<string, string>).then(function () {
-                    window.bootbox.alert("保存成功", function () {
+                    alert("保存成功", function () {
                         toolbarApi.clearDirty();
                     });
                 });
             }
         } catch (error: any) {
-            window.bootbox.alert(error.message || error);
+            alert(error.message || error);
         }
     }
 
@@ -125,13 +125,13 @@ document.addEventListener('DOMContentLoaded', function () {
         toolbarApi.clearDirty();
     }).catch(function (response: any) {
         if (response && response.status === 401) {
-            window.bootbox.alert("权限不足，不能进行此操作.");
+            alert("权限不足，不能进行此操作.");
         } else if (response && response.text) {
             response.text().then(function (text: string) {
-                window.bootbox.alert("<span style='color: red'>加载数据失败,服务端错误：" + text + "</span>");
+                alert("<span style='color: red'>加载数据失败,服务端错误：" + text + "</span>");
             });
         } else {
-            window.bootbox.alert("<span style='color: red'>加载数据失败,服务端出错</span>");
+            alert("<span style='color: red'>加载数据失败,服务端出错</span>");
         }
     });
 });

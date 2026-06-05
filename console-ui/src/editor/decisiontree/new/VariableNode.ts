@@ -5,6 +5,7 @@
 import BaseNode from './BaseNode.js';
 import { ConditionLeft } from '../ConditionLeft.js';
 
+import {confirm} from '@/utils/modal';
 declare const ruleforge: any;
 
 export default class VariableNode extends BaseNode {
@@ -43,7 +44,7 @@ export default class VariableNode extends BaseNode {
                 name: 'delete',
                 label: '删除',
                 onClick() {
-                    window.bootbox.confirm('真的要删除当前节点？', function (result: boolean) {
+                    confirm('真的要删除当前节点？', function (result: boolean) {
                         if (result) {
                             self.delete();
                         }

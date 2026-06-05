@@ -42,8 +42,10 @@ test.describe('100% Business Flow', () => {
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(800);
         const dropdown = page.locator('button:has-text("选择项目"), button:has-text("test_proj")').first();
-        await dropdown.click({force: true});
-        await page.waitForTimeout(400);
+        if (await dropdown.isVisible({timeout: 2000}).catch(() => false)) {
+            await dropdown.click({force: true});
+            await page.waitForTimeout(400);
+        }
         const newProj = page.locator('a:has-text("新建项目"), li:has-text("新建项目")').first();
         if (await newProj.isVisible({timeout: 1000}).catch(() => false)) {
             await newProj.click({force: true});

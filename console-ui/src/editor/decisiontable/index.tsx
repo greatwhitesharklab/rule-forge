@@ -1,4 +1,3 @@
-import '../../bootbox.js';
 import 'handsontable/styles/handsontable.css';
 import '../context.standalone.css';
 import '../../css/iconfont.css';

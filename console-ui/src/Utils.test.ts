@@ -1,4 +1,40 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
+vi.mock('@/utils/modal', () => mocks);
+
 import {
     formatDate,
     getParameter,
@@ -6,8 +42,6 @@ import {
     handleResponseError,
     nextIFrameId,
 } from './Utils.js';
-import { setupMockBootbox, teardownMockBootbox } from './__test_utils__/mockBootbox.js';
-
 describe('Utils - formatDate', () => {
     it('GIVEN a Date object and "yyyy-MM-dd" format WHEN formatDate is called THEN it should return formatted date string', () => {
         const date = new Date(2025, 5, 15, 10, 30, 45);
@@ -101,19 +135,15 @@ describe('Utils - buildProjectNameFromFile', () => {
 });
 
 describe('Utils - handleResponseError', () => {
-    let mockBootbox: any;
-
     beforeEach(() => {
-        mockBootbox = setupMockBootbox();
     });
 
     afterEach(() => {
-        teardownMockBootbox();
     });
 
     it('GIVEN a 401 response WHEN handleResponseError is called THEN it should alert permission denied', () => {
         handleResponseError({ status: 401 } as any);
-        expect((window as any).bootbox.alert).toHaveBeenCalledWith('权限不足，不能进行此操作.');
+        expect(mocks.alert).toHaveBeenCalledWith('权限不足，不能进行此操作.');
     });
 
     it('GIVEN a response with text method and error body WHEN handleResponseError is called THEN it should alert the error text with prefix', async () => {
@@ -125,7 +155,7 @@ describe('Utils - handleResponseError', () => {
         const result = handleResponseError(response as any, 'Error:');
         await result;
 
-        expect((window as any).bootbox.alert).toHaveBeenCalledWith(
+        expect(mocks.alert).toHaveBeenCalledWith(
             "<span style='color: red'>Error:Something went wrong</span>"
         );
     });
@@ -139,21 +169,21 @@ describe('Utils - handleResponseError', () => {
         const result = handleResponseError(response as any, 'Error:');
         await result;
 
-        expect((window as any).bootbox.alert).toHaveBeenCalledWith(
+        expect(mocks.alert).toHaveBeenCalledWith(
             "<span style='color: red'>Error:</span>"
         );
     });
 
     it('GIVEN a response with no text method WHEN handleResponseError is called THEN it should alert generic error', () => {
         handleResponseError({ status: 500 } as any);
-        expect((window as any).bootbox.alert).toHaveBeenCalledWith(
+        expect(mocks.alert).toHaveBeenCalledWith(
             "<span style='color: red'>服务端出错</span>"
         );
     });
 
     it('GIVEN a response with no text method and custom prefix WHEN handleResponseError is called THEN it should alert with prefix', () => {
         handleResponseError({ status: 503 } as any, 'Custom prefix');
-        expect((window as any).bootbox.alert).toHaveBeenCalledWith(
+        expect(mocks.alert).toHaveBeenCalledWith(
             "<span style='color: red'>Custom prefix</span>"
         );
     });
@@ -167,7 +197,7 @@ describe('Utils - handleResponseError', () => {
         const result = handleResponseError(response as any);
         await result;
 
-        expect((window as any).bootbox.alert).toHaveBeenCalledWith(
+        expect(mocks.alert).toHaveBeenCalledWith(
             "<span style='color: red'>服务端错误：detail</span>"
         );
     });

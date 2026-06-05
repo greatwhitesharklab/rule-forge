@@ -7,6 +7,7 @@ import type {ConstantCategory, ConstantItem} from '../action.js';
 import * as refEvent from '../../reference/event.js';
 import ReferenceDialog from '../../reference/ReferenceDialog.tsx';
 
+import {alert, confirm} from '@/utils/modal';
 interface ConstantEditorProps {
     dispatch: (a: unknown) => unknown;
     masterData: ConstantCategory[];
@@ -64,7 +65,7 @@ class ConstantEditor extends React.Component<ConstantEditorProps> {
                     icon: 'glyphicon glyphicon-trash',
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 4px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
-                        window.bootbox.confirm('真的要删除当前记录？', function (result) {
+                        confirm('真的要删除当前记录？', function (result) {
                             if (!result) return;
                             dispatch(action.deleteMaster(rowIndex));
                             dispatch(action.loadSlaveData({}));
@@ -81,7 +82,7 @@ class ConstantEditor extends React.Component<ConstantEditorProps> {
                     icon: 'glyphicon glyphicon-trash',
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 10px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
-                        window.bootbox.confirm('真的要删除当前记录？', function (result) {
+                        confirm('真的要删除当前记录？', function (result) {
                             if (!result) return;
                             dispatch(action.deleteSlave(rowIndex));
                         });
@@ -115,7 +116,7 @@ class ConstantEditor extends React.Component<ConstantEditorProps> {
                             <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
                                 <button className="btn btn-info" type="button" onClick={() => {
                                     if (!this.currentData) {
-                                        window.bootbox.alert('请先选择一条具体的常量');
+                                        alert('请先选择一条具体的常量');
                                         return;
                                     }
                                     const title = '常量"' + (this.masterData?.name ?? '') + '.' + this.currentData.name + '"';

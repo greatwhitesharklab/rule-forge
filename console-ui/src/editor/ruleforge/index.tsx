@@ -1,4 +1,3 @@
-import '../../bootbox.js';
 import '../context.standalone.css';
 import './ruleset.css';
 import '../../css/iconfont.css';
@@ -13,6 +12,7 @@ import './RuleProperty.js';
 import '../common/ComparisonOperator.js';
 import '../common/ComplexArithmetic.js';
 import '../common/VariableValue.js';
+import {alert} from '@/utils/modal';
 // @ts-ignore - side-effect import
 import '../common/ResourceListDialog.js';
 // @ts-ignore - side-effect import
@@ -64,7 +64,7 @@ import { RuleFactory } from './RuleFactory.js';
 document.addEventListener('DOMContentLoaded', function () {
     const file = getParameter('file');
     if (!file || file.length < 1) {
-        window.bootbox.alert('当前编辑器未指定具体规则文件！');
+        alert('当前编辑器未指定具体规则文件！');
         return;
     }
 
@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             xml = factory.toXml();
         } catch (error: unknown) {
-            window.bootbox.alert(error as string);
+            alert(error as string);
             return;
         }
         xml = encodeURIComponent(xml);
@@ -89,13 +89,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isNewVersion) {
             saveNewVersion(url, { file: file, content: xml }).then(function () {
                 toolbarApi.clearDirty();
-                window.bootbox.alert('保存成功!');
+                alert('保存成功!');
             }).catch(function () {});
         } else {
             const postData: Record<string, string> = { content: xml, file: file, newVersion: String(isNewVersion) };
             save(url, postData).then(function () {
                 toolbarApi.clearDirty();
-                window.bootbox.alert('保存成功!');
+                alert('保存成功!');
             });
         }
     }

@@ -1,5 +1,6 @@
 import {formPost, httpGet} from '../api/client.js';
 
+import {alert} from '@/utils/modal';
 export const MASTER_LOADED = 'master_loaded';
 export const SLAVE_LOADED = 'slave_loaded';
 export const PERMISSION_CHANGE = "permission_change";
@@ -81,7 +82,7 @@ export function save(data: UserPermission[]) {
     formPost("/permission/saveResourceSecurityConfigs", {content: xml}, {
         errorPrefix: '服务端错误：',
     }).then(function () {
-        window.bootbox.alert('保存成功');
+        alert('保存成功');
     }).catch(function () {
         // error already handled by client
     });

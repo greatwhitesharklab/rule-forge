@@ -1,9 +1,10 @@
+import {alert, confirm} from '@/utils/modal';
 /**
  * Centralized HTTP client for the RuleForge frontend.
  *
  * All functions auto-prepend `window._server` to relative paths.
  * Error handling is centralized — 401 shows permission alert, other
- * errors show the response text via bootbox.alert.
+ * errors show the response text via alert.
  */
 
 // ---- Types ----
@@ -19,7 +20,7 @@ export interface ApiResponse<T = unknown> {
 export interface RequestOptions {
     /** Prefix for error messages shown to the user. */
     errorPrefix?: string;
-    /** If true, suppress the automatic bootbox error dialog. */
+    /** If true, suppress the automatic error dialog. */
     silent?: boolean;
 }
 
@@ -34,7 +35,7 @@ function handleError(response: Response, opts: RequestOptions = {}): Promise<nev
     if (opts.silent) return Promise.reject(response);
 
     if (response.status === 401) {
-        window.bootbox.alert('权限不足，不能进行此操作.');
+        alert('权限不足，不能进行此操作.');
         return Promise.reject(response);
     }
 
@@ -42,14 +43,14 @@ function handleError(response: Response, opts: RequestOptions = {}): Promise<nev
         const msg = text
             ? (opts.errorPrefix || '服务端错误：') + text
             : (opts.errorPrefix || '服务端出错');
-        window.bootbox.alert("<span style='color: red'>" + msg + "</span>");
+        alert("<span style='color: red'>" + msg + "</span>");
         return Promise.reject(response);
     });
 }
 
 function networkError(err: unknown, opts: RequestOptions = {}): never {
     if (!opts.silent) {
-        window.bootbox.alert("<span style='color: red'>服务端出错</span>");
+        alert("<span style='color: red'>服务端出错</span>");
     }
     throw err;
 }
@@ -166,7 +167,7 @@ export function httpDelete(
  *
  * Posts form-encoded data, then checks `result.status`. If the server
  * returns `{ status: false, message: "..." }`, shows the message via
- * bootbox and rejects. If `status: true`, resolves with the full response.
+ * the modal helper and rejects. If `status: true`, resolves with the full response.
  */
 export function save<T = unknown>(
     path: string,
@@ -176,7 +177,7 @@ export function save<T = unknown>(
     return formPost<ApiResponse<T>>(path, params, opts).then(function (result) {
         if (!result.status) {
             if (!opts?.silent) {
-                window.bootbox.alert(result.message || '保存失败');
+                alert(result.message || '保存失败');
             }
             return Promise.reject(result);
         }
@@ -204,7 +205,7 @@ export function saveNewVersion(
             if (!result.status) {
                 // File is not dirty — no diff
                 if (!opts?.silent) {
-                    window.bootbox.alert('与最新版本无差异，无需生成新版本');
+                    alert('与最新版本无差异，无需生成新版本');
                 }
                 return Promise.reject(new Error('no_diff'));
             }
@@ -215,7 +216,7 @@ export function saveNewVersion(
                 decodedFileName = decodeURIComponent(decodedFileName);
             }
             return new Promise<void>(function (resolve, reject) {
-                window.bootbox.confirm(
+                confirm(
                     '是否对【' + decodedFileName + '】生成新版本?',
                     function (confirmed: boolean) {
                         if (!confirmed) {

@@ -216,7 +216,8 @@ test.describe('100% Panel tab tour', () => {
     test('p06-panel-project-files', async ({page}) => {
         await page.goto('/html/frame.html');
         await page.waitForSelector('.app-layout', {timeout: 10000});
-        await page.locator('.activity-bar-icon[title="项目文件"]').click({force: true});
+        // V5.8.4 后 activity bar 删了 "项目文件" 入口(规则编辑自带项目树 + 选择项目)
+        await page.locator('.activity-bar-icon[title="规则编辑"]').click({force: true});
         await page.waitForTimeout(2000);
         // 选 test_proj
         const dropdown = page.locator('button:has-text("选择项目")').first();
@@ -325,7 +326,8 @@ test.describe('100% State tour', () => {
         // 这个之前会 500 返 JSON,现在返 200 + {} 空 config
         await page.goto('/html/frame.html');
         await page.waitForSelector('.app-layout', {timeout: 10000});
-        await page.locator('.activity-bar-icon[title="项目文件"]').click({force: true});
+        // V5.8.4 后 activity bar 删了 "项目文件" 入口(规则编辑自带项目树 + 选择项目)
+        await page.locator('.activity-bar-icon[title="规则编辑"]').click({force: true});
         await page.waitForTimeout(800);
         // 选项目 → 切到 package view
         const dropdown = page.locator('button:has-text("选择项目")').first();
@@ -363,7 +365,7 @@ test.describe('100% Interaction state tour', () => {
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(800);
         // hover 一个 activity bar
-        const icon = page.locator('.activity-bar-icon[title="项目文件"]');
+        const icon = page.locator('.activity-bar-icon[title="规则编辑"]');
         await icon.hover({force: true});
         await page.waitForTimeout(400);
         await shot(page, 'interact-button-hover');
@@ -392,9 +394,12 @@ test.describe('100% Interaction state tour', () => {
         await page.goto('/html/frame.html');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(800);
-        const dropdown = page.locator('button:has-text("选择项目")').first();
-        await dropdown.click({force: true});
-        await page.waitForTimeout(800);
+        // 规则编辑 panel 顶部 project dropdown(显示 选择项目 / test_proj / __ix_proj_* 任一)
+        const dropdown = page.locator('button:has-text("选择项目"), button:has-text("test_proj"), button:has-text("__ix_proj_")').first();
+        if (await dropdown.isVisible({timeout: 2000}).catch(() => false)) {
+            await dropdown.click({force: true});
+            await page.waitForTimeout(800);
+        }
         await shot(page, 'interact-dropdown-open');
     });
 

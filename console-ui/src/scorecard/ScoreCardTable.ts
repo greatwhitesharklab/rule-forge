@@ -7,6 +7,7 @@ import ConditionCol from './ConditionCol';
 import ScoreCol from './ScoreCol';
 import { Remark } from '../Remark.js';
 
+import {prompt} from '@/utils/modal';
 export default class ScoreCardTable {
     remark: any;
     weightSupport = false;
@@ -195,7 +196,7 @@ export default class ScoreCardTable {
             window._setDirty?.();
         } else {
             const _this = this;
-            window.bootbox.prompt("请输入列名", function (name) {
+            prompt("请输入列名", function (name) {
                 if (!name || name.length < 1) {
                     return;
                 }

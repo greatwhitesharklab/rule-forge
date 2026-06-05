@@ -3,6 +3,7 @@ import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
 
+import {alert} from '@/utils/modal';
 interface ImportExcelDataDialogProps {}
 
 interface ImportExcelDataDialogState {
@@ -35,13 +36,13 @@ export default class ImportExcelDataDialog extends Component<ImportExcelDataDial
         const fileInput = document.getElementById("input-file") as HTMLInputElement;
         const file = fileInput.files![0];
         if (!file) {
-            window.bootbox.alert('请选择文件');
+            alert('请选择文件');
             return;
         }
 
         action.importExcelData(this.state.files, file, (result) => {
             if (result.status) {
-                window.bootbox.alert('导入Excel成功，共 ' + (result.totalRows || 0) + ' 行数据');
+                alert('导入Excel成功，共 ' + (result.totalRows || 0) + ' 行数据');
                 this.setState({sessionId: result.sessionId || null});
                 // 全局存储 sessionId，供批量测试使用
                 (window as any)._importSessionId = result.sessionId;
@@ -50,7 +51,7 @@ export default class ImportExcelDataDialog extends Component<ImportExcelDataDial
                 if (result.data && result.data.length > 0) {
                     event.eventEmitter.emit(event.OPEN_IMPORT_EXCEL_ERROR_DIALOG, result.data);
                 } else {
-                    window.bootbox.alert(result.msg || '导入Excel失败');
+                    alert(result.msg || '导入Excel失败');
                 }
             }
         });

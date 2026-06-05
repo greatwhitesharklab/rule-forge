@@ -1,8 +1,42 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
+vi.mock('@/utils/modal', () => mocks);
+
 import * as ACTIONS from './action.js';
 import { setupMockServer, teardownMockServer } from '../__test_utils__/mockServer.js';
-import { setupMockBootbox, teardownMockBootbox } from '../__test_utils__/mockBootbox.js';
-
 // Mock handleResponseError
 vi.mock('../Utils.js', () => ({
     handleResponseError: vi.fn(),
@@ -42,7 +76,7 @@ describe('Permission Module - Action Creators', () => {
         }));
         (global as any).fetch = mockFetch;
         window._server = 'http://test';
-        setupMockBootbox();
+        clearModalMockState();
 
         const data = [
             {
@@ -86,22 +120,19 @@ describe('Permission Module - Action Creators', () => {
 
         delete (global as any).fetch;
         delete window._server;
-        teardownMockBootbox();
     });
 });
 
 describe('Permission Module - Thunks', () => {
-    let mockServer: ReturnType<typeof setupMockServer>, dispatch: ReturnType<typeof vi.fn>, mockBootbox: ReturnType<typeof setupMockBootbox>;
+    let mockServer: ReturnType<typeof setupMockServer>, dispatch: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
         mockServer = setupMockServer();
-        mockBootbox = setupMockBootbox();
         dispatch = vi.fn();
     });
 
     afterEach(() => {
         teardownMockServer();
-        teardownMockBootbox();
     });
 
     it('GIVEN server returns data WHEN loadMasterData thunk is dispatched THEN it should dispatch MASTER_LOADED', async () => {
@@ -163,7 +194,7 @@ describe('Permission Module - Thunks', () => {
 });
 
 describe('Permission Module - saveData XML Generation', () => {
-    let mockFetch: ReturnType<typeof vi.fn>, mockBootbox: ReturnType<typeof setupMockBootbox>;
+    let mockFetch: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
         mockFetch = vi.fn(() => Promise.resolve({
@@ -172,13 +203,11 @@ describe('Permission Module - saveData XML Generation', () => {
         }));
         (global as any).fetch = mockFetch;
         window._server = 'http://test';
-        mockBootbox = setupMockBootbox();
     });
 
     afterEach(() => {
         delete (global as any).fetch;
         delete window._server;
-        teardownMockBootbox();
     });
 
     it('GIVEN valid permission data WHEN save is called THEN it should generate correct XML structure', async () => {
@@ -393,7 +422,7 @@ describe('Permission Module - saveData XML Generation', () => {
         ACTIONS.save(data);
         await flushAsync(mockFetch);
 
-        expect(mockBootbox.getLastAlertMessage()).toBe('保存成功');
+        expect(getLastAlertMessage()).toBe('保存成功');
     });
 
     it('GIVEN save fails WHEN save is called THEN it should handle error', async () => {

@@ -57,6 +57,30 @@ class BpmnFlowControllerTest {
     @DisplayName("加载 BPMN 文件")
     class LoadBpmn {
 
+        // ──────────────────────────────────────────────────
+        // BDD STUB: V5.9.x NPE regression — null InputStream from readFile
+        //
+        // Given  Git 存储层不可用,readFile 走 DB fallback,DB 也没 file_content
+        //        (生产: saveFile 把 content 存 Git 不存 DB,只在容器没启用 Git 存储时 NPE)
+        // When   GET /flow/load?file=test_rl.xml
+        // Then   应返回 404 (file not found),不应抛 NullPointerException
+        //
+        // 当前 controller 行为: inputStream.readAllBytes() 在 inputStream=null 时 NPE
+        // 抛 RuleException → 走 GlobalExceptionHandler → 400 纯文本 body
+        // 修复方向: 在 inputStream==null 时显式 return notFound() (跟 notFound.xml 路径一致)
+        @Test
+        @DisplayName("【V5.9.x BUG】readFile 返 null (Git 不可用 + DB 没 content) 不应 NPE")
+        void shouldReturn404WhenReadFileReturnsNull() throws Exception {
+            // Given Git 存储不可用 + DB 也没 file_content, readFile 静默返 null
+            when(repositoryService.readFile("git_unavailable.xml", null)).thenReturn(null);
+
+            // When GET /flow/load?file=git_unavailable.xml
+            ResponseEntity<String> result = controller.loadBpmn("git_unavailable.xml", null);
+
+            // Then 应返 404 (跟 notexist.xml 路径一致), 不应 NPE
+            assertThat(result.getStatusCode().value()).isEqualTo(404);
+        }
+
         @Test
         @DisplayName("正常加载已存在的 BPMN 文件")
         void shouldLoadExistingBpmnFile() throws Exception {

@@ -1,5 +1,6 @@
 import Col from './Col';
 
+import {confirm} from '@/utils/modal';
 export default class CustomCol extends Col {
     customCells: import('./CustomCell').default[] = [];
 
@@ -23,7 +24,7 @@ export default class CustomCol extends Col {
         del.innerHTML = "<i class='glyphicon glyphicon-remove'/>";
         this.td.appendChild(del);
         del.addEventListener('click', function () {
-            window.bootbox.confirm("真的要删除当前列？", function (result) {
+            confirm("真的要删除当前列？", function (result) {
                 if (!result) return;
                 _this.remove();
             });

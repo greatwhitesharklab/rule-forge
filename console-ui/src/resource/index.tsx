@@ -1,4 +1,3 @@
-import '../bootbox.js';
 import '../../node_modules/bootstrapvalidator/dist/css/bootstrapValidator.css';
 import '../css/iconfont.css'
 import '../css/tailwind-base.css';
@@ -13,11 +12,12 @@ import ResourceEditor from './components/ResourceEditor.jsx'
 import * as action from './action.js'
 import Loading from '../components/loading/component/Loading.tsx';
 
+import {alert} from '@/utils/modal';
 document.addEventListener('DOMContentLoaded', function () {
     const store: Store = createStore(reducer, applyMiddleware(thunk))
     const file = _getParameter('file')
     if (!file || file.length < 1) {
-        window.bootbox.alert('请先指定要加载的变量库文件.')
+        alert('请先指定要加载的变量库文件.')
         return
     }
     (store.dispatch as Function)(action.generateVariableLibrary(file))

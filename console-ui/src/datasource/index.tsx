@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 import {connect} from 'react-redux';
 import {Modal, Radio, Input, Form, Button, Space, Tag, Tooltip, Upload, message} from 'antd';
+import {alert} from '@/utils/modal';
 import {
     loadDatasources, createDatasource, updateDatasource, deleteDatasource,
     testConnection, setSelectedDatasource, setTab,
@@ -216,11 +217,11 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
             onOk: () => {
                 const valueList = entityIds.split(/[,\s]+/).filter((s: string) => s.length > 0);
                 if (valueList.length === 0) {
-                    window.bootbox.alert('请输入 entityIds');
+                    alert('请输入 entityIds');
                     return Promise.reject();
                 }
                 if (!flowId) {
-                    window.bootbox.alert('请输入 Flow ID');
+                    alert('请输入 Flow ID');
                     return Promise.reject();
                 }
                 this.startBatchTestDs(ds, 'FLOW', idField, valueList, flowId);
@@ -291,11 +292,11 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
             onOk: () => {
                 const valueList = entityIds.split(/[,\s]+/).filter((s: string) => s.length > 0);
                 if (!fieldName) {
-                    window.bootbox.alert('请输入 fieldName');
+                    alert('请输入 fieldName');
                     return Promise.reject();
                 }
                 if (valueList.length === 0) {
-                    window.bootbox.alert('请输入 entityIds');
+                    alert('请输入 entityIds');
                     return Promise.reject();
                 }
                 // 构造 Excel 风格的 rows:[{entityId, fieldName, clazz: ''}]
@@ -373,10 +374,10 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
                 });
                 if (ce) ce.eventEmitter.emit(ce.SHOW_LOADING);
             } else {
-                window.bootbox.alert('启动失败: ' + (result.error || JSON.stringify(result)));
+                alert('启动失败: ' + (result.error || JSON.stringify(result)));
             }
         } catch (e: any) {
-            window.bootbox.alert('请求失败: ' + e.message);
+            alert('请求失败: ' + e.message);
         }
     };
 

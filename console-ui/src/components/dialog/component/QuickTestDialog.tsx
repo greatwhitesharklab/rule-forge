@@ -6,6 +6,7 @@ import CodeMirror from 'codemirror';
 import '../../../../node_modules/codemirror/lib/codemirror.css';
 import '../../../../node_modules/codemirror/theme/3024-day.css';
 
+import {alert, dialog} from '@/utils/modal';
 interface VariableItem {
     label: string;
     defaultValue?: string;
@@ -195,7 +196,7 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                     }} onClick={() => {
                         const logContent = (this.state.logData || []).map(item => `<p>》》》规则（RuleSet：${decodeURIComponent(item.fileName || '')}，${item.version}），已被添加到执行队列；</p>`);
                         console.log('logContent', logContent);
-                        window.bootbox.alert({ title: '日志', message: logContent.join('') });
+                        dialog({ title: '日志', message: logContent.join('') });
                     }}>查看详细日志</button>
                 </div>
                 {(this.state.resultData || []).map((item, key) => (
@@ -266,7 +267,7 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                             try {
                                 params.data = JSON.parse(this.editor!.getValue());
                             } catch (error) {
-                                window.bootbox.alert('JSON格式错误，请检查输入内容');
+                                alert('JSON格式错误，请检查输入内容');
                                 return;
                             }
                         }

@@ -13,6 +13,7 @@
 import BaseCell from './BaseCell.js';
 import {copyCellData, pasteCellData} from './cellDataUtils.js';
 
+import {alert} from '@/utils/modal';
 declare const ruleforge: any;
 declare const MsgBox: { confirm(message: string, callback: () => void): void };
 
@@ -135,7 +136,7 @@ export default class Cell extends BaseCell {
                     if (xml && xml !== '') {
                         copyCellData('value', xml);
                     } else {
-                        window.bootbox.alert('当前没有内容可供复制!');
+                        alert('当前没有内容可供复制!');
                     }
                 }
             }, {
