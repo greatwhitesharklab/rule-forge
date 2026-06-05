@@ -454,4 +454,30 @@ test.describe('Datasource Panel', () => {
         // Then: Datasource table is still visible (first table in the panel)
         await expect(p.locator('table').first()).toBeVisible();
     });
+
+    // ── BDD STUB: V5.9.0 视觉 diff 回归保护 ────────────────────────────────
+    // Given: 用户登录,DatasourcePanel 已渲染
+    //   And:  表格至少有一行数据
+    // When:  Playwright 截图面板(table 区域,跳过 modal/animation)
+    // Then:  跟 baseline "datasource-panel-baseline.png" 对比
+    //   And:  diff < maxDiffPixels(500) → 允许背景渐变/字体抗锯齿
+    //   And:  diff ratio < maxDiffPixelRatio(0.02) → 允许 < 2% 像素差
+    // Why:   防止 Step 1-3 的样式改动被后续 commit 无意回退(比如有人误改 token)
+    //        第一次跑:生成 baseline;后续跑:必须 diff 在阈值内。
+    //        阈值故意放宽(500px / 2%)— 留点空间给无关紧要的 hover/font 变化。
+    test('V5.9.0 visual diff — DatasourcePanel table 截图与 baseline 对比', async ({page}) => {
+        const p = panel(page);
+        // 等表格 + 第一行渲染好
+        await expect(p.locator('table').first()).toBeVisible();
+        await expect(p.locator('table tbody tr').first()).toBeVisible();
+        // 让字体抗锯齿 + 动画 稳定
+        await page.waitForTimeout(300);
+
+        // 只截 panel 区域(不截全屏),减少误报
+        await expect(p).toHaveScreenshot('datasource-panel-baseline.png', {
+            maxDiffPixels: 500,        // 允许 < 500px 差异(背景渐变/抗锯齿/hover)
+            maxDiffPixelRatio: 0.02,   // 允许 < 2% 像素差
+            animations: 'disabled',    // 禁动画,避免帧差
+        });
+    });
 });

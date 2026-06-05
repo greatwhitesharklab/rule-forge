@@ -811,18 +811,21 @@ public class FrameController extends BaseController {
         return this.ruleforgeRepositoryService.createProject(projectName, user, classify);
     }
 
+    @PostMapping("/lockFile")
     public void lockFile(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         String file = req.getParameter("file");
         User user = EnvironmentUtils.getLoginUser(new RequestContext(req, resp));
         this.ruleforgeRepositoryService.lockPath(file, user);
     }
 
+    @PostMapping("/unlockFile")
     public void unlockFile(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         String file = req.getParameter("file");
         User user = EnvironmentUtils.getLoginUser(new RequestContext(req, resp));
         this.ruleforgeRepositoryService.unlockPath(file, user, null);
     }
 
+    @PostMapping("/copyFile")
     public void copyFile(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String newFullPath = req.getParameter("newFullPath");
         String oldFullPath = req.getParameter("oldFullPath");
@@ -839,6 +842,7 @@ public class FrameController extends BaseController {
         }
     }
 
+    @PostMapping("/fileRename")
     public void fileRename(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         String path = req.getParameter("path");
         path = Utils.decodeURL(path);

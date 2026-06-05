@@ -110,19 +110,21 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                     <span style={{fontSize: 12, color: '#999'}}>{projectName}</span>
                 </div>
 
-                {/* Tab Bar */}
+                {/* Tab Bar — V5.9.0: icon-text gap 4→8,字体 13→12 让 7 个 tab 不挤 */}
                 <div style={{display: 'flex', borderBottom: '1px solid #e0e0e0', background: '#fafafa'}}>
                     {tabs.map(tab => (
                         <button key={tab.id}
                                 onClick={() => this.handleTabChange(tab.id)}
                                 style={{
-                                    flex: 1, padding: '8px 0', border: 'none', cursor: 'pointer',
+                                    flex: 1, padding: '8px 4px', border: 'none', cursor: 'pointer',
                                     background: activeTab === tab.id ? '#fff' : '#fafafa',
-                                    borderBottom: activeTab === tab.id ? '2px solid #5470c6' : '2px solid transparent',
+                                    borderBottom: activeTab === tab.id ? '2px solid #1677ff' : '2px solid transparent',
                                     fontWeight: activeTab === tab.id ? 600 : 400,
-                                    fontSize: 13
+                                    fontSize: 12,
+                                    color: activeTab === tab.id ? '#1677ff' : 'rgba(0,0,0,0.65)',
+                                    transition: 'all 0.2s'
                                 }}>
-                            <span className={tab.icon} style={{marginRight: 4}}/>
+                            <span className={tab.icon} style={{marginRight: 6, fontSize: 12}}/>
                             {tab.label}
                         </button>
                     ))}

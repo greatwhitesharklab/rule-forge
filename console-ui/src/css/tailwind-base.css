@@ -26,6 +26,30 @@
     --rf-font-size-sm: 12px;
     --rf-radius-sm: 4px;
     --rf-radius-base: 6px;
+    /* V5.9.0: 间距 token — 让所有 panel/card 用同一组值 */
+    --rf-space-xs: 4px;
+    --rf-space-sm: 8px;
+    --rf-space-md: 16px;
+    --rf-space-lg: 24px;
+    --rf-space-xl: 32px;
+    /* V5.9.0: 阴影 token — 跟 Antd 一致,1/2/3 层叠 */
+    --rf-shadow-sm: 0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.02);
+    --rf-shadow-md: 0 6px 16px rgba(0,0,0,0.08), 0 3px 6px rgba(0,0,0,0.12), 0 9px 28px rgba(0,0,0,0.05);
+    /* V5.9.0: focus ring — 全站统一蓝色光圈,可达性 */
+    --rf-focus-ring: 0 0 0 2px rgba(22,119,255,0.2);
+    --rf-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* V5.9.0: 全局 box-sizing reset — 防止 padding/border 撑大容器,这是 Antd/Bootstrap 都能正确
+   嵌套的前提(老代码很多 .col-* 用固定 width + padding 会算错) */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* V5.9.0: focus-visible 统一 — 键盘 tab 时显示蓝色光圈,鼠标点击不显示 */
+:focus { outline: none; }
+:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus-ring);
+    transition: box-shadow 0.15s;
 }
 
 body {
@@ -37,6 +61,7 @@ body {
     background: var(--rf-bg-base);
     line-height: 1.5714;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 a { color: var(--rf-primary); transition: color 0.2s; }
@@ -93,14 +118,27 @@ a:hover { color: var(--rf-primary-hover); }
 .btn-group .btn + .btn { margin-left: 0; }
 .btn-group-vertical { display: inline-flex; flex-direction: column; gap: 4px; }
 
+/* V5.9.0: btn-toolbar (editor toolbar) — 让 button group 之间有 8px gap,不再挤在一起
+   (决策表 13 按钮场景:每个 group 4 按钮,组与组之间要明显留白) */
+.btn-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn-toolbar > .btn-group { margin-left: 0; }
+
+/* V5.9.0: navbar-btn (scriptdecisiontable 用) — Bootstrap 默认 transparent,这里统一背景
+   让 7 个按钮不跟页面背景混在一起,跟其他 editor toolbar 视觉一致 */
+.navbar.navbar-default { background: var(--rf-bg-container); border: 1px solid var(--rf-border-split); border-radius: var(--rf-radius-base); }
+.navbar-btn { background: var(--rf-bg-container) !important; border: 1px solid var(--rf-border-split) !important; }
+
 /* ========== Tables ========== */
 .table { width: 100%; border-collapse: collapse; }
-.table th, .table td { padding: 8px 12px; text-align: left; font-size: 13px; line-height: 1.5; }
+.table th, .table td { padding: 10px 12px; text-align: left; font-size: 13px; line-height: 1.5; }
 .table-bordered { border: 1px solid #e5e7eb; }
 .table-bordered th, .table-bordered td { border: 1px solid #e5e7eb; }
 .table-condensed th, .table-condensed td { padding: 4px 8px; }
-.table thead tr { background: #f9fafb; }
-.table th { font-weight: 600; color: rgba(0,0,0,0.65); font-size: 12px; }
+.table thead tr { background: #fafafa; }
+.table th { font-weight: 600; color: rgba(0,0,0,0.65); font-size: 12px; border-bottom: 1px solid #f0f0f0; }
+.table tbody tr { transition: background 0.15s; }
+.table tbody tr:hover { background: #f5f5f5; }
+.table tbody tr td { border-bottom: 1px solid #f5f5f5; }
 
 /* ========== Forms ========== */
 .form-control {
@@ -131,7 +169,7 @@ a:hover { color: var(--rf-primary-hover); }
 /* ========== Modal (bootbox) ========== */
 .modal { display: none; position: fixed; inset: 0; z-index: 1050; overflow: auto; -webkit-overflow-scrolling: touch; outline: 0; }
 .modal.in { display: block; }
-.modal-backdrop { position: fixed; inset: 0; z-index: 1040; background: rgba(0,0,0,0.45); }
+.modal-backdrop { position: fixed; inset: 0; z-index: 1040; background: rgba(0,0,0,0.65); }
 .modal-backdrop.in { opacity: 1; }
 .modal-dialog { position: relative; width: auto; max-width: 500px; margin: 30px auto; background: #fff; border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.08), 0 9px 28px rgba(0,0,0,0.05); }
 .modal-lg { max-width: 700px; }
@@ -139,11 +177,19 @@ a:hover { color: var(--rf-primary-hover); }
 .modal-content { background: #fff; border-radius: 8px; overflow: hidden; border: 0; box-shadow: none; }
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #f0f0f0; }
 .modal-title { font-size: 15px; font-weight: 600; color: rgba(0,0,0,0.88); margin: 0; }
-.modal-body { padding: 16px 20px; font-size: 13px; color: rgba(0,0,0,0.65); position: relative; }
+.modal-body { padding: 16px 20px; font-size: 13px; color: rgba(0,0,0,0.65); position: relative; word-break: break-word; overflow-wrap: anywhere; }
+/* V5.9.0: package 错误信息超长(4 行 JSON),Bootstrap modal-body 默认 word-break:break-all 会
+   把 "Error" 拆成 "Er ror" 难看。!important 覆盖 bootstrap.css,优先 anywhere */
+.modal-body { word-break: normal !important; }
 .modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 20px; border-top: 1px solid #f0f0f0; }
 .modal-footer .btn { min-width: 72px; }
 .close { font-size: 18px; font-weight: 400; color: rgba(0,0,0,0.45); background: none; border: none; cursor: pointer; opacity: 1; }
 .close:hover { color: rgba(0,0,0,0.88); }
+
+/* V5.9.0: Bootstrap modal 也垂直居中 (跟 Antd modal 一致) */
+.modal.in .modal-dialog { margin-top: 0; margin-bottom: 0; }
+.modal.in { display: flex !important; align-items: center; justify-content: center; }
+.modal.fade .modal-dialog { transition: transform 0.2s ease-out; }
 
 /* ========== Well ========== */
 .well { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; min-height: 20px; }
@@ -201,7 +247,8 @@ a:hover { color: var(--rf-primary-hover); }
 .toolbar .btn { font-size: 12px; padding: 4px 12px; height: 28px; border-radius: 6px; }
 
 /* ========== Panel ========== */
-.panel { border-radius: 8px; border: 1px solid #f0f0f0; box-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.02); }
+/* V5.9.0: 改用 --rf-shadow-sm token 统一阴影 */
+.panel { border-radius: 8px; border: 1px solid #f0f0f0; box-shadow: var(--rf-shadow-sm); }
 .panel-heading { border-radius: 8px 8px 0 0; background: #fff; border-bottom: 1px solid #f0f0f0; font-weight: 500; color: rgba(0,0,0,0.88); padding: 10px 16px; }
 .panel-body { padding: 16px; }
 
@@ -236,10 +283,64 @@ a:hover { color: var(--rf-primary-hover); }
 @keyframes rf-spin { to { transform: rotate(360deg); } }
 
 /* ========== Scrollbar ========== */
+/* V5.9.0: 统一细滚动条 (Chrome/Safari/Edge 用 -webkit-,Firefox 用 scrollbar-*) */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+html { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.15) transparent; }
+
+/* ========== V5.9.0 工具类 ========== */
+/* 间距 token 短写 — 跟 --rf-space-* 对应,让 panel/页面统一用同一组值 */
+.rf-p-xs { padding: var(--rf-space-xs); }
+.rf-p-sm { padding: var(--rf-space-sm); }
+.rf-p-md { padding: var(--rf-space-md); }
+.rf-p-lg { padding: var(--rf-space-lg); }
+.rf-px-md { padding-left: var(--rf-space-md); padding-right: var(--rf-space-md); }
+.rf-py-sm { padding-top: var(--rf-space-sm); padding-bottom: var(--rf-space-sm); }
+.rf-mt-sm { margin-top: var(--rf-space-sm); }
+.rf-mt-md { margin-top: var(--rf-space-md); }
+.rf-mb-sm { margin-bottom: var(--rf-space-sm); }
+.rf-mb-md { margin-bottom: var(--rf-space-md); }
+/* 卡片 — 跟 .panel 类似但更轻,给 Antd Card / 自定义 card 用 */
+.rf-card {
+    background: var(--rf-bg-container);
+    border: 1px solid var(--rf-border-split);
+    border-radius: var(--rf-radius-base);
+    box-shadow: var(--rf-shadow-sm);
+    transition: var(--rf-transition);
+}
+.rf-card:hover { box-shadow: var(--rf-shadow-md); }
+/* 文本截断 */
+.rf-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* 通用过渡(hover/active 用) */
+.rf-trans { transition: var(--rf-transition); }
+
+/* ========== V5.9.0 Antd 5 Modal 全局统一 ========== */
+/* Modal 垂直居中 (Antd 默认 top:100px,这里覆盖) */
+body .ant-modal-wrap.ant-modal-wrap {
+    top: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    display: flex !important;
+}
+body .ant-modal-wrap.ant-modal-wrap .ant-modal {
+    top: 0 !important;
+    padding-bottom: 0 !important;
+    margin: 0 auto !important;
+}
+body .ant-modal-content {
+    border-radius: 6px !important;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08), 0 3px 6px rgba(0,0,0,0.12), 0 9px 28px rgba(0,0,0,0.05) !important;
+}
+/* 遮罩加深: 0.45 → 0.65, 弹窗时背景更聚焦 */
+body .ant-modal-mask.ant-modal-mask {
+    background: rgba(0, 0, 0, 0.65) !important;
+}
 
 /* ========== RF Utility Classes ========== */
 .rf { color: rgba(0,0,0,0.65); transition: color 0.2s; }

@@ -141,6 +141,15 @@ public class CommonController extends BaseController {
                         } else {
                             inputStream = this.ruleforgeRepositoryService.readFile(path, null);
                         }
+                        if (inputStream == null) {
+                            // 文件不存在 (readFile 返 null) — 之前返 200+error 串,前端
+                            // response.json() throw → "服务端出错"。改为抛 404,前端可展示
+                            // "文件不存在,请新建"。
+                            log.warn("loadXml: file [{}] version [{}] not found", path, version);
+                            throw new org.springframework.web.server.ResponseStatusException(
+                                    org.springframework.http.HttpStatus.NOT_FOUND,
+                                    "file not found: " + path);
+                        }
                         Element element = parseXml(inputStream);
                         for (Deserializer<?> des : this.deserializers) {
                             if (des.support(element)) {
@@ -152,9 +161,14 @@ public class CommonController extends BaseController {
                             }
                         }
                         inputStream.close();
+                    } catch (org.springframework.web.server.ResponseStatusException ex) {
+                        throw ex;
                     } catch (Exception ex) {
                         log.error("loadXml", ex);
-                        return ex.getMessage();
+                        // XML 解析失败 / 其他: 改为 400 而非 200+error 串
+                        throw new org.springframework.web.server.ResponseStatusException(
+                                org.springframework.http.HttpStatus.BAD_REQUEST,
+                                "loadXml failed: " + ex.getMessage());
                     }
                 }
             }

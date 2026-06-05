@@ -643,7 +643,7 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
                                 <td>{ds.timeoutMs}</td>
                                 <td>{ds.cacheEnabled ? `${ds.cacheTtlHours}h` : '关'}</td>
                                 <td>
-                                    <Space size="small">
+                                    <Space size="middle">
                                         <Tooltip title="编辑数据源">
                                             <Button
                                                 size="small"

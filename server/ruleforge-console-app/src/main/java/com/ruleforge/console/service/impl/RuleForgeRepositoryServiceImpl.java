@@ -115,17 +115,27 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
         String[] projectArray = project.split(":");
         String version = null;
         ProjectEntity projectEntity = this.projectRepository.findByName(projectArray[0]);
+        if (projectEntity == null) {
+            log.warn("loadProjectResourcePackages: project [{}] not found, return empty list", projectArray[0]);
+            return new ArrayList<>();
+        }
 
         if (projectArray.length > 1) {
             project = projectArray[0];
             version = projectArray[1];
         } else if (org.springframework.util.StringUtils.hasText(env)) {
             ProjectRuntimeConfigEntity projectRuntime = this.runtimeRepository.findConfigByProjectIdAndEnv(projectEntity.getId(), env);
-            version = projectRuntime.getProjectVersion();
+            if (projectRuntime != null) {
+                version = projectRuntime.getProjectVersion();
+            }
         }
 
         String filePath = processPath(project) + "/" + RES_PACKAGE_FILE;
         InputStream inputStream = readFile(filePath, version);
+        if (inputStream == null) {
+            log.warn("loadProjectResourcePackages: res-package file [{}] version [{}] not found, return empty list", filePath, version);
+            return new ArrayList<>();
+        }
         String content = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
         inputStream.close();
 
@@ -136,7 +146,17 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
             packageRuntimeMap.put(projectRuntimeConfigEntity.getPackageId() + "_" + projectRuntimeConfigEntity.getExecEnv(), projectRuntimeConfigEntity.getProjectVersion());
         }
 
-        Document document = DocumentHelper.parseText(content);
+        if (content == null || content.trim().isEmpty()) {
+            log.warn("loadProjectResourcePackages: res-package file [{}] is empty, return empty list", filePath);
+            return new ArrayList<>();
+        }
+        Document document;
+        try {
+            document = DocumentHelper.parseText(content);
+        } catch (org.dom4j.DocumentException e) {
+            log.warn("loadProjectResourcePackages: failed to parse res-package file [{}]: {}, return empty list", filePath, e.getMessage());
+            return new ArrayList<>();
+        }
         Element rootElement = document.getRootElement();
         SimpleDateFormat sd = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         List<ResourcePackage> packages = new ArrayList<>();
@@ -1273,13 +1293,31 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
 
     @Override
     public PackageConfig loadPackageConfigs(String project) throws Exception {
+        if (project == null || project.trim().isEmpty()) {
+            log.warn("loadPackageConfigs called with empty project name, returning empty config");
+            return new PackageConfig();
+        }
         String filePath = processPath(project) + "/" + PACKAGE_CONFIG_FILE;
 
         InputStream inputStream = readFile(filePath);
+        if (inputStream == null) {
+            log.warn("loadPackageConfigs: package config file not found at {}, returning empty config", filePath);
+            return new PackageConfig();
+        }
         String content = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
         inputStream.close();
 
-        Document document = DocumentHelper.parseText(content);
+        if (content == null || content.trim().isEmpty()) {
+            log.warn("loadPackageConfigs: empty content for {}, returning empty config", filePath);
+            return new PackageConfig();
+        }
+        Document document;
+        try {
+            document = DocumentHelper.parseText(content);
+        } catch (org.dom4j.DocumentException e) {
+            log.warn("loadPackageConfigs: failed to parse {}: {}, returning empty config", filePath, e.getMessage());
+            return new PackageConfig();
+        }
         Element rootElement = document.getRootElement();
 
         PackageConfig packageConfig = new PackageConfig();
