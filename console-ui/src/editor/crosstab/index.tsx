@@ -1,5 +1,3 @@
-import '../../bootbox.js';
-
 import '../context.standalone.css';
 import '../../css/iconfont.css';
 import './crosstab.css';
@@ -51,7 +49,7 @@ import ResourceListDialogComponent from '../common/ResourceListDialogComponent.t
 import ConfigLibraryDialog from '../../components/dialog/component/ConfigLibraryDialog.tsx';
 import EditorToolbar from '../../components/editor-toolbar/EditorToolbar.tsx';
 
-declare const bootbox: BootboxStatic;
+import {alert, prompt} from '@/utils/modal';
 
 document.addEventListener('DOMContentLoaded', function () {
     const crossTable = new CrossTable({
@@ -73,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             xml = crossTable.toXml();
         } catch (e: any) {
-            window.bootbox.alert(e.message || e);
+            alert(e.message || e);
             return;
         }
         if (!xml) return;
@@ -82,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const saveUrl = window._server + '/common/saveFile';
 
         if (isNewVersion) {
-            bootbox.prompt('请输入新版本描述.', function (comment) {
+            prompt('请输入新版本描述.', function (comment) {
                 if (comment) {
                     save(saveUrl, {
                         content: xml,
@@ -149,18 +147,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }).catch(function (error: any) {
         document.body.innerHTML = '';
         if (error && error.status === 401) {
-            window.bootbox.alert('权限不足，不能进行此操作.');
+            alert('权限不足，不能进行此操作.');
         } else if (error && error.text) {
             error.text().then(function (text: string) {
                 try {
                     const result = JSON.parse(text);
-                    window.bootbox.alert("<span style='color: red'>服务端错误：" + result.errorMsg + '</span>');
+                    alert("<span style='color: red'>服务端错误：" + result.errorMsg + '</span>');
                 } catch (e) {
-                    window.bootbox.alert("<span style='color: red'>服务端错误：" + text + '</span>');
+                    alert("<span style='color: red'>服务端错误：" + text + '</span>');
                 }
             });
         } else {
-            window.bootbox.alert("<span style='color: red'>服务端出错</span>");
+            alert("<span style='color: red'>服务端出错</span>");
         }
     });
 });

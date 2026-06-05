@@ -1,6 +1,7 @@
 import Styles from '../Styles.js';
 import { formPost, jsonPost } from '../api/client.js';
 
+import {alert} from '@/utils/modal';
 let __ui_id = 1;
 
 export function uniqueID(): string {
@@ -50,7 +51,7 @@ export function loadTestRuleSets(file: string, version: string, callback: (rules
         console.log('获取规则集', rules);
         callback(rules);
     }).catch(function () {
-        window.bootbox.alert('加载资源失败.');
+        alert('加载资源失败.');
         callback([]);
     });
 }
@@ -60,7 +61,7 @@ export function loadVariableCategories(params: Record<string, unknown>, callback
     jsonPost<unknown[]>('/test/variableCategories/load', params, { silent: true }).then(function (data) {
         callback(data);
     }).catch(function () {
-        window.bootbox.alert('加载资源失败.');
+        alert('加载资源失败.');
         callback([]);
     });
 }
@@ -71,11 +72,11 @@ export function searchForAppId(appId: string, projectId: string, callback: (data
         if (res.status) {
             callback(res.data || []);
         } else {
-            window.bootbox.alert(res.msg || '加载资源失败.');
+            alert(res.msg || '加载资源失败.');
             callback([]);
         }
     }).catch(function () {
-        window.bootbox.alert('加载资源失败.');
+        alert('加载资源失败.');
         callback([]);
     });
 }
@@ -87,17 +88,17 @@ export function beginTest(postData: Record<string, unknown>, type: string, callb
             callback(res.data || [], true);
         } else {
             if (type === 'json') {
-                window.bootbox.alert('JSON格式错误，请检查输入内容.');
+                alert('JSON格式错误，请检查输入内容.');
             } else {
-                window.bootbox.alert(res.msg || '测试失败');
+                alert(res.msg || '测试失败');
             }
             callback([], false);
         }
     }).catch(function () {
         if (type === 'json') {
-            window.bootbox.alert('JSON格式错误，请检查输入内容.');
+            alert('JSON格式错误，请检查输入内容.');
         } else {
-            window.bootbox.alert('接口调用失败.');
+            alert('接口调用失败.');
         }
         callback([], false);
     });

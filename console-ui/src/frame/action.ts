@@ -3,6 +3,7 @@ import {formPost} from '../api/client.js';
 import * as event from './event.js';
 import * as componentEvent from '../components/componentEvent.js';
 
+import {alert, confirm} from '@/utils/modal';
 // ---- Action type constants ----
 export const ADD = 'add';
 export const DEL = 'del';
@@ -441,7 +442,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                     name: '删除项目',
                     icon: 'rf rf-remove',
                     click: function (data: TreeNodeData) {
-                        window.bootbox.confirm("此操作将删除" + data.name + "项目及其下所有文件，你确定要这样做吗？", function (result) {
+                        confirm("此操作将删除" + data.name + "项目及其下所有文件，你确定要这样做吗？", function (result) {
                             if (!result) {
                                 return;
                             }
@@ -455,7 +456,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                         name: '导出项目备份',
                         icon: 'rf rf-export',
                         click: function (data: TreeNodeData) {
-                            window.bootbox.confirm("真的要导出项目" + data.name + "的备份文件吗？", function (result) {
+                            confirm("真的要导出项目" + data.name + "的备份文件吗？", function (result) {
                                 if (!result) {
                                     return;
                                 }
@@ -909,7 +910,7 @@ function buildFullContextMenu(isFolder?: boolean, folderType?: string): ContextM
                 name: '删除',
                 icon: 'rf rf-remove',
                 click: function (data: TreeNodeData) {
-                    window.bootbox.confirm("删除目录[" + data.name + "],将会同时删除其下所有子目录及文件，确认吗？", function (result) {
+                    confirm("删除目录[" + data.name + "],将会同时删除其下所有子目录及文件，确认吗？", function (result) {
                         if (!result) {
                             return;
                         }
@@ -958,20 +959,20 @@ function buildPasteMenuItem(): ContextMenuItem {
                 copy = true;
             }
             if (!sourceFileData) {
-                window.bootbox.alert("没有文件可供粘贴！");
+                alert("没有文件可供粘贴！");
                 return;
             }
             const newDir = data.fullPath;
             const newFullPath = newDir + "/" + sourceFileData.name, oldFullPath = sourceFileData.fullPath;
             if (oldFullPath === newFullPath) {
-                window.bootbox.alert("目录未改变，不能进行此操作！");
+                alert("目录未改变，不能进行此操作！");
                 return;
             }
             let info = "真的要移动文件【" + sourceFileData.name + "】到【" + newDir + "】目录吗？";
             if (copy) {
                 info = "真的要复制文件【" + sourceFileData.name + "】到【" + newDir + "】目录吗？";
             }
-            window.bootbox.confirm(info, function (result) {
+            confirm(info, function (result) {
                 if (!result) {
                     return;
                 }
@@ -1013,7 +1014,7 @@ function buildFileContextMenu(): ContextMenuItem[] {
             name: '删除文件',
             icon: 'rf rf-remove',
             click: function (data: TreeNodeData) {
-                window.bootbox.confirm("真的要删除[" + data.name + "]文件吗？", function (result) {
+                confirm("真的要删除[" + data.name + "]文件吗？", function (result) {
                     if (!result) {
                         return;
                     }
@@ -1068,7 +1069,7 @@ export function lockFile(file: string, dispatch: Function) {
         buildData(rootFile, 1);
         dispatch({data: rootFile, type: LOAD_END});
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        window.bootbox.alert('锁定成功!');
+        alert('锁定成功!');
     }).catch(function () {
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
     });
@@ -1081,7 +1082,7 @@ export function unlockFile(file: string, dispatch: Function) {
         buildData(rootFile, 1);
         dispatch({data: rootFile, type: LOAD_END});
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        window.bootbox.alert('解锁成功!');
+        alert('解锁成功!');
     }).catch(function () {
         componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
     });
@@ -1090,7 +1091,7 @@ export function unlockFile(file: string, dispatch: Function) {
 export function saveFileSource(file: string, content: string) {
     const encodedContent = encodeURIComponent(content);
     formPost("/common/saveFile", {file, content: encodedContent}).then(function () {
-        window.bootbox.alert('保存成功!');
+        alert('保存成功!');
     }).catch(function () {
     });
 }

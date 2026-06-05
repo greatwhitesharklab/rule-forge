@@ -1,5 +1,6 @@
 import * as ACTIONS from './action.js';
 import {combineReducers} from 'redux';
+import {alert} from '@/utils/modal';
 import {
     applyNewVersion,
     PackageAction,
@@ -52,7 +53,7 @@ function master(state: MasterState = {}, action: PackageAction): MasterState {
                 }
             });
             if (error) {
-                window.bootbox.alert(error);
+                alert(error);
                 return state;
             }
             newPackage.resourceItems = [];

@@ -8,6 +8,7 @@
 
 import { formPost, httpGet } from '../../api/client.js';
 
+import {alert} from '@/utils/modal';
 /** Helper to create an inline-editable container element. */
 export function generateContainer(): HTMLElement {
     const container = document.createElement('span');
@@ -56,7 +57,7 @@ export function refreshParameterLibraries(): void {
             });
         })
         .catch(() => {
-            window.bootbox.alert('加载文件失败！');
+            alert('加载文件失败！');
         });
 }
 
@@ -73,7 +74,7 @@ export function refreshVariableLibraries(): void {
             });
         })
         .catch(() => {
-            window.bootbox.alert('加载文件失败！');
+            alert('加载文件失败！');
         });
 }
 
@@ -90,7 +91,7 @@ export function refreshActionLibraries(): void {
             });
         })
         .catch(() => {
-            window.bootbox.alert('加载文件失败！');
+            alert('加载文件失败！');
         });
 }
 
@@ -107,7 +108,7 @@ export function refreshConstantLibraries(): void {
             });
         })
         .catch(() => {
-            window.bootbox.alert('加载文件失败！');
+            alert('加载文件失败！');
         });
 }
 
@@ -120,7 +121,7 @@ export function refreshFunctionLibraries(): void {
             });
         })
         .catch(() => {
-            window.bootbox.alert('加载函数失败！');
+            alert('加载函数失败！');
         });
 }
 

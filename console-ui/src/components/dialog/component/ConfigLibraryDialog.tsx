@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import * as componentEvent from '../../componentEvent.js';
 
+import {alert} from '@/utils/modal';
 declare const variableLibraries: string[];
 declare const constantLibraries: string[];
 declare const actionLibraries: string[];
@@ -102,7 +103,7 @@ export default class ConfigLibraryDialog extends Component<{}, ConfigLibraryDial
                 }
                 const libs = config.getLibraries();
                 if (libs.indexOf(path) !== -1) {
-                    window.bootbox.alert(config.existsMsg);
+                    alert(config.existsMsg);
                     return;
                 }
                 libs.push(path);

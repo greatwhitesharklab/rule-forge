@@ -1,5 +1,6 @@
 import {save as apiSave, formPost} from '../api/client.js';
 
+import {alert, prompt} from '@/utils/modal';
 export const LOAD_MASTER_COMPLETED = 'load_master_completed';
 export const LOAD_SLAVE_COMPLETE = 'load_slave_completed';
 export const ADD_MASTER = 'add_master';
@@ -92,7 +93,7 @@ export function saveData(data: VariableCategory[], newVersion: boolean, file: st
         xml += '</category>';
     });
     if (errorInfo.length > 1) {
-        window.bootbox.alert(errorInfo + ',不能保存！');
+        alert(errorInfo + ',不能保存！');
         return;
     }
     xml += '</variable-library>';
@@ -100,18 +101,18 @@ export function saveData(data: VariableCategory[], newVersion: boolean, file: st
     let postData: Record<string, string> = {content: xml, file, newVersion: String(newVersion)};
     const url = window._server + '/common/saveFile';
     if (newVersion) {
-        window.bootbox.prompt("请输入新版本描述.", function (versionComment) {
+        prompt("请输入新版本描述.", function (versionComment) {
             if (!versionComment) {
                 return;
             }
             postData.versionComment = versionComment;
             apiSave(url, postData).then(function () {
-                window.bootbox.alert('保存成功!');
+                alert('保存成功!');
             })
         });
     } else {
         apiSave(url, postData).then(function () {
-            window.bootbox.alert('保存成功!');
+            alert('保存成功!');
         })
     }
     return {type: SAVE_COMPLETED};
@@ -142,7 +143,7 @@ export function generateFields(rowIndex: number, clazz: string) {
         formPost('/variableeditor/generateFields', {clazz}).then(function (result) {
             dispatch({rowIndex, variables: result, type: GENERATED_FIELDS});
         }).catch(function () {
-            // Error handled by api/client.js (shows bootbox alert)
+            // Error handled by api/client.js (shows alert)
         });
     }
 }
@@ -152,7 +153,7 @@ export function loadMasterData(files: string) {
         formPost<VariableCategory[][]>("/xml", {files}).then(function (data) {
             dispatch({type: LOAD_MASTER_COMPLETED, masterData: data[0]});
         }).catch(function () {
-            // Error handled by api/client.js (shows bootbox alert)
+            // Error handled by api/client.js (shows alert)
         });
     }
 }

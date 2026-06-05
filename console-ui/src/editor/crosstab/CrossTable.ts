@@ -21,6 +21,7 @@ import {Remark} from '../../Remark.js';
 import type BaseRowCol from './BaseRowCol';
 import type BaseCell from './BaseCell';
 
+import {alert} from '@/utils/modal';
 export default class CrossTable {
     seq: number;
     rows: BaseRowCol[];
@@ -336,7 +337,7 @@ export default class CrossTable {
             xml += '</crosstab>';
             return xml;
         } catch (error) {
-            window.bootbox.alert(error as string);
+            alert(error as string);
         }
     }
 }

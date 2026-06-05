@@ -4,6 +4,7 @@ import {Dispatch} from 'redux';
 import Grid from '../../components/grid/component/Grid.tsx';
 import Splitter from '../../components/splitter/component/Splitter.tsx';
 import * as action from '../action.js';
+import {alert, confirm} from '@/utils/modal';
 import {
     ResourcePackage,
     PackageConfig,
@@ -78,7 +79,7 @@ class PackageEditor extends Component<PackageEditorProps> {
                     icon: 'glyphicon glyphicon-trash',
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 4px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
-                        window.bootbox.confirm('真的要删除当前记录？', function (result: boolean) {
+                        confirm('真的要删除当前记录？', function (result: boolean) {
                             if (!result) return;
                             _this.currentPackage = null;
                             dispatch(action.deleteMaster(rowIndex));
@@ -110,7 +111,7 @@ class PackageEditor extends Component<PackageEditorProps> {
                     icon: 'glyphicon glyphicon-trash',
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 10px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
-                        window.bootbox.confirm('真的要删除当前记录？', function (result: boolean) {
+                        confirm('真的要删除当前记录？', function (result: boolean) {
                             if (!result) return;
                             dispatch(action.deleteSlave(rowIndex));
                         })
@@ -153,7 +154,7 @@ class PackageEditor extends Component<PackageEditorProps> {
                                     if (this.currentPackage) {
                                         event.eventEmitter.emit(event.OPEN_VERSION_DIALOG, this.currentPackage);
                                     } else {
-                                        window.bootbox.alert('请先选择一个知识包！');
+                                        alert('请先选择一个知识包！');
                                     }
                                 }}><i className="glyphicon glyphicon-floppy-disk"/> 生成版本
                                 </button>
@@ -163,7 +164,7 @@ class PackageEditor extends Component<PackageEditorProps> {
                                     if (this.currentPackage) {
                                         dispatch(action.apply(project, packageConfig, this.currentPackage))
                                     } else {
-                                        window.bootbox.alert('请先选择一个知识包！');
+                                        alert('请先选择一个知识包！');
                                     }
                                 }}><i className="glyphicon glyphicon-send"/> 发起审批
                                 </button>
@@ -173,7 +174,7 @@ class PackageEditor extends Component<PackageEditorProps> {
                                     if (this.currentPackage) {
                                         action.refreshKnowledgeCache(project, packageConfig, this.currentPackage);
                                     } else {
-                                        window.bootbox.alert('请先选择一个知识包！');
+                                        alert('请先选择一个知识包！');
                                     }
                                 }}><i className="glyphicon glyphicon-cloud-upload"/> 发布测试
                                 </button>
@@ -181,7 +182,7 @@ class PackageEditor extends Component<PackageEditorProps> {
                                     if (this.currentPackage) {
                                         event.eventEmitter.emit(event.OPEN_SIMULATOR_DIALOG, this.currentPackage);
                                     } else {
-                                        window.bootbox.alert('请先选择一个知识包！');
+                                        alert('请先选择一个知识包！');
                                     }
                                 }}><i className="glyphicon glyphicon-flash"/> 仿真测试
                                 </button>
@@ -206,7 +207,7 @@ class PackageEditor extends Component<PackageEditorProps> {
                                             title: "添加包[" + masterRowData.name + "]中的知识文件"
                                         })
                                     } else {
-                                        window.bootbox.alert('请先选择一个知识包！');
+                                        alert('请先选择一个知识包！');
                                     }
                                 }}><i className="fa fa-plus-square"/> 添加文件
                                 </button>

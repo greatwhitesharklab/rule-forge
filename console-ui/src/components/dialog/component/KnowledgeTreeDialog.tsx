@@ -6,6 +6,7 @@ import * as action from '../../componentAction.js';
 import * as event from '../../componentEvent.js';
 import VersionSelectDialog from './VersionSelectDialog.tsx';
 
+import {alert} from '@/utils/modal';
 interface KnowledgeTreeDialogConfig {
     project: string | null;
     forLib?: boolean;
@@ -101,7 +102,7 @@ export default class KnowledgeTreeDialog extends Component<KnowledgeTreeDialogPr
                         this.callback!(this.currentNodeData.fullPath, 'LATEST');
                         event.eventEmitter.emit(event.HIDE_KNOWLEDGE_TREE_DIALOG);
                     } else {
-                        window.bootbox.alert("请先选择一个文件");
+                        alert("请先选择一个文件");
                     }
                 }.bind(this)
             }
@@ -117,7 +118,7 @@ export default class KnowledgeTreeDialog extends Component<KnowledgeTreeDialogPr
                         callback: this.callback
                     });
                 } else {
-                    window.bootbox.alert("请先选择一个文件");
+                    alert("请先选择一个文件");
                 }
             }.bind(this)
         });

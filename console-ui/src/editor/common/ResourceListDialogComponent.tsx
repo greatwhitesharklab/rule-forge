@@ -5,6 +5,7 @@ import * as event from '../../components/componentEvent.js';
 import { buildData } from '../../components/componentAction.js';
 import { formPost } from '../../api/client.js';
 
+import {alert} from '@/utils/modal';
 interface ResourceListState {
     visible: boolean;
     treeData: any;
@@ -29,7 +30,7 @@ export default class ResourceListDialogComponent extends Component<{}, ResourceL
                 buildData(data);
                 this.setState({ treeData: data, visible: true });
             }.bind(this)).catch(function () {
-                window.bootbox.alert('加载资源失败');
+                alert('加载资源失败');
             });
         });
         event.eventEmitter.on(event.CLOSE_RESOURCE_LIST_DIALOG, () => {
@@ -48,7 +49,7 @@ export default class ResourceListDialogComponent extends Component<{}, ResourceL
 
     getSelectedFile(): string | null {
         if (!this.currentNodeData) {
-            window.bootbox.alert('请先选择一个库文件！');
+            alert('请先选择一个库文件！');
             return null;
         }
         return this.currentNodeData.fullPath;

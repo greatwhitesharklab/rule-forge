@@ -12,6 +12,7 @@ import BaseCell from './BaseCell.js';
 import {copyCellData, pasteCellData} from './cellDataUtils.js';
 import {generateContainer} from '../common/URule.js';
 
+import {alert, dialog} from '@/utils/modal';
 declare const ruleforge: any;
 declare const MsgBox: { confirm(message: string, callback: () => void): void };
 
@@ -259,18 +260,20 @@ export default class ConditionCell extends BaseCell {
                 label: '配置条件',
                 icon: 'glyphicon glyphicon-cog',
                 onClick: function () {
-                    const dialog = document.createElement('div');
+                    const dlg = document.createElement('div');
                     if (!self.cellCondition) {
                         self.cellCondition = new ruleforge.CellCondition('<div/>');
                     }
-                    self.cellCondition.renderTo(dialog);
-                    (window.bootbox as any).dialog('配置条件', dialog, [], [{
-                        name: 'hide.bs.modal',
-                        callback: function () {
+                    self.cellCondition.renderTo(dlg);
+                    dialog({
+                        title: '配置条件',
+                        message: dlg.outerHTML,
+                        onhide: function () {
                             self.conditionContainer.innerHTML = '';
                             self.conditionContainer.appendChild(self.cellCondition.getDisplayContainer());
-                        }
-                    }], true);
+                        },
+                        closeButton: true,
+                    });
                 }
             }, {
                 label: '添加条件列',
@@ -327,7 +330,7 @@ export default class ConditionCell extends BaseCell {
                     if (xml && xml !== '') {
                         copyCellData('condition', xml);
                     } else {
-                        window.bootbox.alert('当前没有内容可供复制!');
+                        alert('当前没有内容可供复制!');
                     }
                 }
             }, {
@@ -364,18 +367,20 @@ export default class ConditionCell extends BaseCell {
                 label: '配置条件',
                 icon: 'glyphicon glyphicon-cog',
                 onClick: function () {
-                    const dialog = document.createElement('div');
+                    const dlg = document.createElement('div');
                     if (!self.cellCondition) {
                         self.cellCondition = new ruleforge.CellCondition('<div/>');
                     }
-                    self.cellCondition.renderTo(dialog);
-                    (window.bootbox as any).dialog('配置条件', dialog, [], [{
-                        name: 'hide.bs.modal',
-                        callback: function () {
+                    self.cellCondition.renderTo(dlg);
+                    dialog({
+                        title: '配置条件',
+                        message: dlg.outerHTML,
+                        onhide: function () {
                             self.conditionContainer.innerHTML = '';
                             self.conditionContainer.appendChild(self.cellCondition.getDisplayContainer());
-                        }
-                    }], true);
+                        },
+                        closeButton: true,
+                    });
                 }
             }, {
                 label: '添加条件列',
@@ -432,7 +437,7 @@ export default class ConditionCell extends BaseCell {
                     if (xml && xml !== '') {
                         copyCellData('condition', xml);
                     } else {
-                        window.bootbox.alert('当前没有内容可供复制!');
+                        alert('当前没有内容可供复制!');
                     }
                 }
             }, {
@@ -486,7 +491,7 @@ export default class ConditionCell extends BaseCell {
             const removeCount = endIdx - startIdx;
             rows.splice(startIdx, removeCount);
         } else {
-            window.bootbox.alert('当前行至少要保留一行，不能被删除！');
+            alert('当前行至少要保留一行，不能被删除！');
         }
     }
 
@@ -511,7 +516,7 @@ export default class ConditionCell extends BaseCell {
             const removeCount = endIdx - startIdx;
             columns.splice(startIdx, removeCount);
         } else {
-            window.bootbox.alert('当前列至少要保留一列，不能被删除！');
+            alert('当前列至少要保留一列，不能被删除！');
         }
     }
 

@@ -6,6 +6,7 @@ import type {ParameterItem} from '../action.js';
 import * as refEvent from '../../reference/event.js';
 import ReferenceDialog from '../../reference/ReferenceDialog.tsx';
 
+import {alert, confirm} from '@/utils/modal';
 interface ParameterEditorProps {
     dispatch: (a: unknown) => unknown;
     data: ParameterItem[];
@@ -57,7 +58,7 @@ class ParameterEditor extends Component<ParameterEditorProps> {
                     icon: 'glyphicon glyphicon-trash',
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 4px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
-                        window.bootbox.confirm('真的要删除当前记录？', function (result) {
+                        confirm('真的要删除当前记录？', function (result) {
                             if (!result) return;
                             dispatch(action.del(rowIndex));
                         });
@@ -89,7 +90,7 @@ class ParameterEditor extends Component<ParameterEditorProps> {
                     <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
                         <button className="btn btn-info" type="button" onClick={() => {
                             if (!this.currentData) {
-                                window.bootbox.alert('请先选择一条具体的参数');
+                                alert('请先选择一条具体的参数');
                                 return;
                             }
                             const title = '参数"' + this.currentData.name + '"';

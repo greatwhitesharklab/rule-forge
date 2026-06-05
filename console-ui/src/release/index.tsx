@@ -4,6 +4,7 @@ import * as action from './action';
 import type {EnvironmentInfo, ApprovalTask, DeploymentRecord, ExecutorNode, GrayStrategy, ShadowConfig, ShadowComparison, ShadowStats} from './action';
 import type {ReleaseState} from './reducer';
 
+import {alert, confirm, prompt} from '@/utils/modal';
 interface ReleasePanelState {
     projectName: string;
 }
@@ -186,7 +187,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             {env.execEnv === 'prod' && env.projectVersion && (
                                 <button className="btn btn-default btn-xs"
                                         onClick={() => {
-                                            window.bootbox.confirm('确认回滚到上一版本？', (ok) => {
+                                            confirm('确认回滚到上一版本？', (ok) => {
                                                 if (ok) {
                                                     this.props.dispatch(action.rollbackVersion(
                                                         this.state.projectName, env.packageId, env.projectVersion, 'prod'));
@@ -238,15 +239,15 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                 <div>
                                     <button className="btn btn-success btn-xs" style={{marginRight: 4}}
                                             onClick={() => {
-                                                window.bootbox.confirm('确认通过该审批？', (ok) => {
+                                                confirm('确认通过该审批？', (ok) => {
                                                     if (ok) this.props.dispatch(action.approveTask(task.id, ''));
                                                 });
                                             }}>通过</button>
                                     <button className="btn btn-danger btn-xs"
                                             onClick={() => {
-                                                (window.bootbox as any).prompt({title: '驳回原因', callback: (remark: string | null) => {
+                                                prompt('驳回原因', (remark: string | null) => {
                                                     if (remark !== null) this.props.dispatch(action.rejectTask(task.id, remark));
-                                                }});
+                                                });
                                             }}>驳回</button>
                                 </div>
                             )}
@@ -294,7 +295,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                 {dep.deployStatus === 'deployed' && dep.execEnv === 'prod' && idx > 0 && (
                                     <button className="btn btn-warning btn-xs"
                                             onClick={() => {
-                                                window.bootbox.confirm('确认回滚到版本 ' + dep.projectVersion + '？', (ok) => {
+                                                confirm('确认回滚到版本 ' + dep.projectVersion + '？', (ok) => {
                                                     if (ok) {
                                                         this.props.dispatch(action.rollbackVersion(
                                                             this.state.projectName, dep.packageId,
@@ -390,10 +391,10 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             const execEnv = (document.getElementById('canary-env') as HTMLSelectElement).value;
                             const nodeGroup = (document.getElementById('canary-group') as HTMLSelectElement).value;
                             if (!packageId || !version) {
-                                window.bootbox.alert('请填写包ID和版本号');
+                                alert('请填写包ID和版本号');
                                 return;
                             }
-                            window.bootbox.confirm(`确认将版本 ${version} 部署到 ${nodeGroup} 节点组？`, (ok) => {
+                            confirm(`确认将版本 ${version} 部署到 ${nodeGroup} 节点组？`, (ok) => {
                                 if (ok) {
                                     this.props.dispatch(action.deployToGroup(
                                         this.state.projectName, packageId, version, execEnv, nodeGroup));
@@ -510,7 +511,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             const target = (document.getElementById('gray-target') as HTMLInputElement).value;
                             const baseline = (document.getElementById('gray-baseline') as HTMLInputElement).value;
                             if (!name || !packageId || !target || !baseline) {
-                                window.bootbox.alert('请填写策略名称、包ID、目标版本和基准版本');
+                                alert('请填写策略名称、包ID、目标版本和基准版本');
                                 return;
                             }
                             this.props.dispatch(action.createGrayStrategy({
@@ -604,7 +605,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                         const flowId = (document.getElementById('shadow-flow-id') as HTMLInputElement).value;
                         const sampleRate = (document.getElementById('shadow-sample-rate') as HTMLInputElement).value;
                         if (!mainPath || !shadowPath) {
-                            window.bootbox.alert('请填写主规则包路径和陪跑规则包路径');
+                            alert('请填写主规则包路径和陪跑规则包路径');
                             return;
                         }
                         this.props.dispatch(action.createShadowConfig({

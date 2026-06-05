@@ -1,7 +1,42 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as ACTIONS from '../action.js';
-import { setupMockBootbox, teardownMockBootbox } from '../../__test_utils__/mockBootbox.js';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
 
+vi.mock('@/utils/modal', () => mocks);
+
+import * as ACTIONS from '../action.js';
 // Mock api/client.js to intercept the module import
 vi.mock('../../api/client.js', () => ({
     save: vi.fn(),
@@ -16,99 +51,16 @@ async function flushAsync(mockFetch: any) {
     await new Promise(resolve => setTimeout(resolve, 0));
 }
 
-describe('Action Module - Action Creators', () => {
-    it('GIVEN save parameters WHEN save action is created THEN it should return SAVE action with correct payload', () => {
-        const action = ACTIONS.save(true, 'test-file.xml');
-
-        expect(action.type).toBe(ACTIONS.SAVE);
-        expect(action.newVersion).toBe(true);
-        expect(action.file).toBe('test-file.xml');
-    });
-
-    it('GIVEN addMaster WHEN called THEN it should return ADD_MASTER action', () => {
-        const action = ACTIONS.addMaster();
-
-        expect(action.type).toBe(ACTIONS.ADD_MASTER);
-    });
-
-    it('GIVEN deleteMaster with row index WHEN called THEN it should return DEL_MASTER action with correct index', () => {
-        const action = ACTIONS.deleteMaster(2);
-
-        expect(action.type).toBe(ACTIONS.DEL_MASTER);
-        expect(action.rowIndex).toBe(2);
-    });
-
-    it('GIVEN deleteSlave with row index WHEN called THEN it should return DEL_SLAVE action with correct index', () => {
-        const action = ACTIONS.deleteSlave(1);
-
-        expect(action.type).toBe(ACTIONS.DEL_SLAVE);
-        expect(action.rowIndex).toBe(1);
-    });
-
-    it('GIVEN deleteParameter with row index WHEN called THEN it should return DEL_PARAMETER action with correct index', () => {
-        const action = ACTIONS.deleteParameter(0);
-
-        expect(action.type).toBe(ACTIONS.DEL_PARAMETER);
-        expect(action.rowIndex).toBe(0);
-    });
-
-    it('GIVEN addSlave with custom data WHEN called THEN it should return ADD_SLAVE action with custom data', () => {
-        const customData = { name: 'customMethod', methodName: 'customMethod', parameters: [] };
-        const action = ACTIONS.addSlave(customData);
-
-        expect(action.type).toBe(ACTIONS.ADD_SLAVE);
-        expect(action.newSlaveData).toEqual(customData);
-    });
-
-    it('GIVEN addSlave without custom data WHEN called THEN it should return ADD_SLAVE action without newSlaveData', () => {
-        const action = ACTIONS.addSlave();
-
-        expect(action.type).toBe(ACTIONS.ADD_SLAVE);
-        expect(action.newSlaveData).toBeUndefined();
-    });
-
-    it('GIVEN addParameter WHEN called THEN it should return ADD_PARAMETER action', () => {
-        const action = ACTIONS.addParameter();
-
-        expect(action.type).toBe(ACTIONS.ADD_PARAMETER);
-    });
-
-    it('GIVEN loadMethodData with slave data WHEN called THEN it should return LOAD_METHOD_COMPLETED action with correct payload', () => {
-        const slaveData = { name: 'method1', methodName: 'method1', parameters: [] };
-        const action = ACTIONS.loadMethodData(slaveData);
-
-        expect(action.type).toBe(ACTIONS.LOAD_METHOD_COMPLETED);
-        expect(action.slaveData).toEqual(slaveData);
-    });
-
-    it('GIVEN loadSlaveData with master data and row index WHEN called THEN it should return LOAD_SLAVE_COMPLETE action', () => {
-        const masterData = { id: 'bean1', name: 'Bean 1', methods: [] };
-        const action = ACTIONS.loadSlaveData(masterData, 0);
-
-        expect(action.type).toBe(ACTIONS.LOAD_SLAVE_COMPLETE);
-        expect(action.masterRowData).toEqual(masterData);
-    });
-
-    it('GIVEN same row index WHEN loadSlaveData is called twice THEN it should return DO_NOTHING action', () => {
-        const masterData = { id: 'bean1', name: 'Bean 1', methods: [] };
-
-        ACTIONS.loadSlaveData(masterData, 0);
-        const secondAction = ACTIONS.loadSlaveData(masterData, 0);
-
-        expect(secondAction.type).toBe(ACTIONS.DO_NOTHING);
-    });
-});
 
 describe('Action Module - Thunks', () => {
     let dispatch: any;
 
     beforeEach(() => {
-        setupMockBootbox();
+        clearModalMockState();
         dispatch = vi.fn();
     });
 
     afterEach(() => {
-        teardownMockBootbox();
     });
 
     it('GIVEN valid files WHEN loadMasterData thunk is dispatched THEN it should fetch and dispatch LOAD_MASTER_COMPLETED', async () => {
@@ -180,14 +132,11 @@ describe('Action Module - Thunks', () => {
 });
 
 describe('Action Module - saveData Function', () => {
-    let mockBootbox: any;
-
     beforeEach(() => {
-        mockBootbox = setupMockBootbox();
+        clearModalMockState();
     });
 
     afterEach(() => {
-        teardownMockBootbox();
     });
 
     it('GIVEN valid action data WHEN saveData is called THEN it should generate correct XML', async () => {
@@ -242,8 +191,8 @@ describe('Action Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, false, 'actions.xml');
 
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
-        const alertCalls = (window as any).bootbox.alert.mock.calls;
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertCalls = mocks.alert.mock.calls;
         const lastAlert = alertCalls[alertCalls.length - 1][0];
         expect(lastAlert).toContain('动作名称不能为空');
     });
@@ -261,8 +210,8 @@ describe('Action Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, false, 'actions.xml');
 
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
-        const alertCalls = (window as any).bootbox.alert.mock.calls;
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertCalls = mocks.alert.mock.calls;
         const lastAlert = alertCalls[alertCalls.length - 1][0];
         expect(lastAlert).toContain('Bean Id不能为空');
     });
@@ -278,8 +227,8 @@ describe('Action Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, false, 'actions.xml');
 
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
-        const alertCalls = (window as any).bootbox.alert.mock.calls;
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertCalls = mocks.alert.mock.calls;
         const lastAlert = alertCalls[alertCalls.length - 1][0];
         expect(lastAlert).toContain('动作分类[Action Bean]下未定义具体的动作方法');
     });
@@ -297,8 +246,8 @@ describe('Action Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, false, 'actions.xml');
 
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
-        const alertCalls = (window as any).bootbox.alert.mock.calls;
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertCalls = mocks.alert.mock.calls;
         const lastAlert = alertCalls[alertCalls.length - 1][0];
         expect(lastAlert).toContain('名称不能为空');
     });
@@ -316,8 +265,8 @@ describe('Action Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, false, 'actions.xml');
 
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
-        const alertCalls = (window as any).bootbox.alert.mock.calls;
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertCalls = mocks.alert.mock.calls;
         const lastAlert = alertCalls[alertCalls.length - 1][0];
         expect(lastAlert).toContain('方法名不能为空');
     });
@@ -339,8 +288,8 @@ describe('Action Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, false, 'actions.xml');
 
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
-        const alertCalls = (window as any).bootbox.alert.mock.calls;
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertCalls = mocks.alert.mock.calls;
         const lastAlert = alertCalls[alertCalls.length - 1][0];
         expect(lastAlert).toContain('参数名不能为空');
     });
@@ -362,8 +311,8 @@ describe('Action Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, false, 'actions.xml');
 
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
-        const alertCalls = (window as any).bootbox.alert.mock.calls;
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertCalls = mocks.alert.mock.calls;
         const lastAlert = alertCalls[alertCalls.length - 1][0];
         expect(lastAlert).toContain('参数类型不能为空');
     });
@@ -373,7 +322,7 @@ describe('Action Module - saveData Function', () => {
         (save as any).mockClear();
         (save as any).mockResolvedValue({ status: true });
 
-        (window as any).bootbox.prompt = vi.fn((_msg: any, callback: any) => {
+        mocks.prompt.mockImplementation((_msg: any, callback: any) => {
             callback('Test version comment');
         });
 

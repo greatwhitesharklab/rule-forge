@@ -1,6 +1,7 @@
 import {Component} from 'react';
 import {httpGet, formPost, jsonPut} from '../../api/client.js';
 
+import {alert} from '@/utils/modal';
 interface ConfigPanelProps {
     dispatch: (action: unknown) => void;
 }
@@ -90,9 +91,9 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
                 'llm.max_tokens': maxTokens,
                 'system_prompt': systemPrompt,
             });
-            window.bootbox.alert('配置已保存');
+            alert('配置已保存');
         } catch (e) {
-            window.bootbox.alert('保存失败: ' + (e as Error).message);
+            alert('保存失败: ' + (e as Error).message);
         }
     };
 

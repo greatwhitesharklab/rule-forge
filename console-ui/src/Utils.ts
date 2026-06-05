@@ -32,14 +32,14 @@ export function buildProjectNameFromFile(file: string): string | undefined {
 
 export function handleResponseError(response: Response | { status?: number; text?: () => Promise<string> }, prefix?: string): void | Promise<void> {
     if ((response as Response).status === 401) {
-        window.bootbox.alert("权限不足，不能进行此操作.");
+        alert("权限不足，不能进行此操作.");
     } else if ((response as Response).text) {
         return (response as Response).text().then(function (text: string) {
             var msg = text ? (prefix || "服务端错误：") + text : (prefix || "服务端出错");
-            window.bootbox.alert("<span style='color: red'>" + msg + "</span>");
+            alert("<span style='color: red'>" + msg + "</span>");
         });
     } else {
-        window.bootbox.alert("<span style='color: red'>" + (prefix || "服务端出错") + "</span>");
+        alert("<span style='color: red'>" + (prefix || "服务端出错") + "</span>");
     }
 }
 
@@ -95,6 +95,7 @@ interface EditorData {
 
 import { formPost } from './api/client.js';
 
+import {alert} from '@/utils/modal';
 export function loadEditorData(file: string, extraParams?: Record<string, string>): Promise<EditorData> {
     var params: Record<string, string> = {files: file};
     if (extraParams) {

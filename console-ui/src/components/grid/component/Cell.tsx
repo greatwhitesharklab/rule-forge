@@ -3,6 +3,7 @@ import * as componentEvent from '../componentEvent.ts';
 import { formatDate } from '../../../Utils.js';
 import type { GridColumnHeader } from './CellEditor.tsx';
 
+import {alert, dialog} from '@/utils/modal';
 interface CellProps {
     rowData: Record<string, unknown>;
     header: GridColumnHeader;
@@ -68,14 +69,14 @@ export default class Cell extends Component<CellProps, CellState> {
                 optionsHtml += `<option value="${category.clazz}">${category.name}</option>`;
             }
             optionsHtml += '<option value="" selected></option>';
-            window.bootbox.dialog({
+            dialog({
                 title: '选择子对象类型',
                 message: `<select class="form-control" id="bootbox-category-select">${optionsHtml}</select>`,
                 callback: () => {
                     const selectEl = document.getElementById('bootbox-category-select') as HTMLSelectElement | null;
                     targetType = selectEl ? selectEl.value : '';
                     if (!targetType || targetType === '') {
-                        window.bootbox.alert('请先选择子对象类型!');
+                        alert('请先选择子对象类型!');
                         return;
                     }
                     let categoryTarget: SimulatorCategoryItem | null = null;

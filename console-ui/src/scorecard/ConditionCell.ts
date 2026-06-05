@@ -1,5 +1,6 @@
 import Cell from './Cell';
 
+import {confirm, dialog} from '@/utils/modal';
 declare const ruleforge: {
     CellCondition: new (tag: string) => {
         initData(joint: any): void;
@@ -40,7 +41,7 @@ export default class ConditionCell extends Cell {
             }
             _this.cellCondition.renderTo(dialogContent);
             const caption = "配置条件";
-            window.bootbox.dialog({
+            dialog({
                 title: caption,
                 message: dialogContent.outerHTML,
                 closeButton: true,
@@ -59,7 +60,7 @@ export default class ConditionCell extends Cell {
             del.innerHTML = '<i class="glyphicon glyphicon-trash" style="cursor: pointer" title="删除当前行"/>';
             container.appendChild(del);
             del.addEventListener('click', function () {
-                window.bootbox.confirm("真的要删除？", function (result) {
+                confirm("真的要删除？", function (result) {
                     if (!result) return;
                     (_this.row as any).remove();
                 });

@@ -1,4 +1,3 @@
-import '../bootbox.js';
 import '../css/iconfont.css';
 import '../css/tailwind-base.css';
 
@@ -11,11 +10,12 @@ import reducer from './reducer.js';
 import * as action from './action.js';
 import ActionEditor from './components/ActionEditor.jsx';
 
+import {alert} from '@/utils/modal';
 document.addEventListener('DOMContentLoaded', function () {
     const store: Store = createStore(reducer, applyMiddleware(thunk));
     const file = _getParameter('file');
     if (!file || file.length < 1) {
-        window.bootbox.alert('请先指定要加载的变量库文件.');
+        alert('请先指定要加载的变量库文件.');
         return;
     }
     (store.dispatch as Function)(action.loadMasterData(file));

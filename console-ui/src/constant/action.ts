@@ -1,5 +1,6 @@
 import {save as apiSave, formPost} from '../api/client.js';
 
+import {alert, prompt} from '@/utils/modal';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type {Dispatch} from 'redux';
 
@@ -71,7 +72,7 @@ export function saveData(data: ConstantCategory[], newVersion: boolean, file: st
         xml += '</category>';
     });
     if (errorInfo.length > 1) {
-        window.bootbox.alert(errorInfo + ',不能保存！');
+        alert(errorInfo + ',不能保存！');
         return;
     }
     xml += '</constant-library>';
@@ -79,18 +80,18 @@ export function saveData(data: ConstantCategory[], newVersion: boolean, file: st
     const postData: Record<string, string> = {content: xml, file, newVersion: String(newVersion)};
     const url = window._server + '/common/saveFile';
     if (newVersion) {
-        window.bootbox.prompt("请输入新版本描述.", function (versionComment) {
+        prompt("请输入新版本描述.", function (versionComment) {
             if (!versionComment) {
                 return;
             }
             postData.versionComment = versionComment;
             apiSave(url, postData).then(function () {
-                window.bootbox.alert('保存成功!');
+                alert('保存成功!');
             });
         });
     } else {
         apiSave(url, postData).then(function () {
-            window.bootbox.alert('保存成功!');
+            alert('保存成功!');
         });
     }
 }
@@ -116,7 +117,7 @@ export function loadMasterData(files: string): ThunkAction {
         formPost<Array<{ categories: ConstantCategory[] }>>("/xml", {files}).then(function (data) {
             dispatch({type: LOAD_MASTER_COMPLETED, masterData: data[0].categories});
         }).catch(function () {
-            // Error handled by api/client.js (shows bootbox alert)
+            // Error handled by api/client.js (shows alert)
         });
     };
 }

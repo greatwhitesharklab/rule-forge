@@ -1,19 +1,10 @@
 /**
  * Global type declarations for RuleForge frontend
  *
- * Window extensions, bootbox, and module-level globals.
+ * Window extensions and module-level globals.
  */
 
 // ---- Window extensions ----
-
-interface BootboxStatic {
-    alert(message: string, callback?: () => void): unknown;
-    alert(options: { title?: string; message: string; callback?: () => void }): unknown;
-    confirm(message: string, callback: (result: boolean) => void): unknown;
-    prompt(message: string, callback: (result: string | null) => void): unknown;
-    dialog(options: Record<string, unknown>): unknown;
-    setDefaults(): void;
-}
 
 interface TreeNodeData {
     id: string;
@@ -231,9 +222,6 @@ interface Window {
 
     // Current user
     __currentUser: UserInfo | undefined;
-
-    // Bootbox dialog library (custom implementation)
-    bootbox: BootboxStatic;
 
     // Component event bus
     componentEvent: import('@/components/componentEvent.js').ComponentEventModule;

@@ -1,5 +1,4 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
-import '../../bootbox.js';
 /**
  * Complex Scorecard Editor - Entry point.
  *

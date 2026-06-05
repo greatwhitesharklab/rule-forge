@@ -3,6 +3,7 @@ import {connect} from 'react-redux';
 import Grid from '../../components/grid/component/Grid.tsx';
 import * as action from '../action.ts';
 
+import {confirm} from '@/utils/modal';
 interface ClientConfigEditorProps {
     data: Array<{ name?: string; client?: string }>;
     dispatch: (a: unknown) => unknown;
@@ -24,7 +25,7 @@ class ClientConfigEditor extends Component<ClientConfigEditorProps> {
                     icon: 'glyphicon glyphicon-trash',
                     style: {fontSize: '16px', color: '#d9534f', padding: '0px 4px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
-                        window.bootbox.confirm('真的要删除当前记录？', function (result: boolean) {
+                        confirm('真的要删除当前记录？', function (result: boolean) {
                             if (!result) return;
                             dispatch(action.del(rowIndex));
                         });

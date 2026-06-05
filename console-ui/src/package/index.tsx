@@ -1,4 +1,3 @@
-import '../bootbox.js';
 import '../../node_modules/bootstrapvalidator/dist/css/bootstrapValidator.css';
 import '../css/tailwind-base.css';
 import { createRoot } from 'react-dom/client';

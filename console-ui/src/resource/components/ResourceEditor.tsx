@@ -11,6 +11,7 @@ import * as event from '../event.js';
 import type {ResourceCategory, VariableItem} from '../action.js';
 import type {ResourceRootState} from '../reducer.js';
 
+import {alert, confirm} from '@/utils/modal';
 interface ResourceEditorProps {
     masterData: ResourceCategory[];
     masterRowData: ResourceCategory;
@@ -69,7 +70,7 @@ class ResourceEditor extends Component<ResourceEditorProps> {
                     icon: 'glyphicon glyphicon-trash',
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 10px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
-                        window.bootbox.confirm('真的要删除当前记录？', function (result) {
+                        confirm('真的要删除当前记录？', function (result) {
                             if (!result) return;
                             dispatch(action.deleteSlave(rowIndex));
                         })
@@ -97,7 +98,7 @@ class ResourceEditor extends Component<ResourceEditorProps> {
                             <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
                                 <button className="btn btn-info" type="button" onClick={(e) => {
                                     if (!this.currentData) {
-                                        window.bootbox.alert('请先选择一条具体的变量');
+                                        alert('请先选择一条具体的变量');
                                         return;
                                     }
                                     const title = `变量"${this.masterData!.name}.${this.currentData.label}"`;
@@ -138,7 +139,7 @@ class ResourceEditor extends Component<ResourceEditorProps> {
                                             }
                                         })
                                     } else {
-                                        window.bootbox.alert('请先选择一条数据源！');
+                                        alert('请先选择一条数据源！');
                                     }
                                 }}><i className="glyphicon glyphicon-plus-sign"/> 添加字段
                                 </button>

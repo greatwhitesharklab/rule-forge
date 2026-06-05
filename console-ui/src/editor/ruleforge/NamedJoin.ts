@@ -1,5 +1,6 @@
 import { generateContainer } from '../common/URule';
 
+import {alert, confirm} from '@/utils/modal';
 declare const ruleforge: any;
 
 export class NamedJoin {
@@ -107,7 +108,7 @@ export class NamedJoin {
                     name: category.name,
                     onClick: function (item: MenuItemConfig) {
                         if (self.children.length > 0) {
-                            window.bootbox.confirm('当前节点下已配置了条件，此操作将会清这些条件，你确定吗？', function (result: boolean) {
+                            confirm('当前节点下已配置了条件，此操作将会清这些条件，你确定吗？', function (result: boolean) {
                                 if (result) {
                                     self.variableCategory = item;
                                     self.variableCategoryName = (item as any).category ? (item as any).category.name : item.label;
@@ -145,7 +146,7 @@ export class NamedJoin {
         }
         this.variableCategoryLabel.addEventListener('click', function (e: Event) {
             if (!self.referenceName) {
-                window.bootbox.alert('请先输入引用名称.');
+                alert('请先输入引用名称.');
                 return;
             }
             self.categoryMenu!.show(e as MouseEvent);
@@ -230,7 +231,7 @@ export class NamedJoin {
                 label: '删除',
                 onClick: function () {
                     if (self.children.length > 0) {
-                        window.bootbox.alert('请先删除当前连接下子元素！');
+                        alert('请先删除当前连接下子元素！');
                         return;
                     }
                     if (parentConnection) {
@@ -269,7 +270,7 @@ export class NamedJoin {
 
     addItem(isJoin: boolean | string): any {
         if (!this.variableCategoryName || !this.referenceName) {
-            window.bootbox.alert('请先定义变量引用名及变量对象!');
+            alert('请先定义变量引用名及变量对象!');
             return;
         }
         window._setDirty?.();

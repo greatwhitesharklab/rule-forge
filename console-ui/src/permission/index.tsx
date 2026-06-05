@@ -1,4 +1,3 @@
-import '../bootbox.js';
 import '../css/iconfont.css';
 import '../css/tailwind-base.css';
 

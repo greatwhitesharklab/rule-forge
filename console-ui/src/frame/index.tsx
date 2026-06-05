@@ -1,4 +1,3 @@
-import '@/bootbox.js';
 import '@/css/iconfont.css';
 import 'codemirror/lib/codemirror.css';
 import 'bootstrapvalidator/dist/css/bootstrapValidator.css';

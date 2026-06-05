@@ -1,7 +1,41 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as ACTIONS from './action.js';
-import { setupMockBootbox, teardownMockBootbox } from '../__test_utils__/mockBootbox.js';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
+vi.mock('@/utils/modal', () => mocks);
 
+import * as ACTIONS from './action.js';
 // Mock api/client.js — production code imports save and formPost
 vi.mock('../api/client.js', () => ({
     save: vi.fn(),
@@ -61,15 +95,13 @@ describe('Variable Module - Action Creators', () => {
 });
 
 describe('Variable Module - Thunks', () => {
-    let dispatch: any, mockBootbox: any;
+    let dispatch: any;
 
     beforeEach(() => {
-        mockBootbox = setupMockBootbox();
         dispatch = vi.fn();
     });
 
     afterEach(() => {
-        teardownMockBootbox();
     });
 
     it('GIVEN valid files WHEN loadMasterData thunk is dispatched THEN it should fetch and dispatch LOAD_MASTER_COMPLETED', async () => {
@@ -141,14 +173,11 @@ describe('Variable Module - Thunks', () => {
 });
 
 describe('Variable Module - saveData Function', () => {
-    let mockBootbox: any;
-
     beforeEach(() => {
-        mockBootbox = setupMockBootbox();
+        clearModalMockState();
     });
 
     afterEach(() => {
-        teardownMockBootbox();
     });
 
     it('GIVEN valid variable data WHEN saveData is called THEN it should generate correct XML', async () => {
@@ -190,8 +219,8 @@ describe('Variable Module - saveData Function', () => {
 
         const result = ACTIONS.saveData(data as any, false, 'test.xml');
 
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
-        const alertMsg = (window as any).bootbox.alert.mock.calls[0][0];
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertMsg = mocks.alert.mock.calls[0][0];
         expect(alertMsg).toContain('变量分类名称不能为空');
         // saveData returns undefined when validation fails (no explicit return before bootbox.alert)
         expect(result).toBeUndefined();
@@ -204,8 +233,8 @@ describe('Variable Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, false, 'test.xml');
 
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
-        const alertMsg = (window as any).bootbox.alert.mock.calls[0][0];
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertMsg = mocks.alert.mock.calls[0][0];
         expect(alertMsg).toContain('变量类路径不能为空');
     });
 
@@ -216,8 +245,8 @@ describe('Variable Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, false, 'test.xml');
 
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
-        const alertMsg = (window as any).bootbox.alert.mock.calls[0][0];
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertMsg = mocks.alert.mock.calls[0][0];
         expect(alertMsg).toContain('变量分类[Cat1]下未定义具体变量信息');
     });
 
@@ -236,8 +265,8 @@ describe('Variable Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, false, 'test.xml');
 
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
-        const alertMsg = (window as any).bootbox.alert.mock.calls[0][0];
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertMsg = mocks.alert.mock.calls[0][0];
         expect(alertMsg).toContain('变量名[var1]重复');
     });
 
@@ -256,8 +285,8 @@ describe('Variable Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, false, 'test.xml');
 
-        expect((window as any).bootbox.alert).toHaveBeenCalled();
-        const alertMsg = (window as any).bootbox.alert.mock.calls[0][0];
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertMsg = mocks.alert.mock.calls[0][0];
         expect(alertMsg).toContain('变量标题[SameLabel]重复');
     });
 
@@ -266,7 +295,7 @@ describe('Variable Module - saveData Function', () => {
         (save as any).mockClear();
         (save as any).mockResolvedValue({ status: true });
 
-        (window as any).bootbox.prompt = vi.fn((msg: any, callback: any) => {
+        mocks.prompt.mockImplementation((msg: any, callback: any) => {
             callback('Test version comment');
         });
 
@@ -281,7 +310,7 @@ describe('Variable Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, true, 'variables.xml');
 
-        expect((window as any).bootbox.prompt).toHaveBeenCalled();
+        expect(mocks.prompt).toHaveBeenCalled();
         expect(save).toHaveBeenCalled();
         const callArgs = (save as any).mock.calls[0];
         expect(callArgs[1].versionComment).toBe('Test version comment');
@@ -291,7 +320,7 @@ describe('Variable Module - saveData Function', () => {
         const { save } = await import('../api/client.js') as any;
         (save as any).mockClear();
 
-        (window as any).bootbox.prompt = vi.fn((msg: any, callback: any) => {
+        mocks.prompt.mockImplementation((msg: any, callback: any) => {
             callback(null);
         });
 
@@ -306,7 +335,7 @@ describe('Variable Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, true, 'variables.xml');
 
-        expect((window as any).bootbox.prompt).toHaveBeenCalled();
+        expect(mocks.prompt).toHaveBeenCalled();
         expect(save).not.toHaveBeenCalled();
     });
 
@@ -326,7 +355,7 @@ describe('Variable Module - saveData Function', () => {
 
         ACTIONS.saveData(data as any, false, 'variables.xml');
 
-        expect((window as any).bootbox.prompt).not.toHaveBeenCalled();
+        expect(mocks.prompt).not.toHaveBeenCalled();
         expect(save).toHaveBeenCalled();
     });
 

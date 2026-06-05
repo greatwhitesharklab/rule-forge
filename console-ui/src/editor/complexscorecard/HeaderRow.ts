@@ -8,6 +8,7 @@
 import ResizableHeaderCell from './ResizableHeaderCell';
 import RowContext from './RowContext';
 
+import {alert, prompt} from '@/utils/modal';
 declare const MsgBox: {
     confirm(message: string, callback: () => void): void;
 };
@@ -97,7 +98,7 @@ class ConditionHeaderCell extends ResizableHeaderCell {
 
     deleteColumn(complexTable: import('./ComplexScoreCard').default): void {
         if (complexTable.headerRow.conditionHeaders.length < 2) {
-            window.bootbox.alert('条件列至少要有一列！');
+            alert('条件列至少要有一列！');
             return;
         }
 
@@ -309,7 +310,7 @@ class ActionHeaderCell extends ResizableHeaderCell {
 
     insertActionColumn(complexTable: import('./ComplexScoreCard').default, actionType: number): void {
         const self = this;
-        window.bootbox.prompt('请输入自定义列名称：', function (name) {
+        prompt('请输入自定义列名称：', function (name) {
             if (name) {
                 const rowContext = new RowContext(complexTable);
                 rowContext.setCustomActionHeaderLabel(name);
@@ -318,7 +319,7 @@ class ActionHeaderCell extends ResizableHeaderCell {
                 complexTable.addActionColumn(rowContext);
                 window._setDirty?.();
             } else {
-                window.bootbox.alert('自定义列名不能为空！');
+                alert('自定义列名不能为空！');
             }
         });
     }

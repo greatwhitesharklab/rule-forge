@@ -1,4 +1,3 @@
-import '../../bootbox.js';
 import '../../../node_modules/codemirror/lib/codemirror.css';
 import '../../../node_modules/codemirror/addon/hint/show-hint.css';
 import '../../../node_modules/codemirror/addon/lint/lint.css';

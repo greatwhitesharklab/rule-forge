@@ -2,6 +2,7 @@ import {Component} from 'react';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 
+import {alert} from '@/utils/modal';
 interface ImportProjectDialogProps {
     dispatch?: (action: unknown) => void;
 }
@@ -42,12 +43,12 @@ export default class ImportProjectDialog extends Component<ImportProjectDialogPr
                 if (responseText !== "") {
                     const responseData = JSON.parse(responseText) as ImportResponse;
                     if (responseData && responseData.status) {
-                        window.bootbox.alert('导入成功');
+                        alert('导入成功');
                         return;
                     }
                 }
 
-                window.bootbox.alert('导入失败');
+                alert('导入失败');
             }
         };
     }
@@ -86,13 +87,13 @@ export default class ImportProjectDialog extends Component<ImportProjectDialogPr
                 icon: 'fa fa-upload',
                 click: function () {
                     if ($vm.state.isImporting) {
-                        window.bootbox.alert('正在导入中，请等待');
+                        alert('正在导入中，请等待');
                         return;
                     }
                     const fileInput = document.querySelector('[name=file]') as HTMLInputElement;
                     const file = fileInput ? fileInput.value : '';
                     if (!file || file.length < 2) {
-                        window.bootbox.alert('请选择要导入的文件');
+                        alert('请选择要导入的文件');
                         return;
                     }
                     $vm.setState({isImporting: true});

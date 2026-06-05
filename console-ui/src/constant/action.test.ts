@@ -1,7 +1,41 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import * as ACTIONS from './action.js';
-import {setupMockBootbox, teardownMockBootbox} from '../__test_utils__/mockBootbox.js';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
+vi.mock('@/utils/modal', () => mocks);
 
+import * as ACTIONS from './action.js';
 // Mock api/client.js — production code imports save and formPost
 vi.mock('../api/client.js', () => ({
     save: vi.fn(),
@@ -52,16 +86,13 @@ describe('Constant Module - Action Creators', () => {
 });
 
 describe('Constant Module - Thunks', () => {
-    let mockBootbox: ReturnType<typeof setupMockBootbox>;
     let dispatch: (a: unknown) => void;
 
     beforeEach(() => {
-        mockBootbox = setupMockBootbox();
         dispatch = vi.fn() as unknown as (a: unknown) => void;
     });
 
     afterEach(() => {
-        teardownMockBootbox();
     });
 
     it('GIVEN valid files WHEN loadMasterData thunk is dispatched THEN it should fetch and dispatch LOAD_MASTER_COMPLETED', async () => {
@@ -99,14 +130,11 @@ describe('Constant Module - Thunks', () => {
 });
 
 describe('Constant Module - saveData Function', () => {
-    let mockBootbox: ReturnType<typeof setupMockBootbox>;
-
     beforeEach(() => {
-        mockBootbox = setupMockBootbox();
+        clearModalMockState();
     });
 
     afterEach(() => {
-        teardownMockBootbox();
     });
 
     it('GIVEN valid constant data WHEN saveData is called THEN it should generate correct XML', async () => {
@@ -147,8 +175,8 @@ describe('Constant Module - saveData Function', () => {
 
         ACTIONS.saveData(data, false, 'test.xml');
 
-        expect(window.bootbox.alert).toHaveBeenCalled();
-        const alertMsg = (window.bootbox.alert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertMsg = (mocks.alert as ReturnType<typeof vi.fn>).mock.calls[0][0];
         expect(alertMsg).toContain('常量分类名称不能为空');
     });
 
@@ -159,8 +187,8 @@ describe('Constant Module - saveData Function', () => {
 
         ACTIONS.saveData(data, false, 'test.xml');
 
-        expect(window.bootbox.alert).toHaveBeenCalled();
-        const alertMsg = (window.bootbox.alert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertMsg = (mocks.alert as ReturnType<typeof vi.fn>).mock.calls[0][0];
         expect(alertMsg).toContain('常量分类标题不能为空');
     });
 
@@ -171,8 +199,8 @@ describe('Constant Module - saveData Function', () => {
 
         ACTIONS.saveData(data, false, 'test.xml');
 
-        expect(window.bootbox.alert).toHaveBeenCalled();
-        const alertMsg = (window.bootbox.alert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertMsg = (mocks.alert as ReturnType<typeof vi.fn>).mock.calls[0][0];
         expect(alertMsg).toContain('常量分类[Group 1]下未定义具体的常量信息');
     });
 
@@ -187,8 +215,8 @@ describe('Constant Module - saveData Function', () => {
 
         ACTIONS.saveData(data, false, 'test.xml');
 
-        expect(window.bootbox.alert).toHaveBeenCalled();
-        const alertMsg = (window.bootbox.alert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertMsg = (mocks.alert as ReturnType<typeof vi.fn>).mock.calls[0][0];
         expect(alertMsg).toContain('常量名不能为空');
     });
 
@@ -203,8 +231,8 @@ describe('Constant Module - saveData Function', () => {
 
         ACTIONS.saveData(data, false, 'test.xml');
 
-        expect(window.bootbox.alert).toHaveBeenCalled();
-        const alertMsg = (window.bootbox.alert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertMsg = (mocks.alert as ReturnType<typeof vi.fn>).mock.calls[0][0];
         expect(alertMsg).toContain('常量标题不能为空');
     });
 
@@ -219,8 +247,8 @@ describe('Constant Module - saveData Function', () => {
 
         ACTIONS.saveData(data, false, 'test.xml');
 
-        expect(window.bootbox.alert).toHaveBeenCalled();
-        const alertMsg = (window.bootbox.alert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        expect(mocks.alert).toHaveBeenCalled();
+        const alertMsg = (mocks.alert as ReturnType<typeof vi.fn>).mock.calls[0][0];
         expect(alertMsg).toContain('常量数据类型不能为空');
     });
 
@@ -229,7 +257,7 @@ describe('Constant Module - saveData Function', () => {
         (save as any).mockClear();
         (save as any).mockResolvedValue({status: true});
 
-        window.bootbox.prompt = vi.fn((msg: string, callback: (result: string) => void) => {
+        mocks.prompt.mockImplementation((msg: string, callback: (result: string) => void) => {
             callback('Test version comment');
         });
 
@@ -243,7 +271,7 @@ describe('Constant Module - saveData Function', () => {
 
         ACTIONS.saveData(data, true, 'constants.xml');
 
-        expect(window.bootbox.prompt).toHaveBeenCalled();
+        expect(mocks.prompt).toHaveBeenCalled();
         expect(save).toHaveBeenCalled();
         const callArgs = (save as any).mock.calls[0];
         expect(callArgs[1].versionComment).toBe('Test version comment');
@@ -253,7 +281,7 @@ describe('Constant Module - saveData Function', () => {
         const {save} = await import('../api/client.js');
         (save as any).mockClear();
 
-        window.bootbox.prompt = vi.fn((msg: string, callback: (result: string | null) => void) => {
+        mocks.prompt.mockImplementation((msg: string, callback: (result: string | null) => void) => {
             callback(null);
         });
 
@@ -267,7 +295,7 @@ describe('Constant Module - saveData Function', () => {
 
         ACTIONS.saveData(data, true, 'constants.xml');
 
-        expect(window.bootbox.prompt).toHaveBeenCalled();
+        expect(mocks.prompt).toHaveBeenCalled();
         expect(save).not.toHaveBeenCalled();
     });
 
@@ -286,7 +314,7 @@ describe('Constant Module - saveData Function', () => {
 
         ACTIONS.saveData(data, false, 'constants.xml');
 
-        expect(window.bootbox.prompt).not.toHaveBeenCalled();
+        expect(mocks.prompt).not.toHaveBeenCalled();
         expect(save).toHaveBeenCalled();
     });
 

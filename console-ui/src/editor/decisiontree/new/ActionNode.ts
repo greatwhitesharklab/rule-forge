@@ -4,6 +4,7 @@
 
 import BaseNode from './BaseNode.js';
 
+import {alert, confirm} from '@/utils/modal';
 declare const ruleforge: any;
 
 export default class ActionNode extends BaseNode {
@@ -35,7 +36,7 @@ export default class ActionNode extends BaseNode {
             name: 'delete',
             label: '删除',
             onClick() {
-                window.bootbox.confirm('真的要删除当前节点？', function (result: boolean) {
+                confirm('真的要删除当前节点？', function (result: boolean) {
                     if (result) {
                         self.delete();
                     }
@@ -74,7 +75,7 @@ export default class ActionNode extends BaseNode {
         const self = this;
         delIcon.addEventListener('click', function () {
             if (self.actionTypes.length === 1) {
-                window.bootbox.alert('动作至少要有一个.');
+                alert('动作至少要有一个.');
                 return;
             }
             let pos = -1;
@@ -89,7 +90,7 @@ export default class ActionNode extends BaseNode {
                 actionContainer.remove();
                 window._setDirty!();
             } else {
-                window.bootbox.alert('未找到要删除的动作对象.');
+                alert('未找到要删除的动作对象.');
             }
         });
         return newActionType;

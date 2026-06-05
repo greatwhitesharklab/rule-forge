@@ -1,7 +1,41 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import * as ACTIONS from '../action.js';
-import {setupMockBootbox, teardownMockBootbox} from '../../__test_utils__/mockBootbox.js';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
+vi.mock('@/utils/modal', () => mocks);
 
+import * as ACTIONS from '../action.js';
 // Mock api/client.js to intercept the module import
 vi.mock('../../api/client.js', () => ({
     save: vi.fn(),
@@ -37,16 +71,13 @@ describe('Parameter Module - Action Creators', () => {
 });
 
 describe('Parameter Module - Thunks', () => {
-    let mockBootbox: ReturnType<typeof setupMockBootbox>;
     let dispatch: (a: unknown) => void;
 
     beforeEach(() => {
-        mockBootbox = setupMockBootbox();
         dispatch = vi.fn() as unknown as (a: unknown) => void;
     });
 
     afterEach(() => {
-        teardownMockBootbox();
     });
 
     it('GIVEN valid files WHEN loadData thunk is dispatched THEN it should fetch and dispatch LOAD_DATA_COMPLETED', async () => {
@@ -99,14 +130,11 @@ describe('Parameter Module - Thunks', () => {
 });
 
 describe('Parameter Module - saveData Function', () => {
-    let mockBootbox: ReturnType<typeof setupMockBootbox>;
-
     beforeEach(() => {
-        mockBootbox = setupMockBootbox();
+        clearModalMockState();
     });
 
     afterEach(() => {
-        teardownMockBootbox();
     });
 
     it('GIVEN valid parameter data WHEN saveData is called THEN it should generate correct XML', async () => {
@@ -140,7 +168,7 @@ describe('Parameter Module - saveData Function', () => {
 
         ACTIONS.saveData(data, false, 'parameters.xml');
 
-        const lastMsg = mockBootbox.getLastAlertMessage();
+        const lastMsg = getLastAlertMessage();
         expect(lastMsg).toBeTruthy();
         expect(lastMsg).toContain('参数名称不能为空');
     });
@@ -152,7 +180,7 @@ describe('Parameter Module - saveData Function', () => {
 
         ACTIONS.saveData(data, false, 'parameters.xml');
 
-        const lastMsg = mockBootbox.getLastAlertMessage();
+        const lastMsg = getLastAlertMessage();
         expect(lastMsg).toBeTruthy();
         expect(lastMsg).toContain('参数标题不能为空');
     });
@@ -162,7 +190,7 @@ describe('Parameter Module - saveData Function', () => {
         (save as ReturnType<typeof vi.fn>).mockClear();
         (save as ReturnType<typeof vi.fn>).mockResolvedValue({ status: true });
 
-        window.bootbox.prompt = vi.fn((_msg: string, callback: (result: string) => void) => {
+        mocks.prompt.mockImplementation((_msg: string, callback: (result: string) => void) => {
             callback('Test version comment');
         });
 
@@ -182,7 +210,7 @@ describe('Parameter Module - saveData Function', () => {
         (save as ReturnType<typeof vi.fn>).mockClear();
         (save as ReturnType<typeof vi.fn>).mockResolvedValue({ status: true });
 
-        window.bootbox.prompt = vi.fn((_msg: string, callback: (result: string | null) => void) => {
+        mocks.prompt.mockImplementation((_msg: string, callback: (result: string | null) => void) => {
             callback(null);
         });
 
@@ -207,6 +235,6 @@ describe('Parameter Module - saveData Function', () => {
         ACTIONS.saveData(data, false, 'parameters.xml');
 
         expect(save).toHaveBeenCalled();
-        expect(window.bootbox.prompt).not.toHaveBeenCalled();
+        expect(mocks.prompt).not.toHaveBeenCalled();
     });
 });

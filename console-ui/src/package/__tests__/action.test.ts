@@ -1,7 +1,41 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as ACTIONS from '../action.js';
-import { setupMockBootbox, teardownMockBootbox } from '../../__test_utils__/mockBootbox.js';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
+vi.mock('@/utils/modal', () => mocks);
 
+import * as ACTIONS from '../action.js';
 // Helper to flush async chains
 async function flushAsync(mockFetch: ReturnType<typeof vi.fn>) {
     if (mockFetch.mock && mockFetch.mock.results[0]) {
@@ -85,12 +119,11 @@ describe('Package Module - Thunks', () => {
     let dispatch: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
-        setupMockBootbox();
+        clearModalMockState();
         dispatch = vi.fn();
     });
 
     afterEach(() => {
-        teardownMockBootbox();
         delete (global as any).fetch;
         delete (window as any).parent;
     });
@@ -220,7 +253,7 @@ describe('Package Module - Thunks', () => {
 
 describe('Package Module - saveData Function', () => {
     beforeEach(() => {
-        setupMockBootbox();
+        clearModalMockState();
         (window as any).parent = window;
         (window as any).parent.componentEvent = {
             eventEmitter: { emit: vi.fn() },
@@ -230,7 +263,6 @@ describe('Package Module - saveData Function', () => {
     });
 
     afterEach(() => {
-        teardownMockBootbox();
         delete (window as any).parent.componentEvent;
         delete (window as any).parent;
         delete (global as any).fetch;
@@ -442,7 +474,7 @@ describe('Package Module - startApprovalProcess', () => {
     });
 
     it('GIVEN valid formData and failed response WHEN startApprovalProcess is called THEN it should show alert', async () => {
-        const mockBootbox = setupMockBootbox();
+        const mockBootbox = clearModalMockState();
 
         const formData = new FormData();
         formData.append('project', 'test-project');
@@ -459,8 +491,6 @@ describe('Package Module - startApprovalProcess', () => {
         await fetchPromise;
         await new Promise(resolve => setTimeout(resolve, 10));
 
-        expect(mockBootbox.getLastAlertMessage()).toContain('Error occurred');
-
-        teardownMockBootbox();
+        expect(getLastAlertMessage()).toContain('Error occurred');
     });
 });

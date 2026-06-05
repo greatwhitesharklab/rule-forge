@@ -1,4 +1,40 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
+vi.mock('@/utils/modal', () => mocks);
+
 import {
     formPost,
     jsonPost,
@@ -9,16 +45,10 @@ import {
     saveNewVersion,
 } from './client.js';
 
-// Mock window._server and window.bootbox
+// Mock window._server and modal mocks (utils/modal mocked via vi.mock at top)
 beforeEach(function () {
     (window as any)._server = 'http://localhost:8081';
-    window.bootbox = {
-        alert: vi.fn(),
-        confirm: vi.fn(),
-        prompt: vi.fn(),
-        dialog: vi.fn(),
-        setDefaults: vi.fn(),
-    } as any;
+    clearModalMockState();
 });
 
 // Helper to mock fetch
@@ -63,19 +93,19 @@ describe('formPost', function () {
     it('should show bootbox alert on HTTP error', async function () {
         mockFetchError(500, 'internal error');
         await expect(formPost('/test', {})).rejects.toBeDefined();
-        expect(window.bootbox.alert).toHaveBeenCalled();
+        expect(mocks.alert).toHaveBeenCalled();
     });
 
     it('should show permission alert on 401', async function () {
         mockFetchError(401);
         await expect(formPost('/test', {})).rejects.toBeDefined();
-        expect(window.bootbox.alert).toHaveBeenCalledWith('权限不足，不能进行此操作.');
+        expect(mocks.alert).toHaveBeenCalledWith('权限不足，不能进行此操作.');
     });
 
     it('should not show alert when silent is true', async function () {
         mockFetchError(500);
         await expect(formPost('/test', {}, { silent: true })).rejects.toBeDefined();
-        expect(window.bootbox.alert).not.toHaveBeenCalled();
+        expect(mocks.alert).not.toHaveBeenCalled();
     });
 });
 
@@ -147,13 +177,13 @@ describe('save', function () {
     it('should show bootbox alert when status is false', async function () {
         mockFetch({ status: false, message: '保存失败' });
         await expect(save('/save', {})).rejects.toBeDefined();
-        expect(window.bootbox.alert).toHaveBeenCalledWith('保存失败');
+        expect(mocks.alert).toHaveBeenCalledWith('保存失败');
     });
 
     it('should not show alert when status false and silent', async function () {
         mockFetch({ status: false, message: '保存失败' });
         await expect(save('/save', {}, { silent: true })).rejects.toBeDefined();
-        expect(window.bootbox.alert).not.toHaveBeenCalledWith('保存失败');
+        expect(mocks.alert).not.toHaveBeenCalledWith('保存失败');
     });
 });
 
@@ -171,7 +201,7 @@ describe('saveNewVersion', function () {
         await expect(
             saveNewVersion('/save', { file: 'test.xml', content: '<xml/>' }),
         ).rejects.toBeDefined();
-        expect(window.bootbox.alert).toHaveBeenCalledWith(
+        expect(mocks.alert).toHaveBeenCalledWith(
             '与最新版本无差异，无需生成新版本',
         );
     });
@@ -224,7 +254,7 @@ describe('startBatchTest', function () {
             text: async () => 'DATASOURCE subject 暂未实现',
         }));
         await expect(startBatchTest({} as any)).rejects.toBeDefined();
-        expect(window.bootbox.alert).toHaveBeenCalledWith(
+        expect(mocks.alert).toHaveBeenCalledWith(
             expect.stringContaining('DATASOURCE subject'),
         );
     });
@@ -306,7 +336,7 @@ describe('getBatchTestProgress', function () {
         await expect(getBatchTestProgress(999)).rejects.toBeDefined();
         // Note: httpGet currently alerts on any non-ok response (generic client behavior).
         // The 404 case here is intentional — controller returns 404 when session doesn't exist.
-        expect(window.bootbox.alert).toHaveBeenCalled();
+        expect(mocks.alert).toHaveBeenCalled();
     });
 });
 

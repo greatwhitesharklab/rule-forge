@@ -1,15 +1,48 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
+vi.mock('@/utils/modal', () => mocks);
+
 import reducer from '../reducer.js';
 import * as ACTIONS from '../action.js';
-import { setupMockBootbox, teardownMockBootbox } from '../../__test_utils__/mockBootbox.js';
-
 describe('Action Module - Combined Reducer', () => {
     beforeEach(() => {
-        setupMockBootbox();
+        clearModalMockState();
     });
 
     afterEach(() => {
-        teardownMockBootbox();
     });
 
     describe('Master Reducer', () => {
@@ -192,7 +225,7 @@ describe('Action Module - Combined Reducer', () => {
             const action = { type: ACTIONS.ADD_SLAVE };
             const newState = reducer(existingState as any, action as any);
 
-            expect((window as any).bootbox.alert).toHaveBeenCalledWith('请先指定方法所属的Bean');
+            expect(mocks.alert).toHaveBeenCalledWith('请先指定方法所属的Bean');
             expect(newState.slave).toEqual(existingState.slave);
         });
 
@@ -294,7 +327,7 @@ describe('Action Module - Combined Reducer', () => {
             const action = { type: ACTIONS.ADD_PARAMETER };
             const newState = reducer(existingState as any, action as any);
 
-            expect((window as any).bootbox.alert).toHaveBeenCalledWith('请先指定参数所属的方法');
+            expect(mocks.alert).toHaveBeenCalledWith('请先指定参数所属的方法');
             expect(newState.method).toEqual(existingState.method);
         });
 

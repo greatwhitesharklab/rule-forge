@@ -1,4 +1,3 @@
-import '../../bootbox.js';
 import '../../../node_modules/codemirror/lib/codemirror.css';
 import '../../../node_modules/codemirror/addon/hint/show-hint.css';
 import '../../../node_modules/codemirror/addon/lint/lint.css';
@@ -6,7 +5,8 @@ import './ul.css';
 import '../../css/tailwind-base.css';
 import React from 'react';
 import {createRoot} from 'react-dom/client';
-/* bootbox is a global */
+import {alert} from '@/utils/modal';
+/*  */
 import CodeMirror from 'codemirror';
 import '../../../node_modules/codemirror/addon/mode/simple.js';
 import '../../../node_modules/codemirror/addon/hint/show-hint.js';
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (newVersion) {
             saveNewVersion(url, { file, content }).then(function () {
                 toolbarApi.clearDirty();
-                window.bootbox.alert('保存成功!');
+                alert('保存成功!');
             }).catch(function () {});
         } else {
             save(url, postData as Record<string, string>).then(function () {
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function loadResLib() {
         const content = codeMirror.getValue();
         if (!content || content.length < 10) {
-            window.bootbox.alert('请先输入脚本.');
+            alert('请先输入脚本.');
             return;
         }
         formPost('/uleditor/loadULLibs', {content: content}).then(function (data: any) {

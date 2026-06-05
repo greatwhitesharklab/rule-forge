@@ -4,6 +4,7 @@
 
 import TreeNode from './TreeNode.js';
 
+import {confirm} from '@/utils/modal';
 declare const ruleforge: any;
 
 export class ConditionTreeNode extends TreeNode {
@@ -64,7 +65,7 @@ export class ConditionTreeNode extends TreeNode {
             name: 'delete',
             label: '删除',
             onClick() {
-                window.bootbox.confirm('真的要删除当前节点？', function (result: boolean) {
+                confirm('真的要删除当前节点？', function (result: boolean) {
                     if (result) self.delete();
                 });
             }

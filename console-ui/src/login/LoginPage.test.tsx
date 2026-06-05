@@ -1,10 +1,44 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
+vi.mock('@/utils/modal', () => mocks);
+
 import { render, fireEvent, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 
 // We need to mock bootbox before importing the component
-vi.mock('../bootbox.js', () => ({}));
-
 // Import LoginPage as a named class component
 // Since index.tsx renders to DOM directly, we import the component indirectly
 // We'll create a wrapper approach by reading the module
@@ -55,7 +89,6 @@ describe('LoginPage Component', () => {
         // The file has side effects but they're guarded by `if (container)` check
         // We need to re-import to get a fresh module each time
         vi.resetModules();
-        vi.mock('../bootbox.js', () => ({}));
         const mod = await import('./index.tsx');
         // The component is not exported, but we can get it by examining default export
         // Since it's not exported, we need a different approach

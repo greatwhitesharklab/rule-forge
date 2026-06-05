@@ -1,5 +1,6 @@
 import {save as apiSave, formPost} from '../api/client.js';
 
+import {alert, prompt} from '@/utils/modal';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type {Dispatch} from 'redux';
 
@@ -49,7 +50,7 @@ export function saveData(data: ParameterItem[], newVersion: boolean, file: strin
         xml += "<parameter name='" + item.name + "' label='" + item.label + "' type='" + item.type + "' act='InOut'/>";
     });
     if (errorInfo.length > 1) {
-        window.bootbox.alert(errorInfo + ',不能保存！');
+        alert(errorInfo + ',不能保存！');
         return;
     }
     xml += '</parameter-library>';
@@ -57,18 +58,18 @@ export function saveData(data: ParameterItem[], newVersion: boolean, file: strin
     const postData: Record<string, string> = {content: xml, file, newVersion: String(newVersion)};
     const path = '/common/saveFile';
     if (newVersion) {
-        window.bootbox.prompt("请输入新版本描述.", function (versionComment) {
+        prompt("请输入新版本描述.", function (versionComment) {
             if (!versionComment) {
                 return;
             }
             postData.versionComment = versionComment;
             apiSave(path, postData).then(function () {
-                window.bootbox.alert('保存成功!');
+                alert('保存成功!');
             });
         });
     } else {
         apiSave(path, postData).then(function () {
-            window.bootbox.alert('保存成功!');
+            alert('保存成功!');
         });
     }
 }

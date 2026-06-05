@@ -1,4 +1,40 @@
 import { describe, it, expect, vi } from 'vitest';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
+vi.mock('@/utils/modal', () => mocks);
+
 import reducer from './reducer.js';
 import * as ACTIONS from './action.js';
 
@@ -51,8 +87,8 @@ describe('Variable Module - Master Reducer', () => {
     });
 
     it('GIVEN an existing state WHEN ADD_MASTER action is dispatched with duplicate name THEN it should alert and return unchanged state', () => {
-        const bootboxAlert = vi.fn();
-        (window as any).bootbox = { alert: bootboxAlert };
+        const bootboxAlert = mocks.alert;
+        // window.bootbox mock removed — utils/modal is mocked via vi.mock
 
         const existingState = {
             master: {
@@ -67,7 +103,7 @@ describe('Variable Module - Master Reducer', () => {
         expect(newState.master.data).toHaveLength(1);
         expect(bootboxAlert).toHaveBeenCalledWith('[Cat1]已经存在，添加失败');
 
-        delete (window as any).bootbox;
+        // window.bootbox cleanup removed
     });
 
     it('GIVEN an existing state WHEN GENERATED_FIELDS action is dispatched THEN it should set variables for the category at specified index', () => {

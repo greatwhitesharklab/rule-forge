@@ -11,6 +11,7 @@ import RowContext from './RowContext';
 import { generateContainer } from '../common/URule';
 import { copyCellData, pasteCellData } from '../crosstab/cellDataUtils.js';
 
+import {alert, dialog} from '@/utils/modal';
 declare const MsgBox: {
     confirm(message: string, callback: () => void): void;
 };
@@ -96,7 +97,7 @@ export default class ConditionCell extends HighlightCell {
                     if (xml && xml !== '') {
                         copyCellData('condition', xml);
                     } else {
-                        window.bootbox.alert('当前没有内容可供复制!');
+                        alert('当前没有内容可供复制!');
                     }
                 }
             }, {
@@ -175,15 +176,15 @@ export default class ConditionCell extends HighlightCell {
     }
 
     configCondition(container: HTMLElement): void {
-        const dialog = document.createElement('div');
+        const dlg = document.createElement('div');
         if (!this.cellCondition) {
             this.cellCondition = new (ruleforge as any).CellCondition('<div/>');
         }
         const self = this;
-        this.cellCondition.renderTo(dialog);
-        window.bootbox.dialog({
+        this.cellCondition.renderTo(dlg);
+        dialog({
             title: '配置条件',
-            message: dialog.outerHTML,
+            message: dlg.outerHTML,
             closeButton: true,
             callback: function () {
                 container.innerHTML = '';
@@ -210,7 +211,7 @@ export default class ConditionCell extends HighlightCell {
         const spanCount = rowspan;
 
         if (rowspan === complexTable.contentRows.length) {
-            window.bootbox.alert('条件行至少要保留一行!');
+            alert('条件行至少要保留一行!');
             return;
         }
 
@@ -350,7 +351,7 @@ export class ActionCell extends HighlightCell {
                     if (xml && xml !== '') {
                         copyCellData('value', xml);
                     } else {
-                        window.bootbox.alert('当前没有内容可供复制!');
+                        alert('当前没有内容可供复制!');
                     }
                 }
             }, {

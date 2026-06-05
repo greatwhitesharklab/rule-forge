@@ -14,6 +14,7 @@ import ConditionColumn, { ActionColumn } from './ScoreCardColumn';
 import TableAction from './TableAction';
 import { getParameter, handleResponseError } from '../../Utils.js';
 import { save, saveNewVersion, formPost } from '../../api/client.js';
+import {alert} from '@/utils/modal';
 import {
     constantLibraries,
     actionLibraries,
@@ -159,7 +160,7 @@ export default class ComplexScoreCard {
         try {
             xml = self.toXml();
         } catch (e: any) {
-            window.bootbox.alert(e);
+            alert(e);
             return;
         }
 
@@ -172,13 +173,13 @@ export default class ComplexScoreCard {
 
         if (isNewVersion) {
             saveNewVersion(saveUrl, { file, content: encodeURIComponent(xml) }).then(function () {
-                window.bootbox.alert('保存成功!', function () {
+                alert('保存成功!', function () {
                     self.resetState();
                 });
             }).catch(function () {});
         } else {
             save(saveUrl, postData).then(function () {
-                window.bootbox.alert('保存成功!', function () {
+                alert('保存成功!', function () {
                     self.resetState();
                 });
             });
@@ -193,7 +194,7 @@ export default class ComplexScoreCard {
 
     deleteCriteriaRow(): void {
         if (!(window as any)._currentConditionCell) {
-            window.bootbox.alert('请先选中目标行的一个条件单元格');
+            alert('请先选中目标行的一个条件单元格');
             return;
         }
         MsgBox.confirm('真的要删除当前单元格所在的所有行？', () => {

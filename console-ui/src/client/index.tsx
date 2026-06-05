@@ -1,4 +1,3 @@
-import '../bootbox.js';
 import '../css/iconfont.css';
 import '../css/tailwind-base.css';
 import React from 'react';
@@ -11,8 +10,6 @@ import reducer from './reducer.ts';
 import ClientConfigEditor from './component/ClientConfigEditor.tsx';
 import * as action from './action.ts';
 import {getParameter} from '../Utils.js';
-
-declare const bootbox: BootboxStatic;
 
 document.addEventListener('DOMContentLoaded', function () {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

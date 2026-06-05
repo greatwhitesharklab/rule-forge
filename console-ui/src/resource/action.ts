@@ -1,6 +1,7 @@
 import {save as apiSave, formPost} from '../api/client.js';
 import * as componentEvent from '../components/componentEvent.js';
 
+import {alert, prompt} from '@/utils/modal';
 export const LOAD_MASTER_COMPLETED = 'load_master_completed';
 export const LOAD_SLAVE_COMPLETE = 'load_slave_completed';
 export const GENERATED_FIELDS = 'generated_fields';
@@ -111,7 +112,7 @@ export function saveData(data: ResourceCategory[], newVersion: boolean, file: st
         xml += '</category>';
     });
     if (errorInfo.length > 1) {
-        window.bootbox.alert(errorInfo + ',不能保存！');
+        alert(errorInfo + ',不能保存！');
         return;
     }
     xml += '</variable-library>';
@@ -119,18 +120,18 @@ export function saveData(data: ResourceCategory[], newVersion: boolean, file: st
     let postData: Record<string, string> = {content: xml, file, newVersion: String(newVersion)};
     const url = window._server + '/common/saveFile';
     if (newVersion) {
-        window.bootbox.prompt("请输入新版本描述.", function (versionComment) {
+        prompt("请输入新版本描述.", function (versionComment) {
             if (!versionComment) {
                 return;
             }
             postData.versionComment = versionComment;
             apiSave(url, postData).then(function () {
-                // window.bootbox.alert('保存成功!');
+                // alert('保存成功!');
             })
         });
     } else {
         apiSave(url, postData).then(function () {
-            // window.bootbox.alert('保存成功!');
+            // alert('保存成功!');
         })
     }
     return {type: SAVE_COMPLETED};

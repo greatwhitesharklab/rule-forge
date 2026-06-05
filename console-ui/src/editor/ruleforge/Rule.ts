@@ -1,6 +1,7 @@
 import Sortable from 'sortablejs';
 import { Remark } from '../../Remark.js';
 
+import {alert} from '@/utils/modal';
 declare const ruleforge: any;
 declare const MsgBox: { confirm(message: string, callback: () => void): void };
 
@@ -225,7 +226,7 @@ export class Rule {
         this.nameEditor.addEventListener('blur', function () {
             const value = self.nameEditor.value;
             if (!value || value.length < 2) {
-                window.bootbox.alert('规则名不合法');
+                alert('规则名不合法');
                 return;
             }
             self.name = value;

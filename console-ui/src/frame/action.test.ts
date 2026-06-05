@@ -1,8 +1,42 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
+    const alerts: { message: unknown; cb?: () => void }[] = [];
+    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
+    const alert = vi.fn((message: unknown, cb?: () => void) => {
+        alerts.push({ message, cb });
+        if (typeof cb === 'function') cb();
+    });
+    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
+        confirms.push({ message, callback });
+    });
+    const prompt = vi.fn();
+    const dialog = vi.fn();
+    return {
+        mocks: { alert, confirm, prompt, dialog },
+        clearModalMockState: () => {
+            alerts.length = 0;
+            confirms.length = 0;
+            alert.mockReset();
+            confirm.mockReset();
+            prompt.mockReset();
+            dialog.mockReset();
+        },
+        getLastAlertMessage: () => {
+            const last = alerts[alerts.length - 1];
+            if (!last) return null;
+            return typeof last.message === 'string' ? last.message : String(last.message);
+        },
+        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
+        confirmLast: (accept = true) => {
+            const last = confirms[confirms.length - 1];
+            if (last) last.callback(accept);
+        },
+    };
+});
+vi.mock('@/utils/modal', () => mocks);
+
 import * as ACTIONS from './action.js';
 import { setupMockServer, teardownMockServer } from '../__test_utils__/mockServer.js';
-import { setupMockBootbox, teardownMockBootbox } from '../__test_utils__/mockBootbox.js';
-
 // Mock componentEvent and event modules used by action.js
 vi.mock('../components/componentEvent.js', () => ({
     eventEmitter: { emit: vi.fn() },
@@ -186,8 +220,7 @@ describe('Frame Module - Thunks', () => {
 
     beforeEach(() => {
         mockServer = setupMockServer();
-        // setupMockBootbox 副作用:安装 window.bootbox mock,无需返回值
-        setupMockBootbox();
+                clearModalMockState();
         dispatch = vi.fn();
 
         // Mock DOM
@@ -200,7 +233,6 @@ describe('Frame Module - Thunks', () => {
 
     afterEach(() => {
         teardownMockServer();
-        teardownMockBootbox();
         delete (global.document as any).getElementById;
     });
 
@@ -354,16 +386,14 @@ describe('Frame Module - Thunks', () => {
 });
 
 describe('Frame Module - Helper Functions', () => {
-    let mockServer: ReturnType<typeof setupMockServer>, mockBootbox: ReturnType<typeof setupMockBootbox>;
+    let mockServer: ReturnType<typeof setupMockServer>;
 
     beforeEach(() => {
         mockServer = setupMockServer();
-        mockBootbox = setupMockBootbox();
     });
 
     afterEach(() => {
         teardownMockServer();
-        teardownMockBootbox();
     });
 
     // Helper to flush async chains
@@ -388,7 +418,7 @@ describe('Frame Module - Helper Functions', () => {
                 type: ACTIONS.LOAD_END
             })
         );
-        expect(mockBootbox.getLastAlertMessage()).toBe('锁定成功!');
+        expect(getLastAlertMessage()).toBe('锁定成功!');
     });
 
     it('GIVEN file path WHEN unlockFile is called THEN it should unlock the file', async () => {
@@ -405,7 +435,7 @@ describe('Frame Module - Helper Functions', () => {
                 type: ACTIONS.LOAD_END
             })
         );
-        expect(mockBootbox.getLastAlertMessage()).toBe('解锁成功!');
+        expect(getLastAlertMessage()).toBe('解锁成功!');
     });
 
     it('GIVEN file and content WHEN saveFileSource is called THEN it should save the file source', async () => {
@@ -415,7 +445,7 @@ describe('Frame Module - Helper Functions', () => {
 
         await flushAsync();
 
-        expect(mockBootbox.getLastAlertMessage()).toBe('保存成功!');
+        expect(getLastAlertMessage()).toBe('保存成功!');
     });
 
     it('GIVEN data with fullPath WHEN seeFileSource is called THEN it should fetch file source', async () => {

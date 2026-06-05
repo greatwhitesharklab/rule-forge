@@ -1,3 +1,4 @@
+import {alert} from '@/utils/modal';
 declare const ruleforge: any;
 
 export class Join {
@@ -91,7 +92,7 @@ export class Join {
                 label: '删除',
                 onClick: function () {
                     if (self.children.length > 0) {
-                        window.bootbox.alert('请先删除当前连接下子元素！');
+                        alert('请先删除当前连接下子元素！');
                         return;
                     }
                     if (parentConnection) {

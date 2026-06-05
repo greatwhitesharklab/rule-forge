@@ -1,4 +1,3 @@
-import '../../bootbox.js';
 import '../context.standalone.css';
 import '../../css/iconfont.css';
 import './decision-tree.css';
@@ -50,6 +49,7 @@ import { getParameter, buildProjectNameFromFile, loadEditorData, handleResponseE
 import { save, saveNewVersion } from '../../api/client.js';
 import * as event from '../../components/componentEvent.js';
 
+import {alert} from '@/utils/modal';
 document.addEventListener('DOMContentLoaded', function () {
     const file = getParameter('file');
     if (!file || file.length < 1) {
@@ -77,12 +77,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isNewVersion) {
             saveNewVersion(url, { file, content: xml }).then(function () {
                 toolbarApi.clearDirty();
-                window.bootbox.alert('保存成功!');
+                alert('保存成功!');
             }).catch(function () {});
         } else {
             save(url, postData as Record<string, string>).then(function () {
                 toolbarApi.clearDirty();
-                window.bootbox.alert('保存成功!');
+                alert('保存成功!');
             });
         }
     }

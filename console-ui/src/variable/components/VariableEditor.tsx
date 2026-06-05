@@ -10,6 +10,7 @@ import * as event from '../event.js';
 import type {VariableCategory, VariableItem} from '../action.js';
 import type {VariableRootState} from '../reducer.js';
 
+import {alert, confirm, prompt} from '@/utils/modal';
 interface VariableEditorProps {
     masterData: VariableCategory[];
     masterRowData: VariableCategory;
@@ -55,10 +56,10 @@ class VariableEditor extends Component<VariableEditorProps> {
                     click: (rowIndex: number, rowData: VariableCategory) => {
                         let clazz = rowData.clazz;
                         if (!clazz || clazz.length < 1) {
-                            window.bootbox.alert('请先指定类路径');
+                            alert('请先指定类路径');
                             return;
                         }
-                        window.bootbox.confirm("真的生成类[" + clazz + "]中所有字段吗？", function (result) {
+                        confirm("真的生成类[" + clazz + "]中所有字段吗？", function (result) {
                             if (!result) return;
                             dispatch(action.generateFields(rowIndex, clazz));
                         });
@@ -77,7 +78,7 @@ class VariableEditor extends Component<VariableEditorProps> {
                     icon: 'glyphicon glyphicon-trash',
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 4px', cursor: 'pointer'},
                     click: (rowIndex: number) => {
-                        window.bootbox.confirm('真的要删除当前记录？', function (result) {
+                        confirm('真的要删除当前记录？', function (result) {
                             if (!result) return;
                             dispatch(action.deleteMaster(rowIndex));
                             dispatch(action.loadSlaveData({} as VariableCategory));
@@ -95,7 +96,7 @@ class VariableEditor extends Component<VariableEditorProps> {
                     icon: 'glyphicon glyphicon-trash',
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 10px', cursor: 'pointer'},
                     click: (rowIndex: number) => {
-                        window.bootbox.confirm('真的要删除当前记录？', function (result) {
+                        confirm('真的要删除当前记录？', function (result) {
                             if (!result) return;
                             dispatch(action.deleteSlave(rowIndex));
                         })
@@ -112,7 +113,7 @@ class VariableEditor extends Component<VariableEditorProps> {
                         <div style={{margin: '2px'}}>
                             <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
                                 <button className="btn btn-primary" type="button" onClick={(e) => {
-                                    window.bootbox.prompt("请输入类名称", function (masterName) {
+                                    prompt("请输入类名称", function (masterName) {
                                         if (!masterName) {
                                             return;
                                         }
@@ -134,7 +135,7 @@ class VariableEditor extends Component<VariableEditorProps> {
                             {/* <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
                                 <button className="btn btn-info" type="button" onClick={(e) => {
                                     if (!this.currentData) {
-                                        window.bootbox.alert('请先选择一条具体的变量');
+                                        alert('请先选择一条具体的变量');
                                         return;
                                     }
                                     const text = `var-category="${this.masterData.name}" var="${this.currentData.name}"`;

@@ -3,6 +3,7 @@ import Dialog from '../../components/dialog/component/Dialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
 
+import {alert} from '@/utils/modal';
 interface ImportXmlDialogProps {
     dispatch: Function;
 }
@@ -47,7 +48,7 @@ export default class ImportXmlDialog extends Component<ImportXmlDialogProps, Imp
                         dispatch(action.importFields(this.state.rowIndex, jsonResult));
                         this.setState({visible: false});
                     } catch (error) {
-                        window.bootbox.alert('上传文件不合法');
+                        alert('上传文件不合法');
                     }
                 }}/>
             </div>
