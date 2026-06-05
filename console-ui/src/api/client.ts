@@ -386,3 +386,41 @@ export interface BatchTestSession {
     inputSourceType: string;
     inputSourceId: number | null;
 }
+
+// ---- 5.10-D: Git 状态面板 (admin) ----
+
+/** /ruleforge/git/observability/summary 响应 */
+export interface GitStatusSummary {
+    totalFailures: number;
+    last1h: number;
+    last24h: number;
+    counters: Record<string, number>;
+}
+
+/** /ruleforge/git/observability/recent 列表行 */
+export interface GitStatusFailure {
+    id: number;
+    filePath: string;
+    projectId: number | null;
+    fileId: number | null;
+    errorType: string;
+    errorMessage: string | null;
+    branch: string | null;
+    occurredAt: string;   // ISO 8601
+}
+
+/** 抓取 Git dualWrite 健康 summary (admin 门控). */
+export function getGitStatusSummary(opts?: RequestOptions): Promise<GitStatusSummary> {
+    return httpGet<GitStatusSummary>('/ruleforge/git/observability/summary', opts);
+}
+
+/** 抓取最近 N 条 dualWrite 失败 (admin 门控,默认 50,后端上限 500). */
+export function getGitStatusRecent(
+    limit = 50,
+    opts?: RequestOptions,
+): Promise<GitStatusFailure[]> {
+    return httpGet<GitStatusFailure[]>(
+        '/ruleforge/git/observability/recent?limit=' + limit,
+        opts,
+    );
+}

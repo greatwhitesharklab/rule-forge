@@ -70,6 +70,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 5.10-A 集成测试 `RuleForgeRepositoryServiceImplGitStorageIntegrationTest` 同步加
   `dualwriteFailureRepository` + `meterRegistry` 构造参数
 - 整模块 `mvn -pl ruleforge-console-app test` 280 / 280 全绿
+
+**v5.10-D UI Git 健康面板(分支 `feature/5.10-git-storage`)**
+
+把 5.10-C 的 audit log + counter 暴露到前端,admin 可视化:
+
+- API client `getGitStatusSummary` / `getGitStatusRecent` — 走 `httpGet`
+  拉 `/ruleforge/git/observability/{summary,recent}`,admin 门控
+  (后端用 `NoPermissionException` 拦,401 由 client 自动 alert)
+- `GitStatusPanel.tsx` — 左侧面板,沿用 `MonitoringPanel` 模式
+  - 顶部 summary card:总失败 / 近 1h / 近 24h 三格
+  - "健康概览" tab:Micrometer counter 快照(`ruleforge_git_dualwrite_total{...}` 等)
+  - "最近失败" tab:表格 时间/文件(后 2 段)/分支/异常类型
+  - 30 秒轮询(`POLL_INTERVAL_MS`),`componentWillUnmount` 清 timer
+  - 状态条:24h > 0 → 黄色,error → 红色,正常 → 绿色
+- `frame/activity-bar` 加 `{id: 'gitStatus', icon: 'glyphicon-heartbeat', title: 'Git 健康'}`
+- `frame/reducer.ts` + `frame/action.ts` 加 `gitStatusTab` + `SET_GIT_STATUS_TAB`
+- `frame/index.tsx` `SidePanelSwitcher` 加 `case 'gitStatus'` 路由
+- 测试: `GitStatusPanel.test.tsx` 4 scenarios(summary 数字/recent 列表/空态/401 error)
+  (mock `getGitStatusSummary`/`getGitStatusRecent` + 真 `frame/reducer`)
+- `npm run typecheck` 0 error
+- `npm test` 321 / 321 全绿
 - 已知重复: `extractProjectName` 现在 3 处(`RuleForgeRepositoryServiceImpl:1173`、
   `FrameController:857`、迁移服务内)— 留 5.11 refactor
 

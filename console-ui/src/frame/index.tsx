@@ -16,6 +16,7 @@ import ContentTabBar from '@/frame/components/ContentTabBar.tsx';
 import ActivityBar from '@/frame/components/ActivityBar.tsx';
 import RuleEditorPanel from '@/frame/panels/RuleEditorPanel.jsx';
 import MonitoringPanel from '@/frame/panels/MonitoringPanel.jsx';
+import GitStatusPanel from '@/frame/panels/GitStatusPanel.tsx';
 import DatasourcePanel from '@/datasource/index.tsx';
 import PlaceholderPanel from '@/frame/panels/PlaceholderPanel.jsx';
 import ReleasePanel from '@/release/index.tsx';
@@ -48,6 +49,8 @@ function SidePanelSwitcher({activePanel, store, eventObj}: SidePanelSwitcherProp
             return <SimulationPanel/>;
         case 'ai':
             return <AgentPanel/>;
+        case 'gitStatus':
+            return <GitStatusPanel/>;
         case 'settings':
             return <PlaceholderPanel panelId="settings"/>;
         default:

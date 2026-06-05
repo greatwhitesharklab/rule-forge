@@ -16,6 +16,7 @@ export const LOAD_CHILDREN_END = 'load_children_end';
 export const SET_ACTIVE_PANEL = 'set_active_panel';
 export const SET_MONITORING_TAB = 'set_monitoring_tab';
 export const SET_SIMULATION_TAB = 'set_simulation_tab';
+export const SET_GIT_STATUS_TAB = 'set_git_status_tab';
 
 // ---- Action creators ----
 
@@ -29,6 +30,10 @@ export function setMonitoringTab(tab: string) {
 
 export function setSimulationTab(tab: string) {
     return {type: SET_SIMULATION_TAB, tab};
+}
+
+export function setGitStatusTab(tab: string) {
+    return {type: SET_GIT_STATUS_TAB, tab};
 }
 
 // ---- Thunk action creators ----
