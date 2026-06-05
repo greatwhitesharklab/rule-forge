@@ -143,11 +143,23 @@ export function prompt(msg: string, callback: (result: string | null) => void): 
     document.body.appendChild(container);
     const root = createRoot(container);
 
+    // 闭包内唯一 value — 避免连续触发 prompt 共享模块级变量导致竞态
     let value = '';
-
-    const cleanup = () => {
+    // 防重入:已触发关闭后,Antd onOk 还会二次 fire (Modal 的 onOk + Input 的 onPressEnter 都会走),
+    // 用 closed 标志位防止 callback 重复调用
+    let closed = false;
+    const finish = (result: string | null) => {
+        if (closed) return;
+        closed = true;
+        // 先 unmount React,再延迟一帧删 DOM — 否则 React 还在 reconciliation 阶段
+        // 突然没了父节点会抛 "removeChild" 警告
         root.unmount();
-        document.body.removeChild(container);
+        setTimeout(() => {
+            if (document.body.contains(container)) {
+                document.body.removeChild(container);
+            }
+            callback(result);
+        }, 0);
     };
 
     const PromptModal: React.FC = () => {
@@ -160,13 +172,11 @@ export function prompt(msg: string, callback: (result: string | null) => void): 
                 cancelText="取消"
                 onOk={() => {
                     setOpen(false);
-                    cleanup();
-                    callback(value);
+                    finish(value);
                 }}
                 onCancel={() => {
                     setOpen(false);
-                    cleanup();
-                    callback(null);
+                    finish(null);
                 }}
             >
                 <p style={{marginBottom: 8}}>{msg}</p>
@@ -177,11 +187,9 @@ export function prompt(msg: string, callback: (result: string | null) => void): 
                         value = e.target.value;
                     }}
                     onPressEnter={(e) => {
-                        // 回车等同于确定
                         const v = (e.target as HTMLInputElement).value;
                         setOpen(false);
-                        cleanup();
-                        callback(v);
+                        finish(v);
                     }}
                 />
             </Modal>

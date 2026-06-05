@@ -97,11 +97,12 @@ test.describe('Q: editor 真改字段+保存+重载', () => {
         }
         const uniqueName = '__ix_q1_' + Date.now();
         await clickAndFillBootboxPrompt(page, addBtn, uniqueName);
-        await page.waitForTimeout(800);
+        // 等 dispatch 生效 + VariableEditor 重新 render (production build 比 vite dev 慢一帧)
+        await page.waitForTimeout(2000);
         await shot(page, 'q1-var-after-add');
 
         const rowWithName = page.locator(`tr:has-text("${uniqueName}")`).first();
-        const appeared = await rowWithName.isVisible({timeout: 3000}).catch(() => false);
+        const appeared = await rowWithName.isVisible({timeout: 5000}).catch(() => false);
         expect(appeared, `Variable category "${uniqueName}" 应该在添加后出现`).toBe(true);
     });
 
