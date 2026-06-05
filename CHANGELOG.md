@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+**v5.10-B 老项目 DB→Git migration tool(分支 `feature/5.10-git-storage`)**
+
+把 V5.10-A 之前创建的项目(`gr_file_version.fileContent` 有内容但
+`git_commit_sha=NULL` 且本地 `.git` 不存在)回填到 Git 仓,让老项目
+也跑在新 storage 协议上:
+
+- `com.ruleforge.console.migration.MigrationService` — 核心服务
+  `migrate(MigrationRequest): MigrationReport`,扫 `gr_project`,逐项目
+  `initRepo` + 按 `versionNumReal` 升序逐版本 `writeFile`+`commit`+`updateGitCommitSha`
+- `MigrationRequest` / `MigrationReport` / `ProjectResult` / `VersionError`
+  — 入参/出参 DTO(运行 ID + 聚合 + per-project 拆解)
+- `MigrationController` — `POST /ruleforge/migration/run`,admin 门控走
+  `permissionService.isAdmin()`(与 `RuleForgeRepositoryServiceImpl:216` 同款)
+- `MigrationCommandLineRunner` — `@ConditionalOnProperty(ruleforge.migration.enabled=true)`,
+  走 main jar 加 `--ruleforge.migration.enabled=true --spring.main.web-application-type=none`,
+  支持 `--project <name>` (可重复) + `--dry-run`,运维/CI 都能用
+- `FileRepository` 加 `findVersionsByProjectId(Long)` + `FileRepositoryImpl` 实现
+  (MyBatis-Plus `LambdaQueryWrapper` 按 `versionNumReal` 升序)
+- skip 规则: `fileContent IS NULL` 跳过;`git_commit_sha IS NOT NULL` 跳过
+  (天然幂等,重跑安全)
+- per-project / per-version 两层 `try/catch` 失败隔离,异常吞进 `MigrationReport`
+- 分支 `main`,author `"migration-tool"`,commit message 形如
+  `Migration: /project/file.xml v3 (alice, 2026-05-12)` — 历史回看方便
+- 内容**不**走 `xmlCanonicalizer`,老项目字节级保留 DB 原内容
+- BDD 覆盖: `MigrationServiceBddTest` 8 scenarios(happy / skip / dry-run /
+  idempotent / per-project-fail / per-version-fail / no-projects /
+  multi-version-order)+ `MigrationControllerAdminGateTest` 1 case。
+  `mvn -pl ruleforge-console-app test -Dtest='Migration*,RuleForge*Git*'`
+  16 个 case 全绿。
+- 已知重复: `extractProjectName` 现在 3 处(`RuleForgeRepositoryServiceImpl:1173`、
+  `FrameController:857`、迁移服务内)— 留 5.11 refactor
+
 **v5.8.4 BatchTest Excel upload(分支 `feature/phase9-batch-test-controller`)**
 
 把 V5.8.0 留的"V5.8.2 简化:用 inline inputConfig 走老路径"补完 — 一个 multipart
