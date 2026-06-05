@@ -15,6 +15,7 @@ import com.ruleforge.console.repository.model.Type;
 import com.ruleforge.console.repository.model.VersionFile;
 import com.ruleforge.console.servlet.RequestContext;
 import com.ruleforge.console.servlet.frame.ExportProject;
+import com.ruleforge.console.util.GitPathUtils;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.runtime.cache.CacheUtils;
 import com.ruleforge.console.model.Repository;
@@ -137,7 +138,7 @@ public class FrameController extends BaseController {
 
         // If gitTag is provided, read directly from Git by tag
         if (StringUtils.hasText(gitTag)) {
-            String projectName = extractProjectNameFromPath(path);
+            String projectName = GitPathUtils.extractProjectName(path);
             if (projectName != null && gitStorageService.repoExists(projectName)) {
                 String gitPath = path.startsWith("/") ? path.substring(1) : path;
                 inputStream = gitStorageService.readFileStream(projectName, gitTag, gitPath);
@@ -852,13 +853,8 @@ public class FrameController extends BaseController {
     }
 
     /**
-     * Extract project name from a file path like "/projectName/folder/file.xml".
+     * V5.11: 委托给 GitPathUtils.extractProjectName,与 RuleForgeRepositoryServiceImpl 共用.
+     * 原 FrameController.extractProjectNameFromPath 删除.
      */
-    private String extractProjectNameFromPath(String path) {
-        if (path == null || path.isEmpty()) return null;
-        String cleaned = path.startsWith("/") ? path.substring(1) : path;
-        int slash = cleaned.indexOf('/');
-        return slash > 0 ? cleaned.substring(0, slash) : cleaned;
-    }
 
 }

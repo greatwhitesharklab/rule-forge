@@ -9,6 +9,130 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+**v5.10-B 老项目 DB→Git migration tool(分支 `feature/5.10-git-storage`)**
+
+把 V5.10-A 之前创建的项目(`gr_file_version.fileContent` 有内容但
+`git_commit_sha=NULL` 且本地 `.git` 不存在)回填到 Git 仓,让老项目
+也跑在新 storage 协议上:
+
+- `com.ruleforge.console.migration.MigrationService` — 核心服务
+  `migrate(MigrationRequest): MigrationReport`,扫 `gr_project`,逐项目
+  `initRepo` + 按 `versionNumReal` 升序逐版本 `writeFile`+`commit`+`updateGitCommitSha`
+- `MigrationRequest` / `MigrationReport` / `ProjectResult` / `VersionError`
+  — 入参/出参 DTO(运行 ID + 聚合 + per-project 拆解)
+- `MigrationController` — `POST /ruleforge/migration/run`,admin 门控走
+  `permissionService.isAdmin()`(与 `RuleForgeRepositoryServiceImpl:216` 同款)
+- `MigrationCommandLineRunner` — `@ConditionalOnProperty(ruleforge.migration.enabled=true)`,
+  走 main jar 加 `--ruleforge.migration.enabled=true --spring.main.web-application-type=none`,
+  支持 `--project <name>` (可重复) + `--dry-run`,运维/CI 都能用
+- `FileRepository` 加 `findVersionsByProjectId(Long)` + `FileRepositoryImpl` 实现
+  (MyBatis-Plus `LambdaQueryWrapper` 按 `versionNumReal` 升序)
+- skip 规则: `fileContent IS NULL` 跳过;`git_commit_sha IS NOT NULL` 跳过
+  (天然幂等,重跑安全)
+- per-project / per-version 两层 `try/catch` 失败隔离,异常吞进 `MigrationReport`
+- 分支 `main`,author `"migration-tool"`,commit message 形如
+  `Migration: /project/file.xml v3 (alice, 2026-05-12)` — 历史回看方便
+- 内容**不**走 `xmlCanonicalizer`,老项目字节级保留 DB 原内容
+- BDD 覆盖: `MigrationServiceBddTest` 8 scenarios(happy / skip / dry-run /
+  idempotent / per-project-fail / per-version-fail / no-projects /
+  multi-version-order)+ `MigrationControllerAdminGateTest` 1 case。
+  `mvn -pl ruleforge-console-app test -Dtest='Migration*,RuleForge*Git*'`
+  16 个 case 全绿。
+
+**v5.10-C dualWrite 失败可观测(分支 `feature/5.10-git-storage`)**
+
+5.10-A/B 把 dualWriteToGit 跑通了,但失败时 DB 写成功 + Git 写失败会静默
+(仅打 `log.error`,sha 返 null),运维侧无可观测。5.10-C 补足:
+
+- 新表 `gr_git_dualwrite_failure` — `file_path / project_id / file_id /
+  error_type / error_message / branch / occurred_at`,Flyway
+  `V5.10.0__git_dualwrite_failure.sql`
+- `GitDualwriteFailureEntity` / `Mapper` / `Repository` / `RepositoryImpl`
+  — `insert / countAll / countSince(Date) / findRecent(int) / deleteOlderThan(Date)`
+- `RuleForgeRepositoryServiceImpl.dualWriteToGit` / `dualDeleteFromGit` 接入:
+  - Micrometer `Counter` `ruleforge_git_dualwrite_total{op, result, error_type}`
+    + `ruleforge_git_dualdelete_total{result, error_type}`,可在 `/actuator/prometheus` 抓
+  - 失败时 `dualwriteFailureRepository.insert(...)` 落审计行
+    (errorMessage 截到 2048 字符,含 cause chain)
+  - DB 写失败行也**不**抛(防 audit-log 故障引发 dualWrite 行为变化)
+- `resolveBranch(author)` 提到方法级,save/delete/failure-record 共享同一分支解析
+  (避免 `BranchContext.forUser(null)` 产生 "user/null" 死值)
+- `GitObservabilityController` — `GET /ruleforge/git/observability/summary`
+  (总数 + 1h/24h + counter 快照) + `GET /ruleforge/git/observability/recent?limit=50`
+  (默认 50,最大 500 防滥用),admin 门控
+  (`permissionService.isAdmin()`,与 `RuleForgeRepositoryServiceImpl:216` 同款)
+- `RuleForgeConsoleAutoConfiguration` `@ComponentScan` 加 `"com.ruleforge.console.observability"`
+- BDD 覆盖: `DualWriteObservabilityBddTest` 6 scenarios
+  (happy / fail-and-record / multi-fail-accumulate / skip-no-repo / error-type-tagging /
+  failure-row-fields) + `GitObservabilityControllerTest` 5 cases
+  (admin-gate-summary / admin-gate-recent / happy-summary / happy-recent /
+  limit-clamp-to-500)
+- 5.10-A 集成测试 `RuleForgeRepositoryServiceImplGitStorageIntegrationTest` 同步加
+  `dualwriteFailureRepository` + `meterRegistry` 构造参数
+- 整模块 `mvn -pl ruleforge-console-app test` 280 / 280 全绿
+
+**v5.10-D UI Git 健康面板(分支 `feature/5.10-git-storage`)**
+
+把 5.10-C 的 audit log + counter 暴露到前端,admin 可视化:
+
+- API client `getGitStatusSummary` / `getGitStatusRecent` — 走 `httpGet`
+  拉 `/ruleforge/git/observability/{summary,recent}`,admin 门控
+  (后端用 `NoPermissionException` 拦,401 由 client 自动 alert)
+- `GitStatusPanel.tsx` — 左侧面板,沿用 `MonitoringPanel` 模式
+  - 顶部 summary card:总失败 / 近 1h / 近 24h 三格
+  - "健康概览" tab:Micrometer counter 快照(`ruleforge_git_dualwrite_total{...}` 等)
+  - "最近失败" tab:表格 时间/文件(后 2 段)/分支/异常类型
+  - 30 秒轮询(`POLL_INTERVAL_MS`),`componentWillUnmount` 清 timer
+  - 状态条:24h > 0 → 黄色,error → 红色,正常 → 绿色
+- `frame/activity-bar` 加 `{id: 'gitStatus', icon: 'glyphicon-heartbeat', title: 'Git 健康'}`
+- `frame/reducer.ts` + `frame/action.ts` 加 `gitStatusTab` + `SET_GIT_STATUS_TAB`
+- `frame/index.tsx` `SidePanelSwitcher` 加 `case 'gitStatus'` 路由
+- 测试: `GitStatusPanel.test.tsx` 4 scenarios(summary 数字/recent 列表/空态/401 error)
+  (mock `getGitStatusSummary`/`getGitStatusRecent` + 真 `frame/reducer`)
+- `npm run typecheck` 0 error
+- `npm test` 321 / 321 全绿
+
+**v5.11 清理已知债(分支 `feature/5.10-git-storage`)**
+
+5.10 系列在多个 commit 里埋了两个小债,5.11 收尾:
+
+- `.gitignore` 误伤源文件夹:
+  原 `data/` 会匹配任何名为 `data` 的目录,误伤
+  `src/main/java/.../repository/data/`、`util/data/` 等源文件夹。
+  改为 `/data/`(只忽略仓库根目录的 `data/`,即 `gitConfig.base` 路径),
+  5.10-B 时 `git add -f` 强加 `FileRepository` 的临时补丁不再需要
+
+- `extractProjectName` 重复实现去重:
+  原 `RuleForgeRepositoryServiceImpl:1182` 和 `FrameController:857`
+  是一模一样的 6 行实现。新建 `com.ruleforge.console.util.GitPathUtils.extractProjectName(String)`,
+  2 处改用。新增边角: `"/"` → `null`(原实现返 `""`,等同 falsy,行为兼容)
+- `MigrationService` 之前以为也有重复,审后发现它直接接 `projectName`
+  入参,**不**需要 extract,故无需改
+- `GitPathUtilsTest` 8 case(null / 空 / `/` / 单段 / 嵌套 / 无前导斜杠 /
+  无斜杠单段 / 真实路径)
+- 整模块 `mvn -pl ruleforge-console-app test` 288 / 288 全绿
+- 已知重复: `extractProjectName` 现在 3 处(`RuleForgeRepositoryServiceImpl:1173`、
+  `FrameController:857`、迁移服务内)— 留 5.11 refactor
+
+**v5.12 dualWrite 失败 audit log 定时清理(分支 `feature/5.10-git-storage`)**
+
+5.10-C 留的最后一个债 — `gr_git_dualwrite_failure` 表无界增长,补 TTL:
+
+- `com.ruleforge.console.observability.DualwriteFailureCleanupJob` —
+  `@Component` + `@Scheduled(cron = "0 0 3 * * *")`(每天凌晨 3 点)
+  调 `dualwriteFailureRepository.deleteOlderThan(now - 30d)`,
+  返回删除条数,异常吞掉 + `log.error` — 清理任务挂不能影响业务
+- `@Scheduled` 入口和 `purgeOldFailures()` 解耦:测试 `new` 出来直接调核心方法,
+  绕开 Spring AOP 代理,无 @MockBean
+- `DualwriteFailureCleanupJobTest` 4 scenario:
+  1. `deleteOlderThan` 接到的 `Date` 落在 `[now-30d-1s, now-30d+1s]` 区间
+  2. 仓库返 N 时,作业返 N
+  3. 仓库抛异常时,`assertThatCode` 验证不向上抛
+  4. 多次调用 → 每次各 1 次 `deleteOlderThan`(无 retry loop)
+- `@EnableScheduling` 已在 `com.ruleforge.console.app.config.SchedulingConfig` 里,
+  沿用 `monitoring-` 线程池
+- 整模块 `mvn -pl ruleforge-console-app test` 292 / 292 全绿(原 288 + 4)
+
 **v5.8.4 BatchTest Excel upload(分支 `feature/phase9-batch-test-controller`)**
 
 把 V5.8.0 留的"V5.8.2 简化:用 inline inputConfig 走老路径"补完 — 一个 multipart

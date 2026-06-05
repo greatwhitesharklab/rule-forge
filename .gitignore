@@ -31,8 +31,11 @@ __pycache__/
 output/
 data_generator.log
 
-# Runtime data
-data/
+# Runtime data — ONLY the root-level /data/ (e.g. GitStorageService base path)
+# NOT src/.../data/ source folders (e.g. repository/data/, util/data/)
+/data/
+# model-service 是 Python 子项目,自己的 .gitignore 缺失,这里兜底
+model-service/data/
 
 # OS
 .DS_Store

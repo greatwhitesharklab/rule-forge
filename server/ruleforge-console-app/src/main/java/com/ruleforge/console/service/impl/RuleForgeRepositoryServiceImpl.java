@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.ruleforge.Utils;
 import com.ruleforge.console.repository.RepositoryService;
 import com.ruleforge.console.repository.data.FileRepository;
+import com.ruleforge.console.repository.data.GitDualwriteFailureRepository;
 import com.ruleforge.console.repository.data.LockRepository;
 import com.ruleforge.console.repository.data.PackageRepository;
 import com.ruleforge.console.repository.data.ProjectRepository;
@@ -31,6 +32,8 @@ import com.ruleforge.console.util.FileTypeUtils;
 import com.ruleforge.console.util.VersionFileUtils;
 import com.ruleforge.console.util.VersionUtils;
 import com.google.common.collect.Lists;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
@@ -72,6 +75,12 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
     private final GitStorageService gitStorageService;
     private final GitConfig gitConfig;
     private final XmlCanonicalizer xmlCanonicalizer;
+    // V5.10-C: dualWrite 失败 audit log + Micrometer counter
+    private final GitDualwriteFailureRepository dualwriteFailureRepository;
+    private final MeterRegistry meterRegistry;
+
+    private static final String DUALWRITE_COUNTER = "ruleforge_git_dualwrite_total";
+    private static final String DUALDELETE_COUNTER = "ruleforge_git_dualdelete_total";
 
 
 
@@ -1169,12 +1178,11 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
     /**
      * Extract project name from a path like "/projectName/folder/file.xml".
      * Returns the first path segment.
+     *
+     * V5.11: 委托给 GitPathUtils.extractProjectName,与 FrameController 共用.
      */
     private String extractProjectName(String path) {
-        if (path == null || path.isEmpty()) return null;
-        String cleaned = path.startsWith("/") ? path.substring(1) : path;
-        int slash = cleaned.indexOf('/');
-        return slash > 0 ? cleaned.substring(0, slash) : cleaned;
+        return com.ruleforge.console.util.GitPathUtils.extractProjectName(path);
     }
 
     /**
@@ -1182,24 +1190,19 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
      * Uses per-user branch if BranchContext is set, otherwise writes to main.
      * Non-blocking: logs errors but does not throw.
      *
+     * V5.10-C: also records Micrometer counter (success/failure by errorType)
+     * + persists a row in gr_git_dualwrite_failure when JGit throws.
+     *
      * @return the Git commit SHA, or null if Git write was skipped/failed
      */
     private String dualWriteToGit(String path, String content, String author) {
+        String branch = resolveBranch(author);
         try {
             String projectName = extractProjectName(path);
             if (projectName == null || !gitStorageService.repoExists(projectName)) return null;
 
             String gitPath = path.startsWith("/") ? path.substring(1) : path;
             String canonical = xmlCanonicalizer.canonicalize(content);
-
-            // Determine branch: use BranchContext if set, otherwise user-based branch
-            String branch = BranchContext.getBranch();
-            if (branch == null && author != null) {
-                branch = BranchContext.forUser(author);
-            }
-            if (branch == null) {
-                branch = "main";
-            }
 
             // Ensure branch exists (create from main if needed)
             if (!"main".equals(branch)) {
@@ -1215,9 +1218,15 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
                     "Save: " + path, author != null ? author : "system");
             gitStorageService.push(projectName);
             log.debug("Dual-write to Git succeeded: {} on branch {} (sha={})", path, branch, commitSha);
+            recordDualwriteSuccess("save");
             return commitSha;
         } catch (GitOperationException e) {
             log.error("Git dual-write failed (DB write succeeded): {}", path, e);
+            recordDualwriteFailure("save", path, extractProjectName(path), null, branch, e);
+            return null;
+        } catch (RuntimeException e) {
+            log.error("Git dual-write unexpected failure (DB write succeeded): {}", path, e);
+            recordDualwriteFailure("save", path, extractProjectName(path), null, branch, e);
             return null;
         }
     }
@@ -1228,19 +1237,109 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
      * Non-blocking: logs errors but does not throw.
      */
     private void dualDeleteFromGit(String path) {
+        String branch = resolveBranch(null);
         try {
             String projectName = extractProjectName(path);
             if (projectName == null || !gitStorageService.repoExists(projectName)) return;
 
             String gitPath = path.startsWith("/") ? path.substring(1) : path;
-            String branch = BranchContext.getBranch() != null ? BranchContext.getBranch() : "main";
             gitStorageService.deleteFile(projectName, branch, gitPath);
             gitStorageService.commit(projectName, branch, "Delete: " + path, "system");
             gitStorageService.push(projectName);
             log.debug("Dual-delete from Git succeeded: {} on branch {}", path, branch);
+            recordDualDeleteSuccess();
         } catch (GitOperationException e) {
             log.error("Git dual-delete failed (DB delete succeeded): {}", path, e);
+            recordDualwriteFailure("delete", path, extractProjectName(path), null, branch, e);
+        } catch (RuntimeException e) {
+            log.error("Git dual-delete unexpected failure (DB delete succeeded): {}", path, e);
+            recordDualwriteFailure("delete", path, extractProjectName(path), null, branch, e);
         }
+    }
+
+    /** V5.10-C: branch 选择逻辑提到方法级,save/delete/failure-record 共享 */
+    private String resolveBranch(String author) {
+        String branch = BranchContext.getBranch();
+        if (branch == null && author != null) {
+            branch = BranchContext.forUser(author);
+        }
+        if (branch == null) {
+            branch = "main";
+        }
+        return branch;
+    }
+
+    // ----- V5.10-C observability helpers -----
+
+    private void recordDualwriteSuccess(String op) {
+        Counter.builder(DUALWRITE_COUNTER)
+                .tag("op", op)
+                .tag("result", "success")
+                .register(meterRegistry)
+                .increment();
+    }
+
+    private void recordDualDeleteSuccess() {
+        Counter.builder(DUALDELETE_COUNTER)
+                .tag("result", "success")
+                .register(meterRegistry)
+                .increment();
+    }
+
+    private void recordDualwriteFailure(String op, String path, String projectName, Long fileId,
+                                        String branch, Throwable t) {
+        String errorType = t == null ? "Unknown" : t.getClass().getSimpleName();
+        Counter.builder(DUALWRITE_COUNTER)
+                .tag("op", op)
+                .tag("result", "failure")
+                .tag("error_type", errorType)
+                .register(meterRegistry)
+                .increment();
+        if (op.equals("delete")) {
+            Counter.builder(DUALDELETE_COUNTER)
+                    .tag("result", "failure")
+                    .tag("error_type", errorType)
+                    .register(meterRegistry)
+                    .increment();
+        }
+        try {
+            GitDualwriteFailureEntity row = new GitDualwriteFailureEntity();
+            row.setFilePath(path);
+            row.setProjectId(resolveProjectId(projectName));
+            row.setFileId(fileId);
+            row.setErrorType(errorType);
+            row.setErrorMessage(truncate(t == null ? "" : safeMessage(t), 2048));
+            row.setBranch(branch);
+            dualwriteFailureRepository.insert(row);
+        } catch (RuntimeException dbErr) {
+            // 失败行的写入也不能让上层感知,只能 log.
+            log.error("Failed to persist dualwrite failure row for {}", path, dbErr);
+        }
+    }
+
+    private Long resolveProjectId(String projectName) {
+        if (projectName == null) return null;
+        try {
+            ProjectEntity p = projectRepository.findByName(projectName);
+            return p == null ? null : p.getId();
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private static String safeMessage(Throwable t) {
+        String m = t.getMessage();
+        if (m == null) m = t.getClass().getName();
+        Throwable c = t.getCause();
+        if (c != null && c.getMessage() != null) {
+            m = m + " | caused by: " + c.getClass().getSimpleName() + ": " + c.getMessage();
+        }
+        return m;
+    }
+
+    private static String truncate(String s, int max) {
+        if (s == null) return null;
+        return s.length() <= max ? s : s.substring(0, max);
     }
 
     private void syncVersionFileLatestFromLocal(RepositoryFile repositoryFile, long projectId) {

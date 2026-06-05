@@ -12,6 +12,7 @@ interface UIState {
     activePanel: string;
     monitoringTab: string;
     simulationTab: string;
+    gitStatusTab: string;
 }
 
 interface FrameState {
@@ -23,7 +24,7 @@ interface FrameState {
     [key: string]: unknown;
 }
 
-function ui(state: UIState = {activePanel: 'rules', monitoringTab: 'overview', simulationTab: 'configure'}, action: { type: string; [key: string]: any }): UIState {
+function ui(state: UIState = {activePanel: 'rules', monitoringTab: 'overview', simulationTab: 'configure', gitStatusTab: 'summary'}, action: { type: string; [key: string]: any }): UIState {
     switch (action.type) {
         case ACTIONS.SET_ACTIVE_PANEL:
             return {...state, activePanel: action.panel};
@@ -31,6 +32,8 @@ function ui(state: UIState = {activePanel: 'rules', monitoringTab: 'overview', s
             return {...state, monitoringTab: action.tab};
         case ACTIONS.SET_SIMULATION_TAB:
             return {...state, simulationTab: action.tab};
+        case ACTIONS.SET_GIT_STATUS_TAB:
+            return {...state, gitStatusTab: action.tab};
         default:
             return state;
     }
