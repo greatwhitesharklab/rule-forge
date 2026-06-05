@@ -124,7 +124,7 @@ export function loadEnvironments(projectName: string) {
     return function (dispatch: AppDispatch) {
         dispatch({type: LOAD_ENVIRONMENTS});
         formPost('/deployment/environments', {projectName})
-        .then(data => dispatch({type: LOAD_ENVIRONMENTS_COMPLETED, data}))
+        .then((resp: {data?: unknown[]; status: boolean}) => dispatch({type: LOAD_ENVIRONMENTS_COMPLETED, data: resp.data || []}))
         .catch(err => {
             console.error('加载环境信息失败', err);
             dispatch({type: LOAD_ENVIRONMENTS_COMPLETED, data: []});
@@ -136,7 +136,7 @@ export function loadApprovals(projectName: string) {
     return function (dispatch: AppDispatch) {
         dispatch({type: LOAD_APPROVALS});
         formPost('/approval/listByProject', {projectName})
-        .then(data => dispatch({type: LOAD_APPROVALS_COMPLETED, data}))
+        .then((resp: {data?: unknown[]; status: boolean}) => dispatch({type: LOAD_APPROVALS_COMPLETED, data: resp.data || []}))
         .catch(err => {
             console.error('加载审批列表失败', err);
             dispatch({type: LOAD_APPROVALS_COMPLETED, data: []});
@@ -171,7 +171,7 @@ export function loadDeploymentHistory(projectName: string, packageId?: string) {
         const params: Record<string, string> = {projectName};
         if (packageId) params.packageId = packageId;
         formPost('/deployment/history', params)
-        .then(data => dispatch({type: LOAD_DEPLOYMENT_HISTORY_COMPLETED, data}))
+        .then((resp: {data?: unknown[]; status: boolean}) => dispatch({type: LOAD_DEPLOYMENT_HISTORY_COMPLETED, data: resp.data || []}))
         .catch(err => {
             console.error('加载部署历史失败', err);
             dispatch({type: LOAD_DEPLOYMENT_HISTORY_COMPLETED, data: []});
@@ -221,7 +221,7 @@ export function loadNodes(execEnv?: string) {
         const params: Record<string, string> = {};
         if (execEnv) params.execEnv = execEnv;
         formPost('/deployment/listNodes', params)
-        .then(data => dispatch({type: LOAD_NODES_COMPLETED, data}))
+        .then((resp: {data?: unknown[]; status: boolean}) => dispatch({type: LOAD_NODES_COMPLETED, data: resp.data || []}))
         .catch(err => {
             console.error('加载节点列表失败', err);
             dispatch({type: LOAD_NODES_COMPLETED, data: []});
@@ -266,7 +266,7 @@ export function loadShadowConfigs() {
     return function (dispatch: AppDispatch) {
         dispatch({type: LOAD_SHADOW_CONFIGS});
         httpGet('/shadow/configs')
-        .then(data => dispatch({type: LOAD_SHADOW_CONFIGS_COMPLETED, data}))
+        .then((resp: {data?: unknown[]; status: boolean}) => dispatch({type: LOAD_SHADOW_CONFIGS_COMPLETED, data: resp.data || []}))
         .catch(err => {
             console.error('加载陪跑配置失败', err);
             dispatch({type: LOAD_SHADOW_CONFIGS_COMPLETED, data: []});
@@ -313,7 +313,7 @@ export function loadShadowComparisons(rulePackagePath: string, startTime?: strin
         if (startTime) params.append('startTime', startTime);
         if (endTime) params.append('endTime', endTime);
         httpGet('/shadow/comparisons?' + params.toString())
-        .then(data => dispatch({type: LOAD_SHADOW_COMPARISONS_COMPLETED, data}))
+        .then((resp: {data?: unknown[]; status: boolean}) => dispatch({type: LOAD_SHADOW_COMPARISONS_COMPLETED, data: resp.data || []}))
         .catch(err => {
             console.error('加载陪跑对比失败', err);
             dispatch({type: LOAD_SHADOW_COMPARISONS_COMPLETED, data: []});
@@ -328,7 +328,7 @@ export function loadShadowStats(rulePackagePath: string, startTime?: string, end
         if (startTime) params.append('startTime', startTime);
         if (endTime) params.append('endTime', endTime);
         httpGet('/shadow/stats?' + params.toString())
-        .then(data => dispatch({type: LOAD_SHADOW_STATS_COMPLETED, data}))
+        .then((resp: {data?: unknown; status: boolean}) => dispatch({type: LOAD_SHADOW_STATS_COMPLETED, data: resp.data || null}))
         .catch(err => {
             console.error('加载陪跑统计失败', err);
             dispatch({type: LOAD_SHADOW_STATS_COMPLETED, data: null});
@@ -343,7 +343,7 @@ export function loadGrayStrategies(projectId?: string, packageId?: string) {
         if (projectId) params.append('projectId', projectId);
         if (packageId) params.append('packageId', packageId);
         httpGet('/gray/strategies?' + params.toString())
-        .then(data => dispatch({type: LOAD_GRAY_STRATEGIES_COMPLETED, data}))
+        .then((resp: {data?: unknown[]; status: boolean}) => dispatch({type: LOAD_GRAY_STRATEGIES_COMPLETED, data: resp.data || []}))
         .catch(err => {
             console.error('加载灰度策略失败', err);
             dispatch({type: LOAD_GRAY_STRATEGIES_COMPLETED, data: []});

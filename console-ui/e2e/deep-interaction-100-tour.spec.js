@@ -56,21 +56,23 @@ async function apiCall(page, method, path, body) {
 }
 
 /**
- * Bootbox helper: click button via JS dispatch (React onClick 兼容), type value, click OK
+ * Antd Modal prompt helper (V5.9.0 后替代 bootbox):
+ * - 旧 bootbox.prompt 弹窗 = .modal / input 是 .bootbox-input / OK 是 .bootbox-accept
+ * - 新 @/utils/modal.prompt 弹窗 = .ant-modal / input 是 .ant-modal-body input / OK 是 .ant-modal-footer .ant-btn-primary
  *
  * 注意:Playwright 的 locator.click({force: true}) 在 React 16+ 组件上不触发 onClick
  * (Playwright dispatch 的是 mouse 事件,React 16+ 用合成事件系统,需要 native click)
  * 改用 page.evaluate 调用 .click() 触发原生 click 事件。
- * Bootbox 弹窗是 .modal(不是 .bootbox),input 是 .bootbox-input,OK 是 .bootbox-accept
  */
 async function clickAndFillBootboxPrompt(page, buttonLocator, value) {
     const handle = await buttonLocator.elementHandle();
     if (!handle) throw new Error('button not found');
     await page.evaluate((b) => b.click(), handle);
-    await page.waitForSelector('.bootbox-input', {timeout: 5000});
-    await page.locator('.bootbox-input').first().fill(value);
-    // OK 按钮:bootbox-accept class(没有 .bootbox 包裹)
-    await page.locator('.bootbox-accept, .modal .btn-primary').first().click({force: true});
+    // 等 Antd modal 弹出
+    await page.waitForSelector('.ant-modal-body input', {timeout: 5000});
+    await page.locator('.ant-modal-body input').first().fill(value);
+    // OK 按钮 — Antd modal footer 的 primary 按钮
+    await page.locator('.ant-modal-footer .ant-btn-primary').first().click({force: true});
     await page.waitForTimeout(800);
 }
 
