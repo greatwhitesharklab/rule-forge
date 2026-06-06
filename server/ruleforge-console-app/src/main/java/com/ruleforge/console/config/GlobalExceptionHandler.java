@@ -1,5 +1,6 @@
 package com.ruleforge.console.config;
 
+import com.ruleforge.console.exception.NoPermissionException;
 import com.ruleforge.exception.RuleException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .header("Content-Type", "text/plain;charset=UTF-8")
                 .body(ex.getMessage() != null ? ex.getMessage() : "RuleException");
+    }
+
+    /**
+     * V5.15: NoPermissionException → 401 + 纯文本,
+     * 前端 client.ts 已对 401 做 alert("权限不足,不能进行此操作.")
+     */
+    @ExceptionHandler(NoPermissionException.class)
+    public ResponseEntity<String> handleNoPermission(NoPermissionException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .header("Content-Type", "text/plain;charset=UTF-8")
+                .body(ex.getMessage() != null ? ex.getMessage() : "Permission denied!");
     }
 
     /**

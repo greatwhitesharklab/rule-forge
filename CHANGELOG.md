@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+**V5.15 权限改造 (分支 `feature/5.15-permission-auth`)**
+
+把用户/权限从"文件+硬编码"迁移到 MySQL,实现 BCrypt 密码认证 + 项目级权限控制:
+
+- Flyway `V5.15.0__user_and_permission.sql` — `rf_user` (BCrypt 密码) + `rf_user_project_permission`
+  (项目级权限 12 种文件类型 × 读/写) + seed admin/admin123
+- `PasswordUtil` — BCryptPasswordEncoder 包装 (`encode` / `matches`)
+- `UserEntity` / `UserProjectPermissionEntity` — MyBatis-Plus 实体 + `toSessionUser()` / `toProjectConfig()` 转换
+- `UserMapper` / `UserProjectPermissionMapper` — 按 username / userId / userId+project 查询
+- `AuthService` + `AuthServiceImpl` — login(BCrypt 验证) / createUser / updateUser / toggleEnabled / resetPassword
+- `LoginController` 改造 — 不再硬编码 `setAdmin(true)`,调 AuthService 做 BCrypt 验证,
+  失败返 `{status: false, error: "用户名或密码错误"}`,session 写入 DB 实体转换的 DefaultUser
+- `PermissionServiceImpl` 改造 — 从 `rf_user_project_permission` 表读权限,
+  不再从仓库文件 `___resource__security__config__` 读;switch expression 覆盖全部 FileType 枚举;
+  构造器注入替代 setter 注入
+- `PermissionController` 新增用户 CRUD 端点 — GET/POST/PUT/PATCH `/permission/users`,
+  GET/POST `/permission/users/{id}/permissions`;admin-only 门控走 `assertAdmin()`
+- `EnvironmentProviderImpl` 改造 — `getUsers()` 从 `rf_user` 表读替代硬编码
+- `GlobalExceptionHandler` — `NoPermissionException` → 401 + 纯文本 (前端 client.ts 已对 401 alert)
+- BDD 覆盖: AuthServiceTest(4) + PasswordUtilTest(3) + LoginControllerAuthTest(4) +
+  PermissionControllerUserMgmtTest(4) = 15 scenarios 全绿;全模块 307/307 全绿
+
+**V5.8.4 BatchTest Excel upload(分支 `feature/phase9-batch-test-controller`)**
+
 **v5.10-B 老项目 DB→Git migration tool(分支 `feature/5.10-git-storage`)**
 
 把 V5.10-A 之前创建的项目(`gr_file_version.fileContent` 有内容但
