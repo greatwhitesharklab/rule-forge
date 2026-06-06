@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+**v5.14 mapper duplicate registration 清理(分支 `feature/5.14-mapper-warning-cleanup`)**
+
+消除 `@MapperScan` 重复注册导致的 Spring bean 定义冲突 warning:
+
+- `RuleForgeConsoleAutoConfiguration` 移除 `@MapperScan("com.ruleforge.console.mapper")`
+  — 已由 `MybatisPlusConfig` 的 `@MapperScan(value="com.ruleforge.console.mapper",
+  sqlSessionFactoryRef="ruleforgeSqlSessionFactory")` 统一注册
+- `RuleForgeConsoleApplication` 移除 `@MapperScan("com.ruleforge.decision.mapper")`
+  — 已由 `DecisionMybatisPlusConfig` 的 `@MapperScan(value="com.ruleforge.decision.mapper",
+  sqlSessionFactoryRef="ruleforgeSqlSessionFactory")` 统一注册
+- 保留的 `@MapperScan` 都带显式 `sqlSessionFactoryRef`,确保 mapper 绑定正确的数据源
+- 整模块 `mvn -pl ruleforge-console-app test` 292 / 292 全绿
+
 ### Added
 
 **v5.10-B 老项目 DB→Git migration tool(分支 `feature/5.10-git-storage`)**

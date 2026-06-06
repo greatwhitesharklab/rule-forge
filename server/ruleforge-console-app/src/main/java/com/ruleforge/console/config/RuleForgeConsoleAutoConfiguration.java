@@ -2,7 +2,6 @@ package com.ruleforge.console.config;
 
 import com.ruleforge.console.service.RepositoryInterceptor;
 import com.ruleforge.console.service.impl.DefaultRepositoryInterceptor;
-import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.*;
 
@@ -39,9 +38,6 @@ import org.springframework.context.annotation.*;
         "com.ruleforge.decision.config",
         "com.ruleforge.decision.connector",
         "com.ruleforge.decision.repository"
-})
-@MapperScan(basePackages = {
-        "com.ruleforge.console.mapper"
 })
 public class RuleForgeConsoleAutoConfiguration {
 
