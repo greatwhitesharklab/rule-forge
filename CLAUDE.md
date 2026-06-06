@@ -96,9 +96,8 @@ Deployable executor with RestTemplate config for console communication.
 ### BDD/TDD
 
 - Follow Behavior Driven Development practices for test writing:
-  1. Before writing test code, create an empty test file with Gherkin-style behavior annotations (Given/When/Then) and function names only
-  2. Use `AskUserQuestion` to confirm with the user before proceeding to write actual test code
-  3. Never write test code before completing the behavior annotations
+  1. Write test files with Gherkin-style behavior annotations (Given/When/Then) in @DisplayName/@Nested
+  2. Write test code directly after annotations — no need to confirm with user before writing test code
 - Follow Test Driven Development: never write business/implementation code before writing tests
 
 ### Versioning Convention (V5.16 起)
