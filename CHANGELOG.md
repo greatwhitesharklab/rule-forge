@@ -2,8 +2,27 @@
 
 All notable changes to RuleForge will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## 版本号约定 (V5.16 起)
+
+**格式: `Major.Feature.Fix` — `vMAJOR.FEATURE.FIX`(Flyway 迁移文件名 `V{MAJOR}.{FEATURE}.{FIX}__*.sql`)**
+
+| 位 | 语义 | 递增规则 | 例子 |
+|---|---|---|---|
+| **Major** | 里程碑(milestone) | 大版本升级(架构 / 数据模型 / 部署协议级别 breaking)才动;**不**要求每次 release 都加 | 3 → 5 是 2024-2025 跨大版本(gr_* 换 rf_*,MyBatis-Plus 升级等) |
+| **Feature** | 任意特性(feature) | **不**要求严格 +1,可以跳号(3.1.3 → 3.1.4 → 3.5.3,跳过未做的小版本) | 5.8.0 batchtest subject polymorphism → 5.10.0 git dualwrite |
+| **Fix** | 修小 bug / 增量迁移 | 同 Feature 内的后续微调(补字段、bugfix) | 3.1.3 → 3.1.4,3.8.0 → 3.8.1,3.12.0 → 3.12.5 |
+
+跟标准 SemVer 的区别:
+- **Feature 位不严格递增** — 项目里跳号是历史事实(3.5 → 3.6,5.3 → 5.8 等),延续这个习惯
+- **Major 不绑定"破坏性"** — V3 → V5 是里程碑(2024-2025),不是 API breaking;Flyway 跟 Maven 版本号也不强绑定
+- **每个 migration 都是历史的真实记录** — 已经应用在 dev / 生产 DB 上的版本号**不**允许改写(改了 Flyway 会校验失败);要"修"已发布的版本,只能再发一个 V{同号}.{+1}__*.sql
+
+迁移文件命名示例:
+- `V5.15.0__user_and_permission.sql` — V5 系列第 15 个 feature,首次
+- `V5.16.0__init_app_schema.sql` — V5 系列第 16 个 feature(给 app_db 接入 Flyway)
+- `V5.16.1__xxx.sql` — 后续修小 bug
 
 ## [Unreleased]
 

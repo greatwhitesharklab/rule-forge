@@ -101,6 +101,23 @@ Deployable executor with RestTemplate config for console communication.
   3. Never write test code before completing the behavior annotations
 - Follow Test Driven Development: never write business/implementation code before writing tests
 
+### Versioning Convention (V5.16 起)
+
+**格式: `Major.Feature.Fix` — 迁移文件 `V{MAJOR}.{FEATURE}.{FIX}__*.sql`,分支 `feature/{MAJOR}.{FEATURE}-{slug}`,CHANGELOG 标签 `v{MAJOR}.{FEATURE}.{FIX}`**
+
+| 位 | 语义 | 递增规则 |
+|---|---|---|
+| **Major** | 里程碑(milestone) | 大版本升级(架构 / 数据模型 / 部署协议级别)才动;**不**要求每次 release 都加 |
+| **Feature** | 任意特性(feature) | **不**要求严格 +1,可以跳号(3.1.3 → 3.1.4 → 3.5.3,跳过未做的小版本) |
+| **Fix** | 修小 bug / 增量迁移 | 同 Feature 内的后续微调(补字段、bugfix) |
+
+跟标准 SemVer 的区别:
+- Feature 位不严格递增 — 项目里跳号是历史事实,延续这个习惯
+- Major 不绑定"破坏性" — V3 → V5 是 2024-2025 里程碑(gr_* 换 rf_*,MyBatis-Plus 升级),不是 API breaking
+- Flyway 跟 Maven 版本号不强绑定 — Maven version 是 1.0.0 / 4.0.6(Spring Boot),Flyway migration 用项目自己的节奏
+
+**硬规则:已发布在 dev / 生产 DB 上的版本号不允许改写**(改了 Flyway checksum 校验失败);要"修"已发布的版本只能再发一个 `V{同号}.{+1}__*.sql`。
+
 ## Rule Types
 
 向导式规则集, 脚本式规则集 (UL), 决策表, 脚本决策表, 决策树, 评分卡, 决策流
