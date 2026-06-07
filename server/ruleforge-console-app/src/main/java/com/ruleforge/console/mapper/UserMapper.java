@@ -1,4 +1,4 @@
-package com.ruleforge.console.app.mapper;
+package com.ruleforge.console.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.ruleforge.console.app.entity.UserEntity;

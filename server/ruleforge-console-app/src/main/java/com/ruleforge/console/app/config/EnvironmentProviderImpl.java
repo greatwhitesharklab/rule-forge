@@ -1,14 +1,17 @@
 package com.ruleforge.console.app.config;
 
 import com.ruleforge.console.EnvironmentProvider;
-import com.ruleforge.console.app.mapper.UserMapper;
+import com.ruleforge.console.mapper.UserMapper;
 import com.ruleforge.console.controller.LoginController;
 import com.ruleforge.console.model.DefaultUser;
 import com.ruleforge.console.model.User;
 import com.ruleforge.console.servlet.RequestContext;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,8 +30,23 @@ public class EnvironmentProviderImpl implements EnvironmentProvider {
 
     @Override
     public User getLoginUser(RequestContext context) {
+        // 1. 优先从传入的 RequestContext 取 session (老代码路径)
         if (context != null && context.getRequest() != null) {
             HttpSession session = context.getRequest().getSession(false);
+            if (session != null) {
+                User user = (User) session.getAttribute(LoginController.USER_SESSION_KEY);
+                if (user != null) {
+                    return user;
+                }
+            }
+        }
+        // 2. fallback: 从 Spring RequestContextHolder 取当前请求的 session
+        //    (PermissionController 等 @RestController 调 EnvironmentUtils.getLoginUser(null) 时走这里)
+        ServletRequestAttributes attrs =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attrs != null) {
+            HttpServletRequest request = attrs.getRequest();
+            HttpSession session = request.getSession(false);
             if (session != null) {
                 User user = (User) session.getAttribute(LoginController.USER_SESSION_KEY);
                 if (user != null) {

@@ -1,7 +1,7 @@
 package com.ruleforge.console.app.service;
 
 import com.ruleforge.console.app.entity.UserEntity;
-import com.ruleforge.console.app.mapper.UserMapper;
+import com.ruleforge.console.mapper.UserMapper;
 import com.ruleforge.console.app.service.impl.AuthServiceImpl;
 import com.ruleforge.console.app.util.PasswordUtil;
 import org.junit.jupiter.api.DisplayName;

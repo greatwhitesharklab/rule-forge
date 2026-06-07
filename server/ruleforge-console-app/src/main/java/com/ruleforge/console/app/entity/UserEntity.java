@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.Date;
@@ -19,6 +22,9 @@ import java.util.Date;
  */
 @Data
 @TableName("rf_user")
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY,
+                getterVisibility = JsonAutoDetect.Visibility.NONE,
+                isGetterVisibility = JsonAutoDetect.Visibility.NONE)
 public class UserEntity {
 
     @TableId(value = "id", type = IdType.AUTO)
@@ -28,21 +34,26 @@ public class UserEntity {
     private String username;
 
     @TableField("password_hash")
+    @JsonIgnore
     private String passwordHash;
 
     @TableField("company_id")
     private String companyId;
 
     @TableField("is_admin")
+    @JsonProperty("isAdmin")
     private boolean isAdmin;
 
     @TableField("is_enabled")
+    @JsonProperty("isEnabled")
     private boolean isEnabled;
 
     @TableField("can_import")
+    @JsonProperty("canImport")
     private boolean canImport;
 
     @TableField("can_export")
+    @JsonProperty("canExport")
     private boolean canExport;
 
     @TableField("created_at")

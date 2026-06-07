@@ -2,8 +2,8 @@ package com.ruleforge.console.controller;
 
 import com.ruleforge.console.app.entity.UserEntity;
 import com.ruleforge.console.app.entity.UserProjectPermissionEntity;
-import com.ruleforge.console.app.mapper.UserMapper;
-import com.ruleforge.console.app.mapper.UserProjectPermissionMapper;
+import com.ruleforge.console.mapper.UserMapper;
+import com.ruleforge.console.mapper.UserProjectPermissionMapper;
 import com.ruleforge.console.app.service.AuthService;
 import com.ruleforge.console.app.util.PasswordUtil;
 import com.ruleforge.console.exception.NoPermissionException;
