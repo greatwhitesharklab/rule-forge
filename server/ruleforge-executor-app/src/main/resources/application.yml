@@ -45,6 +45,14 @@ ruleforge:
   isKnowledgeUpdateRemoteV2: true
   console:
     url: ${CONSOLE_URL:http://localhost:8180}
+  flow:
+    # V5.20+: 自建决策流执行器引擎。=custom 走自建 FlowEngine,=legacy 走 Flowable。
+    # Phase 1 默认 legacy(行为不变,等 Step 6 端到端对比通过再切 custom)。
+    executor-engine: ${FLOW_EXECUTOR_ENGINE:legacy}
+    # StateRecoveryJob 调度参数
+    recovery-interval-ms: 30000
+    recovery-initial-delay-ms: 60000
+    worker-id: ${HOSTNAME:flow-recovery-1}
 
 flowable:
   # 改用独立库 (见 spring.datasource.flowable),不让 Flowable 自 init 脚本

@@ -11,9 +11,15 @@ import com.ruleforge.decision.model.OutputModel;
 import com.ruleforge.decision.dto.DecisionRequest;
 import com.ruleforge.decision.dto.DecisionResponse;
 import com.ruleforge.decision.dto.GrayResolution;
+import com.ruleforge.decision.entity.DecisionFlowState;
 import com.ruleforge.decision.entity.RuleVariableDef;
 import com.ruleforge.decision.entity.ShadowConfig;
 import com.ruleforge.decision.exception.AsyncDataSourcePendingException;
+import com.ruleforge.decision.exception.DecisionAsyncPendingException;
+import com.ruleforge.decision.exception.FlowExecutionException;
+import com.ruleforge.decision.flow.engine.FlowContext;
+import com.ruleforge.decision.flow.engine.FlowDefinitionRepo;
+import com.ruleforge.decision.flow.engine.FlowEngine;
 import com.ruleforge.decision.lazy.DecisionContext;
 import com.ruleforge.decision.lazy.LazyEntityFactory;
 import com.ruleforge.decision.lazy.LazyGeneralEntity;
@@ -27,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.runtime.ProcessInstance;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.PrintWriter;
@@ -34,6 +41,7 @@ import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -53,6 +61,11 @@ public class DecisionServiceImpl implements IDecisionService {
     private final IGrayStrategyService grayStrategyService;
     private final RuntimeService flowableRuntimeService;
     private final MeterRegistry meterRegistry;
+    // V5.20+ 自建决策流执行器(Flowable 替代品)
+    private final FlowEngine flowEngine;
+    private final FlowDefinitionRepo flowDefinitionRepo;
+    @Value("${ruleforge.flow.executor-engine:legacy}")
+    private String executorEngine;
 
     @Override
     public DecisionResponse evaluate(DecisionRequest request) {
@@ -95,6 +108,17 @@ public class DecisionServiceImpl implements IDecisionService {
             return DecisionResponse.success(ctx.resultData);
 
         } catch (Exception e) {
+            // V5.20+: 自建引擎路径抛 DecisionAsyncPendingException(USER_TASK 二元决策挂起)
+            DecisionAsyncPendingException asyncFlowEx = extractAsyncFlowPendingException(e);
+            if (asyncFlowEx != null) {
+                log.info("决策流挂起等待人工决策: userId={}, orderNo={}, flowId={}, userTaskNode={}, flowRunId={}",
+                        request.getUserId(), request.getOrderNo(), request.getFlowId(),
+                        asyncFlowEx.getWaitRef(), asyncFlowEx.getCurrentNodeId());
+                savePendingLog(ctx, asyncFlowEx);
+                recordMetrics(ctx, "PENDING");
+                return DecisionResponse.asyncPending(asyncFlowEx.getWaitRef(), true);
+            }
+
             // 检查异常链中是否包含 AsyncDataSourcePendingException
             AsyncDataSourcePendingException asyncEx = extractAsyncPendingException(e);
             if (asyncEx != null) {
@@ -335,6 +359,67 @@ public class DecisionServiceImpl implements IDecisionService {
     }
 
     private void executeDecisionFlow(ExecutionContext ctx) {
+        if ("custom".equalsIgnoreCase(executorEngine)) {
+            executeDecisionFlowCustom(ctx);
+        } else {
+            executeDecisionFlowLegacy(ctx);
+        }
+    }
+
+    /**
+     * V5.20+: 自建决策流执行器。直接调 FlowEngine.start,不走 Flowable 引擎。
+     * <p>
+     * 关键差异 vs legacy:
+     * - 不再调 flowableRuntimeService.startProcessInstanceByKey
+     * - RuleNodeExecutor 内部已经做 OutputModel var-assign(V5.18 wrapOutputModelAsEntity +
+     *   BeanUtils.populate 修法搬到 RuleNodeExecutor),所以 insertEntities 末尾的 workaround
+     *   块对 custom 路径不重复
+     * - 抛 DecisionAsyncPendingException → DecisionServiceImpl catch 后走 asyncPending
+     */
+    private void executeDecisionFlowCustom(ExecutionContext ctx) {
+        Map<String, Object> params = buildProcessVariables(ctx.request);
+
+        ctx.inputParams = new HashMap<>(ctx.session.getParameters());
+        ctx.inputParams.putAll(params);
+        log.info("[FLOW-CUSTOM] start: flowId={} params={}", ctx.request.getFlowId(), ctx.inputParams);
+
+        long stepStartTime = System.currentTimeMillis();
+        try {
+            FlowContext flowCtx = new FlowContext();
+            flowCtx.setFlowRunId(UUID.randomUUID().toString());
+            flowCtx.setVars(new HashMap<>(params));
+            flowCtx.setSession(ctx.session);
+            flowCtx.setOutputModel(ctx.outputModel);
+            // 同步主路径:从 startNodeId 推到 endEvent
+            DecisionFlowState state = flowEngine.start(ctx.request.getFlowId(), flowCtx);
+            if (DecisionFlowState.STATUS_WAITING_CALLBACK.equals(state.getStatus())
+                || DecisionFlowState.STATUS_PENDING_ASYNC.equals(state.getStatus())) {
+                throw new DecisionAsyncPendingException(
+                    state.getFlowRunId(), state.getWaitRef(), state.getCurrentNodeId());
+            }
+            if (DecisionFlowState.STATUS_FAILED.equals(state.getStatus())) {
+                throw new FlowExecutionException(state.getErrorMessage());
+            }
+            ctx.flowRunId = state.getFlowRunId();
+            ctx.response = new ExecutionResponseImpl();
+            ctx.execMessageItems = ctx.session.getExecMessageItems();
+            log.info("[FLOW-CUSTOM] completed: flowRunId={} status={}",
+                ctx.flowRunId, state.getStatus());
+        } catch (DecisionAsyncPendingException e) {
+            throw e;
+        } catch (FlowExecutionException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new FlowExecutionException("Custom flow execution failed: " + e.getMessage(), e);
+        } finally {
+            ctx.flowExecutionTime = System.currentTimeMillis() - stepStartTime;
+        }
+    }
+
+    /**
+     * V5.x 老 Flowable 路径。保留以供回滚,Step 7 拆 Flowable 时整体删除。
+     */
+    private void executeDecisionFlowLegacy(ExecutionContext ctx) {
         // 把 loanZone/orbitCode 加上 applicant/order facts 一起作为决策流输入参数传入
         Map<String, Object> params = buildProcessVariables(ctx.request);
 
@@ -516,6 +601,66 @@ public class DecisionServiceImpl implements IDecisionService {
         );
     }
 
+    private void savePendingLog(ExecutionContext ctx, DecisionAsyncPendingException asyncFlowEx) {
+        ctx.totalExecutionTime = System.currentTimeMillis() - ctx.totalStartTime;
+
+        Map<String, Object> entityDataMap = new HashMap<>();
+        for (Map.Entry<String, LazyGeneralEntity> entry : ctx.insertedEntities.entrySet()) {
+            String clazz = entry.getKey();
+            LazyGeneralEntity entity = entry.getValue();
+            Map<String, Object> entityFields = new HashMap<>();
+            for (String field : entity.getLoadedFields()) {
+                entityFields.put(field, entity.get(field));
+            }
+            entityDataMap.put(clazz, entityFields);
+            ctx.totalLoadedFields += entity.getLoadedFields().size();
+        }
+
+        Map<String, Object> pendingInfo = new HashMap<>();
+        pendingInfo.put("asyncFlowRunId", asyncFlowEx.getWaitRef());
+        pendingInfo.put("userTaskNodeId", asyncFlowEx.getWaitRef());
+        pendingInfo.put("pendingNodeId", asyncFlowEx.getCurrentNodeId());
+        pendingInfo.put("waitType", asyncFlowEx.getWaitType());
+
+        decisionLogService.saveDecisionLog(
+                ctx.request.getUserId(),
+                ctx.request.getOrderNo(),
+                ctx.request.getFlowId(),
+                asyncFlowEx.getWaitRef(),
+                ctx.request.getRulePackagePath(),
+                null,
+                "PENDING",
+                null,
+                null,
+                ctx.inputParams,
+                pendingInfo,
+                entityDataMap,
+                null,
+                null,
+                ctx.queryVariableDefTime,
+                ctx.loadKnowledgeTime,
+                ctx.createSessionTime,
+                ctx.insertEntityTime,
+                0,
+                ctx.totalExecutionTime,
+                ctx.totalLoadedFields,
+                null,
+                null,
+                ctx.grayResolution
+        );
+    }
+
+    private DecisionAsyncPendingException extractAsyncFlowPendingException(Throwable e) {
+        Throwable current = e;
+        while (current != null) {
+            if (current instanceof DecisionAsyncPendingException) {
+                return (DecisionAsyncPendingException) current;
+            }
+            current = current.getCause();
+        }
+        return null;
+    }
+
     private void savePendingLog(ExecutionContext ctx, AsyncDataSourcePendingException asyncEx) {
         ctx.totalExecutionTime = System.currentTimeMillis() - ctx.totalStartTime;
 
@@ -683,6 +828,7 @@ public class DecisionServiceImpl implements IDecisionService {
         KnowledgeSession session;
         Map<String, LazyGeneralEntity> insertedEntities = new HashMap<>();
         OutputModel outputModel;
+        String flowRunId;
 
         Map<String, Object> inputParams;
         Map<String, Object> resultData;

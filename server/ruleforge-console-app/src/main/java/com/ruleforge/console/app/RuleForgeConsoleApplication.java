@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
+import com.ruleforge.decision.config.RuleForgeDecisionAutoConfiguration;
 import com.ruleforge.decision.service.impl.DatasourceServiceImpl;
 import com.ruleforge.decision.service.impl.GrayStrategyServiceImpl;
 import com.ruleforge.decision.service.impl.RuleVariableDefServiceImpl;
@@ -20,11 +21,14 @@ import com.ruleforge.decision.service.impl.ShadowConfigServiceImpl;
 // 决策模块(ruleforge-decision)仍在 nested jar 里,Spring Boot 4 下需要:
 // - @Import 它的 Service 实现(boot 不会扫 nested jar 里的 @Component)
 // - @MapperScan 显式注册它的 mapper 接口 — 由 DecisionMybatisPlusConfig 统一注册
+// - @Import RuleForgeDecisionAutoConfiguration 启用 lib 内的 @Component (BpmnXmlParser /
+//   FlowDefinitionRepo / NodeExecutor / 等),boot 不会扫 nested jar 里的 @Component
 @Import({
         DatasourceServiceImpl.class,
         GrayStrategyServiceImpl.class,
         RuleVariableDefServiceImpl.class,
-        ShadowConfigServiceImpl.class
+        ShadowConfigServiceImpl.class,
+        RuleForgeDecisionAutoConfiguration.class
 })
 public class RuleForgeConsoleApplication {
 

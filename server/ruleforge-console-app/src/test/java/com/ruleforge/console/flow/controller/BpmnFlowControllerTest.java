@@ -4,6 +4,7 @@ import com.ruleforge.console.flow.converter.FlowXmlConverter;
 import com.ruleforge.console.service.RuleForgeRepositoryService;
 import com.ruleforge.console.util.EnvironmentUtils;
 import com.ruleforge.console.model.User;
+import com.ruleforge.decision.flow.parser.BpmnXmlParser;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.repository.Deployment;
 import org.flowable.engine.repository.DeploymentBuilder;
@@ -14,6 +15,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -40,7 +43,12 @@ class BpmnFlowControllerTest {
         repositoryService = mock(RuleForgeRepositoryService.class);
         flowableRepositoryService = mock(RepositoryService.class);
         flowXmlConverter = new FlowXmlConverter();
-        controller = new BpmnFlowController(repositoryService, flowableRepositoryService, flowXmlConverter);
+        BpmnXmlParser parser = new BpmnXmlParser();
+        RestTemplate restTemplate = mock(RestTemplate.class);
+        controller = new BpmnFlowController(repositoryService, flowableRepositoryService,
+            flowXmlConverter, parser, restTemplate);
+        // V5.20+: 注入 ruleforge.exec.url(原本 @Value 拿,这里测试用 ReflectionTestUtils 注入)
+        ReflectionTestUtils.setField(controller, "execUrl", "http://test-exec:8280");
         envUtilsMock = mockStatic(EnvironmentUtils.class);
         User testUser = mock(User.class);
         when(testUser.getUsername()).thenReturn("testuser");
@@ -171,8 +179,8 @@ class BpmnFlowControllerTest {
         @Test
         @DisplayName("部署 BPMN 文件到 Flowable 引擎")
         void shouldDeployBpmnToFlowable() throws Exception {
-            // Given 仓库中存在 BPMN 文件
-            String bpmnContent = "<bpmn:definitions><bpmn:process id=\"test\"/></bpmn:definitions>";
+            // Given 仓库中存在 BPMN 文件(声明 xmlns:bpmn,BpmnXmlParser 校验格式)
+            String bpmnContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"><bpmn:process id=\"test\"><bpmn:startEvent id=\"start\"/><bpmn:endEvent id=\"end\"/></bpmn:process></bpmn:definitions>";
             InputStream is = new ByteArrayInputStream(bpmnContent.getBytes(StandardCharsets.UTF_8));
             when(repositoryService.readFile("flow.xml", null)).thenReturn(is);
 
@@ -197,8 +205,8 @@ class BpmnFlowControllerTest {
         @Test
         @DisplayName("部署指定版本")
         void shouldDeploySpecificVersion() throws Exception {
-            // Given 仓库中存在 BPMN 文件的指定版本
-            String bpmnContent = "<bpmn:definitions><bpmn:process id=\"v1\"/></bpmn:definitions>";
+            // Given 仓库中存在 BPMN 文件的指定版本(声明 xmlns:bpmn,BpmnXmlParser 校验格式)
+            String bpmnContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"><bpmn:process id=\"v1\"><bpmn:startEvent id=\"start\"/><bpmn:endEvent id=\"end\"/></bpmn:process></bpmn:definitions>";
             InputStream is = new ByteArrayInputStream(bpmnContent.getBytes(StandardCharsets.UTF_8));
             when(repositoryService.readFile("flow.xml", "v1.0")).thenReturn(is);
 

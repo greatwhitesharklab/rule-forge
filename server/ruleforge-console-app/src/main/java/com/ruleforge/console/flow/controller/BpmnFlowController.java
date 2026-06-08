@@ -5,18 +5,22 @@ import com.ruleforge.console.model.User;
 import com.ruleforge.console.service.RuleForgeRepositoryService;
 import com.ruleforge.console.flow.converter.FlowXmlConverter;
 import com.ruleforge.console.util.EnvironmentUtils;
+import com.ruleforge.decision.flow.ir.FlowDefinition;
+import com.ruleforge.decision.flow.parser.BpmnXmlParser;
 import com.ruleforge.exception.RuleException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.flowable.engine.RepositoryService;
-import org.flowable.engine.repository.ProcessDefinition;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
@@ -28,6 +32,11 @@ public class BpmnFlowController {
     private final RuleForgeRepositoryService repositoryService;
     private final RepositoryService flowableRepositoryService;
     private final FlowXmlConverter flowXmlConverter;
+    private final BpmnXmlParser bpmnXmlParser;
+    private final RestTemplate execRestTemplate;
+
+    @Value("${ruleforge.exec.url}")
+    private String execUrl;
 
     @GetMapping(value = "/load", produces = "text/xml;charset=UTF-8")
     public ResponseEntity<String> loadBpmn(@RequestParam String file,
@@ -66,6 +75,8 @@ public class BpmnFlowController {
         try {
             User user = EnvironmentUtils.getLoginUser(null);
             repositoryService.saveFile(file, content, newVersion, null, user);
+            // V5.20: save 之后通知 executor 清缓存。失败不影响 save 自身结果。
+            notifyExecutorInvalidate(file);
             return "{\"result\":true}";
         } catch (Exception ex) {
             throw new RuleException(ex);
@@ -87,6 +98,14 @@ public class BpmnFlowController {
                 throw new RuleException("File [" + file + "] not exist.");
             }
             String bpmnXml = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+
+            // V5.20+: 走自建执行器路径。解析 IR(校验 XML 格式),然后通知 executor invalidate。
+            // 暂时保留 Flowable 部署以保 V5.x 老 evaluate 兼容(Step 7 完全拆 Flowable 时再删)。
+            FlowDefinition def = bpmnXmlParser.parse(bpmnXml);
+            log.info("[DEPLOY-BPMN] parsed flowId={} nodes={} xmlHash={}",
+                def.getProcessId(), def.getNodes().size(), def.getSourceXmlHash());
+            notifyExecutorInvalidate(file);
+
             String deploymentId = flowableRepositoryService.createDeployment()
                     .addString(file + ".bpmn20.xml", bpmnXml)
                     .name(file)
@@ -111,6 +130,24 @@ public class BpmnFlowController {
             return flowXmlConverter.convertToBpmn(oldXml);
         } catch (Exception ex) {
             throw new RuleException(ex);
+        }
+    }
+
+    /**
+     * 通知 executor 端清掉 FlowDefinition 缓存。
+     * <p>
+     * POST {ruleforge.exec.url}/flow/invalidate?flowId=xxx — 失败仅 warn,
+     * 不会影响 saveBpmn / deployBpmn 自身结果(executor 下次 evaluate 时会 lazy 拉最新)。
+     */
+    private void notifyExecutorInvalidate(String file) {
+        try {
+            String base = execUrl.endsWith("/") ? execUrl.substring(0, execUrl.length() - 1) : execUrl;
+            String url = base + "/ruleforge/flow/invalidate?flowId="
+                + URLEncoder.encode(file, StandardCharsets.UTF_8);
+            execRestTemplate.postForEntity(url, null, String.class);
+        } catch (Exception ex) {
+            log.warn("[FLOW-INVALIDATE] notify executor failed for flowId={} (will lazy-refresh on next evaluate): {}",
+                file, ex.getMessage());
         }
     }
 }

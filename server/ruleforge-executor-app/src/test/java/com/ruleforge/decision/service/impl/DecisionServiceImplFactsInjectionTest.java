@@ -63,7 +63,10 @@ class DecisionServiceImplFactsInjectionTest {
                 mock(com.ruleforge.decision.service.IShadowExecutionService.class),
                 mock(com.ruleforge.decision.service.IGrayStrategyService.class),
                 mock(org.flowable.engine.RuntimeService.class),
-                new io.micrometer.core.instrument.simple.SimpleMeterRegistry()
+                new io.micrometer.core.instrument.simple.SimpleMeterRegistry(),
+                // V5.20+: 自建决策流执行器 — injectFacts 测不到这些,但构造器要
+                mock(com.ruleforge.decision.flow.engine.FlowEngine.class),
+                mock(com.ruleforge.decision.flow.engine.FlowDefinitionRepo.class)
         );
     }
 

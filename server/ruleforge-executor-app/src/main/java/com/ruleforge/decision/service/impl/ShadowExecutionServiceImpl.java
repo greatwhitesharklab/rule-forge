@@ -8,8 +8,12 @@ import com.ruleforge.runtime.KnowledgeSessionFactory;
 import com.ruleforge.runtime.response.ExecutionResponseImpl;
 import com.ruleforge.runtime.service.KnowledgeService;
 import com.ruleforge.decision.model.OutputModel;
+import com.ruleforge.decision.entity.DecisionFlowState;
 import com.ruleforge.decision.entity.RuleVariableDef;
 import com.ruleforge.decision.entity.ShadowConfig;
+import com.ruleforge.decision.exception.FlowExecutionException;
+import com.ruleforge.decision.flow.engine.FlowContext;
+import com.ruleforge.decision.flow.engine.FlowEngine;
 import com.ruleforge.decision.lazy.LazyEntityFactory;
 import com.ruleforge.decision.lazy.LazyGeneralEntity;
 import com.ruleforge.decision.service.IRuleVariableDefService;
@@ -20,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.runtime.ProcessInstance;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +33,7 @@ import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -43,6 +49,10 @@ public class ShadowExecutionServiceImpl implements IShadowExecutionService {
     private final IShadowDecisionLogService shadowDecisionLogService;
     private final IShadowComparisonService shadowComparisonService;
     private final RuntimeService flowableRuntimeService;
+    // V5.20+ 自建决策流执行器
+    private final FlowEngine flowEngine;
+    @Value("${ruleforge.flow.executor-engine:legacy}")
+    private String executorEngine;
 
     @Override
     @Async("shadowExecutor")
@@ -113,8 +123,30 @@ public class ShadowExecutionServiceImpl implements IShadowExecutionService {
             inputParams = session.getParameters();
 
             stepStartTime = System.currentTimeMillis();
-            ProcessInstance processInstance = flowableRuntimeService.startProcessInstanceByKey(shadowFlowId);
-            Map<String, Object> resultVars = flowableRuntimeService.getVariables(processInstance.getId());
+            if ("custom".equalsIgnoreCase(executorEngine)) {
+                // V5.20+: 自建 FlowEngine
+                FlowContext flowCtx = new FlowContext();
+                flowCtx.setFlowRunId(UUID.randomUUID().toString());
+                flowCtx.setVars(new HashMap<>());
+                flowCtx.setSession(session);
+                flowCtx.setOutputModel(outputModel);
+                DecisionFlowState state = flowEngine.start(shadowFlowId, flowCtx);
+                if (DecisionFlowState.STATUS_FAILED.equals(state.getStatus())) {
+                    throw new FlowExecutionException("Shadow flow failed: " + state.getErrorMessage());
+                }
+                if (DecisionFlowState.STATUS_WAITING_CALLBACK.equals(state.getStatus())
+                    || DecisionFlowState.STATUS_PENDING_ASYNC.equals(state.getStatus())) {
+                    // Shadow 路径遇 USER_TASK: 视为 FAIL(陪跑不挂起,直接跳过)
+                    log.warn("[SHADOW-CUSTOM] flow hit USER_TASK, recording as FAILED: shadowFlowId={} waitRef={}",
+                        shadowFlowId, state.getWaitRef());
+                    throw new FlowExecutionException("Shadow flow suspended (USER_TASK) — not supported in shadow path");
+                }
+                log.info("[SHADOW-CUSTOM] completed: shadowFlowId={} status={}", shadowFlowId, state.getStatus());
+            } else {
+                // V5.x Flowable 老路径
+                ProcessInstance processInstance = flowableRuntimeService.startProcessInstanceByKey(shadowFlowId);
+                Map<String, Object> resultVars = flowableRuntimeService.getVariables(processInstance.getId());
+            }
             response = new ExecutionResponseImpl();
             flowExecutionTime = System.currentTimeMillis() - stepStartTime;
 
