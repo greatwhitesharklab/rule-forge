@@ -8,8 +8,8 @@ title: 贡献指南
 
 ## 贡献方式
 
-- [提交 Bug](https://github.com/FredGoo/rule-forge/issues/new?template=bug_report.md)
-- [功能建议](https://github.com/FredGoo/rule-forge/issues/new?template=feature_request.md)
+- [提交 Bug](https://github.com/greatwhitesharklab/rule-forge/issues/new?template=bug_report.md)
+- [功能建议](https://github.com/greatwhitesharklab/rule-forge/issues/new?template=feature_request.md)
 - 改进文档
 - 提交代码
 
@@ -71,4 +71,4 @@ docs: 更新 API 文档
 
 ## 行为准则
 
-参见 [CODE_OF_CONDUCT.md](https://github.com/FredGoo/rule-forge/blob/main/CODE_OF_CONDUCT.md)。
+参见 [CODE_OF_CONDUCT.md](https://github.com/greatwhitesharklab/rule-forge/blob/main/CODE_OF_CONDUCT.md)。

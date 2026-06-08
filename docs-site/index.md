@@ -14,7 +14,7 @@ hero:
       link: /tutorial/sme-loan-approval
     - theme: alt
       text: GitHub
-      link: https://github.com/FredGoo/rule-forge
+      link: https://github.com/greatwhitesharklab/rule-forge
 
 features:
   - icon: 🤖

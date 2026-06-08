@@ -7,7 +7,7 @@ title: Docker Compose 部署
 ## 一键启动
 
 ```bash
-git clone https://github.com/FredGoo/rule-forge.git
+git clone https://github.com/greatwhitesharklab/rule-forge.git
 cd rule-forge
 docker compose up -d
 ```
