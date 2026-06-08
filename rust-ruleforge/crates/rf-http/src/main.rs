@@ -1,14 +1,31 @@
 //! `rf-http` binary entry point.
 //!
-//! Phase 1: axum server on `HTTP_PORT` (default 8281) with only `/health`.
-//! Phase 5+: add `/ruleforge/evaluate`, `/flow/decision`, `/flow/invalidate`.
+//! Phase 5 surface:
+//! - `POST /ruleforge/evaluate`        run a flow synchronously
+//! - `POST /ruleforge/flow/decision`   resume a suspended flow
+//! - `POST /ruleforge/flow/invalidate` drop a flow_id from the cache
+//! - `GET  /ruleforge/flow/load`       proxy to the Java console
+//! - `GET  /health`                    liveness probe
+//!
+//! Wiring:
+//! - `FlowDefinitionRepo` caches parsed BPMN, with `HttpFlowLoader`
+//!   hitting the Java console on miss.
+//! - `ExecutorRegistry` wires `MockRuleEngine` for v0 (Phase 7+ could
+//!   swap in a real engine).
+//! - `InflightStore` keeps suspended flow contexts in memory (Phase 6
+//!   swaps this out for pg `rust_decision_flow_state`).
 
 use std::net::SocketAddr;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use anyhow::Context;
 use clap::Parser;
-use rf_http::routes::health;
+use rf_executor::dispatch::ExecutorRegistry;
+use rf_http::flow_def_repo::{FlowDefinitionRepo, HttpFlowLoader};
+use rf_http::routes::{decision, evaluate, health, invalidate, load};
+use rf_http::state::AppState;
+use rf_rule::mock::MockRuleEngine;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -46,7 +63,38 @@ async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     info!(?cli, "rf-http starting");
 
-    let app = axum::Router::new().route("/health", axum::routing::get(health::health));
+    let loader = Arc::new(HttpFlowLoader {
+        base_url: cli.console_url.clone(),
+        client: reqwest::Client::builder()
+            .build()
+            .context("build reqwest client")?,
+    });
+    let repo = Arc::new(FlowDefinitionRepo::new(loader));
+    let registry = Arc::new(ExecutorRegistry::with_rule_engine(Arc::new(MockRuleEngine)));
+    let state = AppState::new(
+        repo,
+        registry,
+        cli.worker_id.clone(),
+        cli.console_url.clone(),
+        cli.pg_url.clone(),
+    );
+
+    let app = axum::Router::new()
+        .route("/health", axum::routing::get(health::health))
+        .route(
+            "/ruleforge/evaluate",
+            axum::routing::post(evaluate::evaluate),
+        )
+        .route(
+            "/ruleforge/flow/decision",
+            axum::routing::post(decision::decide),
+        )
+        .route(
+            "/ruleforge/flow/invalidate",
+            axum::routing::post(invalidate::invalidate),
+        )
+        .route("/ruleforge/flow/load", axum::routing::get(load::load))
+        .with_state(state);
 
     let addr = SocketAddr::from_str(&format!("0.0.0.0:{}", cli.http_port))
         .with_context(|| format!("invalid HTTP_PORT={}", cli.http_port))?;

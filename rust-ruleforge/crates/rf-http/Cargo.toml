@@ -27,3 +27,9 @@ clap = { workspace = true }
 dashmap = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
+thiserror = { workspace = true }
+async-trait = "0.1"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
