@@ -9,11 +9,14 @@ import org.springframework.context.annotation.Primary;
 import javax.sql.DataSource;
 
 /**
- * Executor 数据源配置 — ruleforge + flowable 两个库。
+ * Executor 数据源配置 — ruleforge / clickhouse。
  *
  * <p>和 console-app 的 DataSourceConfig 用同样模式,绕开 Spring Boot 4
  * 的 DataSourceAutoConfiguration,用 @Value + 直接 new HikariDataSource
  * 才能拿到显式的 poolName。
+ *
+ * <p>V5.21+: flowable DataSource 已删除 — 决策流由自建 FlowEngine 驱动,
+ * 不再走 Flowable 8 引擎,flowable_db 也不再被任何 Bean 引用。
  */
 @Configuration
 public class DataSourceConfig {
@@ -26,15 +29,6 @@ public class DataSourceConfig {
 
     @Value("${RF_DB_PASSWORD:}")
     private String rfDbPassword;
-
-    @Value("${FLOWABLE_DB_URL}")
-    private String flowableDbUrl;
-
-    @Value("${FLOWABLE_DB_USERNAME:root}")
-    private String flowableDbUsername;
-
-    @Value("${FLOWABLE_DB_PASSWORD:}")
-    private String flowableDbPassword;
 
     @Value("${CH_DB_URL:jdbc:clickhouse://192.168.3.36:8123/ruleforge_analytics}")
     private String chDbUrl;
@@ -49,11 +43,6 @@ public class DataSourceConfig {
     @Bean
     public DataSource ruleforgeDataSource() {
         return buildPool("ExecutorCloudSqlCP", rfDbUrl, rfDbUsername, rfDbPassword, 10);
-    }
-
-    @Bean("flowable")
-    public DataSource flowableDataSource() {
-        return buildPool("ExecutorFlowableSqlCP", flowableDbUrl, flowableDbUsername, flowableDbPassword, 5);
     }
 
     @Bean("clickhouseDataSource")

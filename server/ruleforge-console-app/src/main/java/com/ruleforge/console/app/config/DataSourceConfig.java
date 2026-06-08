@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Primary;
 import javax.sql.DataSource;
 
 /**
- * 多数据源配置：app / ruleforge / flowable。
+ * 多数据源配置:app / ruleforge / clickhouse。
  *
  * <p>注意:不能用 {@code DataSourceBuilder + @ConfigurationProperties},
  * Spring Boot 4 下 Hikari 池的 pool-name / maximum-pool-size 等属性绑不上,
@@ -19,6 +19,9 @@ import javax.sql.DataSource;
  * <p>改用 {@code @Value} 显式注入,然后直接 new {@link HikariDataSource} 并
  * 设置 poolName / connectionTimeout 等。这样既绕开 Spring Boot 4 的
  * {@link DataSourceAutoConfiguration}(已 exclude),又能精确控制每个池。
+ *
+ * <p>V5.21+: flowable DataSource 已删除 — 决策流由自建 FlowEngine 驱动,
+ * 不再走 Flowable 8 引擎,flowable_db 也不再被任何 Bean 引用。
  */
 @Configuration
 public class DataSourceConfig {
@@ -41,15 +44,6 @@ public class DataSourceConfig {
     @Value("${RF_DB_PASSWORD:}")
     private String rfDbPassword;
 
-    @Value("${FLOWABLE_DB_URL}")
-    private String flowableDbUrl;
-
-    @Value("${FLOWABLE_DB_USERNAME:root}")
-    private String flowableDbUsername;
-
-    @Value("${FLOWABLE_DB_PASSWORD:}")
-    private String flowableDbPassword;
-
     @Value("${CH_DB_URL:jdbc:clickhouse://192.168.3.36:8123/ruleforge_analytics}")
     private String chDbUrl;
 
@@ -68,11 +62,6 @@ public class DataSourceConfig {
     @Bean
     public DataSource ruleforgeDataSource() {
         return buildPool("UruleCloudSqlCP", rfDbUrl, rfDbUsername, rfDbPassword, 10);
-    }
-
-    @Bean("flowable")
-    public DataSource flowableDataSource() {
-        return buildPool("FlowableCloudSqlCP", flowableDbUrl, flowableDbUsername, flowableDbPassword, 5);
     }
 
     @Bean("clickhouseDataSource")

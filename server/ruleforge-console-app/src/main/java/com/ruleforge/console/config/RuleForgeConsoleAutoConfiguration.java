@@ -32,7 +32,7 @@ import org.springframework.context.annotation.*;
         // V5.17: user/permission audit log (Entity / Mapper / Service / Controller)
         "com.ruleforge.console.audit",
         // Spring Boot 4 不扫 nested jar 的 @Component,补齐决策模块的所有包:
-        //   config     — FlowableConfig 等 @Configuration
+        //   config     — 决策模块 @Configuration(灰度/陪跑/状态恢复等)
         //   connector  — 5 个数据源连接器(AdvanceAi/Jdbc/Rest/Pkl + TokenManager)
         //   repository — DatasourceRepositoryImpl(包装 mappers 给 Service 用)
         // decision 的 service.impl 由 RuleForgeConsoleApplication 显式 @Import,

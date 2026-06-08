@@ -26,19 +26,6 @@ spring:
         validation-timeout: 3000
         connection-test-query: SELECT 1
         pool-name: ExecutorCloudSqlCP
-    # Flowable 独立库 — 详见 commit 2 注释
-    flowable:
-      jdbcUrl: ${FLOWABLE_DB_URL:jdbc:mysql://192.168.3.36:3306/flowable_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true}
-      username: ${FLOWABLE_DB_USERNAME:root}
-      password: ${FLOWABLE_DB_PASSWORD:}
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      hikari:
-        maximum-pool-size: 5
-        minimum-idle: 1
-        connection-timeout: 60000
-        idle-timeout: 300000
-        max-lifetime: 1200000
-        pool-name: ExecutorFlowableSqlCP
 
 ruleforge:
   knowledgeUpdateCycleV2: 300
@@ -53,13 +40,6 @@ ruleforge:
     recovery-interval-ms: 30000
     recovery-initial-delay-ms: 60000
     worker-id: ${HOSTNAME:flow-recovery-1}
-
-flowable:
-  # 改用独立库 (见 spring.datasource.flowable),不让 Flowable 自 init 脚本
-  # 跟 Flyway 管理的 ruleforge_db 抢同一张 schema
-  datasource: flowable
-  database-schema-update: true
-  async-executor-activate: false
 
 # 延迟加载配置
 lazy-load:
