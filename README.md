@@ -14,12 +14,7 @@
 
 </div>
 
-> **⚠️ 项目已迁移**
-> 本仓库(`FredGoo/rule-forge`)已迁移至新组织 **[greatwhitesharklab/rule-forge](https://github.com/greatwhitesharklab/rule-forge)**。
-> 本仓库仅作历史归档,新代码、PR、Issue 请到 [greatwhitesharklab/rule-forge](https://github.com/greatwhitesharklab/rule-forge) 提交。
-> 在线文档: [greatwhitesharklab.github.io/rule-forge](https://greatwhitesharklab.github.io/rule-forge/)
-
-> **📌 项目状态：活跃开发中**
+> **⚠️ 项目状态：活跃开发中**
 > Phase 1-11 已完成，Phase 12+ 规划中。详见 [路线图](docs/roadmap.md) 和 [更新日志](CHANGELOG.md)。
 
 ---
