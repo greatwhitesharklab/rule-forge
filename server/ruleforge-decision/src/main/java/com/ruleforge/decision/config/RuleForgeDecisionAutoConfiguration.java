@@ -23,9 +23,11 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan(basePackages = {
         "com.ruleforge.decision.service.impl",
         "com.ruleforge.decision.connector",
-        // BPMN JavaDelegates — 共享给 console-app 和 executor-app
-        // (executor-app 跑 /api/loan/evaluate 启动 BPMN,delegate 必须在那里)
-        "com.ruleforge.decision.flow.delegate"
+        // V5.20+: 自建决策流执行器 — 共享给 console-app(解析 XML)和 executor-app(跑 evaluate)
+        "com.ruleforge.decision.flow.engine",
+        "com.ruleforge.decision.flow.executor",
+        "com.ruleforge.decision.flow.parser",
+        "com.ruleforge.decision.flow.state"
 })
 @MapperScan(basePackages = {
         "com.ruleforge.decision.mapper"
