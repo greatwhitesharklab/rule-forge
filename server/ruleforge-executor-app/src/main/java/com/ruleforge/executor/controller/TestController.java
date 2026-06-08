@@ -25,17 +25,14 @@ public class TestController {
     private final DatasourceRoutingProvider datasourceRoutingProvider;
 
     @RequestMapping("/do")
-    public String doTest(@RequestParam("path") String path,
-                         @RequestParam(value = "flow", required = false) String flow) throws Exception {
+    public String doTest(@RequestParam("path") String path) throws Exception {
         KnowledgePackage knowledgePackage = knowledgeService.getKnowledge(path);
         KnowledgeSession session = KnowledgeSessionFactory.newKnowledgeSession(knowledgePackage);
 
-        if (flow != null && !flow.isEmpty()) {
-            // Flow execution is now handled by Flowable BPMN engine in console app.
-            // Delegate to console's REST endpoint.
-            return "Flow execution requires Flowable engine. Use console /flow/deploy and Flowable RuntimeService.";
-        }
-
+        // V5.21+: 删 flow 参数分支 — Flowable 路径已删,evaluate 走 console 侧
+        // TestController.doTest(FlowEngine 路径,见 console-app /doTest) 或主路径 /api/loan/evaluate
+        // (executor-app 自己的 DecisionServiceImpl.executeDecisionFlow)。
+        // 前端不再传 flow=xxx,留纯规则测试路径。
         RuleExecutionResponse response = session.fireRules();
         return response.toString();
     }

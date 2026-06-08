@@ -11,7 +11,6 @@ import com.ruleforge.exception.RuleException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
-import org.flowable.engine.RepositoryService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 public class BpmnFlowController {
 
     private final RuleForgeRepositoryService repositoryService;
-    private final RepositoryService flowableRepositoryService;
     private final FlowXmlConverter flowXmlConverter;
     private final BpmnXmlParser bpmnXmlParser;
     private final RestTemplate execRestTemplate;
@@ -99,19 +97,15 @@ public class BpmnFlowController {
             }
             String bpmnXml = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 
-            // V5.20+: 走自建执行器路径。解析 IR(校验 XML 格式),然后通知 executor invalidate。
-            // 暂时保留 Flowable 部署以保 V5.x 老 evaluate 兼容(Step 7 完全拆 Flowable 时再删)。
+            // V5.21+: 不再调 Flowable 部署。改为解析 IR(校验 XML 格式) + 通知 executor
+            // invalidate。返回 deploymentId 用 file 名占位(前端 alert 成功,字段语义保留)。
+            // 真正的"部署"语义由 executor 端 evaluate 时 lazy 拉最新 BPMN 完成。
             FlowDefinition def = bpmnXmlParser.parse(bpmnXml);
             log.info("[DEPLOY-BPMN] parsed flowId={} nodes={} xmlHash={}",
                 def.getProcessId(), def.getNodes().size(), def.getSourceXmlHash());
             notifyExecutorInvalidate(file);
 
-            String deploymentId = flowableRepositoryService.createDeployment()
-                    .addString(file + ".bpmn20.xml", bpmnXml)
-                    .name(file)
-                    .deploy()
-                    .getId();
-            return "{\"deploymentId\":\"" + deploymentId + "\"}";
+            return "{\"deploymentId\":\"" + file + "\"}";
         } catch (Exception ex) {
             throw new RuleException(ex);
         }

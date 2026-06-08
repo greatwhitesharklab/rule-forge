@@ -28,13 +28,15 @@ import com.ruleforge.console.model.DoTestDto;
 import com.ruleforge.console.model.ReadTestDataExcelResult;
 import com.ruleforge.console.service.TestService;
 import com.ruleforge.console.util.ExcelUtils;
+import com.ruleforge.decision.entity.DecisionFlowState;
+import com.ruleforge.decision.exception.FlowExecutionException;
+import com.ruleforge.decision.flow.engine.FlowContext;
+import com.ruleforge.decision.flow.engine.FlowEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -55,6 +57,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * 测试控制器 — 单条测试、批量测试、Excel 导入导出
@@ -88,7 +91,8 @@ public class TestController {
     private final TestService testService;
     private final TestDataService testDataService;
     private final BatchTestService batchTestService;
-    private final RuntimeService flowableRuntimeService;
+    // V5.21+: 自建决策流执行器(原 Flowable RuntimeService)
+    private final FlowEngine flowEngine;
 
     // ==================== 单条测试 ====================
 
@@ -138,12 +142,25 @@ public class TestController {
                     flowVariables.putAll((Map<String, Object>) obj);
                 }
             }
-            ProcessInstance processInstance = flowableRuntimeService.startProcessInstanceByKey(flowId, flowVariables);
+            // V5.21+: 走自建 FlowEngine(原 Flowable startProcessInstanceByKey)
+            // RuleNodeExecutor 内部对 outputModel == null 走 NoOp 兜底(V5.18 V18 + 后续
+            // PR 加的 guard,见 RuleNodeExecutor.java line 67),所以 console-app 测试路径
+            // 不引入 executor-app 的 OutputModel 类,守住模块边界。
+            FlowContext flowCtx = new FlowContext();
+            flowCtx.setFlowRunId(UUID.randomUUID().toString());
+            flowCtx.setVars(new HashMap<>(flowVariables));
+            flowCtx.setSession(session);
+            DecisionFlowState state = flowEngine.start(flowId, flowCtx);
+            if (DecisionFlowState.STATUS_FAILED.equals(state.getStatus())) {
+                throw new FlowExecutionException(state.getErrorMessage());
+            }
+            // 把 FlowEngine 写回的 vars 同步回 facts(供前端展示 var-assign 后的值)
+            Map<String, Object> resultVars = flowCtx.getVars();
             for (Map.Entry<VariableCategory, Object> entry : facts.entrySet()) {
                 Object obj = entry.getValue();
                 if (obj instanceof GeneralEntity) {
                     String varName = entry.getKey().getName();
-                    Object updated = flowVariables.get(varName);
+                    Object updated = resultVars.get(varName);
                     if (updated != null) {
                         entry.setValue(updated);
                     }

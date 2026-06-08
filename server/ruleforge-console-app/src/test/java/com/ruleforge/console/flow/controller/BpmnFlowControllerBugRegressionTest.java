@@ -6,7 +6,6 @@ import com.ruleforge.console.util.EnvironmentUtils;
 import com.ruleforge.console.model.User;
 import com.ruleforge.decision.flow.parser.BpmnXmlParser;
 import com.ruleforge.exception.RuleException;
-import org.flowable.engine.RepositoryService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +34,6 @@ import static org.mockito.Mockito.*;
 class BpmnFlowControllerBugRegressionTest {
 
     private RuleForgeRepositoryService repositoryService;
-    private RepositoryService flowableRepositoryService;
     private FlowXmlConverter flowXmlConverter;
     private BpmnFlowController controller;
     private MockedStatic<EnvironmentUtils> envUtilsMock;
@@ -43,11 +41,11 @@ class BpmnFlowControllerBugRegressionTest {
     @BeforeEach
     void setUp() {
         repositoryService = mock(RuleForgeRepositoryService.class);
-        flowableRepositoryService = mock(RepositoryService.class);
         flowXmlConverter = new FlowXmlConverter();
         BpmnXmlParser parser = new BpmnXmlParser();
         RestTemplate restTemplate = mock(RestTemplate.class);
-        controller = new BpmnFlowController(repositoryService, flowableRepositoryService,
+        // V5.21+: 4-arg 构造器,不再注入 Flowable RepositoryService
+        controller = new BpmnFlowController(repositoryService,
             flowXmlConverter, parser, restTemplate);
         ReflectionTestUtils.setField(controller, "execUrl", "http://test-exec:8280");
         envUtilsMock = mockStatic(EnvironmentUtils.class);

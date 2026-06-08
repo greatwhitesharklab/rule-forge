@@ -28,11 +28,14 @@ import static org.mockito.Mockito.*;
  * TestController BDD 单元测试
  *
  * 覆盖场景：
- * 1. doTest - 规则执行应返回响应字符串
- * 2. doTest - flow 参数非空时返回 Flowable 提示信息
- * 3. doTest - knowledgeService 找不到包时应抛异常
- * 4. knowledge - 传入 packageId 应标记知识包为 dirty
- * 5. knowledge - 传入 null packageId 不应调用 markKnowledgeDirty
+ * 1. doTest - 规则执行应返回响应字符串(V5.21+: 1 参,纯规则路径,无 Flowable 分支)
+ * 2. doTest - knowledgeService 找不到包时应抛异常
+ * 3. knowledge - 传入 packageId 应标记知识包为 dirty
+ * 4. knowledge - 传入 null packageId 不应调用 markKnowledgeDirty
+ *
+ * 历史:曾有 `flow` 参数分支走 Flowable RuntimeService,V5.21 PR3 已删。
+ * 决策流测试改走 console-app `/doTest`(FlowEngine.start)或 executor-app
+ * DecisionServiceImpl.executeDecisionFlow 主路径。
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("TestController 单元测试")
@@ -49,8 +52,8 @@ class TestControllerTest {
     // ------------------------------------------------------------------ //
 
     @Test
-    @DisplayName("规则执行测试 - 无 flow 参数时正常执行规则并返回结果")
-    void doTest_withoutFlow_shouldExecuteRules() throws Exception {
+    @DisplayName("规则执行测试 - 正常执行规则并返回结果")
+    void doTest_shouldExecuteRules() throws Exception {
         // Given: knowledgeService 返回有效的 KnowledgePackage
         KnowledgePackage mockPackage = mock(KnowledgePackage.class);
         KnowledgeSession mockSession = mock(KnowledgeSession.class);
@@ -65,35 +68,13 @@ class TestControllerTest {
                     .thenReturn(mockSession);
             when(mockSession.fireRules()).thenReturn(mockResponse);
 
-            // When: 调用 doTest 不带 flow 参数
-            String result = testController.doTest("projectA/pkg1", null);
+            // When: 调用 doTest(单参,无 flow 字段)
+            String result = testController.doTest("projectA/pkg1");
 
             // Then: 应返回规则执行结果
             assertThat(result).isEqualTo(expectedResponse);
             verify(knowledgeService).getKnowledge("projectA/pkg1");
             verify(mockSession).fireRules();
-        }
-    }
-
-    @Test
-    @DisplayName("规则执行测试 - flow 参数非空时应返回 Flowable 提示信息")
-    void doTest_withFlow_shouldReturnFlowableMessage() throws Exception {
-        // Given: 提供了 flow 参数
-        KnowledgePackage mockPackage = mock(KnowledgePackage.class);
-        KnowledgeSession mockSession = mock(KnowledgeSession.class);
-
-        when(knowledgeService.getKnowledge("projectA/pkg1")).thenReturn(mockPackage);
-
-        try (MockedStatic<KnowledgeSessionFactory> factoryMock = mockStatic(KnowledgeSessionFactory.class)) {
-            factoryMock.when(() -> KnowledgeSessionFactory.newKnowledgeSession(mockPackage))
-                    .thenReturn(mockSession);
-
-            // When: 调用 doTest 并传入 flow 参数
-            String result = testController.doTest("projectA/pkg1", "flow-abc");
-
-            // Then: 应返回 Flowable 提示信息，不执行 fireRules
-            assertThat(result).contains("Flowable");
-            verify(mockSession, never()).fireRules();
         }
     }
 
@@ -104,7 +85,7 @@ class TestControllerTest {
         when(knowledgeService.getKnowledge("nonexistent")).thenThrow(new RuntimeException("Package not found"));
 
         // When & Then: 调用 doTest 应抛出异常
-        assertThatThrownBy(() -> testController.doTest("nonexistent", null))
+        assertThatThrownBy(() -> testController.doTest("nonexistent"))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Package not found");
     }

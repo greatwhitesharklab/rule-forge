@@ -5,9 +5,6 @@ import com.ruleforge.console.service.RuleForgeRepositoryService;
 import com.ruleforge.console.util.EnvironmentUtils;
 import com.ruleforge.console.model.User;
 import com.ruleforge.decision.flow.parser.BpmnXmlParser;
-import org.flowable.engine.RepositoryService;
-import org.flowable.engine.repository.Deployment;
-import org.flowable.engine.repository.DeploymentBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,7 +30,6 @@ import static org.mockito.Mockito.*;
 class BpmnFlowControllerTest {
 
     private RuleForgeRepositoryService repositoryService;
-    private RepositoryService flowableRepositoryService;
     private FlowXmlConverter flowXmlConverter;
     private BpmnFlowController controller;
     private MockedStatic<EnvironmentUtils> envUtilsMock;
@@ -41,12 +37,11 @@ class BpmnFlowControllerTest {
     @BeforeEach
     void setUp() {
         repositoryService = mock(RuleForgeRepositoryService.class);
-        flowableRepositoryService = mock(RepositoryService.class);
         flowXmlConverter = new FlowXmlConverter();
         BpmnXmlParser parser = new BpmnXmlParser();
         RestTemplate restTemplate = mock(RestTemplate.class);
-        controller = new BpmnFlowController(repositoryService, flowableRepositoryService,
-            flowXmlConverter, parser, restTemplate);
+        // V5.21+: 构造器去 flowableRepositoryService(deployBpmn 改为走自建路径)
+        controller = new BpmnFlowController(repositoryService, flowXmlConverter, parser, restTemplate);
         // V5.20+: 注入 ruleforge.exec.url(原本 @Value 拿,这里测试用 ReflectionTestUtils 注入)
         ReflectionTestUtils.setField(controller, "execUrl", "http://test-exec:8280");
         envUtilsMock = mockStatic(EnvironmentUtils.class);
@@ -173,33 +168,24 @@ class BpmnFlowControllerTest {
     }
 
     @Nested
-    @DisplayName("部署到 Flowable")
+    @DisplayName("部署 BPMN(V5.21+: 不再调 Flowable,改为 parse + invalidate)")
     class DeployBpmn {
 
         @Test
-        @DisplayName("部署 BPMN 文件到 Flowable 引擎")
-        void shouldDeployBpmnToFlowable() throws Exception {
+        @DisplayName("部署 BPMN 文件:解析 IR + 返回 file 名占位的 deploymentId")
+        void shouldDeployBpmnToFlowEngine() throws Exception {
             // Given 仓库中存在 BPMN 文件(声明 xmlns:bpmn,BpmnXmlParser 校验格式)
             String bpmnContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"><bpmn:process id=\"test\"><bpmn:startEvent id=\"start\"/><bpmn:endEvent id=\"end\"/></bpmn:process></bpmn:definitions>";
             InputStream is = new ByteArrayInputStream(bpmnContent.getBytes(StandardCharsets.UTF_8));
             when(repositoryService.readFile("flow.xml", null)).thenReturn(is);
 
-            DeploymentBuilder builder = mock(DeploymentBuilder.class);
-            when(flowableRepositoryService.createDeployment()).thenReturn(builder);
-            when(builder.addString(anyString(), anyString())).thenReturn(builder);
-            when(builder.name(anyString())).thenReturn(builder);
-            Deployment deployment = mock(Deployment.class);
-            when(deployment.getId()).thenReturn("deploy-123");
-            when(builder.deploy()).thenReturn(deployment);
-
             // When POST /flow/deploy file="flow.xml"
             String result = controller.deployBpmn("flow.xml", null);
 
-            // Then 应通过 Flowable RepositoryService 创建部署
-            verify(flowableRepositoryService).createDeployment();
-            verify(builder).deploy();
-            // And 返回 deploymentId
-            assertThat(result).contains("deploy-123");
+            // Then 返回 {"deploymentId":"flow.xml"} — file 名占位,前端 alert 成功
+            assertThat(result).isEqualTo("{\"deploymentId\":\"flow.xml\"}");
+            // And readFile 被调(读 BPMN XML 给 parser)
+            verify(repositoryService).readFile("flow.xml", null);
         }
 
         @Test
@@ -210,20 +196,12 @@ class BpmnFlowControllerTest {
             InputStream is = new ByteArrayInputStream(bpmnContent.getBytes(StandardCharsets.UTF_8));
             when(repositoryService.readFile("flow.xml", "v1.0")).thenReturn(is);
 
-            DeploymentBuilder builder = mock(DeploymentBuilder.class);
-            when(flowableRepositoryService.createDeployment()).thenReturn(builder);
-            when(builder.addString(anyString(), anyString())).thenReturn(builder);
-            when(builder.name(anyString())).thenReturn(builder);
-            Deployment deployment = mock(Deployment.class);
-            when(deployment.getId()).thenReturn("deploy-v1");
-            when(builder.deploy()).thenReturn(deployment);
-
             // When POST /flow/deploy file="flow.xml" version="v1.0"
             String result = controller.deployBpmn("flow.xml", "v1.0");
 
-            // Then 应部署指定版本的文件
+            // Then 应读指定版本 + 返回 file 名占位的 deploymentId
             verify(repositoryService).readFile("flow.xml", "v1.0");
-            assertThat(result).contains("deploy-v1");
+            assertThat(result).isEqualTo("{\"deploymentId\":\"flow.xml\"}");
         }
     }
 

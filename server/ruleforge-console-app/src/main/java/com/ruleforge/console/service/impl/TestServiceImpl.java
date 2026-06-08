@@ -15,10 +15,12 @@ import com.ruleforge.console.model.BatchTestFlowMap;
 import com.ruleforge.console.model.SaveProcessItemDto;
 import com.ruleforge.console.model.TestRuntimeErrorDto;
 import com.ruleforge.console.service.TestService;
+import com.ruleforge.decision.entity.DecisionFlowState;
+import com.ruleforge.decision.exception.FlowExecutionException;
+import com.ruleforge.decision.flow.engine.FlowContext;
+import com.ruleforge.decision.flow.engine.FlowEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -27,6 +29,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -34,7 +37,8 @@ import java.util.Map;
 public class TestServiceImpl implements TestService {
 
     private final ExternalRepository externalRepository;
-    private final RuntimeService flowableRuntimeService;
+    // V5.21+: 自建决策流执行器(原 Flowable RuntimeService)
+    private final FlowEngine flowEngine;
 
     @Override
     public SaveProcessItemDto doFlowTest(KnowledgePackage knowledgePackage, String flowId, ApplicationAllVariableCategoryMap row, BatchTestFlowMap flowMap) throws Exception {
@@ -62,7 +66,9 @@ public class TestServiceImpl implements TestService {
         if (StringUtils.hasText(flowId)) {
             saveProcessItemModel.setFlowId(flowId);
 
-            // Execute flow via Flowable
+            // V5.21+: 走自建 FlowEngine(原 Flowable startProcessInstanceByKey + getVariables)
+            // RuleNodeExecutor 对 outputModel == null 走 NoOp 兜底(见 RuleNodeExecutor.java line 67),
+            // 守住模块边界:console-app 不引入 executor-app 的 OutputModel。
             Map<String, Object> flowVariables = new HashMap<>();
             for (String name : row.keySet()) {
                 Object fact = row.get(name);
@@ -72,13 +78,20 @@ public class TestServiceImpl implements TestService {
                     flowVariables.putAll((Map<String, Object>) fact);
                 }
             }
-            ProcessInstance processInstance = flowableRuntimeService.startProcessInstanceByKey(flowId, flowVariables);
-            Map<String, Object> resultVars = flowableRuntimeService.getVariables(processInstance.getId());
+            FlowContext flowCtx = new FlowContext();
+            flowCtx.setFlowRunId(UUID.randomUUID().toString());
+            flowCtx.setVars(new HashMap<>(flowVariables));
+            flowCtx.setSession(session);
+            DecisionFlowState state = flowEngine.start(flowId, flowCtx);
+            if (DecisionFlowState.STATUS_FAILED.equals(state.getStatus())) {
+                throw new FlowExecutionException(state.getErrorMessage());
+            }
+            Map<String, Object> resultVars = flowCtx.getVars();
             session.getParameters().putAll(resultVars);
             row.put(VariableCategory.PARAM_CATEGORY, session.getParameters());
 
             Map<String, Object> result = new HashMap<>();
-            // Record fired rules from process variables
+            // Record fired rules from FlowEngine output vars
             Object firedRules = resultVars.get("_firedRules");
             if (firedRules != null) {
                 result.put("触发规则数", firedRules);

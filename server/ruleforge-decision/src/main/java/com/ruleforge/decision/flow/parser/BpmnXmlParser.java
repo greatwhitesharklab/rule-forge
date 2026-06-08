@@ -29,13 +29,17 @@ import java.util.Set;
  * 命名空间:
  *   bpmn      = http://www.omg.org/spec/BPMN/20100524/MODEL
  *   ruleforge = http://ruleforge.com/schema
- *   flowable  = http://flowable.org/bpmn
+ *   flowable  = http://flowable.org/bpmn  (V5.x 兼容,识别 flowable: 扩展属性但不执行)
  * <p>
  * 关键提取:
  * - process.id (key)
  * - startEvent / endEvent / serviceTask / scriptTask / userTask / exclusiveGateway / parallelGateway
  * - extensionAttrs: ruleforge:taskType / file / project / version / bean / method / packageId / decisionType / decisionField / rulesList / percent / decisionValue / async
  * - sequenceFlow: conditionExpression / ruleforge:percent / ruleforge:decisionValue
+ * <p>
+ * V5.21+ 行为变化:已不再把 BPMN 部署到 Flowable 引擎。本解析器仍识别 flowable:
+ * 扩展属性(V5.x 老 BPMN 可能用到),放进 FlowNode.extensionAttrs 但不执行 —
+ * 自建 FlowEngine 只读 ruleforge: 属性,flowable: 走 NoOp 兜底。
  */
 @Component
 public class BpmnXmlParser {

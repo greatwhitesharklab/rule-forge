@@ -280,7 +280,7 @@ public class PackageController extends BaseController {
 
     @PostMapping(value = "/loadFlows", produces = "text/json;charset=UTF-8")
     public String loadFlows(HttpServletRequest req) throws Exception {
-        // Flow definitions are now managed by Flowable BPMN engine
+        // V5.21+: 决策流定义由 console BpmnFlowController /flow/load + executor FlowDefinitionRepo 维护
         return "[]";
     }
 
