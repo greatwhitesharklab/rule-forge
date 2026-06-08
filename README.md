@@ -14,7 +14,12 @@
 
 </div>
 
-> **⚠️ 项目状态：活跃开发中**
+> **⚠️ 项目已迁移**
+> 本仓库(`FredGoo/rule-forge`)已迁移至新组织 **[greatwhitesharklab/rule-forge](https://github.com/greatwhitesharklab/rule-forge)**。
+> 本仓库仅作历史归档,新代码、PR、Issue 请到 [greatwhitesharklab/rule-forge](https://github.com/greatwhitesharklab/rule-forge) 提交。
+> 在线文档: [greatwhitesharklab.github.io/rule-forge](https://greatwhitesharklab.github.io/rule-forge/)
+
+> **📌 项目状态：活跃开发中**
 > Phase 1-11 已完成，Phase 12+ 规划中。详见 [路线图](docs/roadmap.md) 和 [更新日志](CHANGELOG.md)。
 
 ---
@@ -140,7 +145,7 @@ graph LR
 ### 方式一：Docker Compose（推荐）
 
 ```bash
-git clone https://github.com/FredGoo/rule-forge.git
+git clone https://github.com/greatwhitesharklab/rule-forge.git
 cd rule-forge
 docker compose up
 ```
@@ -227,7 +232,7 @@ npx playwright test
 
 | 文档 | 说明 |
 |------|------|
-| 📖 [在线文档](https://fredgoo.github.io/rule-forge/) | VitePress 文档站点 |
+| 📖 [在线文档](https://greatwhitesharklab.github.io/rule-forge/) | VitePress 文档站点 |
 | 🏗️ [架构概览](docs/architecture/overview.md) | 模块结构、依赖链、执行流程 |
 | ⚙️ [RETE 引擎](docs/architecture/rete-engine.md) | RETE 算法实现、会话生命周期 |
 | 🌐 [Console API](docs/api/console-api.md) | 编辑器 REST API 参考 |

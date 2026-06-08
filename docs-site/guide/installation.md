@@ -23,7 +23,7 @@ title: 安装部署
 ### 1. 克隆代码
 
 ```bash
-git clone https://github.com/FredGoo/rule-forge.git
+git clone https://github.com/greatwhitesharklab/rule-forge.git
 cd rule-forge
 ```
 

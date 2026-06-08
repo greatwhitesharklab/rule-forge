@@ -102,7 +102,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/FredGoo/rule-forge' },
+      { icon: 'github', link: 'https://github.com/greatwhitesharklab/rule-forge' },
     ],
 
     search: {
@@ -129,7 +129,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: 'https://github.com/FredGoo/rule-forge/edit/main/docs-site/:path',
+      pattern: 'https://github.com/greatwhitesharklab/rule-forge/edit/main/docs-site/:path',
       text: '在 GitHub 上编辑此页面',
     },
 

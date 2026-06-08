@@ -11,7 +11,7 @@ title: 快速开始
 ::: code-group
 ```bash
 # 克隆项目
-git clone https://github.com/FredGoo/rule-forge.git
+git clone https://github.com/greatwhitesharklab/rule-forge.git
 cd rule-forge
 
 # 启动所有服务
