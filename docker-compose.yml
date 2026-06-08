@@ -68,10 +68,6 @@ services:
       RF_DB_URL: jdbc:mysql://mysql:3306/ruleforge_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       RF_DB_USERNAME: root
       RF_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
-      # Flowable 独立库 (commit 2)
-      FLOWABLE_DB_URL: jdbc:mysql://mysql:3306/flowable_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
-      FLOWABLE_DB_USERNAME: root
-      FLOWABLE_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
       EXECUTOR_URL: http://executor-app:8280
       RF_REPO_DIR: /app/data/riskruleforge
       # V5.9.x: Git-first 存储 — 注入 GitConfig.base 路径。容器里用 /app/data/git
@@ -115,10 +111,6 @@ services:
       RF_DB_URL: jdbc:mysql://mysql:3306/ruleforge_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       RF_DB_USERNAME: root
       RF_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
-      # Flowable 独立库 (commit 2)
-      FLOWABLE_DB_URL: jdbc:mysql://mysql:3306/flowable_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
-      FLOWABLE_DB_USERNAME: root
-      FLOWABLE_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
       CONSOLE_URL: http://console-app:8180
       # Phase 8: ClickHouse 分析存储 (双写)
       CH_DB_URL: jdbc:clickhouse://clickhouse:8123/ruleforge_analytics

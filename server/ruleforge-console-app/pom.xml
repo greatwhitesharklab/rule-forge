@@ -54,12 +54,7 @@
             <version>5.0.0</version>
         </dependency>
 
-        <!-- Flowable BPMN 引擎 -->
-        <dependency>
-            <groupId>org.flowable</groupId>
-            <artifactId>flowable-spring-boot-starter-process</artifactId>
-            <version>8.0.0</version>
-        </dependency>
+        <!-- V5.21+: 拆 Flowable 依赖 — 自建 FlowEngine 取代 Flowable 8 starter -->
 
         <dependency>
             <groupId>jakarta.servlet</groupId>
