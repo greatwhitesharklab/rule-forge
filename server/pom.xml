@@ -11,9 +11,9 @@
 
     <modules>
         <module>ruleforge-parent</module>
-        <module>ruleforge-core</module>
-        <module>ruleforge-decision</module>
-        <module>ruleforge-console-app</module>
-        <module>ruleforge-executor-app</module>
+        <module>lib/ruleforge-core</module>
+        <module>lib/ruleforge-decision</module>
+        <module>app/ruleforge-console-app</module>
+        <module>app/ruleforge-executor-app</module>
     </modules>
 </project>

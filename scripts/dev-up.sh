@@ -36,8 +36,8 @@ for arg in "$@"; do
 done
 
 # 启动前检查 jar 是否存在
-if [ ! -f "$ROOT/server/ruleforge-console-app/target/ruleforge-console-app.jar" ] || \
-   [ ! -f "$ROOT/server/ruleforge-executor-app/target/ruleforge-executor-app.jar" ]; then
+if [ ! -f "$ROOT/server/app/ruleforge-console-app/target/ruleforge-console-app.jar" ] || \
+   [ ! -f "$ROOT/server/app/ruleforge-executor-app/target/ruleforge-executor-app.jar" ]; then
     echo "❌ 找不到预编译 jar,先跑 ./scripts/build-images.sh"
     exit 1
 fi

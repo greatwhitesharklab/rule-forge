@@ -6,7 +6,7 @@
         <groupId>com.ruleforge</groupId>
         <artifactId>ruleforge-parent</artifactId>
         <version>${revision}</version>
-        <relativePath>../ruleforge-parent</relativePath>
+        <relativePath>../../ruleforge-parent</relativePath>
     </parent>
 
     <name>RuleForge Decision</name>

@@ -27,7 +27,7 @@ ENV JAVA_OPTS="-Xmx2048m -Xms512m -XX:+UseG1GC -XX:+UseContainerSupport" \
     CONSOLE_PORT=8180
 
 # 预编译的 jar(由 scripts/build-images.sh 提前生成)
-COPY ruleforge-console-app/target/ruleforge-console-app.jar /app/app.jar
+COPY app/ruleforge-console-app/target/ruleforge-console-app.jar /app/app.jar
 COPY docker/entrypoint.sh /app/entrypoint.sh
 RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 

@@ -13,7 +13,7 @@ ENV JAVA_OPTS="-Xmx1024m -Xms256m -XX:+UseG1GC -XX:+UseContainerSupport" \
     EXECUTOR_PORT=8280
 
 # 预编译的 jar
-COPY ruleforge-executor-app/target/ruleforge-executor-app.jar /app/app.jar
+COPY app/ruleforge-executor-app/target/ruleforge-executor-app.jar /app/app.jar
 COPY docker/entrypoint.sh /app/entrypoint.sh
 RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
