@@ -46,6 +46,7 @@ export default defineConfig({
             { text: '决策流设计器', link: '/guide/flow-designer' },
             { text: '评分卡', link: '/guide/scorecard' },
             { text: '规则测试', link: '/guide/testing' },
+            { text: 'V5.22 AI 规则创作', link: '/guide/v522-ai-rule-authoring' },
           ],
         },
       ],
