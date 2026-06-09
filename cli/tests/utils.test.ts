@@ -2,10 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-const { loadConfig, saveConfig, getServer, apiGet, parseDate, output } = require('../lib/utils.js');
+import { loadConfig, saveConfig, getServer, apiGet, parseDate, output } from '../lib/utils.js';
 
 /**
  * CLI 工具函数测试
@@ -50,7 +47,7 @@ describe('CLI utils', () => {
     // ========== output ==========
 
     describe('output', () => {
-        let logSpy;
+        let logSpy: ReturnType<typeof vi.spyOn>;
 
         beforeEach(() => {
             logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -61,8 +58,8 @@ describe('CLI utils', () => {
         });
 
         it('should output JSON format by default', () => {
-            output({key: 'value'});
-            expect(logSpy).toHaveBeenCalledWith(JSON.stringify({key: 'value'}, null, 2));
+            output({ key: 'value' });
+            expect(logSpy).toHaveBeenCalledWith(JSON.stringify({ key: 'value' }, null, 2));
         });
 
         it('should output explicit JSON format', () => {
@@ -72,8 +69,8 @@ describe('CLI utils', () => {
 
         it('should output table format for array of objects', () => {
             const data = [
-                {name: 'Alice', age: 30},
-                {name: 'Bob', age: 25}
+                { name: 'Alice', age: 30 },
+                { name: 'Bob', age: 25 }
             ];
             output(data, 'table');
 
@@ -89,40 +86,40 @@ describe('CLI utils', () => {
         });
 
         it('should fallback to JSON for non-array in table format', () => {
-            output({key: 'val'}, 'table');
-            expect(logSpy).toHaveBeenCalledWith(JSON.stringify({key: 'val'}, null, 2));
+            output({ key: 'val' }, 'table');
+            expect(logSpy).toHaveBeenCalledWith(JSON.stringify({ key: 'val' }, null, 2));
         });
     });
 
     // ========== config load/save ==========
 
     describe('loadConfig / saveConfig', () => {
-        let tmpDir;
+        let tmpDir: string;
 
         beforeEach(() => {
             tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ruleforge-test-'));
         });
 
         afterEach(() => {
-            fs.rmSync(tmpDir, {recursive: true, force: true});
+            fs.rmSync(tmpDir, { recursive: true, force: true });
         });
 
         it('should return default config when file does not exist', () => {
             const configPath = path.join(tmpDir, 'nonexistent.json');
             const config = loadConfig(configPath);
-            expect(config).toEqual({server: 'http://localhost:8180/ruleforgeV2'});
+            expect(config).toEqual({ server: 'http://localhost:8180/ruleforgeV2' });
         });
 
         it('should save and load config', () => {
             const configPath = path.join(tmpDir, 'config.json');
-            saveConfig({server: 'http://custom:9999/api'}, configPath);
+            saveConfig({ server: 'http://custom:9999/api' }, configPath);
             const loaded = loadConfig(configPath);
-            expect(loaded).toEqual({server: 'http://custom:9999/api'});
+            expect(loaded).toEqual({ server: 'http://custom:9999/api' });
         });
 
         it('should create directory if missing on save', () => {
             const configPath = path.join(tmpDir, 'deep', 'nested', 'config.json');
-            saveConfig({server: 'http://test:8080'}, configPath);
+            saveConfig({ server: 'http://test:8080' }, configPath);
             expect(fs.existsSync(configPath)).toBe(true);
             const loaded = loadConfig(configPath);
             expect(loaded.server).toBe('http://test:8080');
@@ -130,14 +127,14 @@ describe('CLI utils', () => {
     });
 
     describe('getServer', () => {
-        let tmpDir;
+        let tmpDir: string;
 
         beforeEach(() => {
             tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ruleforge-test-'));
         });
 
         afterEach(() => {
-            fs.rmSync(tmpDir, {recursive: true, force: true});
+            fs.rmSync(tmpDir, { recursive: true, force: true });
         });
 
         it('should return default server when no config', () => {
@@ -147,7 +144,7 @@ describe('CLI utils', () => {
 
         it('should return configured server', () => {
             const configPath = path.join(tmpDir, 'config.json');
-            saveConfig({server: 'http://prod:8180/ruleforgeV2'}, configPath);
+            saveConfig({ server: 'http://prod:8180/ruleforgeV2' }, configPath);
             expect(getServer(configPath)).toBe('http://prod:8180/ruleforgeV2');
         });
 
@@ -162,10 +159,10 @@ describe('CLI utils', () => {
 
     describe('apiGet', () => {
         it('should construct URL with params and fetch', async () => {
-            const data = [{id: 1}];
-            const mockFetch = vi.fn().mockResolvedValue({ok: true, json: () => Promise.resolve(data)});
+            const data = [{ id: 1 }];
+            const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(data) });
 
-            const result = await apiGet('/test', {key: 'val', num: 42}, 'http://server/api', mockFetch);
+            const result = await apiGet('/test', { key: 'val', num: 42 }, 'http://server/api', mockFetch as any);
             expect(result).toEqual(data);
 
             const calledUrl = mockFetch.mock.calls[0][0];
@@ -175,9 +172,9 @@ describe('CLI utils', () => {
         });
 
         it('should skip null/undefined params', async () => {
-            const mockFetch = vi.fn().mockResolvedValue({ok: true, json: () => Promise.resolve({})});
+            const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
 
-            await apiGet('/test', {a: '1', b: null, c: undefined}, 'http://server', mockFetch);
+            await apiGet('/test', { a: '1', b: null, c: undefined }, 'http://server', mockFetch as any);
             const calledUrl = mockFetch.mock.calls[0][0];
             expect(calledUrl).toContain('a=1');
             expect(calledUrl).not.toContain('b=');
@@ -185,9 +182,9 @@ describe('CLI utils', () => {
         });
 
         it('should throw on HTTP error', async () => {
-            const mockFetch = vi.fn().mockResolvedValue({ok: false, status: 500, statusText: 'Internal Server Error'});
+            const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 500, statusText: 'Internal Server Error' });
 
-            await expect(apiGet('/test', {}, 'http://server', mockFetch)).rejects.toThrow('HTTP 500');
+            await expect(apiGet('/test', {}, 'http://server', mockFetch as any)).rejects.toThrow('HTTP 500');
         });
     });
 });

@@ -3,16 +3,18 @@
   "version": "1.0.0",
   "description": "RuleForge CLI - Agent-friendly command line interface",
   "bin": {
-    "ruleforge": "./bin/ruleforge.js"
+    "ruleforge": "./bin/ruleforge.ts"
   },
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "commander": "^12.0.0",
-    "node-fetch": "^2.7.0"
+    "commander": "^12.0.0"
   },
   "devDependencies": {
+    "@types/node": "^25.9.2",
+    "tsx": "^4.22.4",
     "vitest": "^4.1.7"
   }
 }

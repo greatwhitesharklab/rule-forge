@@ -1,7 +1,7 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S npx tsx
 
-const { Command } = require('commander');
-const { loadConfig, saveConfig, getServer, apiGet, parseDate, output } = require('../lib/utils');
+import { Command } from 'commander';
+import { loadConfig, saveConfig, apiGet, parseDate, output } from '../lib/utils.js';
 
 const program = new Command();
 program
@@ -35,7 +35,7 @@ analysis.command('flow-trend')
     .option('--granularity <g>', 'Time granularity: hourly or daily', 'hourly')
     .option('--format <fmt>', 'Output format: json or table', 'json')
     .action(async (opts) => {
-        const params = {
+        const params: Record<string, any> = {
             startTime: parseDate(opts.start),
             endTime: opts.end ? new Date(opts.end).toISOString() : new Date().toISOString(),
             granularity: opts.granularity
@@ -53,7 +53,7 @@ analysis.command('reject-top')
     .option('--limit <n>', 'Top N', '20')
     .option('--format <fmt>', 'Output format', 'json')
     .action(async (opts) => {
-        const params = {
+        const params: Record<string, any> = {
             startTime: parseDate(opts.start),
             endTime: opts.end ? new Date(opts.end).toISOString() : new Date().toISOString(),
             limit: opts.limit
@@ -69,7 +69,7 @@ analysis.command('package-summary')
     .option('--end <date>', 'End time')
     .option('--format <fmt>', 'Output format', 'table')
     .action(async (opts) => {
-        const params = {
+        const params: Record<string, any> = {
             startTime: parseDate(opts.start),
             endTime: opts.end ? new Date(opts.end).toISOString() : new Date().toISOString()
         };
@@ -83,7 +83,7 @@ analysis.command('rule-coverage')
     .option('--end <date>', 'End time')
     .option('--package <pkg>', 'Rule package filter')
     .action(async (opts) => {
-        const params = {
+        const params: Record<string, any> = {
             startTime: parseDate(opts.start),
             endTime: opts.end ? new Date(opts.end).toISOString() : new Date().toISOString()
         };
@@ -99,7 +99,7 @@ analysis.command('rule-frequency')
     .option('--package <pkg>', 'Rule package filter')
     .option('--format <fmt>', 'Output format', 'table')
     .action(async (opts) => {
-        const params = {
+        const params: Record<string, any> = {
             startTime: parseDate(opts.start),
             endTime: opts.end ? new Date(opts.end).toISOString() : new Date().toISOString()
         };
@@ -114,7 +114,7 @@ analysis.command('anomaly')
     .option('--sigma <t>', 'Sigma threshold', '2.0')
     .option('--package <pkg>', 'Rule package filter')
     .action(async (opts) => {
-        const params = {
+        const params: Record<string, any> = {
             baselineDays: opts.baselineDays,
             sigmaThreshold: opts.sigma
         };
@@ -162,7 +162,7 @@ exp.command('file')
     .requiredOption('--path <path>', 'File path')
     .option('--version <ver>', 'Version')
     .action(async (opts) => {
-        const params = { path: opts.path };
+        const params: Record<string, any> = { path: opts.path };
         if (opts.version) params.version = opts.version;
         const data = await apiGet('/export/file', params);
         output(data);
@@ -174,7 +174,7 @@ const decision = program.command('decision').description('Query decision logs');
 decision.command('list')
     .description('List recent decision logs (placeholder - uses monitoring API)')
     .option('--limit <n>', 'Max results', '20')
-    .action(async (opts) => {
+    .action(async (_opts) => {
         // This would need a dedicated endpoint; for now show package summary
         console.log('Note: Use ruleforge analysis flow-trend for execution data');
     });
