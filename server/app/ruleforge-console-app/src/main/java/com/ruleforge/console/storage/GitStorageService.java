@@ -64,6 +64,14 @@ public interface GitStorageService {
     void writeFile(String projectName, String branch, String filePath, String content);
 
     /**
+     * V5.23 — Write a binary file to a branch's working tree (Base64-encoded in transit
+     * because Git CLI uses text streams; for compiled .class files).
+     *
+     * <p>Does NOT auto-commit; caller must call {@code commit()} separately.
+     */
+    void writeBytes(String projectName, String branch, String filePath, byte[] content);
+
+    /**
      * Read a file from a specific revision (branch name, tag, or commit SHA).
      * Reads directly from the Git object store without checking out a working tree.
      *

@@ -37,6 +37,10 @@ ruleforge:
     recovery-interval-ms: 30000
     recovery-initial-delay-ms: 60000
     worker-id: ${HOSTNAME:flow-recovery-1}
+  # V5.23+: 逗号分隔的项目列表,executor 启动时从 console 拉 data_sources/manifest 并加载
+  # 没配置 = 跳过(允许 executor 暂不接 data source 也能跑)
+  datasource:
+    projects: ${RF_DATASOURCE_PROJECTS:}
 
 # 延迟加载配置
 lazy-load:

@@ -93,6 +93,73 @@ class DraftServiceTest {
         }
     }
 
+    // ========== createDataSourceDraft (V5.23) ==========
+
+    @Nested
+    @DisplayName("Scenario: 创建 data_source 草稿 (V5.23)")
+    class CreateDataSourceDraft {
+
+        private static final String VALID_JAVA = """
+                package com.ruleforge.console.datasource.generated;
+                import com.ruleforge.datasource.BaseApiDataSource;
+                import com.ruleforge.datasource.Vars;
+                public class FakeApi extends BaseApiDataSource {
+                    @Override public String getName() { return "fake"; }
+                    @Override public java.util.Map<String, String> getSchema() { return java.util.Map.of("id", "string"); }
+                    @Override public Vars fetch(Vars v) { return v; }
+                }
+                """;
+
+        @Test
+        @DisplayName("Given 合法 Java 源码 extends BaseApiDataSource When 创建 data_source 草稿 Then 写入 DRAFT + ruleType=data_source")
+        void shouldCreateDataSourceDraft() {
+            DraftEntity d = service.createDataSourceDraft("demo", "fake api", VALID_JAVA, "agent1", "s1", "m1");
+
+            ArgumentCaptor<DraftEntity> captor = ArgumentCaptor.forClass(DraftEntity.class);
+            verify(draftMapper).insert(captor.capture());
+            DraftEntity saved = captor.getValue();
+            assertThat(saved.getRuleType()).isEqualTo("data_source");
+            assertThat(saved.getStatus()).isEqualTo(DraftEntity.STATUS_DRAFT);
+            assertThat(saved.getContent()).isEqualTo(VALID_JAVA);
+            assertThat(saved.getProject()).isEqualTo("demo");
+            assertThat(saved.getSource()).isEqualTo("LLM");
+            assertThat(d.getDraftId()).startsWith("drf_");
+        }
+
+        @Test
+        @DisplayName("Given Java 源码不 extends BaseApiDataSource When 创建 Then 抛(给 LLM 早失败)")
+        void shouldRejectMissingExtends() {
+            String bad = "public class NotADatasource {}";
+            assertThatThrownBy(() -> service.createDataSourceDraft("demo", "t", bad, "u", null, null))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("extends BaseApiDataSource");
+        }
+
+        @Test
+        @DisplayName("Given Java 源码为空 When 创建 Then 抛")
+        void shouldRejectEmptySource() {
+            assertThatThrownBy(() -> service.createDataSourceDraft("demo", "t", "", "u", null, null))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("javaSource");
+        }
+
+        @Test
+        @DisplayName("Given project 为空 When 创建 Then 抛")
+        void shouldRejectEmptyProject() {
+            assertThatThrownBy(() -> service.createDataSourceDraft("", "t", VALID_JAVA, "u", null, null))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("project");
+        }
+
+        @Test
+        @DisplayName("FQCN 形式的 extends 也能识别(LLM 偶尔会写全限定名)")
+        void shouldAcceptFqcnExtends() {
+            String fqcn = "public class X extends com.ruleforge.datasource.BaseApiDataSource {}";
+            DraftEntity d = service.createDataSourceDraft("demo", "t", fqcn, "u", null, null);
+            assertThat(d.getRuleType()).isEqualTo("data_source");
+        }
+    }
+
     // ========== validateContent ==========
 
     @Nested

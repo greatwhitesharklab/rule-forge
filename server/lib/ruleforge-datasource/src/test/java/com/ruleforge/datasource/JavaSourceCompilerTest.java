@@ -149,4 +149,31 @@ class JavaSourceCompilerTest {
                 .isEqualTo("Foo");
         }
     }
+
+    @Nested
+    @DisplayName("Scenario: package 名提取")
+    class ExtractPackageName {
+
+        @Test
+        @DisplayName("package com.foo.bar; → com.foo.bar")
+        void shouldExtractPackage() {
+            assertThat(JavaSourceCompiler.extractPackageName(
+                    "package com.foo.bar; public class X {}"))
+                .isEqualTo("com.foo.bar");
+        }
+
+        @Test
+        @DisplayName("无 package 声明 → 空串")
+        void shouldReturnEmptyForNoPackage() {
+            assertThat(JavaSourceCompiler.extractPackageName("public class X {}"))
+                .isEmpty();
+        }
+
+        @Test
+        @DisplayName("package 单段 → 单段")
+        void shouldExtractSingleSegment() {
+            assertThat(JavaSourceCompiler.extractPackageName("package foo; class X {}"))
+                .isEqualTo("foo");
+        }
+    }
 }

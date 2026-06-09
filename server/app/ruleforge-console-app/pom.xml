@@ -54,6 +54,13 @@
             <version>5.0.0</version>
         </dependency>
 
+        <!-- V5.23+: 第三方 API data source 编译/加载基础设施 -->
+        <dependency>
+            <groupId>com.ruleforge</groupId>
+            <artifactId>ruleforge-datasource</artifactId>
+            <version>5.0.0</version>
+        </dependency>
+
         <!-- V5.21+: 拆 Flowable 依赖 — 自建 FlowEngine 取代 Flowable 8 starter -->
 
         <dependency>

@@ -100,6 +100,9 @@ public class ToolExecutor {
                 case ToolRegistry.GET_DRAFT_HISTORY -> executeGetDraftHistory(args);
                 case ToolRegistry.LIST_AGENT_AUDIT -> executeListAgentAudit(args);
 
+                // V5.23 — 第三方 API 数据源 Java 源码草稿
+                case ToolRegistry.GENERATE_API_DATA_SOURCE -> executeGenerateApiDataSource(args);
+
                 default -> "{\"error\": \"Unknown tool: " + toolName + "\"}";
             };
         } catch (Exception e) {
@@ -968,5 +971,48 @@ public class ToolExecutor {
                 "audits", arr,
                 "count", rows.size()
         ));
+    }
+
+    // ===== V5.23 第三方 API 数据源 =====
+
+    /**
+     * 把 LLM 写的 Java 源码(extends BaseApiDataSource)落为 data_source 草稿。
+     * 走 {@link com.ruleforge.console.app.draft.DraftService#createDataSourceDraft} 绕过
+     * 普通 JSON 校验(content 是 Java 源码,不是 schema 化的 JSON)。
+     */
+    private String executeGenerateApiDataSource(JsonNode args) throws Exception {
+        String project = args.path("project").asText("");
+        String title = args.path("title").asText(null);
+        String javaSource = args.path("javaSource").asText("");
+        String createdBy = args.path("createdBy").asText("anonymous");
+        String sessionId = args.path("sessionId").asText(null);
+        String messageId = args.path("messageId").asText(null);
+
+        if (project.isEmpty() || javaSource.isEmpty()) {
+            return "{\"error\": \"project 和 javaSource 参数必填\"}";
+        }
+        if (title == null || title.isEmpty()) {
+            title = "API 数据源";
+        }
+        try {
+            DraftEntity draft = draftService.createDataSourceDraft(
+                    project, title, javaSource, createdBy, sessionId, messageId);
+            ObjectNode out = objectMapper.createObjectNode();
+            out.put("draftId", draft.getDraftId());
+            out.put("status", draft.getStatus());
+            out.put("ruleType", draft.getRuleType());
+            out.put("project", draft.getProject());
+            out.put("title", draft.getTitle());
+            out.put("contentLength", javaSource.length());
+            out.put("createdAt", draft.getCreatedAt() != null ? draft.getCreatedAt().toInstant().toString() : null);
+            out.put("message", "data_source 草稿已创建。下一步:submit_draft → approve_draft → apply_draft"
+                    + "(apply_draft 会调 JavaSourceCompiler 编译 + 写 git + 注册到 DataSourceRegistry)");
+            return objectMapper.writeValueAsString(out);
+        } catch (IllegalArgumentException e) {
+            return objectMapper.writeValueAsString(Map.of(
+                    "error", "create_data_source_draft_failed",
+                    "message", e.getMessage()
+            ));
+        }
     }
 }

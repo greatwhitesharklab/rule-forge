@@ -89,6 +89,50 @@ public class DraftService {
     }
 
     /**
+     * V5.23 — 创建一个 data_source 草稿(Java 源码,非 JSON)。
+     *
+     * <p>绕过 {@link #validateContent} 的 JSON 解析,因为 data_source 的 content 是 Java 源码
+     * 字符串(后续走 {@code JavaSourceCompiler} 编译),不是 schema 化的 JSON。
+     *
+     * @param javaSource LLM 生成的 Java 源码,必须 extends {@code com.ruleforge.datasource.BaseApiDataSource}
+     */
+    public DraftEntity createDataSourceDraft(String project, String title, String javaSource,
+                                             String createdBy, String sessionId, String messageId) {
+        if (project == null || project.isEmpty()) {
+            throw new IllegalArgumentException("project 必填");
+        }
+        if (javaSource == null || javaSource.isEmpty()) {
+            throw new IllegalArgumentException("javaSource 不能为空");
+        }
+        // 轻量语法预检 — LLM 漏写 extends 时及时拒绝(完整编译由 DataSourceApplyService 做)
+        if (!javaSource.contains("extends BaseApiDataSource")
+                && !javaSource.contains("extends com.ruleforge.datasource.BaseApiDataSource")) {
+            throw new IllegalArgumentException(
+                "data_source Java 源码必须 extends BaseApiDataSource(com.ruleforge.datasource.BaseApiDataSource)");
+        }
+
+        DraftEntity draft = new DraftEntity();
+        draft.setDraftId(generateDraftId());
+        draft.setRuleType("data_source");
+        draft.setProject(project);
+        draft.setContent(javaSource);
+        draft.setTitle(title);
+        draft.setStatus(DraftEntity.STATUS_DRAFT);
+        draft.setSource("LLM");
+        draft.setCreatedBy(createdBy);
+        draft.setSessionId(sessionId);
+        draft.setMessageId(messageId);
+        draft.setExpiresAt(Date.from(Instant.now().plus(DEFAULT_EXPIRY_DAYS, ChronoUnit.DAYS)));
+
+        draftMapper.insert(draft);
+        log.info("[Draft] 创建 data_source 草稿 draftId={} project={} by={} ({} chars)",
+            draft.getDraftId(), project, createdBy, javaSource.length());
+        historyService.record(draft.getDraftId(), DraftHistoryEntity.ACTION_CREATE,
+                null, DraftEntity.STATUS_DRAFT, createdBy, title);
+        return draft;
+    }
+
+    /**
      * 取草稿详情
      */
     public Optional<DraftEntity> get(String draftId) {

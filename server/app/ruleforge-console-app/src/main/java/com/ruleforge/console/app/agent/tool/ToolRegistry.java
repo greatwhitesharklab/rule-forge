@@ -59,6 +59,9 @@ public class ToolRegistry {
     public static final String GET_DRAFT_HISTORY = "get_draft_history";
     public static final String LIST_AGENT_AUDIT = "list_agent_audit";
 
+    // V5.23 — 第三方 API 数据源(LLM 生成 Java 源码,走 JavaSourceCompiler 编译)
+    public static final String GENERATE_API_DATA_SOURCE = "generate_api_data_source";
+
     /**
      * 初始化时注册所有工具
      */
@@ -175,6 +178,18 @@ public class ToolRegistry {
                         prop("sessionId", "string", "sessionId - 可选,只看某个会话"),
                         prop("status", "string", "status - 可选,过滤 OK/ERROR/RATE_LIMITED"),
                         prop("limit", "number", "limit - 默认 50")));
+
+        // V5.23 — LLM 生成第三方 API 数据源 Java 源码,存为 data_source 草稿
+        register(GENERATE_API_DATA_SOURCE, "为某个第三方 API 生成 Java 数据源类(BaseApiDataSource 子类)并落草稿。"
+                + "BA 审批通过 + apply_draft 后会编译成 .class 并注册到 DataSourceRegistry。"
+                + "返回 draftId,下一步走 submit_draft / approve_draft / apply_draft。",
+                List.of(prop("project", "string", "project - 项目名"),
+                        prop("title", "string", "title - 可选,草稿标题(默认:API 数据源)"),
+                        prop("javaSource", "string", "javaSource - 完整 Java 源码,public class 必须 extends BaseApiDataSource,"
+                                + "重写 getName/getSchema/fetch(Vars) 三个方法"),
+                        prop("createdBy", "string", "createdBy - 创建人(用户/agent 名)"),
+                        prop("sessionId", "string", "sessionId - 可选,LLM 会话 ID"),
+                        prop("messageId", "string", "messageId - 可选,LLM 消息 ID")));
 
         log.info("Registered {} agent tools", toolDefs.size());
     }

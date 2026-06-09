@@ -92,6 +92,14 @@ public class JavaSourceCompiler {
             }
 
             Path classFile = outDir.resolve(publicClassName + ".class");
+            // javac 会按源码的 package 声明把 .class 写到子目录 — 找不到时降级到包路径再找一次
+            if (!Files.exists(classFile)) {
+                String pkg = extractPackageName(javaCode);
+                if (pkg != null && !pkg.isEmpty()) {
+                    classFile = outDir.resolve(pkg.replace('.', java.io.File.separatorChar))
+                        .resolve(publicClassName + ".class");
+                }
+            }
             if (!Files.exists(classFile)) {
                 return CompileResult.failed(".class file not generated (compile reported success but no output)\n" + compileLog);
             }
@@ -156,15 +164,24 @@ public class JavaSourceCompiler {
      * declaration — good enough for LLM-generated top-level data source classes.
      */
     static String extractPublicClassName(String source) {
+        // 只匹配 public 顶层类型 — 不 fallback。LLM 写了非 public class 时应当早失败,
+        // 而不是让 javac 静默编出我们找不到的 .class(因为没 .class 也算 success
+        // 但没有可注册 bean — 之前测试中 this 路径是 COMPILE_FAILED 的关键防线)
         java.util.regex.Matcher m = java.util.regex.Pattern.compile(
             "\\bpublic\\s+(?:final\\s+|abstract\\s+)?(?:class|interface|enum|record)\\s+([A-Za-z_$][A-Za-z0-9_$]*)"
         ).matcher(source);
-        if (m.find()) return m.group(1);
-        // fallback: any class declaration
-        m = java.util.regex.Pattern.compile(
-            "\\b(?:class|interface|enum|record)\\s+([A-Za-z_$][A-Za-z0-9_$]*)"
-        ).matcher(source);
         return m.find() ? m.group(1) : null;
+    }
+
+    /**
+     * Naive extraction of {@code package foo.bar;} — used to resolve the on-disk
+     * output path javac writes to ({@code outDir/<package-as-path>/<class>.class}).
+     */
+    static String extractPackageName(String source) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+            "\\bpackage\\s+([A-Za-z_$][A-Za-z0-9_$]*(?:\\.[A-Za-z_$][A-Za-z0-9_$]*)*)\\s*;"
+        ).matcher(source);
+        return m.find() ? m.group(1) : "";
     }
 
     private static boolean verifyClassMagic(byte[] bytes) {

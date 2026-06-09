@@ -167,6 +167,23 @@ public class GitStorageServiceImpl implements GitStorageService {
     }
 
     @Override
+    public void writeBytes(String projectName, String branch, String filePath, byte[] content) {
+        withLock(projectName, () -> {
+            try (Git git = Git.open(getRepoPath(projectName).toFile())) {
+                git.checkout().setName(branch).call();
+                Path fullPath = getRepoPath(projectName).resolve(filePath);
+                Files.createDirectories(fullPath.getParent());
+                Files.write(fullPath, content);
+                log.debug("Wrote binary [{}] ({} bytes) on branch [{}] for project [{}]",
+                    filePath, content.length, branch, projectName);
+            } catch (Exception e) {
+                throw new GitOperationException(projectName,
+                        "Failed to write binary file " + filePath, e);
+            }
+        });
+    }
+
+    @Override
     public String readFile(String projectName, String revision, String filePath) {
         try (Git git = Git.open(getRepoPath(projectName).toFile());
              RevWalk revWalk = new RevWalk(git.getRepository())) {

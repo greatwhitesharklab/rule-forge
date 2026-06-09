@@ -68,6 +68,13 @@
             <version>5.0.0</version>
         </dependency>
 
+        <!-- V5.23+: 第三方 API 数据源 — DataSourceRegistry + JavaSourceCompiler + 隔离 classloader -->
+        <dependency>
+            <groupId>com.ruleforge</groupId>
+            <artifactId>ruleforge-datasource</artifactId>
+            <version>5.0.0</version>
+        </dependency>
+
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
