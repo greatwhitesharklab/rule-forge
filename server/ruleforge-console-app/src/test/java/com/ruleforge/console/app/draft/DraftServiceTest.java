@@ -32,6 +32,8 @@ class DraftServiceTest {
 
     @Mock
     private DraftMapper draftMapper;
+    @Mock
+    private DraftHistoryService historyService;  // V5.22.3
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private RuleSchemaService schemaService;
@@ -41,7 +43,7 @@ class DraftServiceTest {
     void setUp() {
         schemaService = mock(RuleSchemaService.class);
         lenient().when(schemaService.supportedV522Types()).thenReturn(List.of("decision_table", "ul", "decision_tree", "scorecard", "decision_flow", "script_decision_table"));
-        service = new DraftService(draftMapper, schemaService, objectMapper);
+        service = new DraftService(draftMapper, schemaService, objectMapper, historyService);
     }
 
     // ========== createDraft ==========

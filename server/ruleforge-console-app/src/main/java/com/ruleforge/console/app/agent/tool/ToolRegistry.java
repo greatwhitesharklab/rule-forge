@@ -55,6 +55,10 @@ public class ToolRegistry {
     // V5.22.2 — 规则健康仪表盘(给 BA 看:死规则 / 热规则 / 滞留草稿 / 异常)
     public static final String GET_RULE_HEALTH = "get_rule_health";
 
+    // V5.22.3 — 草稿状态历史 + 工具调用历史
+    public static final String GET_DRAFT_HISTORY = "get_draft_history";
+    public static final String LIST_AGENT_AUDIT = "list_agent_audit";
+
     /**
      * 初始化时注册所有工具
      */
@@ -162,6 +166,15 @@ public class ToolRegistry {
         register(GET_RULE_HEALTH, "给 BA 看规则健康总览:死规则 / 热规则 / 滞留草稿 / 异常事件 / Top 拒绝原因",
                 List.of(prop("project", "string", "project - 可选,只看某个项目"),
                         prop("days", "number", "days - 时间窗口(默认 30 天)")));
+
+        // V5.22.3 — 草稿状态历史 / 工具调用审计
+        register(GET_DRAFT_HISTORY, "取草稿的完整状态历史时间线(CREATE/SUBMIT/APPROVE/REJECT/APPLY/EXPIRE)",
+                List.of(prop("draftId", "string", "draftId - 草稿 ID")));
+        register(LIST_AGENT_AUDIT, "列工具调用审计(自己调过的工具,按时间倒序)",
+                List.of(prop("userId", "string", "userId - 可选,只看自己;不传看所有"),
+                        prop("sessionId", "string", "sessionId - 可选,只看某个会话"),
+                        prop("status", "string", "status - 可选,过滤 OK/ERROR/RATE_LIMITED"),
+                        prop("limit", "number", "limit - 默认 50")));
 
         log.info("Registered {} agent tools", toolDefs.size());
     }

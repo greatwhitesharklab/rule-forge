@@ -1,9 +1,14 @@
 import {Component} from 'react';
+import {Progress, Tag, Alert} from 'antd';
 import {jsonPost} from '@/api/client';
 
 // ====== 类型定义 ======
 
 interface HealthData {
+    status?: 'OK' | 'PARTIAL' | 'DEGRADED';   // V5.22.3
+    failedSources?: string[];                  // V5.22.3
+    failedSourceCount?: number;                // V5.22.3
+    totalSourceCount?: number;                 // V5.22.3
     project: string;
     days: number;
     generatedAt: string;
@@ -40,8 +45,10 @@ interface RuleHealthViewState {
 
 /**
  * V5.22.2 — 规则健康仪表盘
- *
- * 给 BA 每天看:死规则 / 热规则 / 滞留草稿 / 异常 / Top 拒绝原因
+ * V5.22.3 — 加 antd Progress / Tag / Alert:
+ *          - 覆盖率卡片加 Progress 条
+ *          - 顶部加 status 横幅(OK / PARTIAL / DEGRADED)
+ *          - 失败 source 列表
  */
 export default class RuleHealthView extends Component<RuleHealthViewProps, RuleHealthViewState> {
 
@@ -78,6 +85,35 @@ export default class RuleHealthView extends Component<RuleHealthViewProps, RuleH
         this.setState({days}, () => this.load());
     };
 
+    renderStatusBanner() {
+        const status = this.state.data?.status || 'OK';
+        if (status === 'OK') return null;
+
+        const failedSources = this.state.data?.failedSources || [];
+        const isDegraded = status === 'DEGRADED';
+
+        return (
+            <div style={{padding: '6px 12px'}}>
+                <Alert
+                    type={isDegraded ? 'error' : 'warning'}
+                    showIcon
+                    title={
+                        isDegraded
+                            ? '健康数据源全部不可用 — 显示空为正常,稍后重试'
+                            : `健康数据源部分失败 (${failedSources.length}/${this.state.data?.totalSourceCount || '?'})`
+                    }
+                    description={
+                        failedSources.length > 0 && (
+                            <span>
+                                失败来源: {failedSources.map(s => <Tag key={s} color="orange">{s}</Tag>)}
+                            </span>
+                        )
+                    }
+                />
+            </div>
+        );
+    }
+
     renderCoverage() {
         const c = this.state.data?.coverage;
         if (!c) return null;
@@ -85,6 +121,7 @@ export default class RuleHealthView extends Component<RuleHealthViewProps, RuleH
         const dead = c.deadRules || 0;
         const active = c.activeRules || (total - dead);
         const deadPct = total > 0 ? Math.round((dead / total) * 100) : 0;
+        const activePct = total > 0 ? Math.round((active / total) * 100) : 0;
         return (
             <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16}}>
                 <div style={{padding: 12, background: '#f0f5ff', borderRadius: 4, border: '1px solid #d6e4ff'}}>
@@ -92,14 +129,26 @@ export default class RuleHealthView extends Component<RuleHealthViewProps, RuleH
                     <div style={{fontSize: 22, fontWeight: 600, color: '#1677ff'}}>{total}</div>
                 </div>
                 <div style={{padding: 12, background: '#f6ffed', borderRadius: 4, border: '1px solid #b7eb8f'}}>
-                    <div style={{fontSize: 11, color: '#666'}}>活跃</div>
-                    <div style={{fontSize: 22, fontWeight: 600, color: '#389e0d'}}>{active}</div>
-                    <div style={{fontSize: 10, color: '#999'}}>{total > 0 ? Math.round((active / total) * 100) : 0}% 触发率</div>
+                    <div style={{fontSize: 11, color: '#666', marginBottom: 4}}>活跃</div>
+                    <div style={{fontSize: 18, fontWeight: 600, color: '#389e0d', marginBottom: 4}}>{active}</div>
+                    <Progress
+                        percent={activePct}
+                        size="small"
+                        strokeColor="#389e0d"
+                        showInfo={false}
+                    />
+                    <div style={{fontSize: 10, color: '#999', marginTop: 2}}>{activePct}% 触发率</div>
                 </div>
                 <div style={{padding: 12, background: dead > 0 ? '#fff1f0' : '#fafafa', borderRadius: 4, border: '1px solid ' + (dead > 0 ? '#ffa39e' : '#e8e8e8')}}>
-                    <div style={{fontSize: 11, color: '#666'}}>死规则</div>
-                    <div style={{fontSize: 22, fontWeight: 600, color: dead > 0 ? '#cf1322' : '#999'}}>{dead}</div>
-                    <div style={{fontSize: 10, color: '#999'}}>{deadPct}% 占比{dead > 0 ? ' — 建议清理' : ''}</div>
+                    <div style={{fontSize: 11, color: '#666', marginBottom: 4}}>死规则</div>
+                    <div style={{fontSize: 18, fontWeight: 600, color: dead > 0 ? '#cf1322' : '#999', marginBottom: 4}}>{dead}</div>
+                    <Progress
+                        percent={deadPct}
+                        size="small"
+                        strokeColor={dead > 0 ? '#cf1322' : '#999'}
+                        showInfo={false}
+                    />
+                    <div style={{fontSize: 10, color: '#999', marginTop: 2}}>{deadPct}% 占比{dead > 0 ? ' — 建议清理' : ''}</div>
                 </div>
             </div>
         );
@@ -150,7 +199,9 @@ export default class RuleHealthView extends Component<RuleHealthViewProps, RuleH
                             padding: 8, background: '#fff', border: '1px solid #e8e8e8',
                             borderLeft: `3px solid ${color}`, borderRadius: 4, marginBottom: 4, fontSize: 12,
                         }}>
-                            <div style={{fontWeight: 500, color}}>{a.type}</div>
+                            <div style={{fontWeight: 500, color}}>
+                                {a.type} <Tag color={a.severity === 'high' ? 'red' : a.severity === 'medium' ? 'orange' : 'default'} style={{marginLeft: 4}}>{a.severity}</Tag>
+                            </div>
                             {a.message && <div style={{fontSize: 11, color: '#666', marginTop: 2}}>{a.message}</div>}
                         </div>
                     );
@@ -162,21 +213,27 @@ export default class RuleHealthView extends Component<RuleHealthViewProps, RuleH
     renderHotRules() {
         const hot = this.state.data?.hotRules || [];
         if (hot.length === 0) return null;
+        const maxFire = hot.length > 0 ? Math.max(...hot.map(r => r.fireCount || 0)) : 1;
         return (
             <div style={{marginBottom: 16}}>
                 <div style={{fontSize: 12, fontWeight: 600, color: '#666', marginBottom: 4}}>
                     🔥 热规则 Top {hot.length}
                 </div>
-                {hot.map((r, i) => (
-                    <div key={i} style={{
-                        padding: 6, background: '#fff', border: '1px solid #e8e8e8',
-                        borderRadius: 3, marginBottom: 2, fontSize: 11,
-                        display: 'flex', justifyContent: 'space-between',
-                    }}>
-                        <span><code>{r.ruleId}</code></span>
-                        <span style={{color: '#d46b08', fontWeight: 600}}>{r.fireCount.toLocaleString()} 次触发</span>
-                    </div>
-                ))}
+                {hot.map((r, i) => {
+                    const pct = maxFire > 0 ? Math.round(((r.fireCount || 0) / maxFire) * 100) : 0;
+                    return (
+                        <div key={i} style={{
+                            padding: 6, background: '#fff', border: '1px solid #e8e8e8',
+                            borderRadius: 3, marginBottom: 2, fontSize: 11,
+                        }}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 2}}>
+                                <span><code>{r.ruleId}</code></span>
+                                <span style={{color: '#d46b08', fontWeight: 600}}>{r.fireCount.toLocaleString()} 次</span>
+                            </div>
+                            <Progress percent={pct} size="small" strokeColor="#d46b08" showInfo={false} />
+                        </div>
+                    );
+                })}
             </div>
         );
     }
@@ -184,26 +241,37 @@ export default class RuleHealthView extends Component<RuleHealthViewProps, RuleH
     renderTopRejectReasons() {
         const reasons = this.state.data?.topRejectReasons || [];
         if (reasons.length === 0) return null;
+        const maxCount = reasons.length > 0 ? Math.max(...reasons.map(r => r.count || 0)) : 1;
         return (
             <div style={{marginBottom: 16}}>
                 <div style={{fontSize: 12, fontWeight: 600, color: '#666', marginBottom: 4}}>
                     Top 拒绝原因
                 </div>
-                {reasons.map((r, i) => (
-                    <div key={i} style={{
-                        padding: 6, background: '#fff', border: '1px solid #e8e8e8',
-                        borderRadius: 3, marginBottom: 2, fontSize: 11,
-                        display: 'flex', justifyContent: 'space-between',
-                    }}>
-                        <span>{r.reason}</span>
-                        <span style={{color: '#666'}}>{r.count.toLocaleString()} 次</span>
-                    </div>
-                ))}
+                {reasons.map((r, i) => {
+                    const pct = maxCount > 0 ? Math.round(((r.count || 0) / maxCount) * 100) : 0;
+                    return (
+                        <div key={i} style={{
+                            padding: 6, background: '#fff', border: '1px solid #e8e8e8',
+                            borderRadius: 3, marginBottom: 2, fontSize: 11,
+                        }}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 2}}>
+                                <span>{r.reason}</span>
+                                <span style={{color: '#666'}}>{r.count.toLocaleString()} 次</span>
+                            </div>
+                            <Progress percent={pct} size="small" strokeColor="#888" showInfo={false} />
+                        </div>
+                    );
+                })}
             </div>
         );
     }
 
     renderToolbar() {
+        const status = this.state.data?.status || 'OK';
+        const statusTag =
+            status === 'DEGRADED' ? <Tag color="red">DEGRADED</Tag> :
+            status === 'PARTIAL' ? <Tag color="orange">PARTIAL</Tag> :
+            <Tag color="green">OK</Tag>;
         return (
             <div style={{display: 'flex', gap: 6, padding: '8px 12px', borderBottom: '1px solid #e8e8e8', alignItems: 'center'}}>
                 <span style={{fontSize: 11, color: '#666'}}>时间窗口:</span>
@@ -215,6 +283,7 @@ export default class RuleHealthView extends Component<RuleHealthViewProps, RuleH
                     </button>
                 ))}
                 <span style={{marginLeft: 'auto', fontSize: 11, color: '#999'}}>
+                    {statusTag}
                     {this.state.data?.project || 'all'} · 更新于 {this.state.data?.generatedAt?.substring(0, 16).replace('T', ' ')}
                 </span>
                 <button className="btn btn-xs btn-default" onClick={this.load} disabled={this.state.loading}>
@@ -238,6 +307,7 @@ export default class RuleHealthView extends Component<RuleHealthViewProps, RuleH
         return (
             <div style={{display: 'flex', flexDirection: 'column', height: '100%', overflow: 'auto'}}>
                 {this.renderToolbar()}
+                {this.renderStatusBanner()}
 
                 {errorMsg && (
                     <div style={{padding: '8px 12px', background: '#fff1f0', color: '#cf1322', fontSize: 12}}>

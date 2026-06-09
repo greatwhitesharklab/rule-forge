@@ -140,3 +140,112 @@ HTTP 429
 - 后端: 70 个单元测试 pass(决策表 / 测试用例 / 限流 / 审计 / ToolExecutor)
 - CLI: 45 个测试 pass(12 V5.22 + 5 V5.22.1 + 3 V5.22.2)
 - 前端: 340 个 vitest pass(决策表 / 健康仪表盘)
+
+## V5.22.3 — 7 项 polish
+
+V5.22.3 是个 patch 级别,7 项改进全在 BA 视角:
+
+| # | 改进 | 影响面 |
+|---|---|---|
+| 1 | `rf_draft_history` 表 + 时间线 UI | 草稿审计 |
+| 2 | 健康仪表盘加 antd `Progress` 进度条 | 视觉化 |
+| 3 | "审计" tab + 工具调用历史 | BA 自我回顾 |
+| 4 | rate limit 429 带 `retryAfterSeconds` | API 体验 |
+| 5 | 健康视图 DEGRADED / PARTIAL 状态标记 | 故障可见性 |
+| 6 | CLI `rule health --format=table` | CLI 可读性 |
+| 7 | VitePress 截图 | 文档 |
+
+### 1. 草稿状态历史
+
+每个草稿点"状态历史" tab 看完整时间线:
+
+```
+●  CREATE  by LLM         2026-06-09 10:00
+  │
+  ●  SUBMIT   DRAFT → PENDING_REVIEW   by BA1   2026-06-09 10:05
+  │
+  ●  REJECT   PENDING_REVIEW → REJECTED   by BA2   2026-06-09 10:10
+  cellMap 的 row 2 缺 condition
+  │
+  ●  EDIT     REJECTED → REJECTED   by BA1   2026-06-09 10:15
+  (注:此处"修一下"是 REJECTED 上的手动改,不改 status)
+```
+
+### 2. 健康仪表盘加进度条
+
+- 活跃规则 / 死规则从裸数字 → 进度条(直接看出占比)
+- 热规则 Top 5 → 相对 max 触发量的水平条
+- 拒绝原因 Top 5 → 相对 max 次数的水平条
+
+### 3. 工具调用历史(新 tab)
+
+AI 助手面板加第 4 个 tab **审计**。BA 看自己今天调了什么:
+
+```
+范围: [BA1 ▾]    状态: [全部 ▾]                3 条记录   ⟳
+
+[ list_drafts ]  [OK]   42ms · 100B           2026-06-09 10:00
+  by BA1  · 会话 sess_abcd
+  {"project":"demo"}
+
+[ draft_rule ]   [ERROR] 5ms · -B             2026-06-09 10:01
+  by BA1  · 会话 sess_abcd
+  ❌ tool_execution_failed  content 不是合法 JSON
+
+[ get_rule_health ]  [限流] 0ms · -B          2026-06-09 10:02
+  by BA1  · 会话 sess_abcd
+```
+
+### 4. rate limit 响应
+
+```json
+HTTP 429
+{
+  "error": "rate_limit_exceeded",
+  "message": "用户 BA1 超过每小时 100 次调用上限",
+  "maxPerHour": 100,
+  "retryAfterSeconds": 2847
+}
+```
+
+客户端按 `retryAfterSeconds` 设个 `setTimeout` 就行,不用等 60 分钟。
+
+### 5. DEGRADED 状态标记
+
+健康仪表盘全部 sub-source 都炸时(罕见),顶部红色横幅:
+
+```
+❌ 健康数据源全部不可用 — 显示空为正常,稍后重试
+   失败来源: [coverage] [hotRules] [recentAnomalies] [topRejectReasons] [staleDrafts]
+```
+
+部分失败时 PARTIAL 黄色 + 列出哪些 source 失败。
+
+### 6. CLI `--format=table`
+
+```bash
+$ ruleforge rule health --project demo --days 7 --format=table
+
+✅ 状态: OK
+项目: demo · 时间窗口: 7 天 · 更新于 2026-06-09 18:15
+
+--- 覆盖率 ---
+  总规则: 50 · 活跃: 35 · 死规则: 15
+
+--- 热规则 Top ---
+  r_hot  1000  次
+  r_warm 500  次
+
+--- Top 拒绝原因 ---
+  AGE_TOO_LOW  120  次
+  INSUFFICIENT_INCOME  80  次
+
+--- 滞留草稿 ---
+  ✅ 无
+```
+
+JSON 还是 default,`--format=table` 走 pretty print。
+
+### 7. 截图
+
+`console-ui/e2e/screenshots/` 目录已经在 V5.22 phase 7 用 Playwright 截了"草稿 tab" 和 "健康 tab" 截图。新加的 V5.22.3 UI(状态历史 / 审计 / DEGRADED 横幅)截图将进 V5.22.4。

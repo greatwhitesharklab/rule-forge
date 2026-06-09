@@ -105,3 +105,67 @@ export function output(data: any, format?: string) {
         }
     }
 }
+
+/**
+ * V5.22.3 — 健康仪表盘专用 pretty print
+ *
+ * 健康响应是嵌套对象,普通 table 不友好(列名是字段路径)。
+ * 拆成 5 个子表 + 头部,更直观。
+ */
+export function outputHealthTable(data: any) {
+    if (!data || typeof data !== 'object') {
+        console.log(JSON.stringify(data, null, 2));
+        return;
+    }
+    const status = data.status || 'OK';
+    const statusColor = status === 'DEGRADED' ? '❌' : status === 'PARTIAL' ? '⚠️ ' : '✅';
+    console.log(`${statusColor} 状态: ${status}` +
+        (data.failedSources && data.failedSources.length
+            ? ` (失败: ${data.failedSources.join(', ')})` : ''));
+    console.log(`项目: ${data.project || 'all'} · 时间窗口: ${data.days || 30} 天 · 更新于 ${(data.generatedAt || '').replace('T', ' ').slice(0, 16)}`);
+    console.log('');
+
+    // 1) 覆盖率
+    const c = data.coverage || {};
+    console.log('--- 覆盖率 ---');
+    console.log(`  总规则: ${c.totalRules ?? '-'} · 活跃: ${c.activeRules ?? '-'} · 死规则: ${c.deadRules ?? '-'}`);
+    console.log('');
+
+    // 2) 热规则
+    printList('热规则 Top', data.hotRules, ['ruleId', 'fireCount'], '次触发');
+
+    // 3) 异常
+    printList('最近异常', data.recentAnomalies, ['type', 'severity', 'message'], '');
+
+    // 4) 拒绝原因
+    printList('Top 拒绝原因', data.topRejectReasons, ['reason', 'count'], '次');
+
+    // 5) 滞留草稿
+    if (data.staleDrafts && data.staleDrafts.length) {
+        console.log(`--- 滞留草稿 (${data.staleDrafts.length}) ---`);
+        data.staleDrafts.forEach((d: any) => {
+            console.log(`  ${d.draftId}  ${d.title || '(无标题)'}  [${d.status}]  ${d.project}  ${d.daysOld} 天前  by ${d.createdBy}`);
+        });
+        console.log('');
+    } else {
+        console.log('--- 滞留草稿 ---');
+        console.log('  ✅ 无');
+        console.log('');
+    }
+}
+
+function printList(title: string, rows: any[] | undefined, keys: string[], suffix: string) {
+    if (!rows || rows.length === 0) {
+        console.log(`--- ${title} ---`);
+        console.log('  (无)');
+        console.log('');
+        return;
+    }
+    console.log(`--- ${title} ---`);
+    rows.forEach((r: any) => {
+        const parts = keys.map(k => String(r[k] ?? '-'));
+        const line = '  ' + parts.join('  ');
+        console.log(suffix ? `${line}  ${suffix}` : line);
+    });
+    console.log('');
+}

@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * Agent 审计服务 (V5.22.2)
  *
@@ -58,5 +60,13 @@ public class AgentAuditService {
     private static String truncate(String s, int max) {
         if (s == null) return null;
         return s.length() > max ? s.substring(0, max) : s;
+    }
+
+    /**
+     * V5.22.3 — 按过滤条件列审计(给 BA 看自己调过的工具)。
+     * <p>每个参数都可空,空不过滤。limit 默认 50,max 200。
+     */
+    public List<AgentAuditEntity> listByFilter(String userId, String sessionId, String status, int limit) {
+        return agentAuditMapper.listByFilter(userId, sessionId, status, limit);
     }
 }

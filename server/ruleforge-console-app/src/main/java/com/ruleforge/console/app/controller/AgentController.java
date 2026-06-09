@@ -206,7 +206,8 @@ public class AgentController {
             return ResponseEntity.status(429).body(Map.of(
                     "error", "rate_limit_exceeded",
                     "message", e.getMessage(),
-                    "maxPerHour", agentRateLimiter.getMaxPerHour()
+                    "maxPerHour", agentRateLimiter.getMaxPerHour(),
+                    "retryAfterSeconds", e.getRetryAfterSeconds()  // V5.22.3
             ));
         }
 

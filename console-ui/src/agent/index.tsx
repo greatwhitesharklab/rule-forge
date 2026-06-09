@@ -8,6 +8,7 @@ import ChatPanel from './components/ChatPanel.tsx';
 import ConfigPanel from './components/ConfigPanel.tsx';
 import DraftsView from './components/DraftsView.tsx';
 import RuleHealthView from './components/RuleHealthView.tsx';
+import AgentAuditView from './components/AgentAuditView.tsx';  // V5.22.3
 import type {AgentSession, AgentMessage} from './action';
 import type {AgentState} from './reducer';
 
@@ -25,7 +26,7 @@ interface AgentPanelProps {
 
 interface AgentPanelState {
     showConfig: boolean;
-    activeTab: 'chat' | 'drafts' | 'health';  // V5.22 — chat / drafts / health tabs
+    activeTab: 'chat' | 'drafts' | 'health' | 'audit';  // V5.22.3 — 加 audit tab
 }
 
 class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
@@ -98,6 +99,19 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                 >
                     <i className="glyphicon glyphicon-stats" style={{marginRight: 4}}/>健康
                 </div>
+                <div
+                    onClick={() => this.setState({activeTab: 'audit'})}
+                    style={{
+                        padding: '6px 12px',
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        fontWeight: this.state.activeTab === 'audit' ? 600 : 400,
+                        color: this.state.activeTab === 'audit' ? '#1677ff' : '#666',
+                        borderBottom: this.state.activeTab === 'audit' ? '2px solid #1677ff' : '2px solid transparent',
+                    }}
+                >
+                    <i className="glyphicon glyphicon-list-alt" style={{marginRight: 4}}/>审计
+                </div>
             </div>
         );
     }
@@ -160,6 +174,8 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                             project={this.props.project}
                             username={this.props.username}
                         />
+                    ) : activeTab === 'audit' ? (  // V5.22.3
+                        <AgentAuditView username={this.props.username} />
                     ) : activeSessionId ? (
                         <ChatPanel
                             messages={messages}

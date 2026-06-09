@@ -48,7 +48,7 @@ interface DraftsViewState {
     filterStatus: string;
     selected: DraftDto | null;
     detail: DraftDto | null;
-    detailTab: 'content' | 'tests';   // V5.22.1 sub-tab
+    detailTab: 'content' | 'tests' | 'history';   // V5.22.3 — 加 history sub-tab
     detailLoading: boolean;
     actionLoading: boolean;
     errorMsg: string | null;
@@ -57,6 +57,19 @@ interface DraftsViewState {
     testsLoading: boolean;
     testRunResult: {passed: number; failed: number; total: number; results: any[]} | null;
     testRunLoading: boolean;
+    // V5.22.3 — 草稿状态历史
+    history: HistoryEntryDto[];
+    historyLoading: boolean;
+}
+
+// V5.22.3 — 历史条目
+interface HistoryEntryDto {
+    action: string;
+    fromStatus: string | null;
+    toStatus: string;
+    actor: string | null;
+    comment: string | null;
+    at: string | null;
 }
 
 // ====== 工具函数 ======
@@ -93,6 +106,8 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
         selected: null,
         detail: null,
         detailTab: 'content',
+        history: [],
+        historyLoading: false,
         detailLoading: false,
         actionLoading: false,
         errorMsg: null,
@@ -144,6 +159,19 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
             this.setState({testCases: Array.isArray(resp?.testCases) ? resp.testCases : [], testsLoading: false});
         } catch (e) {
             this.setState({testsLoading: false, errorMsg: '加载测试用例失败'});
+        }
+    };
+
+    // V5.22.3 — 加载草稿状态历史
+    loadHistory = async (draftId: string) => {
+        this.setState({historyLoading: true});
+        try {
+            const resp = await jsonPost<{history: HistoryEntryDto[]; count: number}>(
+                '/agent/tools/get_draft_history', {draftId}, {silent: true}
+            );
+            this.setState({history: Array.isArray(resp?.history) ? resp.history : [], historyLoading: false});
+        } catch (e) {
+            this.setState({historyLoading: false, errorMsg: '加载历史失败'});
         }
     };
 
@@ -352,7 +380,7 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
     }
 
     renderDetailTabs(detail: DraftDto) {
-        const {detailTab, testCases} = this.state;
+        const {detailTab, testCases, history} = this.state;
         return (
             <div style={{display: 'flex', borderBottom: '1px solid #e8e8e8', background: '#fafafa'}}>
                 <div
@@ -385,6 +413,92 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                         <span style={{marginLeft: 6, fontSize: 10, color: '#999'}}>({testCases.length})</span>
                     )}
                 </div>
+                <div
+                    onClick={() => {
+                        this.setState({detailTab: 'history'});
+                        if (history.length === 0 && !this.state.historyLoading) {
+                            this.loadHistory(detail.draftId);
+                        }
+                    }}
+                    style={{
+                        padding: '8px 16px', fontSize: 12, cursor: 'pointer',
+                        fontWeight: detailTab === 'history' ? 600 : 400,
+                        color: detailTab === 'history' ? '#1677ff' : '#666',
+                        borderBottom: detailTab === 'history' ? '2px solid #1677ff' : '2px solid transparent',
+                    }}
+                >
+                    <i className="glyphicon glyphicon-time" style={{marginRight: 4}}/>状态历史
+                    {history.length > 0 && (
+                        <span style={{marginLeft: 6, fontSize: 10, color: '#999'}}>({history.length})</span>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // V5.22.3 — 状态历史时间线
+    renderHistoryPane() {
+        const {history, historyLoading} = this.state;
+        if (historyLoading) {
+            return <div style={{padding: 20, textAlign: 'center', color: '#999', fontSize: 12}}>
+                <i className="glyphicon glyphicon-refresh" /> 加载中...
+            </div>;
+        }
+        if (history.length === 0) {
+            return <div style={{padding: 40, textAlign: 'center', color: '#999', fontSize: 12}}>
+                <i className="glyphicon glyphicon-time" style={{fontSize: 32, display: 'block', marginBottom: 8}}/>
+                暂无状态历史
+            </div>;
+        }
+        const actionColors: Record<string, string> = {
+            CREATE: '#1677ff', SUBMIT: '#d46b08', APPROVE: '#389e0d',
+            REJECT: '#cf1322', APPLY: '#722ed1', EXPIRE: '#999', EDIT: '#666',
+        };
+        return (
+            <div style={{flex: 1, overflow: 'auto', padding: 12, background: '#fafafa'}}>
+                {history.map((h, i) => (
+                    <div key={i} style={{display: 'flex', marginBottom: 12, position: 'relative'}}>
+                        <div style={{
+                            width: 12, height: 12, borderRadius: '50%',
+                            background: actionColors[h.action] || '#999',
+                            marginRight: 12, marginTop: 4, flexShrink: 0,
+                            border: '2px solid #fff', boxShadow: '0 0 0 1px #e8e8e8',
+                        }}/>
+                        {i < history.length - 1 && (
+                            <div style={{
+                                position: 'absolute', left: 5, top: 16, bottom: -12,
+                                width: 2, background: '#e8e8e8',
+                            }}/>
+                        )}
+                        <div style={{flex: 1, fontSize: 12}}>
+                            <div style={{marginBottom: 2}}>
+                                <span style={{
+                                    fontWeight: 600, color: actionColors[h.action] || '#666',
+                                }}>{h.action}</span>
+                                {h.fromStatus && h.toStatus && h.fromStatus !== h.toStatus && (
+                                    <span style={{color: '#666', marginLeft: 8}}>
+                                        {h.fromStatus} → {h.toStatus}
+                                    </span>
+                                )}
+                                {!h.fromStatus && h.toStatus && (
+                                    <span style={{color: '#666', marginLeft: 8}}>
+                                        → {h.toStatus}
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{color: '#999', fontSize: 11}}>
+                                {h.actor && <span>by {h.actor}</span>}
+                                {h.actor && h.at && <span> · </span>}
+                                {h.at && <span>{h.at.substring(0, 16).replace('T', ' ')}</span>}
+                            </div>
+                            {h.comment && (
+                                <div style={{marginTop: 4, padding: 6, background: '#fff', border: '1px solid #e8e8e8', borderRadius: 3, color: '#666'}}>
+                                    {h.comment}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ))}
             </div>
         );
     }
@@ -495,7 +609,7 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                             {detail.createdAt?.substring(0, 16).replace('T', ' ')}
                         </div>
                     </div>
-                    <button className="btn btn-xs btn-default" onClick={() => this.setState({detail: null, detailTab: 'content', testCases: [], testRunResult: null})}>
+                    <button className="btn btn-xs btn-default" onClick={() => this.setState({detail: null, detailTab: 'content', testCases: [], testRunResult: null, history: []})}>
                         <i className="glyphicon glyphicon-arrow-left" /> 返回列表
                     </button>
                 </div>
@@ -574,6 +688,8 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                             {contentJson}
                         </pre>
                     </div>
+                ) : this.state.detailTab === 'history' ? (
+                    this.renderHistoryPane()
                 ) : (
                     this.renderTestsPane(detail)
                 )}

@@ -127,10 +127,10 @@ class AgentControllerInvokeToolTest {
     class RateLimit {
 
         @Test
-        @DisplayName("Given 限流器抛 RateLimitExceeded When 调 invokeTool Then 返 429 + 写审计 RATE_LIMITED")
+        @DisplayName("Given 限流器抛 RateLimitExceeded When 调 invokeTool Then 返 429 + 写审计 RATE_LIMITED + 带 retryAfterSeconds")
         void shouldReturn429() {
             // Given
-            doThrow(new AgentRateLimiter.RateLimitExceededException("user1 超过每小时 100 次"))
+            doThrow(new AgentRateLimiter.RateLimitExceededException("user1 超过每小时 100 次调用上限", 3600L))
                     .when(agentRateLimiter).check(any(), any());
             when(agentRateLimiter.getMaxPerHour()).thenReturn(100);
 
@@ -141,6 +141,9 @@ class AgentControllerInvokeToolTest {
             assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
             assertThat(resp.getBody().toString()).contains("rate_limit_exceeded");
             assertThat(resp.getBody().toString()).contains("100");
+            // V5.22.3 — retryAfterSeconds 在 429 响应里
+            assertThat(resp.getBody().toString()).contains("retryAfterSeconds");
+            assertThat(resp.getBody().toString()).contains("3600");
         }
     }
 }

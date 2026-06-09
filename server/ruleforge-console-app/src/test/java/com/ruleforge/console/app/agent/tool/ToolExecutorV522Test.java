@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ruleforge.console.app.draft.DraftApplyService;
 import com.ruleforge.console.app.draft.DraftEntity;
+import com.ruleforge.console.app.draft.DraftHistoryService;
 import com.ruleforge.console.app.draft.DraftService;
 import com.ruleforge.console.app.draft.TestCaseEntity;
 import com.ruleforge.console.app.draft.TestCaseService;
+import com.ruleforge.console.app.agent.audit.AgentAuditService;
 import com.ruleforge.console.app.service.IAnalysisService;
 import com.ruleforge.console.service.impl.RuleForgeRepositoryServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,13 +61,17 @@ class ToolExecutorV522Test {
     private DraftApplyService draftApplyService;
     @Mock
     private TestCaseService testCaseService;
+    @Mock
+    private DraftHistoryService historyService;  // V5.22.3
+    @Mock
+    private AgentAuditService auditService;       // V5.22.3
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private ToolExecutor executor;
 
     @BeforeEach
     void setUp() {
-        executor = new ToolExecutor(analysisService, repoService, objectMapper, draftService, draftApplyService, testCaseService);
+        executor = new ToolExecutor(analysisService, repoService, objectMapper, draftService, draftApplyService, testCaseService, historyService, auditService);
     }
 
     // ========== draft_rule ==========

@@ -41,16 +41,36 @@ public class AgentRateLimiter {
         Instant cutoff = now.minus(1, ChronoUnit.HOURS);
 
         if (userId != null && !userId.isEmpty()) {
-            if (!tryAcquire(userWindow.computeIfAbsent(userId, k -> new ArrayDeque<>()), now, cutoff)) {
+            Deque<Instant> w = userWindow.computeIfAbsent(userId, k -> new ArrayDeque<>());
+            if (!tryAcquire(w, now, cutoff)) {
+                long retryAfter = secondsUntilOldestExits(w, now);
                 throw new RateLimitExceededException(
-                        "用户 " + userId + " 超过每小时 " + maxPerHour + " 次调用上限");
+                        "用户 " + userId + " 超过每小时 " + maxPerHour + " 次调用上限",
+                        retryAfter);
             }
         }
         if (sessionId != null && !sessionId.isEmpty()) {
-            if (!tryAcquire(sessionWindow.computeIfAbsent(sessionId, k -> new ArrayDeque<>()), now, cutoff)) {
+            Deque<Instant> w = sessionWindow.computeIfAbsent(sessionId, k -> new ArrayDeque<>());
+            if (!tryAcquire(w, now, cutoff)) {
+                long retryAfter = secondsUntilOldestExits(w, now);
                 throw new RateLimitExceededException(
-                        "会话 " + sessionId + " 超过每小时 " + maxPerHour + " 次调用上限");
+                        "会话 " + sessionId + " 超过每小时 " + maxPerHour + " 次调用上限",
+                        retryAfter);
             }
+        }
+    }
+
+    /**
+     * 算滑动窗口里"最早一次调用"还需要几秒才滑出 1 小时窗口。
+     * 给客户端一个明确的 retry-after,而不是干瞪眼等 60 分钟。
+     */
+    private long secondsUntilOldestExits(Deque<Instant> window, Instant now) {
+        synchronized (window) {
+            if (window.isEmpty()) return 1;
+            Instant oldest = window.peekFirst();
+            Instant exitTime = oldest.plus(1, ChronoUnit.HOURS);
+            long secs = ChronoUnit.SECONDS.between(now, exitTime);
+            return Math.max(1, secs);  // 至少 1 秒,前端好处理
         }
     }
 
@@ -89,8 +109,13 @@ public class AgentRateLimiter {
         return maxPerHour;
     }
 
-    /** 限流异常 */
+    /** 限流异常(V5.22.3 — 带 retryAfterSeconds 字段) */
     public static class RateLimitExceededException extends RuntimeException {
-        public RateLimitExceededException(String msg) { super(msg); }
+        private final long retryAfterSeconds;
+        public RateLimitExceededException(String msg, long retryAfterSeconds) {
+            super(msg);
+            this.retryAfterSeconds = retryAfterSeconds;
+        }
+        public long getRetryAfterSeconds() { return retryAfterSeconds; }
     }
 }

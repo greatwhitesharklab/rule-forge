@@ -7,9 +7,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ruleforge.console.app.draft.DraftApplyService;
 import com.ruleforge.console.app.draft.DraftEntity;
+import com.ruleforge.console.app.draft.DraftHistoryEntity;
+import com.ruleforge.console.app.draft.DraftHistoryService;
 import com.ruleforge.console.app.draft.DraftService;
 import com.ruleforge.console.app.draft.TestCaseEntity;
 import com.ruleforge.console.app.draft.TestCaseService;
+import com.ruleforge.console.app.agent.audit.AgentAuditEntity;
+import com.ruleforge.console.app.agent.audit.AgentAuditService;
 import com.ruleforge.console.app.service.IAnalysisService;
 import com.ruleforge.console.repository.model.ResourceItem;
 import com.ruleforge.console.repository.model.ResourcePackage;
@@ -43,6 +47,8 @@ public class ToolExecutor {
     private final DraftService draftService;
     private final DraftApplyService draftApplyService;
     private final TestCaseService testCaseService;
+    private final DraftHistoryService draftHistoryService;       // V5.22.3
+    private final AgentAuditService agentAuditService;            // V5.22.3
 
     /**
      * 执行工具调用
@@ -89,6 +95,10 @@ public class ToolExecutor {
 
                 // V5.22.2 — 规则健康仪表盘
                 case ToolRegistry.GET_RULE_HEALTH -> executeGetRuleHealth(args);
+
+                // V5.22.3 — 草稿状态历史 + 工具调用审计
+                case ToolRegistry.GET_DRAFT_HISTORY -> executeGetDraftHistory(args);
+                case ToolRegistry.LIST_AGENT_AUDIT -> executeListAgentAudit(args);
 
                 default -> "{\"error\": \"Unknown tool: " + toolName + "\"}";
             };
@@ -657,15 +667,24 @@ public class ToolExecutor {
         out.put("days", days);
         out.put("generatedAt", new Date().toInstant().toString());
 
+        // V5.22.3 — 跟踪每个 sub-source 成功/失败,用于 DEGRADED 标记
+        ArrayNode failedSources = objectMapper.createArrayNode();
+        int sourceCount = 0;
+        int failedCount = 0;
+
         // 1) 死规则(从覆盖率分析里)
         try {
             Map<String, Object> coverage = analysisService.getRuleCoverageAnalysis(project, startTime, endTime);
             // coverage 是 Map,可能含 deadRules / hotRules / totalRules / activeRules 等
             ObjectNode coverageNode = objectMapper.valueToTree(coverage);
             out.set("coverage", coverageNode);
+            sourceCount++;
         } catch (Exception e) {
             log.warn("getRuleCoverageAnalysis 失败: {}", e.getMessage());
             out.set("coverage", objectMapper.createObjectNode());
+            failedSources.add("coverage");
+            failedCount++;
+            sourceCount++;
         }
 
         // 2) 热规则 Top 5
@@ -677,9 +696,13 @@ public class ToolExecutor {
                 hot.add(objectMapper.valueToTree(freq.get(i)));
             }
             out.set("hotRules", hot);
+            sourceCount++;
         } catch (Exception e) {
             log.warn("getRuleFireFrequency 失败: {}", e.getMessage());
             out.set("hotRules", objectMapper.createArrayNode());
+            failedSources.add("hotRules");
+            failedCount++;
+            sourceCount++;
         }
 
         // 3) 最近异常
@@ -691,18 +714,26 @@ public class ToolExecutor {
                 arr.add(objectMapper.valueToTree(anomalies.get(i)));
             }
             out.set("recentAnomalies", arr);
+            sourceCount++;
         } catch (Exception e) {
             log.warn("detectAnomalies 失败: {}", e.getMessage());
             out.set("recentAnomalies", objectMapper.createArrayNode());
+            failedSources.add("recentAnomalies");
+            failedCount++;
+            sourceCount++;
         }
 
         // 4) Top 拒绝原因
         try {
             List<Map<String, Object>> reject = analysisService.getRejectDistribution(startTime, endTime, project, 5);
             out.set("topRejectReasons", objectMapper.valueToTree(reject));
+            sourceCount++;
         } catch (Exception e) {
             log.warn("getRejectDistribution 失败: {}", e.getMessage());
             out.set("topRejectReasons", objectMapper.createArrayNode());
+            failedSources.add("topRejectReasons");
+            failedCount++;
+            sourceCount++;
         }
 
         // 5) 滞留草稿
@@ -744,11 +775,30 @@ public class ToolExecutor {
                     staleDrafts.add(n);
                 }
             }
+            sourceCount++;
         } catch (Exception e) {
             log.warn("staleDrafts 收集失败: {}", e.getMessage());
+            failedSources.add("staleDrafts");
+            failedCount++;
+            sourceCount++;
         }
         out.set("staleDrafts", staleDrafts);
         out.put("staleDraftCount", staleDrafts.size());
+
+        // V5.22.3 — DEGRADED 标记:5 个 sub-source 全炸时返 status
+        // 部分失败: status=PARTIAL, 完整: status=OK
+        String status;
+        if (failedCount == 0) {
+            status = "OK";
+        } else if (failedCount >= sourceCount) {
+            status = "DEGRADED";
+        } else {
+            status = "PARTIAL";
+        }
+        out.put("status", status);
+        out.put("failedSources", failedSources);
+        out.put("failedSourceCount", failedCount);
+        out.put("totalSourceCount", sourceCount);
 
         return objectMapper.writeValueAsString(out);
     }
@@ -866,5 +916,57 @@ public class ToolExecutor {
                 return null;
             }
         }
+    }
+
+    // ===== V5.22.3 草稿历史 + 工具调用审计 =====
+
+    private String executeGetDraftHistory(JsonNode args) throws Exception {
+        String draftId = args.path("draftId").asText("");
+        if (draftId.isEmpty()) return "{\"error\": \"draftId 参数必填\"}";
+
+        if (draftService.get(draftId).isEmpty()) {
+            return "{\"error\": \"草稿不存在 draftId=" + draftId + "\"}";
+        }
+
+        List<DraftHistoryEntity> history = draftHistoryService.listByDraftId(draftId);
+        ArrayNode arr = objectMapper.createArrayNode();
+        for (DraftHistoryEntity h : history) {
+            arr.add(draftHistoryService.toDto(h));
+        }
+        return objectMapper.writeValueAsString(Map.of(
+                "draftId", draftId,
+                "history", arr,
+                "count", history.size()
+        ));
+    }
+
+    private String executeListAgentAudit(JsonNode args) throws Exception {
+        String userId = args.path("userId").asText(null);
+        String sessionId = args.path("sessionId").asText(null);
+        String status = args.path("status").asText(null);
+        int limit = args.path("limit").asInt(50);
+        if (limit <= 0 || limit > 200) limit = 50;
+
+        List<AgentAuditEntity> rows = agentAuditService.listByFilter(userId, sessionId, status, limit);
+        ArrayNode arr = objectMapper.createArrayNode();
+        for (AgentAuditEntity a : rows) {
+            ObjectNode n = objectMapper.createObjectNode();
+            n.put("id", a.getId());
+            n.put("sessionId", a.getSessionId());
+            n.put("messageId", a.getMessageId());
+            n.put("userId", a.getUserId());
+            n.put("toolName", a.getToolName());
+            n.put("argsSummary", a.getArgsSummary());
+            n.put("resultSize", a.getResultSize());
+            n.put("status", a.getStatus());
+            n.put("errorCode", a.getErrorCode());
+            n.put("durationMs", a.getDurationMs());
+            n.put("at", a.getCreatedAt() != null ? a.getCreatedAt().toInstant().toString() : null);
+            arr.add(n);
+        }
+        return objectMapper.writeValueAsString(Map.of(
+                "audits", arr,
+                "count", rows.size()
+        ));
     }
 }

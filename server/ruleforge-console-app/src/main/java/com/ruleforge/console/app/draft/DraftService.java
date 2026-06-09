@@ -41,6 +41,7 @@ public class DraftService {
     private final DraftMapper draftMapper;
     private final RuleSchemaService ruleSchemaService;
     private final ObjectMapper objectMapper;
+    private final DraftHistoryService historyService;  // V5.22.3
 
     /** 默认 7 天过期 */
     private static final int DEFAULT_EXPIRY_DAYS = 7;
@@ -81,6 +82,9 @@ public class DraftService {
 
         draftMapper.insert(draft);
         log.info("[Draft] 创建草稿 draftId={} type={} project={} by={}", draft.getDraftId(), ruleType, project, createdBy);
+        // V5.22.3 — 记一条 CREATE 历史
+        historyService.record(draft.getDraftId(), DraftHistoryEntity.ACTION_CREATE,
+                null, DraftEntity.STATUS_DRAFT, createdBy, title);
         return draft;
     }
 
@@ -122,6 +126,8 @@ public class DraftService {
         d.setUpdatedAt(new Date());
         draftMapper.updateById(d);
         log.info("[Draft] {} 提交审批 by={}", draftId, submittedBy);
+        historyService.record(draftId, DraftHistoryEntity.ACTION_SUBMIT,
+                DraftEntity.STATUS_DRAFT, DraftEntity.STATUS_PENDING_REVIEW, submittedBy, null);
         return d;
     }
 
@@ -140,6 +146,8 @@ public class DraftService {
         d.setReviewComment(reason);
         draftMapper.updateById(d);
         log.info("[Draft] {} 被 {} 拒绝: {}", draftId, reviewer, reason);
+        historyService.record(draftId, DraftHistoryEntity.ACTION_REJECT,
+                DraftEntity.STATUS_PENDING_REVIEW, DraftEntity.STATUS_REJECTED, reviewer, reason);
         return d;
     }
 
@@ -158,6 +166,8 @@ public class DraftService {
         d.setReviewComment(comment);
         draftMapper.updateById(d);
         log.info("[Draft] {} 被 {} 审批通过: {}", draftId, reviewer, comment);
+        historyService.record(draftId, DraftHistoryEntity.ACTION_APPROVE,
+                DraftEntity.STATUS_PENDING_REVIEW, DraftEntity.STATUS_APPROVED, reviewer, comment);
         return d;
     }
 
@@ -175,6 +185,8 @@ public class DraftService {
         d.setAppliedAt(new Date());
         draftMapper.updateById(d);
         log.info("[Draft] {} 标记应用 version={}", draftId, appliedVersion);
+        historyService.record(draftId, DraftHistoryEntity.ACTION_APPLY,
+                DraftEntity.STATUS_APPROVED, DraftEntity.STATUS_APPROVED, appliedVersion, "appliedVersion=" + appliedVersion);
         return d;
     }
 
@@ -182,7 +194,16 @@ public class DraftService {
      * 把过期 DRAFT 标 EXPIRED(定时任务调)
      */
     public int sweepExpired() {
-        return draftMapper.markExpiredDrafts(DraftEntity.STATUS_DRAFT, DraftEntity.STATUS_EXPIRED);
+        int n = draftMapper.markExpiredDrafts(DraftEntity.STATUS_DRAFT, DraftEntity.STATUS_EXPIRED);
+        if (n > 0) {
+            // 批量更新:重新查过期草稿,逐个记历史
+            List<DraftEntity> drafts = draftMapper.listByStatus(DraftEntity.STATUS_EXPIRED, n + 10);
+            for (DraftEntity d : drafts) {
+                historyService.record(d.getDraftId(), DraftHistoryEntity.ACTION_EXPIRE,
+                        DraftEntity.STATUS_DRAFT, DraftEntity.STATUS_EXPIRED, "system", "7 天未提交审批自动过期");
+            }
+        }
+        return n;
     }
 
     // ========== 校验 ==========
