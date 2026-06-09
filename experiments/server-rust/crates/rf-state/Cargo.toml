@@ -1,0 +1,20 @@
+[package]
+name = "rf-state"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Postgres-backed decision flow state + recovery loop (pg_try_advisory_lock)"
+
+[dependencies]
+rf-ir = { path = "../rf-ir" }
+rf-executor = { path = "../rf-executor" }
+sqlx = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+async-trait = "0.1"
+anyhow = { workspace = true }

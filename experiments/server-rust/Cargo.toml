@@ -1,0 +1,61 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/rf-ir",
+    "crates/rf-parse",
+    "crates/rf-executor",
+    "crates/rf-rule",
+    "crates/rf-state",
+    "crates/rf-http",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "MIT"
+
+[workspace.dependencies]
+# async runtime
+tokio = { version = "1", features = ["full"] }
+# HTTP server (only rf-http uses it; declared at workspace level for unified upgrades)
+axum = "0.7"
+# HTTP client (rf-http uses to call console /flow/load)
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+# zero-copy XML
+roxmltree = "0.20"
+# postgres
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "json", "chrono", "uuid", "migrate", "macros"] }
+# serde
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# hashing
+sha2 = "0.10"
+# error types
+thiserror = "1"
+anyhow = "1"
+# logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# misc
+uuid = { version = "1", features = ["v4", "serde"] }
+clap = { version = "4", features = ["derive", "env"] }
+chrono = { version = "0.4", features = ["serde"] }
+dashmap = "6"
+# script engine (rf-executor script task executor — Phase 4)
+rhai = { version = "1", features = ["sync", "std"] }
+# regex for UEL condition evaluator
+regex = "1"
+# pollster: synchronous block_on for the test runtime (Phase 3 step() is
+# async-flavoured so Phase 4 can plug in real async executors, but the
+# dispatcher is still CPU-bound so we don't need a real Tokio runtime in
+# the test harness)
+pollster = "0.3"
+# rand for percent routing
+rand = "0.8"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true

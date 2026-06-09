@@ -1,0 +1,36 @@
+[package]
+name = "rf-http"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "axum HTTP service — /ruleforge/evaluate + /flow/decision + /flow/invalidate"
+
+[[bin]]
+name = "rf-http"
+path = "src/main.rs"
+
+[dependencies]
+rf-ir = { path = "../rf-ir" }
+rf-parse = { path = "../rf-parse" }
+rf-executor = { path = "../rf-executor" }
+rf-rule = { path = "../rf-rule" }
+rf-state = { path = "../rf-state" }
+tokio = { workspace = true }
+axum = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+clap = { workspace = true }
+dashmap = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+async-trait = "0.1"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+sqlx = { workspace = true }
