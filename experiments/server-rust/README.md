@@ -1,4 +1,4 @@
-# rust-ruleforge
+# server-rust (rust-ruleforge)
 
 Rust port of the RuleForge decision flow executor. Sibling project to the Java executor — runs on its own port (8281), uses its own Postgres state store, talks the same HTTP protocol to the Java console.
 

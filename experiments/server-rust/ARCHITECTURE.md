@@ -2,7 +2,7 @@
 
 Comparison of the **6 key design points** that drive the V5.20+ Java
 self-built engine (`ruleforge-decision`) and the Phase 1-7 Rust port
-(`rust-ruleforge`). The goal is **architectural exploration**, not 1:1
+(`server-rust`, previously called `rust-ruleforge`). The goal is **architectural exploration**, not 1:1
 translation — Rust picks the type-system-driven shape that fits
 naturally, Java sticks with what the Spring / Flowable heritage gives
 it.

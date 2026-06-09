@@ -19,7 +19,7 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
         StatusCode::OK,
         Json(json!({
             "status": "ok",
-            "service": "rust-ruleforge",
+            "service": "server-rust",
             "phase": 6,
             "worker_id": state.worker_id,
             "cache_size": state.repo.cache_size(),
