@@ -2,7 +2,8 @@
 //!
 //! Phase 6 surface (Phase 5 routes + pg-backed state):
 //! - `POST /ruleforge/evaluate`        run a flow synchronously
-//! - `POST /ruleforge/flow/decision`   resume a suspended flow
+//! - `POST /ruleforge/flow/decision`   resume a suspended (userTask) flow
+//! - `POST /ruleforge/flow/event`      deliver a message/signal to a suspended flow
 //! - `POST /ruleforge/flow/invalidate` drop a flow_id from the cache
 //! - `GET  /ruleforge/flow/load`       proxy to the Java console
 //! - `GET  /health`                    liveness probe
@@ -27,7 +28,7 @@ use rf_executor::flow_context::FlowContext;
 use rf_executor::traverser::{traverse, TraverseOutcome};
 use rf_http::flow_def_repo::{FlowDefinitionRepo, HttpFlowLoader};
 use rf_http::inflight::{InflightStore, PgInflightStore};
-use rf_http::routes::{decision, evaluate, health, invalidate, load};
+use rf_http::routes::{decision, evaluate, event, health, invalidate, load};
 use rf_http::state::AppState;
 use rf_rule::mock::MockRuleEngine;
 use rf_state::persistence::PgStateStore;
@@ -144,6 +145,10 @@ async fn main() -> Result<()> {
         .route(
             "/ruleforge/flow/decision",
             axum::routing::post(decision::decide),
+        )
+        .route(
+            "/ruleforge/flow/event",
+            axum::routing::post(event::deliver),
         )
         .route(
             "/ruleforge/flow/invalidate",

@@ -3,6 +3,7 @@
 //! Phase 5 surface:
 //! - `POST /ruleforge/evaluate`        run a flow synchronously
 //! - `POST /ruleforge/flow/decision`   resume a suspended (userTask) flow
+//! - `POST /ruleforge/flow/event`      deliver a message/signal to a suspended flow
 //! - `POST /ruleforge/flow/invalidate` drop a flow_id from the cache
 //! - `GET  /ruleforge/flow/load`       proxy to the Java console (raw XML)
 //! - `GET  /health`                    liveness probe
