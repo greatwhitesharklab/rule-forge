@@ -26,6 +26,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [5.24.0] - 2026-06-10
+
+### Changed
+
+**`createFile` 自动建 parent folder(沿用 uruleV1 JCR-style 体验) — V5.24**
+
+之前 `createFile(path, ...)` 在 parent folder 不存在时直接 NPE
+(`parentFile.getProjectId()`),LLM agent / CLI 调
+`rf file create <deep/path/file.xml>` 时被迫先手动建每一层 folder,
+跟 uruleV1 的 `/frame/createFile` 不一样。
+
+**改动**:
+- `RuleForgeRepositoryServiceImpl.createFileNode` — parent 缺失时调用
+  新增的 `ensureParentFolders(parentPath, user)`,递归向上建 folder chain
+- `ensureParentFolders` 是 idempotent 的:递归到已存在的 ancestor 就停;
+  race 期间另一线程已建好 parent,跳过 insert(走 `findByFilePathNeType` 二次确认)
+- 极端 case(连 project root 都没)→ 抛 `RuleException("Cannot resolve ancestor")`,
+  提示明确,不会 NPE
+- 沿用现有 `RepositoryInterceptor.createFile` + `file_repository.batchInsertRelations`
+  关系链 + Flyway 路径,**没有 schema 变更**
+
+**测试**:5 个 BDD scenario 覆盖 happy path / 单层缺失 / 多层缺失 /
+极端 ancestor 缺失 / 并发 race。390/390 console-app 测试通过。
+
+**CLI 配合**:`rf file create` 不再需要先 `rf folder create` — 一次到位。
+
+---
+
 ## [5.23.0] - 2026-06-10
 
 ### Added

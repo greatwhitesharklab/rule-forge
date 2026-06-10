@@ -1039,6 +1039,77 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
         return project.getId();
     }
 
+    /**
+     * V5.24: 自动建 parent folder chain。
+     *
+     * <p>给定一个不存在的 parent path(形如 {@code /project/a/b/c}),
+     * 递归向上找第一个存在的 ancestor(项目根目录或中间 folder),
+     * 然后从那里向下逐层建 folder。已存在则跳过(idempotent)。
+     *
+     * <p>不在 createFileNode 内部直接递归的原因:createFileNode 有
+     * "已存在 → 抛 RuleException" 的语义,folder 递归建需要 idempotent
+     * 语义(并发场景下另一个请求可能已经建好了)。所以单独抽
+     * ensureParentFolders + idempotent 文件存在检查。
+     */
+    private FileEntity ensureParentFolders(String parentPath, User user) throws Exception {
+        if (parentPath == null || parentPath.isEmpty() || !parentPath.contains("/")) {
+            // 已到 project root,这种情况是 bug,父链断了
+            throw new RuleException("Cannot resolve ancestor for path: " + parentPath);
+        }
+        FileEntity existing = this.fileRepository.findByFilePathNeType(parentPath, Type.project.ordinal());
+        if (existing != null) {
+            return existing; // 已存在,跳过
+        }
+        // 递归向上(先建祖先,再建自己)
+        String ancestor = parentPath.substring(0, parentPath.lastIndexOf("/"));
+        FileEntity ancestorFile;
+        if (!ancestor.isEmpty() && ancestor.contains("/")) {
+            ancestorFile = ensureParentFolders(ancestor, user);
+        } else {
+            // ancestor 是 project root(如 "/proj")
+            ancestorFile = this.fileRepository.findByFilePathNeType(ancestor, Type.project.ordinal());
+            if (ancestorFile == null) {
+                throw new RuleException("Cannot resolve ancestor: " + ancestor);
+            }
+        }
+        // 跳过再次 race(并发场景)
+        existing = this.fileRepository.findByFilePathNeType(parentPath, Type.project.ordinal());
+        if (existing != null) {
+            return existing;
+        }
+        long projectId = ancestorFile.getProjectId();
+        String folderName = parentPath.substring(parentPath.lastIndexOf("/") + 1);
+
+        FileEntity folder = new FileEntity();
+        folder.setName(folderName);
+        folder.setFileType(Type.folder.ordinal());
+        folder.setProjectId(projectId);
+        folder.setFilePath(parentPath);
+        folder.setCreateTime(new Date());
+        this.fileRepository.insert(folder);
+
+        List<FileRelationEntity> parentRelationList = this.fileRepository.findRelationsByDescendant(ancestorFile.getId());
+        List<FileRelationEntity> fileRelationList = new ArrayList<>(parentRelationList.size() + 1);
+        parentRelationList.forEach(parentRelation -> {
+            FileRelationEntity fileRelation = new FileRelationEntity();
+            fileRelation.setAncestor(parentRelation.getAncestor());
+            fileRelation.setDescendant(folder.getId());
+            fileRelation.setDistance(parentRelation.getDistance() + 1);
+            fileRelation.setProjectId(projectId);
+            fileRelationList.add(fileRelation);
+        });
+        FileRelationEntity fileRelation = new FileRelationEntity();
+        fileRelation.setAncestor(ancestorFile.getId());
+        fileRelation.setDescendant(folder.getId());
+        fileRelation.setDistance(1);
+        fileRelation.setProjectId(projectId);
+        fileRelationList.add(fileRelation);
+        this.fileRepository.batchInsertRelations(fileRelationList);
+
+        this.repositoryInterceptor.createFile(parentPath, null);
+        return folder; // 把刚建的 folder 直接返给 caller(避免再 query)
+    }
+
     private void createFileNode(String path, String content, User user, boolean isFile) throws Exception {
         path = processPath(path);
         try {
@@ -1048,6 +1119,12 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
 
             String parentPath = path.substring(0, path.lastIndexOf("/"));
             FileEntity parentFile = this.fileRepository.findByFilePathNeType(parentPath, Type.project.ordinal());
+            // V5.24: 自动建 parent folder(沿用 uruleV1 JCR-style 体验)。
+            // parent 不存在 → 递归向上建 folder,直到 hit project root。
+            // ensureParentFolders 内部走权限校验,避免循环触发 NPE。
+            if (parentFile == null) {
+                parentFile = ensureParentFolders(parentPath, user);
+            }
 
             String fileName = path.substring(path.lastIndexOf("/") + 1);
             String createUser = user.getUsername();
