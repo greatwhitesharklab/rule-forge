@@ -31,6 +31,18 @@ use tracing::{debug, warn};
 
 use crate::flow_def_repo::FlowDefinitionRepo;
 
+/// Map an executor `WaitType` to the BPMN `NodeKind` label written to
+/// the `current_node_type` column on the pg row. The label is for
+/// observability / queries — Java parity uses the BPMN element name.
+/// Both `AsyncData` (message / signal catch) and `AsyncTask` (timer
+/// catch) live on `intermediateCatchEvent`, so they share a label.
+fn node_type_for(wait_type: WaitType) -> &'static str {
+    match wait_type {
+        WaitType::UserTask => "UserTask",
+        WaitType::AsyncData | WaitType::AsyncTask => "IntermediateEvent",
+    }
+}
+
 /// One in-flight (suspended) flow run. The `def` is held by `Arc` so
 /// cloning an `InflightFlow` is cheap.
 #[derive(Debug, Clone)]
@@ -180,13 +192,14 @@ impl InflightStore for PgInflightStore {
         // WAITING_CALLBACK. The userTask path's row_vars needs the
         // intermediate ctx state, so we mirror the in-memory store:
         // write a row, then suspend it.
+        let node_type = node_type_for(wait_type);
         if let Err(e) = self
             .state
             .insert_start(
                 &flow_id,
                 &flow_run_id,
                 Some(flow.ctx.current_node_id.as_deref().unwrap_or("")),
-                Some("UserTask"),
+                Some(node_type),
                 Some(flow.def.source_xml_hash.as_str()),
             )
             .await
@@ -206,7 +219,7 @@ impl InflightStore for PgInflightStore {
             .mark_suspended(
                 &flow_run_id,
                 Some(flow.ctx.current_node_id.as_deref().unwrap_or("")),
-                Some("UserTask"),
+                Some(node_type),
                 wait_type.into(),
                 &wait_ref,
                 flow.suspend_info.as_ref().and_then(|i| i.next_retry_at),

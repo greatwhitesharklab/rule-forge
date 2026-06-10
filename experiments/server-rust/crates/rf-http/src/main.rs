@@ -263,11 +263,19 @@ impl Recover for HttpRecover {
             TraverseOutcome::Suspended(t, info) => {
                 // Re-suspend with the new info. Same effect as
                 // Phase 5's inflight store; pg row is rewritten.
+                // The `current_node_type` column is derived from
+                // `wait_type` so message/signal/timer catches are
+                // labelled `IntermediateEvent` (not `UserTask`).
+                let node_type = match info.wait_type {
+                    rf_executor::node_result::WaitType::UserTask => "UserTask",
+                    rf_executor::node_result::WaitType::AsyncData
+                    | rf_executor::node_result::WaitType::AsyncTask => "IntermediateEvent",
+                };
                 self.state
                     .mark_suspended(
                         flow_run_id,
                         Some(t.ctx.current_node_id.as_deref().unwrap_or("")),
-                        Some("UserTask"),
+                        Some(node_type),
                         info.wait_type.into(),
                         &info.wait_ref,
                         info.next_retry_at,

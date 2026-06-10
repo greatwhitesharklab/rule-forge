@@ -297,6 +297,12 @@ impl PgStateStore {
     /// picked rows are then individually locked with
     /// `try_advisory_lock(row.id)`.
     ///
+    /// Excludes `wait_type = ASYNC_DATA` — message / signal catch
+    /// waits are driven by external event delivery (`/flow/event`),
+    /// not by the recovery loop. A `next_retry_at IS NULL` AsyncData
+    /// row would otherwise be picked up forever and re-suspended in a
+    /// busy loop.
+    ///
     /// Returns up to `limit` rows. The caller is responsible for the
     /// subsequent `try_advisory_lock` + `resume`.
     pub async fn select_recoverable_skip_locked(
@@ -316,6 +322,7 @@ impl PgStateStore {
             FROM rust_decision_flow_state
             WHERE status IN ('PENDING_ASYNC', 'WAITING_CALLBACK')
               AND (next_retry_at IS NULL OR next_retry_at <= NOW())
+              AND (wait_type IS NULL OR wait_type != 'ASYNC_DATA')
             ORDER BY id
             LIMIT $1
             FOR UPDATE SKIP LOCKED
