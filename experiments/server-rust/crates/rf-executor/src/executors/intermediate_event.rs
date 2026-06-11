@@ -13,6 +13,28 @@
 //! timer catch suspends with `WaitType::AsyncTask` + a
 //! `next_retry_at`; throw events are no-ops (Continue).
 //!
+//! ## V5.28 P2 — wait_ref namespacing
+//!
+//! V5.26 P0 used the raw `event_name` as the `wait_ref` and
+//! `current_awaiting_field`. That collides if two different
+//! kinds share the same name (e.g. a flow has a
+//! `message:foo` catch AND a `signal:foo` catch — both
+//! would have `wait_ref = "foo"`, breaking the
+//! `/flow/event` handler's resume-by-wait_ref lookup and
+//! the gateway routing). V5.28 P2 namespaces every
+//! wait_ref by kind:
+//!
+//! - message catch  → `message:<event_name>`
+//! - signal catch   → `signal:<event_name>`
+//! - timer catch    → `timer:<node_id>`
+//!
+//! Same shape as `BoundaryEventExecutor`'s
+//! `error:<error_ref>` / `boundaryTimer:<node_id>`. The
+//! `current_awaiting_field` follows the same namespacing
+//! so the resume path (HTTP `/flow/event` handler
+//! writing `current_awaiting_field` to the event name) can
+//! disambiguate.
+//
 //! ## Discriminator
 //!
 //! The event kind is read from the `ruleforge:eventType` attribute
@@ -25,10 +47,10 @@
 //!
 //! The resume path mirrors `UserTaskNodeExecutor`: if the caller
 //! (HTTP `/flow/event` handler — Phase 4+) already wrote
-//! `current_awaiting_field` matching the event name and a
-//! `current_awaiting_value`, this is a continuation — return
-//! `Continue` so the next gateway can route on the event
-//! payload.
+//! `current_awaiting_field` matching the namespaced event ref
+//! (`message:<name>` etc.) and a `current_awaiting_value`,
+//! this is a continuation — return `Continue` so the next
+//! gateway can route on the event payload.
 
 use async_trait::async_trait;
 use chrono::{DateTime, Duration, Utc};
@@ -179,15 +201,13 @@ impl NodeExecutor for IntermediateEventExecutor {
         let kind = IntermediateEventKind::from_attrs(attrs)
             .map_err(|e| FlowError::Action(e.to_string()))?;
 
-        // Distinguish message vs signal before we move `name` into
-        // the helper. `kind` carries the discriminator; we
-        // inspect it before destructuring.
-        let is_message = matches!(&kind, IntermediateEventKind::Message { .. });
-
         match kind {
             IntermediateEventKind::None => Ok(NodeResult::Continue),
-            IntermediateEventKind::Message { name } | IntermediateEventKind::Signal { name } => {
-                catch_message_or_signal(node, ctx, &name, is_message)
+            IntermediateEventKind::Message { name } => {
+                catch_message(node, ctx, &name)
+            }
+            IntermediateEventKind::Signal { name } => {
+                catch_signal(node, ctx, &name)
             }
             IntermediateEventKind::Timer { duration } => {
                 catch_timer(node, ctx, duration)
@@ -196,43 +216,85 @@ impl NodeExecutor for IntermediateEventExecutor {
     }
 }
 
-/// Message / signal catch path. The event name is the wait_ref;
-/// the resume handler (`/flow/event` Phase 4+) writes
-/// `current_awaiting_value` with the event payload.
-fn catch_message_or_signal(
+/// V5.28 P2 — shared resume check helper. Returns true if
+/// `current_awaiting_field` matches `kind_ref` (the namespaced
+/// wait_ref, e.g. `"message:approval_received"`) AND a value
+/// is present. Pulled out so message / signal / timer all
+/// share the same shape — the only thing that varies is
+/// how the namespaced `kind_ref` is built.
+fn is_resume(ctx: &FlowContext, kind_ref: &str) -> bool {
+    ctx.current_awaiting_field.as_deref() == Some(kind_ref)
+        && ctx.current_awaiting_value.is_some()
+}
+
+/// Message catch path. `wait_ref` and `current_awaiting_field`
+/// are both `message:<event_name>` (V5.28 P2 namespacing).
+/// The resume handler (`/flow/event`) writes
+/// `current_awaiting_value` with the event payload AND
+/// `current_awaiting_field = "message:<event_name>"`.
+fn catch_message(
     node: &FlowNode,
     ctx: &mut FlowContext,
     event_name: &str,
-    is_message: bool,
 ) -> Result<NodeResult, FlowError> {
-    // Resume path: caller already set `current_awaiting_field` to
-    // the event name and provided a value. Treat as continuation.
-    if ctx.current_awaiting_field.as_deref() == Some(event_name)
-        && ctx.current_awaiting_value.is_some()
-    {
+    let kind_ref = format!("message:{event_name}");
+    if is_resume(ctx, &kind_ref) {
         return Ok(NodeResult::Continue);
     }
-    // First-time path: record the awaiting field, suspend.
-    ctx.current_awaiting_field = Some(event_name.to_string());
+    ctx.current_awaiting_field = Some(kind_ref.clone());
     let payload = json!({
         "node_id": node.node_id,
-        "event_type": if is_message { "message" } else { "signal" },
+        "event_type": "message",
         "event_name": event_name,
     });
     Ok(NodeResult::Suspend(SuspendInfo {
         wait_type: WaitType::AsyncData,
-        wait_ref: event_name.to_string(),
+        wait_ref: kind_ref,
         next_retry_at: None,
         payload,
     }))
 }
 
-/// Timer catch path. `next_retry_at` is set to now + duration.
+/// Signal catch path. `wait_ref` and `current_awaiting_field`
+/// are both `signal:<event_name>` (V5.28 P2 namespacing).
+fn catch_signal(
+    node: &FlowNode,
+    ctx: &mut FlowContext,
+    event_name: &str,
+) -> Result<NodeResult, FlowError> {
+    let kind_ref = format!("signal:{event_name}");
+    if is_resume(ctx, &kind_ref) {
+        return Ok(NodeResult::Continue);
+    }
+    ctx.current_awaiting_field = Some(kind_ref.clone());
+    let payload = json!({
+        "node_id": node.node_id,
+        "event_type": "signal",
+        "event_name": event_name,
+    });
+    Ok(NodeResult::Suspend(SuspendInfo {
+        wait_type: WaitType::AsyncData,
+        wait_ref: kind_ref,
+        next_retry_at: None,
+        payload,
+    }))
+}
+
+/// Timer catch path. `wait_ref` and `current_awaiting_field`
+/// are both `timer:<node_id>` (V5.28 P2 namespacing). Timer
+/// uses node_id (not event_name) because timer events don't
+/// have a name — they're defined by their position in the
+/// flow + duration. `next_retry_at` is set to now + duration.
 fn catch_timer(
     node: &FlowNode,
-    _ctx: &mut FlowContext,
+    ctx: &mut FlowContext,
     duration: Duration,
 ) -> Result<NodeResult, FlowError> {
+    let kind_ref = format!("timer:{}", node.node_id);
+    if is_resume(ctx, &kind_ref) {
+        return Ok(NodeResult::Continue);
+    }
+    ctx.current_awaiting_field = Some(kind_ref.clone());
     let next_retry_at: DateTime<Utc> = Utc::now() + duration;
     let payload = json!({
         "node_id": node.node_id,
@@ -241,7 +303,7 @@ fn catch_timer(
     });
     Ok(NodeResult::Suspend(SuspendInfo {
         wait_type: WaitType::AsyncTask,
-        wait_ref: node.node_id.clone(),
+        wait_ref: kind_ref,
         next_retry_at: Some(next_retry_at),
         payload,
     }))

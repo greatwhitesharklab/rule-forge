@@ -224,7 +224,14 @@ fn catch_timer(
     });
     Ok(NodeResult::Suspend(SuspendInfo {
         wait_type: WaitType::AsyncTask,
-        wait_ref: node.node_id.clone(),
+        // V5.28 P2 — namespace timer wait_ref with
+        // `boundaryTimer:` so it can't collide with
+        // `IntermediateEvent`'s `timer:<node_id>` (the
+        // node_id may differ for a boundary on an
+        // activity) or other AsyncTask wait_refs in
+        // the same run. Same shape as `error:<ref>`
+        // above.
+        wait_ref: format!("boundaryTimer:{}", node.node_id),
         next_retry_at: Some(next_retry_at),
         payload,
     }))

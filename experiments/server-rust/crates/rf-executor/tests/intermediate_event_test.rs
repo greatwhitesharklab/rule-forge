@@ -102,7 +102,10 @@ fn message_catch_suspends_with_async_data() {
     match outcome {
         TraverseOutcome::Suspended(_, info) => {
             assert_eq!(info.wait_type, WaitType::AsyncData);
-            assert_eq!(info.wait_ref, "approval_received");
+            // V5.28 P2 — wait_ref is namespaced with
+            // `message:` prefix to avoid collisions
+            // with signal/timer in the same run.
+            assert_eq!(info.wait_ref, "message:approval_received");
             assert_eq!(info.payload["event_type"], json!("message"));
             assert_eq!(info.payload["event_name"], json!("approval_received"));
         }
@@ -117,7 +120,8 @@ fn signal_catch_suspends_with_async_data() {
     match outcome {
         TraverseOutcome::Suspended(_, info) => {
             assert_eq!(info.wait_type, WaitType::AsyncData);
-            assert_eq!(info.wait_ref, "broadcast_xyz");
+            // V5.28 P2 — namespaced with `signal:` prefix.
+            assert_eq!(info.wait_ref, "signal:broadcast_xyz");
             assert_eq!(info.payload["event_type"], json!("signal"));
         }
         _ => panic!("expected Suspended"),
@@ -161,7 +165,8 @@ fn no_event_type_passes_through_as_continue() {
 #[test]
 fn message_catch_resume_with_awaiting_value_continues() {
     // Simulate the HTTP /flow/event handler: set
-    // current_awaiting_field to the event name and provide a value.
+    // current_awaiting_field to the namespaced event ref
+    // (`message:<name>` per V5.28 P2) and provide a value.
     // The executor treats it as a continuation and returns Continue.
     let def = parse(&bpmn("p", MESSAGE_CATCH_FLOW));
     let outcome = traverse(def.clone(), FlowContext::new("r"), test_registry());
@@ -170,7 +175,7 @@ fn message_catch_resume_with_awaiting_value_continues() {
         _ => panic!("expected Suspended"),
     };
     let mut ctx = suspended.ctx;
-    ctx.current_awaiting_field = Some("approval_received".to_string());
+    ctx.current_awaiting_field = Some("message:approval_received".to_string());
     ctx.current_awaiting_value = Some(json!({"approved": true, "reviewer": "alice"}));
 
     let outcome = traverse(def, ctx, test_registry());
@@ -203,7 +208,8 @@ fn message_catch_with_wrong_awaiting_field_does_not_resume() {
     match outcome {
         TraverseOutcome::Suspended(_, info) => {
             // Still suspended, still waiting for the original event.
-            assert_eq!(info.wait_ref, "approval_received");
+            // V5.28 P2 — namespaced wait_ref.
+            assert_eq!(info.wait_ref, "message:approval_received");
         }
         _ => panic!("expected Suspended (mismatched field = no resume)"),
     }
