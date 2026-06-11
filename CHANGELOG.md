@@ -26,6 +26,161 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+**V5.28-V5.32 — Rust 端 BPMN 2.0 完整化 + SAGA 收口 + Postgres 原子化 (#66→#79, 14 PRs)**
+
+V5.28-V5.32 是 Rust 引擎在 V5.27 production 化之后的"功能深度"扩展。
+5 个 minor version,14 个 PR,主线是把 Java 端长期 backlog 的 BPMN 2.0
+子集(ParallelGateway JOIN / Multi-Instance / Error·Escalation·Terminate
+EndEvent / Compensation SAGA / Conditional / Link / 完整的 Postgres
+状态机)在 Rust 端先走通契约,然后给 Java 端提供"该长什么样"的可参考
+实现。
+
+#### V5.28 — ParallelGateway 真 JOIN + IntermediateEvent namespacing + BoundaryEvent multi-outgoing + Timer/Message StartEvent (#66-#73)
+
+8 个 PR 把 Rust executor 的并发 / 事件流 / 启动触发全补齐。
+
+- **P0 ParallelGateway fork** (#66) — `GatewayExecutor` 从 no-op 升
+  级成真 fork,产 `NodeResult::Fork(Vec<ForkBranch>)`,traverser
+  跑 N 个独立 sub-traverser
+- **P1 BoundaryEvent `attachedToRef` 路由** (#67) — parser post-pass
+  填 `def.attached_boundaries: BTreeMap<activity, Vec<boundary>>`,
+  traverse error 抛出时按 errorRef 路由
+- **P2 IntermediateEvent wait_ref 拆分** (#68) — `message:<name>` /
+  `signal:<name>` / `timer:<node_id>` 命名空间化,消除"同名
+  message 和 signal 互相覆盖"silent bug
+- **P3 SubProcess 并行 join + outputMapping** (#69) — SubProcess
+  升级支持并行分支(多 entry 节点的 fork)+ outputMapping 映射子
+  流 vars 回主流
+- **P4 Boundary multi-outgoing fan-out** (#70) — 1 boundary event
+  多个 outgoing(默认 + 条件分支)
+- **P5 `/flow/event` handler 修 namespacing 解析** (#71) — 跟 P2
+  对齐,按 `wait_ref` namespace 查 row
+- **P6 ParallelGateway 真正的 JOIN** (#72) — `JoinArrivals: HashMap<node_id, ArrivalCount>`
+  per-scope barrier,所有 fork branch 都到齐了才推进
+- **P7 Timer/Message StartEvent + /flow/start-by-message** (#73) —
+  StartEvent 加 `eventType=message` / `timer` 触发,suspend 等
+  message-catch 触发;`/flow/start-by-message` HTTP route
+  (`POST /ruleforge/flow/start-by-message`)
+
+#### V5.29 — Multi-Instance task wrapper (parallel + sequential) (#74)
+
+- `MultiInstanceExecutor` 包装在 serviceTask / userTask 上
+- 顺序模式:按输入集合顺序遍历,每次创建独立 sub-traverse ctx
+- 并行模式:同 fork,但 join barrier 等所有 instance 完成
+- 输入 `ruleforge:multiInstanceInputCollection` / `outputCollection`
+  / `sequential` 属性
+- 7 个 BDD 测试(input collection / 完成条件 / 完成数 vs 总数 / 输出聚合)
+
+#### V5.30 — Error / Escalation / Terminate end events (#75)
+
+- `EndEventKind` enum: `None` / `Error { error_code }` / `Escalation
+  { escalation_code }` / `Terminate`
+- 解析 `ruleforge:endType` + `errorRef` / `escalationRef`
+- `EndEventExecutor` 路由:`Error`/`Escalation` → `TraverseOutcome::Failed`;
+  `Terminate` → 全 process 立即停(不跑后续 sibling branch);
+  `None` → 走 Completed
+- 跟 BoundaryEvent 的 `error:<ref>` 命名空间对齐,routes 错自动恢复
+- 6 个 BDD 测试(每种 end kind + 触发对应 boundary)
+
+#### V5.31 P0 — CompensationScope + 补偿 hook (BPMN 2.0 SAGA) (#76)
+
+SAGA 模式在 BPMN 2.0 里的官方落地:每个 activity 注册一个
+compensation handler(也是一个 sub-flow),出问题时 throw 触发
+"按 LIFO 顺序回滚每个 handler"。
+
+- **Parser** — 识别 4 个新 BPMN 节点: `compensateStartEvent` /
+  `compensateEndEvent` / `compensateThrowEvent` /
+  `compensateIntermediateThrowEvent`(带 `attachedToRef` 反查)
+- **IR** — `NodeKind` 加 4 个变体;`def.attached_compensations:
+  BTreeMap<activity, Vec<handler>>` post-pass
+- **Executor** — 4 个新 executor(Start/End no-op + throw / intermediate
+  关联到 scope);`CompensationThrowExecutor` override
+  `execute_with` 拿 `reg.def` 走 `crate::compensation::run_handlers`
+- **Traverser** — `Fail` arm 在 V5.31 P0 之前只是简单 route 到 boundary;
+  现在先跑补偿(handler 链 LIFO)再判定 terminal state
+- **V5.31 P0 v0 contract** — 走"throw current scope"语义(per-scope
+  LIFO),"throw all"留 V5.31+ scope;handler sub-flow 失败是
+  best-effort(走 trace,不阻断 outer flow);sub-flow Suspend
+  透传到 outer flow 的 Suspend 状态
+- 13 个 BDD 测试(multi-handler per activity / 多 scope LIFO /
+  handler failure 不阻断 next handler / sub-flow Suspend 透传 /
+  ErrorEnd 触发自动补偿)
+
+#### V5.31 P1 — PgStateStore 复合原子化写 API (#77)
+
+`PgInflightStore::put` 之前是 `insert_start` + `mark_suspended` 两个独立
+query,中间失败 → row 卡在 PENDING,`count_by_status(WaitingCallback)`
+miss,`/flow/decision` 404。
+
+- **`begin_tx()`** — 暴露 `sqlx::Transaction<'_, Postgres>` 给调用方
+  做复合写
+- **`put_suspended(...)`** — 1 个事务里跑 `INSERT (PENDING)` +
+  `UPDATE (WAITING_CALLBACK)`,任一失败 → rollback,row 不可观测
+- **`mark_terminal_with_vars(...target_status, row_vars, total_ms)`** —
+  1 个事务里写 status flip + row_vars + total_execution_ms;SAGA
+  V5.31+ 落地时这一条就是"pre-compensation vars snapshot" 的
+  landing zone(API 形状已就位,字段补 1 个 SQL 即可)
+- **适配方** — `PgInflightStore::put` 改用 `put_suspended`;recovery
+  `Completed` 路径改用 `mark_terminal_with_vars(.., Completed, ..)`
+- 3 个 BDD 测试(put_suspended 原子化 / 事务失败时 phase 1 行回滚 /
+  mark_terminal_with_vars 原子化)+ workspace 全量回归 clean
+
+#### V5.32 — Conditional / Link intermediate event (BPMN 2.0 §9.3/§9.4.5) (#78)
+
+Rust 首发:Java `BpmnXmlParser.java` 当前不识别 `intermediateThrowEvent`,
+无 link / 无 conditional,长期 backlog 滞留。V5.32 在 Rust 端先
+走通契约,Java 端之后 mirror off Rust contract 即可。
+
+- **`conditionalIntermediateCatchEvent`** v0 走"外部 signal
+  trigger"模式(`wait_ref` namespace `conditional:<node_id>`,
+  condition 文本存 SuspendInfo.payload,等外部 agent 写
+  `current_awaiting_field` 触发 resume) — UEL evaluator 和 polling
+  worker 留 V5.32+
+- **`linkThrowEvent` / `linkCatchEvent`** — `def.link_targets:
+  BTreeMap<link_name, catch_id>` 反查,throw 走
+  `NodeResult::Branch(catch_id)`(复用 V5.28 已有 `Branch` arm,
+  traverser `Branch(target) => self.next = Some(target)` 直接
+  旁路 throw 的 outgoing)
+- **Parser** — `intermediateThrowEvent` 新 arm;`merge_event_definitions`
+  helper 抓 `conditionalEventDefinition` / `linkEventDefinition` 子
+  元素注入 attrs
+- **Executor** — 3 个新 `IntermediateEventKind` 变体;`IntermediateEventExecutor`
+  override `execute_with` 拿 `reg.def.link_targets`(mirrors
+  CompensationThrowExecutor / ParallelGatewayExecutor)
+- **Dispatch** — IntermediateEvent 改走 `execute_with`(uniform
+  with ParallelGateway / SubProcess / CompensationThrow)
+- 5 个 BDD 测试(3 conditional + 2 link)+ workspace 全量回归 clean
+
+#### 文档 / 状态 (#79)
+
+- `README.md` — 头部项目状态行加 V5.28-V5.32 完成清单;模块结构
+  列表加 🦀 `experiments/server-rust`;Mermaid 依赖图加
+  `rustEx` 节点(橙色虚线 experimental class);新增 🦀
+  **实验性 Rust 引擎** 段落(列当前覆盖 + Java 还没 mirror 的
+  部分 + 本地怎么跑 + 升格指引);技术栈表加 Rust row + cargo
+  test;顶部 badge 加 Rust alpha
+- `experiments/README.md` — `server-rust/` 状态从 "8 phases / 5/9
+  executor" 更新为 "12 phases / 9 executor / ReteRuleEngine /
+  Postgres state / V5.32 BPMN 完整化";升格条件更新为 V5.33+ 待办
+  (UEL evaluator / Polling worker / ConditionalStartEvent /
+  invalidate 通知链)
+
+### Java 端 mirror 待办(供 V5.33+ 跟踪)
+
+V5.28-V5.32 在 Rust 端先收口的功能,Java 端还没 mirror:
+
+- `BpmnXmlParser.java L204` 识别 `intermediateThrowEvent` + `linkEventDefinition`
+  + `conditionalEventDefinition`
+- 多 handler / 跨 scope Compensation SAGA(目前 Java 端只支持单
+  handler per activity)
+- Postgres advisory-lock 驱动的 single-key CAS(目前 Java 端用
+  MySQL `SELECT ... FOR UPDATE`)
+- 复合原子化写(`put_suspended` / `mark_terminal_with_vars`)
+- Multi-Instance 任务包装(Java 端目前只支持串行)
+- V5.30 Error / Escalation / Terminate EndEvent
+
 ## [5.27.0] - 2026-06-11
 
 ### Added
