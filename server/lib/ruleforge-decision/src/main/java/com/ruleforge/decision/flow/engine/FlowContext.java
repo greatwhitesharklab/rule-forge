@@ -38,6 +38,11 @@ public class FlowContext {
     private List<GeneralEntity> insertedEntities;
     private String currentAwaitingField;
     private String currentNodeId;
+    /**
+     * V5.34 A2 — EndEvent 写出的 thrown error ref(Error/Escalation)。
+     * 委托给 currentToken(跟 vars / currentNodeId 同套路),process-time 状态,不持久化。
+     */
+    private String thrownError;
 
     // V5.33 A0 — 多 token 模型
     /** 多 token 推进;worklist 由 traverse 主循环维护。 */
@@ -95,6 +100,22 @@ public class FlowContext {
             currentToken.setCurrentNodeId(currentNodeId);
         } else {
             this.currentNodeId = currentNodeId;
+        }
+    }
+
+    // -------- V5.34 A2 — thrownError(委托 currentToken) --------
+
+    /** 委托给 currentToken.thrownError(若 currentToken 为 null 返回本字段)。 */
+    public String getThrownError() {
+        if (currentToken != null) return currentToken.getThrownError();
+        return thrownError;
+    }
+
+    public void setThrownError(String thrownError) {
+        if (currentToken != null) {
+            currentToken.setThrownError(thrownError);
+        } else {
+            this.thrownError = thrownError;
         }
     }
 

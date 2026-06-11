@@ -27,6 +27,11 @@ public class Token {
     private Set<String> visited;
     /** 此 token 所属 fork 的 join 节点 id;null 表示不在 fork 上。 */
     private String joinTarget;
+    /**
+     * V5.34 A2 — EndEvent 写出的 thrown error ref(Error/Escalation 用)。
+     * process-time 状态,不持久化,fork/join 不传递(per-token 持有)。
+     */
+    private String thrownError;
 
     public Token(String tokenId) {
         this.tokenId = tokenId;
@@ -83,4 +88,6 @@ public class Token {
     }
     public String getJoinTarget() { return joinTarget; }
     public void setJoinTarget(String joinTarget) { this.joinTarget = joinTarget; }
+    public String getThrownError() { return thrownError; }
+    public void setThrownError(String thrownError) { this.thrownError = thrownError; }
 }
