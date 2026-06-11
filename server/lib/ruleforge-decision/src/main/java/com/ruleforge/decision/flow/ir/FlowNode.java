@@ -46,4 +46,16 @@ public final class FlowNode {
         if (namespace == null || name == null) return null;
         return extensionAttrs.get(namespace + ":" + name);
     }
+
+    /**
+     * V5.33 A1 — 返回一个新 FlowNode,从 extensionAttrs 移除指定 key。
+     * 用途:MultiInstanceExecutor 递归 resolve inner 时,临时剥掉 multiInstance attr
+     * 避免 registry 路由回 wrapper。
+     */
+    public FlowNode withoutAttr(String key) {
+        if (key == null || !extensionAttrs.containsKey(key)) return this;
+        Map<String, String> newExt = new java.util.HashMap<>(extensionAttrs);
+        newExt.remove(key);
+        return new FlowNode(nodeId, type, name, newExt, scriptText, scriptFormat, outgoingIds, async);
+    }
 }

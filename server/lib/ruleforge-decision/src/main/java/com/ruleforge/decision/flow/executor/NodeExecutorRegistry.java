@@ -55,6 +55,17 @@ public class NodeExecutorRegistry {
      */
     public NodeExecutor resolve(FlowNode node) {
         if (node.getType() == NodeType.SERVICE_TASK) {
+            // V5.33 A1:MI 优先于具体 taskType 路由
+            // 任何 SERVICE_TASK 如果带 ruleforge:multiInstance="true",先走 MI wrapper
+            if ("true".equalsIgnoreCase(node.attr("ruleforge", "multiInstance"))) {
+                NodeExecutor wrapper = serviceTaskExecutors.get("multiInstance");
+                if (wrapper == null) {
+                    throw new com.ruleforge.decision.exception.FlowExecutionException(
+                        "No multiInstance executor registered (V5.33 A1 wrapper missing bean?) at node "
+                        + node.getNodeId());
+                }
+                return wrapper;
+            }
             String taskType = node.attr("ruleforge", "taskType");
             if (taskType == null) {
                 throw new com.ruleforge.decision.exception.FlowExecutionException(
