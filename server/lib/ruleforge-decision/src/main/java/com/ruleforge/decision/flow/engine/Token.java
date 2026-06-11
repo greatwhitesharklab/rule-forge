@@ -32,6 +32,17 @@ public class Token {
      * process-time 状态,不持久化,fork/join 不传递(per-token 持有)。
      */
     private String thrownError;
+    /**
+     * V5.34 A3 — BPMN SAGA 补偿栈。`CompensationStart` push scopeId,
+     * `CompensationEnd` 匹配 pop,`CompensationThrow` pop innermost + 跑 handler sub-flow。
+     * per-token 持有,fork 不传递(compensate scope 跟 token 路径相关)。
+     */
+    private java.util.List<String> compensationStack = new java.util.ArrayList<>();
+    /**
+     * V5.34 A3 — 已跑过的 (activityId, handlerNodeId) pair 字符串集合。
+     * outer throw 重复触发时 dedup。
+     */
+    private java.util.Set<String> compensatedHandlers = new java.util.HashSet<>();
 
     public Token(String tokenId) {
         this.tokenId = tokenId;
@@ -90,4 +101,12 @@ public class Token {
     public void setJoinTarget(String joinTarget) { this.joinTarget = joinTarget; }
     public String getThrownError() { return thrownError; }
     public void setThrownError(String thrownError) { this.thrownError = thrownError; }
+    public java.util.List<String> getCompensationStack() { return compensationStack; }
+    public void setCompensationStack(java.util.List<String> stack) {
+        this.compensationStack = stack == null ? new java.util.ArrayList<>() : stack;
+    }
+    public java.util.Set<String> getCompensatedHandlers() { return compensatedHandlers; }
+    public void setCompensatedHandlers(java.util.Set<String> set) {
+        this.compensatedHandlers = set == null ? new java.util.HashSet<>() : set;
+    }
 }

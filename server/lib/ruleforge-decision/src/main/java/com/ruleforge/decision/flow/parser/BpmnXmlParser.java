@@ -209,10 +209,26 @@ public class BpmnXmlParser {
             throw new FlowExecutionException("Inconsistent node tracking in process " + processId);
         }
 
+        // V5.34 A3 — 收集 attachedCompensations(从 compensateIntermediateThrowEvent 的
+        // ruleforge:attachedToRef 倒推 activity → handler_node_id 列表;handler_node_id 即
+        // compensateIntermediateThrowEvent 节点自己的 id;解析顺序保留 → LIFO 用 reverse 遍历)
+        Map<String, List<String>> attachedCompensations = new java.util.LinkedHashMap<>();
+        for (FlowNode n : nodes.values()) {
+            if (n.getType() != NodeType.COMPENSATION_INTERMEDIATE) continue;
+            String attachedTo = n.attr("ruleforge", "attachedToRef");
+            if (attachedTo == null || attachedTo.isBlank()) {
+                log.warn("CompensationIntermediate node {} has no ruleforge:attachedToRef — skipping", n.getNodeId());
+                continue;
+            }
+            attachedCompensations
+                .computeIfAbsent(attachedTo, k -> new ArrayList<>())
+                .add(n.getNodeId());
+        }
+
         String xmlHash = sha256(bpmnXml);
 
         return new FlowDefinition(processId, name, nodes, edges,
-            startNodeId, endNodeIds, bpmnXml, xmlHash, Instant.now());
+            startNodeId, endNodeIds, bpmnXml, xmlHash, Instant.now(), attachedCompensations);
     }
 
     private NodeType mapType(String local, Map<String, String> ext) {
@@ -226,6 +242,11 @@ public class BpmnXmlParser {
             case "parallelGateway"   -> NodeType.PARALLEL_GATEWAY;
             case "intermediateCatchEvent" -> NodeType.INTERMEDIATE_EVENT;
             case "subProcess"        -> NodeType.SUB_PROCESS;
+            // V5.34 A3 — BPMN 2.0 补偿 / SAGA 节点
+            case "compensateStartEvent"      -> NodeType.COMPENSATION_START;
+            case "compensateEndEvent"        -> NodeType.COMPENSATION_END;
+            case "compensateIntermediateThrowEvent" -> NodeType.COMPENSATION_INTERMEDIATE;
+            case "compensateThrowEvent"      -> NodeType.COMPENSATION_THROW;
             default -> null;
         };
     }

@@ -5,8 +5,10 @@ import com.ruleforge.runtime.KnowledgeSession;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 决策流执行上下文。每条 evaluate 独立一个 FlowContext,不可跨请求共享。
@@ -56,6 +58,24 @@ public class FlowContext {
      * join 齐了时,把列表里所有 token.vars union-merge 到 rootToken。
      */
     private Map<String, List<Token>> joinedTokens = new HashMap<>();
+    /**
+     * V5.34 A3 — BPMN SAGA 补偿栈。`CompensationStart` push scopeId,
+     * `CompensationEnd` 匹配 pop,`CompensationThrow` pop innermost + 跑 handler sub-flow。
+     * 委托给 currentToken(跟 vars/currentNodeId/thrownError 同套路)。
+     * process-time 状态,不持久化。
+     */
+    private List<String> compensationStack = new ArrayList<>();
+    /**
+     * V5.34 A3 — 已跑过的 (activityId, handlerNodeId) pair 集合。
+     * outer throw 重复触发时 dedup(handler sub-flow resume 不重跑)。
+     */
+    private Set<String> compensatedHandlers = new HashSet<>();
+    /**
+     * V5.34 A3 — 当前 traverse 的 {@link com.ruleforge.decision.flow.ir.FlowDefinition}。
+     * Runner traverse 在 dispatch 前 set,executor 读(process-time,transient,不持久化)。
+     * 同样给 V5.35 A5 LinkThrow 拿 linkTargets 用。
+     */
+    private com.ruleforge.decision.flow.ir.FlowDefinition currentDef;
 
     public String getFlowRunId() { return flowRunId; }
     public void setFlowRunId(String flowRunId) { this.flowRunId = flowRunId; }
@@ -137,5 +157,42 @@ public class FlowContext {
     public Map<String, List<Token>> getJoinedTokens() { return joinedTokens; }
     public void setJoinedTokens(Map<String, List<Token>> joinedTokens) {
         this.joinedTokens = joinedTokens == null ? new HashMap<>() : joinedTokens;
+    }
+
+    // -------- V5.34 A3 — compensation 字段(委托 currentToken) --------
+
+    /** 委托给 currentToken.compensationStack。 */
+    public List<String> getCompensationStack() {
+        if (currentToken != null) return currentToken.getCompensationStack();
+        return compensationStack;
+    }
+
+    public void setCompensationStack(List<String> stack) {
+        if (currentToken != null) {
+            currentToken.setCompensationStack(stack);
+        } else {
+            this.compensationStack = stack == null ? new ArrayList<>() : stack;
+        }
+    }
+
+    /** 委托给 currentToken.compensatedHandlers。 */
+    public Set<String> getCompensatedHandlers() {
+        if (currentToken != null) return currentToken.getCompensatedHandlers();
+        return compensatedHandlers;
+    }
+
+    public void setCompensatedHandlers(Set<String> set) {
+        if (currentToken != null) {
+            currentToken.setCompensatedHandlers(set);
+        } else {
+            this.compensatedHandlers = set == null ? new HashSet<>() : set;
+        }
+    }
+
+    // -------- V5.34 A3 — currentDef(transient, traverse 前 set) --------
+
+    public com.ruleforge.decision.flow.ir.FlowDefinition getCurrentDef() { return currentDef; }
+    public void setCurrentDef(com.ruleforge.decision.flow.ir.FlowDefinition currentDef) {
+        this.currentDef = currentDef;
     }
 }

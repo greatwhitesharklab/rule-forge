@@ -23,11 +23,26 @@ public final class FlowDefinition {
     private final String sourceXml;
     private final String sourceXmlHash;
     private final Instant parsedAt;
+    /**
+     * V5.34 A3 — activityId → handlerNodeIds(从
+     * {@code <bpmn:compensateIntermediateThrowEvent ruleforge:attachedToRef="..."/>}
+     * 解析而来,顺序 = 解析顺序 = 倒序遍历的"末班" = LIFO 跑)。
+     */
+    private final Map<String, List<String>> attachedCompensations;
 
     public FlowDefinition(String processId, String name,
                           Map<String, FlowNode> nodes, List<SequenceFlow> edges,
                           String startNodeId, List<String> endNodeIds,
                           String sourceXml, String sourceXmlHash, Instant parsedAt) {
+        this(processId, name, nodes, edges, startNodeId, endNodeIds,
+            sourceXml, sourceXmlHash, parsedAt, java.util.Map.of());
+    }
+
+    public FlowDefinition(String processId, String name,
+                          Map<String, FlowNode> nodes, List<SequenceFlow> edges,
+                          String startNodeId, List<String> endNodeIds,
+                          String sourceXml, String sourceXmlHash, Instant parsedAt,
+                          Map<String, List<String>> attachedCompensations) {
         this.processId = processId;
         this.name = name;
         this.nodes = Map.copyOf(nodes);
@@ -39,6 +54,9 @@ public final class FlowDefinition {
         this.sourceXml = sourceXml;
         this.sourceXmlHash = sourceXmlHash;
         this.parsedAt = parsedAt;
+        this.attachedCompensations = attachedCompensations == null
+            ? java.util.Map.of()
+            : attachedCompensations;
     }
 
     public String getProcessId() { return processId; }
@@ -51,6 +69,7 @@ public final class FlowDefinition {
     public String getSourceXml() { return sourceXml; }
     public String getSourceXmlHash() { return sourceXmlHash; }
     public Instant getParsedAt() { return parsedAt; }
+    public Map<String, List<String>> getAttachedCompensations() { return attachedCompensations; }
 
     public FlowNode getNode(String nodeId) { return nodes.get(nodeId); }
     public SequenceFlow getEdge(String edgeId) { return edgesById.get(edgeId); }

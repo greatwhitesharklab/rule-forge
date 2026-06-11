@@ -86,6 +86,12 @@ public class FlowNodeRunner {
             throw new FlowExecutionException("FlowContext.flowRunId is required");
         }
 
+        // V5.34 A3 — 让 CompensationThrowExecutor 等需要 def 的 executor 拿到当前流程
+        ctx.setCurrentDef(def);
+        // A1 模式:把 registry 注入 Holder,executor 通过 Holder 拿(测试场景下用)
+        com.ruleforge.decision.flow.executor.CompensationThrowExecutor.Holder.REGISTRY = this.registry;
+        com.ruleforge.decision.flow.executor.CompensationThrowExecutor.Holder.DEF = def;
+
         // 1. 写 PENDING 状态行(stateMapper nullable for tests)
         DecisionFlowState state = upsertState(def, ctx, DecisionFlowState.STATUS_PENDING, startNodeId, null, null);
 
