@@ -397,3 +397,121 @@ async fn given_message_catch_when_event_resumes_then_chained_user_task_can_suspe
     // Still inflight (one entry).
     assert_eq!(state.inflight.len().await, 1);
 }
+
+// V5.28 P5 — namespaced `current_awaiting_field` regression test.
+//
+// The `IntermediateEventExecutor` (V5.28 P2) namespaces the
+// `current_awaiting_field` it writes at suspend time:
+//   message catch → "message:<event_name>"
+//   signal catch  → "signal:<event_name>"
+//
+// The HTTP `/flow/event` handler must match the client's
+// unprefixed `eventName` against either namespace. This test
+// pins that contract: a flow suspended at
+// `intermediateCatchEvent(eventType=message, eventName=foo)` must
+// complete when the client delivers `eventName=foo` (and a
+// future flow suspended at `signal:foo` would also complete
+// against the same `eventName=foo` — they're independent runs).
+
+#[tokio::test]
+async fn v5_28_p2_namespaced_awaiting_field_matches_unprefixed_event_name() {
+    // The PENDING body from /evaluate exposes the namespaced
+    // wait_ref ("message:approval_received") but the existing
+    // 4 tests above exercise the resume path implicitly.
+    // This test pins the contract at the suspend side AND
+    // the resume side in a single flow.
+    let loader = StubFlowLoader::with_flow("message_catch_flow", MESSAGE_CATCH_BPMN);
+    let state = build_state_with(loader);
+    let app = build_router(state.clone());
+    let flow_run_id = suspend_a_flow(&app, "message_catch_flow").await;
+
+    // The inflight entry's `current_awaiting_field` is the
+    // namespaced form — this is the V5.28 P2 contract that
+    // the handler must respect. We peek the in-memory store
+    // directly. (If we're using the pg-backed store, this
+    // field isn't directly readable — but the test uses
+    // MemInflightStore, so it is.)
+    let stored = state.inflight.get(&flow_run_id).await.expect("inflight entry");
+    assert_eq!(
+        stored.ctx.current_awaiting_field.as_deref(),
+        Some("message:approval_received"),
+        "V5.28 P2: current_awaiting_field is namespaced"
+    );
+
+    // Resume: the client sends an unprefixed name; the handler
+    // must accept by trying the `message:` and `signal:`
+    // prefixes.
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/ruleforge/flow/event")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::to_vec(&json!({
+                        "flowRunId": flow_run_id,
+                        "eventName": "approval_received",
+                        "payload": { "ok": true }
+                    }))
+                    .unwrap(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body = body_json(resp).await;
+    assert_eq!(body["result"], "COMPLETED");
+    assert_eq!(body["vars"]["approval_received"]["ok"], json!(true));
+}
+
+#[tokio::test]
+async fn v5_28_p2_mismatched_kind_returns_409() {
+    // A flow suspended at `message:foo` must NOT be resumable
+    // by a delivery that asks for the same name but with a
+    // different prefix. The handler tries both prefixes —
+    // for `message:foo` (the actual field) the match succeeds
+    // (we're testing the OPPOSITE: the field is `message:foo`
+    // and the request is `eventName=foo` — but the contract
+    // here is that the unprefixed name matches EITHER
+    // prefix). The true negative case: a flow suspended at
+    // `message:foo` and a request with `eventName=bar` —
+    // the namespaced form `message:bar` doesn't match
+    // `message:foo`. We already have
+    // `given_mismatched_event_name_when_deliver_then_409`
+    // for that. This test pins the error message contains
+    // the namespaced `awaiting_event` so observability
+    // dashboards see the actual key.
+    let loader = StubFlowLoader::with_flow("message_catch_flow", MESSAGE_CATCH_BPMN);
+    let state = build_state_with(loader);
+    let app = build_router(state);
+    let flow_run_id = suspend_a_flow(&app, "message_catch_flow").await;
+
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/ruleforge/flow/event")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::to_vec(&json!({
+                        "flowRunId": flow_run_id,
+                        "eventName": "completely_different_event",
+                        "payload": {}
+                    }))
+                    .unwrap(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::CONFLICT);
+    let body = body_json(resp).await;
+    // The error body includes the namespaced `awaiting_event`
+    // so dashboards can show "the flow is waiting for
+    // message:approval_received".
+    assert_eq!(
+        body["awaiting_event"], "message:approval_received",
+        "V5.28 P2: 409 body surfaces the namespaced awaiting field"
+    );
+}

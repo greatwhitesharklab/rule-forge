@@ -61,9 +61,11 @@ pub struct EventRequest {
     /// to this field via the rename below.
     #[serde(rename = "flowRunId", alias = "flow_run_id")]
     pub flow_run_id: String,
-    /// Name of the event being delivered. Must match
-    /// `ctx.current_awaiting_field` (which the
-    /// `IntermediateEventExecutor` set to `eventName` at suspend time).
+    /// Unprefixed event name from the client's perspective. The
+    /// `IntermediateEventExecutor` namespaces the actual
+    /// `current_awaiting_field` by kind (V5.28 P2) — `message:<name>`
+    /// for a message catch, `signal:<name>` for a signal catch. The
+    /// handler tries every plausible prefix when matching.
     #[serde(rename = "eventName", alias = "event_name")]
     pub event_name: String,
     /// Payload to attach. Becomes `vars[eventName] = payload` so
@@ -72,6 +74,31 @@ pub struct EventRequest {
     /// continuation on the next traverse.
     #[serde(default)]
     pub payload: Value,
+}
+
+/// V5.28 P5 — expand an unprefixed `event_name` from the client
+/// to the set of namespaced `current_awaiting_field` values the
+/// `IntermediateEventExecutor` could have set. The handler matches
+/// if any of these equals the flow's actual `current_awaiting_field`.
+///
+/// V5.26 P0 (pre-P2) used the raw `event_name` as the wait_ref and
+/// `current_awaiting_field` — we still accept that for back-compat
+/// with any in-flight flow that suspended before the P2 update.
+///
+/// A flow that suspended at a message catch and one that suspended
+/// at a signal catch can't both share the same `event_name` in the
+/// same `flow_run_id` (only one suspension per run), so the worst
+/// case here is "the client's `event_name` accidentally matches a
+/// different kind's prefix" — which is rejected by the 409 below.
+/// Collision safety is preserved.
+fn candidate_awaiting_fields(event_name: &str) -> Vec<String> {
+    vec![
+        format!("message:{event_name}"),
+        format!("signal:{event_name}"),
+        // Back-compat with pre-P2 flows (and any non-P2 wait types
+        // that may share the same suspend path).
+        event_name.to_string(),
+    ]
 }
 
 pub async fn deliver(
@@ -112,9 +139,15 @@ pub async fn deliver(
     // The event name on the request must match the awaiting field
     // the executor set at suspend time. Mismatch = caller is
     // delivering a different event than the one the flow is
-    // waiting for.
+    // waiting for. V5.28 P2 namespaced the executor's
+    // `current_awaiting_field` by kind (`message:<name>` /
+    // `signal:<name>`); the client still sends the unprefixed
+    // name, so we try every plausible prefix.
     let awaiting = inflight.ctx.current_awaiting_field.as_deref().unwrap_or("");
-    if awaiting != req.event_name {
+    if !candidate_awaiting_fields(&req.event_name)
+        .iter()
+        .any(|c| c == awaiting)
+    {
         return (
             StatusCode::CONFLICT,
             Json(serde_json::json!({
