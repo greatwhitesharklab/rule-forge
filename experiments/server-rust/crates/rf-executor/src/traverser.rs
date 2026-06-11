@@ -43,31 +43,52 @@ use crate::node_result::{ForkBranch, NodeResult, SuspendInfo};
 
 const MAX_STEPS: usize = 1000;
 
-/// V5.28 P1 — resolve the boundary-routing target for a
-/// thrown error. Looks up the activity's attached
+/// V5.28 P1 / P4 — `BoundaryTarget` enum capturing the
+/// three resolution outcomes for boundary routing:
+/// - `Single(target)` — boundary has 1 outgoing edge;
+///   simple Continue (P1 fast path).
+/// - `Fork(targets)` — boundary has 2+ outgoing edges;
+///   fan out to all (P4: parallel fan-out semantics).
+///   The `targets` is `Vec<String>` (target node ids);
+///   `step()` clones the parent's `ctx` once per target
+///   to build `Vec<ForkBranch>`.
+/// - `None` — no matching attached boundary; fall
+///   through to activity's normal outgoing (P1 fallback).
+enum BoundaryTarget {
+    Single(String),
+    Fork(Vec<String>),
+    None,
+}
+
+/// V5.28 P1 / P4 — resolve the boundary-routing target(s)
+/// for a thrown error. Looks up the activity's attached
 /// boundaries (built by the parser from `bpmn:attachedToRef`)
-/// and returns the target node id of the first outgoing
-/// edge of the first boundary whose `ruleforge:errorRef`
-/// matches `thrown_ref`. Document order is preserved by the
-/// parser (BTreeMap iteration is stable), so when multiple
-/// boundaries match, the first one in document order wins.
+/// and returns either:
+/// - `Single(target)` — 1-outgoing boundary, fast path
+/// - `Fork(targets)` — 2+ outgoings, fan out (P4)
+/// - `None` — no match, fall through
 ///
-/// A boundary's `outgoing_ids` are **edge ids** (not target
-/// node ids — same shape as every other node). We resolve
-/// the target via `def.edges.iter().find(|e| e.id == edge_id)`.
+/// Document order is preserved by the parser (BTreeMap
+/// iteration is stable), so when multiple boundaries match,
+/// the first one in document order wins — same semantics as
+/// V5.28 P1.
 ///
-/// Returns `None` if no attached boundary exists for the
-/// activity, or if none of the attached boundaries' error
-/// refs match. The caller (the `Continue` branch in `step`)
-/// then falls through to the normal `next_node` path.
-fn boundary_next(
+/// Each boundary's `outgoing_ids` are **edge ids** (not
+/// target node ids — same shape as every other node). We
+/// resolve the targets via `def.edges.iter().find(|e| e.id
+/// == edge_id)`.
+fn boundary_nexts(
     def: &FlowDefinition,
     activity_id: &str,
     thrown_ref: &str,
-) -> Option<String> {
-    let boundary_ids = def.attached_boundaries.get(activity_id)?;
+) -> BoundaryTarget {
+    let Some(boundary_ids) = def.attached_boundaries.get(activity_id) else {
+        return BoundaryTarget::None;
+    };
     for bid in boundary_ids {
-        let boundary = def.nodes.get(bid)?;
+        let Some(boundary) = def.nodes.get(bid) else {
+            continue;
+        };
         let NodeKind::BoundaryEvent { attrs, .. } = &boundary.kind else {
             continue;
         };
@@ -78,21 +99,35 @@ fn boundary_next(
         if boundary_ref != thrown_ref {
             continue;
         }
-        // Take the boundary's first outgoing edge's
-        // target as the handler path. A boundary with
-        // multiple outgoings (rare — typically a
-        // boundary has one handler path) is documented
-        // as "first wins" in V5.28 P1 v0. Future
-        // versions can route to all.
-        let first_edge_id = boundary.outgoing_ids.first()?;
-        let target = def
-            .edges
-            .iter()
-            .find(|e| &e.id == first_edge_id)
-            .map(|e| e.target.clone())?;
-        return Some(target);
+        // Resolve all outgoing edge targets. A boundary
+        // with zero outgoings is malformed (an error
+        // boundary without a handler path) — treat as
+        // None so the activity falls through normally.
+        if boundary.outgoing_ids.is_empty() {
+            tracing::warn!(
+                activity_id,
+                                boundary_id = %bid,
+                                "attached boundary has no outgoing edges; falling through"
+                            );
+            return BoundaryTarget::None;
+        }
+        let mut targets = Vec::with_capacity(boundary.outgoing_ids.len());
+        for edge_id in &boundary.outgoing_ids {
+            if let Some(edge) = def.edges.iter().find(|e| &e.id == edge_id) {
+                targets.push(edge.target.clone());
+            }
+        }
+        if targets.is_empty() {
+            return BoundaryTarget::None;
+        }
+        // 1 target → fast path, no fork machinery
+        if targets.len() == 1 {
+            return BoundaryTarget::Single(targets.into_iter().next().unwrap());
+        }
+        // 2+ targets → fan out (P4)
+        return BoundaryTarget::Fork(targets);
     }
-    None
+    BoundaryTarget::None
 }
 
 /// Public entry — single-call traversal. Loops `step()` until done,
@@ -339,34 +374,71 @@ impl Traverser<Running> {
 
         match result {
             NodeResult::Continue => {
-                // V5.28 P1 — boundary error routing. If the
-                // activity threw (an action set
+                // V5.28 P1 / P4 — boundary error routing. If
+                // the activity threw (an action set
                 // `ctx.thrown_error`), look up the attached
                 // boundaries for this node and route to the
-                // matching boundary's first outgoing edge.
-                // We do this BEFORE `next_node` so the
-                // boundary short-circuits the activity's
-                // normal outgoing. If no boundary matches,
-                // fall through to the normal next_node path.
+                // matching boundary's outgoing edge(s). We
+                // do this BEFORE `next_node` so the boundary
+                // short-circuits the activity's normal
+                // outgoing. If no boundary matches, fall
+                // through to the normal next_node path.
                 if let Some(thrown_ref) = self.ctx.thrown_error.take() {
-                    if let Some(boundary_next) =
-                        boundary_next(&self.def, &node_id, &thrown_ref)
-                    {
-                        self.next = Some(boundary_next);
-                        return Ok(StepOutcome::Continue(self));
+                    match boundary_nexts(&self.def, &node_id, &thrown_ref) {
+                        BoundaryTarget::Single(target) => {
+                            // V5.28 P1 — 1-outgoing
+                            // boundary: simple Continue (no
+                            // fork machinery needed).
+                            self.next = Some(target);
+                            return Ok(StepOutcome::Continue(self));
+                        }
+                        BoundaryTarget::Fork(targets) => {
+                            // V5.28 P4 — multi-outgoing
+                            // boundary: fan out to ALL
+                            // outgoing edges. Build one
+                            // `ForkBranch` per target; each
+                            // branch clones `self.ctx` so
+                            // activity writes (like
+                            // `__throw_ran__`) are visible
+                            // to all branches. The boundary
+                            // itself is **not visited** —
+                            // its outgoings are direct
+                            // targets, just like
+                            // ParallelGateway's fork.
+                            let branches: Vec<ForkBranch> = targets
+                                .into_iter()
+                                .map(|target| ForkBranch {
+                                    start: target,
+                                    ctx: self.ctx.clone(),
+                                    visited: HashSet::new(),
+                                })
+                                .collect();
+                            let parent = Traverser::<Running> {
+                                def: self.def,
+                                ctx: self.ctx,
+                                reg: self.reg,
+                                next: None,
+                                visited: self.visited,
+                                _state: PhantomData,
+                            };
+                            return Ok(StepOutcome::Fork(parent, branches));
+                        }
+                        BoundaryTarget::None => {
+                            // No matching boundary — re-attach
+                            // the thrown error so an outer
+                            // handler (or a log line) can
+                            // still see it. v0 doesn't have
+                            // an outer handler, so this is a
+                            // deliberate "drop with trace" —
+                            // the activity continues normally.
+                            tracing::warn!(
+                                node_id = %node_id,
+                                thrown_ref = %thrown_ref,
+                                "activity threw but no matching attached boundary; falling through to normal outgoing"
+                            );
+                            self.ctx.thrown_error = Some(thrown_ref);
+                        }
                     }
-                    // No matching boundary — re-attach the
-                    // thrown error so an outer handler (or
-                    // a log line) can still see it. v0
-                    // doesn't have an outer handler, so this
-                    // is a deliberate "drop with trace" —
-                    // the activity continues normally.
-                    tracing::warn!(
-                        node_id = %node_id,
-                        thrown_ref = %thrown_ref,
-                        "activity threw but no matching attached boundary; falling through to normal outgoing"
-                    );
-                    self.ctx.thrown_error = Some(thrown_ref);
                 }
                 match next_node(&self.def, &node, &self.ctx) {
                     Ok(Some(next_id)) => {
