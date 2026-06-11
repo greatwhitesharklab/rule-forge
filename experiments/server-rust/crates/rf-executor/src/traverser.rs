@@ -186,8 +186,25 @@ fn traverse_branch(
                 // a parallel gateway). Recurse via
                 // `traverse_branch` so each sub-branch
                 // starts at its outgoing-edge target.
-                let mut last_ctx = parent.ctx.clone();
+                //
+                // V5.28 P6 — vars are **union-merged**
+                // (all branches' writes survive; conflicts
+                // resolved last-wins by branch iteration
+                // order = outgoing_ids order). When the
+                // fork has an explicit `join_target`, the
+                // parent's `next` becomes the join id and
+                // the join gateway takes over routing
+                // (diamond pattern). When the fork has no
+                // join (P0 behaviour), the parent finishes
+                // here.
+                let mut merged_ctx = parent.ctx.clone();
                 let mut merged_visited = parent.visited.clone();
+                // V5.28 P6 — capture the join target from
+                // the first branch. All branches in one
+                // fork share the same `join_target` (the
+                // gateway executor writes it identically
+                // for every branch).
+                let join_target = branches.first().and_then(|b| b.join_target.clone());
                 for branch in branches {
                     let outcome = traverse_branch(
                         parent.def.clone(),
@@ -198,15 +215,54 @@ fn traverse_branch(
                     );
                     match outcome {
                         TraverseOutcome::Completed(c) => {
-                            // Last-branch-wins for the
-                            // context. For the visited
-                            // set, take the union so
-                            // the parent's loop detection
-                            // is correct after the fork
-                            // (any node any branch
-                            // visited is "off-limits" for
-                            // re-visit by the parent).
-                            last_ctx = c.ctx;
+                            // V5.28 P6 — union-merge vars.
+                            // `Vars::assign` is a
+                            // per-key overwrite, so walking
+                            // branches in
+                            // `outgoing_ids` order and
+                            // assigning each branch's vars
+                            // gives:
+                            // - distinct keys: all kept
+                            //   (union semantics)
+                            // - colliding keys:
+                            //   last-branch-wins (the
+                            //   branch with the higher
+                            //   outgoing-ids index
+                            //   overwrites the earlier
+                            //   one)
+                            // The visited set is the
+                            // union so the parent's loop
+                            // detection is correct after
+                            // the fork (any node any
+                            // branch visited is
+                            // "off-limits" for re-visit
+                            // by the parent).
+                            for (k, v) in c.ctx.vars.as_object() {
+                                merged_ctx.vars.assign(k.clone(), v.clone());
+                            }
+                            // V5.28 P6 — also union the
+                            // join-arrival counter map
+                            // (V5.29 Multi-Instance will
+                            // rely on this for async
+                            // join barriers; P6 v0 is
+                            // sync, so the map is
+                            // effectively a no-op here
+                            // beyond keeping the merge
+                            // contract explicit).
+                            for (k, v) in c.ctx.join_arrivals {
+                                merged_ctx.join_arrivals.insert(k, v);
+                            }
+                            // V5.28 P6 — `current_node_id`
+                            // uses **last-branch-wins** to
+                            // preserve the P0 observable
+                            // (the last branch to finish
+                            // surfaces its end-state node
+                            // id to the caller). When a
+                            // true join is present, the
+                            // join's `next_node` routing
+                            // immediately overwrites
+                            // this on the next step.
+                            merged_ctx.current_node_id = c.ctx.current_node_id;
                             merged_visited.extend(c.visited.iter().cloned());
                         }
                         TraverseOutcome::Suspended(s, info) => {
@@ -217,15 +273,55 @@ fn traverse_branch(
                         }
                     }
                 }
-                // All sub-branches completed. The branch's
-                // continuation is the merged context. V5.28
-                // v0 has no join semantics — the parent
-                // finishes here (next = None).
+                // V5.28 P6 — when the fork has an
+                // explicit `join_target`, the parent
+                // resumes from the join onwards. The
+                // branch's visited sets include the
+                // join and the post-join chain (the
+                // branches traversed through the join
+                // and on to the end), so we **discard
+                // the branch visited** entirely and
+                // start the parent with a fresh
+                // visited set containing only the
+                // pre-fork nodes. This keeps loop
+                // detection correct for the parent's
+                // post-join continuation (the parent's
+                // post-join chain hasn't been visited
+                // by anyone yet — we want the parent
+                // to step on it cleanly) while still
+                // flagging any pre-fork loop.
+                //
+                // We **skip the join node itself** in
+                // the parent's `next` — the join's
+                // purpose is synchronisation (the
+                // barrier fires here, in the union
+                // merge above), not node execution.
+                // The join was a parallel gateway with
+                // one outgoing; its outgoing target is
+                // the parent's "post-join" first node.
+                let next = if let Some(join_id) = join_target.as_ref() {
+                    merged_visited = parent.visited.clone();
+                    parent
+                        .def
+                        .nodes
+                        .get(join_id)
+                        .and_then(|n| n.outgoing_ids.first().cloned())
+                        .and_then(|first_edge_id| {
+                            parent
+                                .def
+                                .edges
+                                .iter()
+                                .find(|e| e.id == first_edge_id)
+                                .map(|e| e.target.clone())
+                        })
+                } else {
+                    None
+                };
                 let new_parent = Traverser::<Running> {
                     def: parent.def,
-                    ctx: last_ctx,
+                    ctx: merged_ctx,
                     reg: parent.reg,
-                    next: None,
+                    next,
                     visited: merged_visited,
                     _state: PhantomData,
                 };
@@ -411,6 +507,14 @@ impl Traverser<Running> {
                                     start: target,
                                     ctx: self.ctx.clone(),
                                     visited: HashSet::new(),
+                                    // V5.28 P4 boundary
+                                    // multi-outgoing fan-out
+                                    // is a "throw routing"
+                                    // construct, not a true
+                                    // parallel fork — there's
+                                    // no join synchronisation
+                                    // for boundary outgoings.
+                                    join_target: None,
                                 })
                                 .collect();
                             let parent = Traverser::<Running> {

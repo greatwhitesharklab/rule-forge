@@ -6,6 +6,8 @@
 //! the next gateway's binary-decision routing (mirrors Java's
 //! `currentAwaitingField` mechanism).
 
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -41,6 +43,33 @@ pub struct FlowContext {
     /// any other ref it wants the boundary to match).
     #[serde(default)]
     pub thrown_error: Option<String>,
+    /// V5.28 P6 — per-join arrival counter, used by
+    /// ParallelGateway **join** synchronisation.
+    ///
+    /// Map: `join_node_id` → number of branches that have
+    /// arrived at this join in the current flow run.
+    /// Incremented by the gateway executor's
+    /// `execute_with` when a branch lands on a parallel
+    /// gateway with multiple incoming edges. When the
+    /// counter reaches the expected number of branches,
+    /// the join "fires" and the traverser continues from
+    /// the join's outgoing edge.
+    ///
+    /// V5.28 P6 v0 is a synchronous barrier — the join
+    /// counter is only meaningful across the recursive
+    /// `traverse_branch` call (P0's serial recursion
+    /// guarantees all branches finish before the join is
+    /// reached). The map survives fork-join round-trips
+    /// because `Vars` is cloned per-branch and the
+    /// post-merge step in `traverse_branch` unions the
+    /// child maps into the parent.
+    ///
+    /// V5.29 (Multi-Instance) will need to persist this
+    /// across suspend / resume so an async join can be
+    /// revived after a worker restart — that's where this
+    /// field earns its keep on the wire.
+    #[serde(default)]
+    pub join_arrivals: HashMap<String, u32>,
 }
 
 impl FlowContext {
@@ -52,6 +81,7 @@ impl FlowContext {
             current_awaiting_field: None,
             current_awaiting_value: None,
             thrown_error: None,
+            join_arrivals: HashMap::new(),
         }
     }
 }

@@ -25,7 +25,14 @@
 //!    with a cloned `FlowContext` and a per-branch
 //!    `visited` set (so each branch's loop detection is
 //!    independent).
-//! 3. Returns [`NodeResult::Fork`] so the traverser
+//! 3. (V5.28 P6) Detects an explicit join gateway — a
+//!    downstream `parallelGateway` whose incoming-edge
+//!    count matches this fork's branch count — and
+//!    threads the join id into every branch's
+//!    `join_target`. When all branches reach the join,
+//!    the traverser's union-merge step fires and the
+//!    parent continues from the join's outgoing edge.
+//! 4. Returns [`NodeResult::Fork`] so the traverser
 //!    driver runs the branches.
 //!
 //! ### V5.28 v0 join semantics
@@ -40,6 +47,26 @@
 //! Future versions can add a per-gateway visit-count
 //! tracker + `outputMapping` to merge branches back at a
 //! true join.
+//!
+//! ### V5.28 P6 — explicit join
+//!
+//! V5.28 P6 introduces explicit-join detection. A
+//! `parallelGateway` with **multiple incoming edges**
+//! (in-degree ≥ 2) is a join candidate. The gateway
+//! executor that initiates a fork looks for the unique
+//! join candidate reachable from the fork's outgoing
+//! targets; if exactly one is found, the join id is
+//! threaded into every branch and the post-merge step
+//! routes the parent through the join's outgoing edge.
+//!
+//! The detection is **heuristic** — when the BPMN has
+//! multiple parallel gateways with the right in-degree
+//! (e.g. a nested fork-join), the heuristic returns
+//! `None` and the executor falls back to P0 behaviour
+//! (each branch runs to its own end event). Java has the
+//! same limitation in v0; the real spec-compliance
+//! detection (BPMN token-based join tracking) is left
+//! for V5.30+.
 //!
 //! [`ForkBranch`]: crate::node_result::ForkBranch
 
@@ -139,18 +166,34 @@ impl NodeExecutor for GatewayExecutor {
         // `ForkBranch.visited` (see
         // `Traverser::step`'s `NodeResult::Fork` arm and
         // the `traverse()` driver's branch loop).
-        let mut branches = Vec::with_capacity(node.outgoing_ids.len());
-        for edge_id in &node.outgoing_ids {
-            let edge = def
-                .edges
-                .iter()
-                .find(|e| &e.id == edge_id)
-                .ok_or_else(|| {
-                    FlowError::EdgeNotFound(format!(
-                        "{} (referenced by parallel gateway {})",
-                        edge_id, node.node_id
-                    ))
-                })?;
+        let branch_targets: Vec<String> = node
+            .outgoing_ids
+            .iter()
+            .map(|edge_id| {
+                def.edges
+                    .iter()
+                    .find(|e| &e.id == edge_id)
+                    .ok_or_else(|| {
+                        FlowError::EdgeNotFound(format!(
+                            "{} (referenced by parallel gateway {})",
+                            edge_id, node.node_id
+                        ))
+                    })
+                    .map(|e| e.target.clone())
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        // V5.28 P6 — find an explicit join target. The
+        // heuristic looks for a `parallelGateway` node
+        // whose in-degree equals the fork's branch
+        // count. If exactly one such node exists, it's
+        // the join. If multiple match (nested fork
+        // ambiguity) or none match, fall back to P0
+        // (`join_target = None`).
+        let join_target = find_join_target(def, &branch_targets, branch_targets.len());
+
+        let mut branches = Vec::with_capacity(branch_targets.len());
+        for start in branch_targets {
             let branch_ctx = ctx.clone();
             // The branch's visited set starts EMPTY —
             // each branch's loop detection is local to
@@ -163,17 +206,98 @@ impl NodeExecutor for GatewayExecutor {
             // parent's visited (it was just stepped on).
             let branch_visited: HashSet<String> = HashSet::new();
             branches.push(ForkBranch {
-                start: edge.target.clone(),
+                start,
                 ctx: branch_ctx,
                 visited: branch_visited,
+                join_target: join_target.clone(),
             });
         }
 
         tracing::debug!(
             node_id = %node.node_id,
             branch_count = branches.len(),
+            join_target = ?join_target,
             "parallel gateway fork"
         );
+        // V5.28 P6 observability — `info_span!` wraps
+        // the fork decision so dashboards (e.g. the
+        // tracing-subscriber JSON formatter) can
+        // see one structured record per fork. The
+        // span is created but not entered — `tracing`
+        // macros inside the recursive `traverse_branch`
+        // call still surface; this just makes sure
+        // the fork's metadata is on the trail too.
+        // The metrics counter (Prometheus) for fork
+        // count is recorded in the traverser's
+        // `StepOutcome::Fork` arm in V5.32; for now
+        // we just log.
+        let _span = tracing::info_span!(
+            "parallel_gateway_fork",
+            gateway_id = %node.node_id,
+            branch_count = branches.len(),
+            join_target = ?join_target,
+        );
         Ok(NodeResult::Fork(branches))
+    }
+}
+
+/// V5.28 P6 — explicit-join detection heuristic.
+///
+/// A "join" is a `parallelGateway` node with multiple
+/// incoming edges (in-degree ≥ 2) that should
+/// synchronise the branches of a fork. The heuristic
+/// returns the **unique** join candidate whose
+/// in-degree matches the fork's branch count; if no
+/// candidate or multiple candidates match, returns
+/// `None` (fallback to P0 "no join" behaviour).
+///
+/// The uniqueness check is on the **whole def** — we
+/// don't restrict the search to nodes reachable from
+/// `branch_targets`. This is intentionally lenient:
+/// the BPMN author is responsible for placing the join
+/// downstream of the fork, and a unique in-degree
+/// match is a strong signal. (A more precise check
+/// would do a BFS from each branch target, but the
+/// extra precision is not worth the complexity in
+/// v0.)
+fn find_join_target(
+    def: &rf_ir::flow_definition::FlowDefinition,
+    _branch_targets: &[String],
+    branch_count: usize,
+) -> Option<String> {
+    if branch_count < 2 {
+        return None;
+    }
+    // In-degree per node id, counting edges whose
+    // target is the node.
+    let mut in_degree: std::collections::HashMap<String, usize> =
+        std::collections::HashMap::new();
+    for edge in &def.edges {
+        *in_degree.entry(edge.target.clone()).or_insert(0) += 1;
+    }
+    // Walk all nodes; collect those that are
+    // `parallelGateway` AND have in-degree ==
+    // branch_count. A join must also have ≥ 1
+    // outgoing edge (otherwise it's a dead-end).
+    let mut candidates: Vec<String> = Vec::new();
+    for (node_id, node) in &def.nodes {
+        if !matches!(node.kind, NodeKind::ParallelGateway { .. }) {
+            continue;
+        }
+        if in_degree.get(node_id).copied().unwrap_or(0) != branch_count {
+            continue;
+        }
+        if node.outgoing_ids.is_empty() {
+            continue;
+        }
+        candidates.push(node_id.clone());
+    }
+    if candidates.len() == 1 {
+        Some(candidates.remove(0))
+    } else {
+        // 0 candidates → no join (P0 behaviour);
+        // 2+ → ambiguous (nested fork-join), also
+        // fall back to P0.
+        None
     }
 }

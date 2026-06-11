@@ -58,6 +58,27 @@ pub struct ForkBranch {
     /// visited (other than its sibling's first node, which
     /// is allowed because each branch has its own copy).
     pub visited: HashSet<String>,
+    /// V5.28 P6 — explicit join target for the branch.
+    ///
+    /// `None` (the P0 default) means "no join synchronisation":
+    /// each branch runs to its own end event, and the
+    /// parent's post-fork continuation is the end of flow
+    /// (the diamond pattern collapses to N independent
+    /// runs).
+    ///
+    /// `Some(join_id)` means "this branch, when it completes,
+    /// returns to the join gateway at `join_id`". When ALL
+    /// branches in the fork reach the join, the join is
+    /// crossed and the parent's post-fork continuation is
+    /// the join's outgoing edge (true diamond pattern).
+    ///
+    /// The fork origin writes the same `join_id` to all
+    /// branches in one fork; the join itself is a regular
+    /// `NodeKind::ParallelGateway` node that the traverser
+    /// steps on normally — its presence in the BPMN is
+    /// what signals the design intent to the gateway
+    /// executor.
+    pub join_target: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

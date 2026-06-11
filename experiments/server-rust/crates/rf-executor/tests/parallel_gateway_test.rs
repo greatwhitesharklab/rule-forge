@@ -220,30 +220,30 @@ fn parallel_fork_last_branch_wins_for_var_merges() {
 }
 
 #[test]
-fn parallel_fork_merges_branch_specific_vars_last_wins() {
+fn parallel_fork_union_merges_branch_vars_with_last_wins_collision() {
+    // V5.28 P6 — vars use **union-merge** semantics.
     // Each branch sets a DISTINCT var (`var_a` vs
-    // `var_b`). After both branches complete, the
-    // parent's vars should contain BOTH vars
-    // (because the post-fork ctx merges ALL branch
-    // vars — not "last wins on every key", but
-    // "the LAST branch's ctx is the parent ctx").
+    // `var_b`) and a SHARED var (`var_x`). After
+    // both branches complete, the parent's vars
+    // should contain:
+    //   - `var_a` (set by branch1) — kept
+    //   - `var_b` (set by branch2) — kept
+    //   - `var_x` = 2 (last-wins; branch2 wrote
+    //     after branch1 in outgoing-ids order)
     //
-    // Concretely: branch2's ctx is the "winner". It
-    // contains `var_b` (set by branch2) but NOT
-    // `var_a` (branch1's var). So the parent
-    // observes only `var_b`.
-    //
-    // This documents the V5.28 v0 limitation. A
-    // future version should use a true var-union
-    // merge (or honor `outputMapping` attrs).
+    // The V5.28 v0 "last-branch-wins full-ctx" bug
+    // is fixed: distinct-keyed vars from earlier
+    // branches now survive the merge.
     let action_reg = Arc::new(
         MockActionRegistry::new()
             .register("set_a", |vars| {
                 vars.insert("var_a", json!(1));
+                vars.insert("var_x", json!(1));
                 Ok(())
             })
             .register("set_b", |vars| {
                 vars.insert("var_b", json!(2));
+                vars.insert("var_x", json!(2));
                 Ok(())
             }),
     );
@@ -279,13 +279,14 @@ fn parallel_fork_merges_branch_specific_vars_last_wins() {
     let outcome = traverse(def, FlowContext::new("p1"), reg);
     match outcome {
         TraverseOutcome::Completed(t) => {
-            // V5.28 v0: only `var_b` is observed
-            // (last-branch-wins full-ctx merge).
-            // V5.28 v1 should be `var_a` AND
-            // `var_b`. Document the limitation
-            // here.
-            assert_eq!(t.ctx().vars.get("var_a"), None);
+            // V5.28 P6 — union-merge: distinct
+            // keys from both branches survive.
+            assert_eq!(t.ctx().vars.get("var_a"), Some(&json!(1)));
             assert_eq!(t.ctx().vars.get("var_b"), Some(&json!(2)));
+            // V5.28 P6 — collision: last branch
+            // (outgoing-ids index 1 = branch2)
+            // wins for the shared key.
+            assert_eq!(t.ctx().vars.get("var_x"), Some(&json!(2)));
         }
         other => panic!("expected Completed, got {other:?}"),
     }
@@ -514,5 +515,256 @@ fn exclusive_gateway_still_uses_execute_path() {
             );
         }
         other => panic!("expected Completed, got {other:?}"),
+    }
+}
+
+// V5.28 P6 — true join (diamond pattern) tests.
+//
+// The classic BPMN "diamond": start → fork → branch1 → join → post
+//                                   → branch2 → join → post.
+//
+// V5.28 P0 supported this only "naively" — the join was a no-op
+// `Continue` and the two branches ran to their own end events.
+// V5.28 P6 detects the explicit `parallelGateway` join and routes
+// the parent through it.
+
+#[test]
+fn parallel_join_synchronizes_two_branches_then_routes_through_post_join_node() {
+    // start → g1 (fork, 2 outgoing) → b1 → g2 (join) → post → end
+    //                                  → b2 → g2 (join) → post → end
+    //
+    // g2 is a parallel gateway with in-degree 2 (= fork's branch
+    // count) and at least one outgoing. The executor's
+    // `find_join_target` heuristic returns `g2` as the unique
+    // candidate, and the post-merge step routes the parent
+    // through g2's outgoing.
+    //
+    // `b1` sets `var_a`, `b2` sets `var_b`; `post` (a
+    // serviceTask so it doesn't suspend) should see both
+    // (union merge). The flow completes at `end` and
+    // `current_node_id` is `end`.
+    let action_reg = Arc::new(
+        MockActionRegistry::new()
+            .register("set_a", |vars| {
+                vars.insert("var_a", json!("from_b1"));
+                Ok(())
+            })
+            .register("set_b", |vars| {
+                vars.insert("var_b", json!("from_b2"));
+                Ok(())
+            })
+            .register("post_action", |vars| {
+                // The post node can observe both
+                // branches' writes — that's the whole
+                // point of the join.
+                vars.insert(
+                    "post_saw",
+                    json!(format!(
+                        "a={:?},b={:?}",
+                        vars.get("var_a"),
+                        vars.get("var_b")
+                    )),
+                );
+                Ok(())
+            }),
+    );
+    let mut reg = (*rule_registry()).clone();
+    reg.action = Arc::new(ActionExecutor::new(action_reg));
+    let reg = Arc::new(reg);
+
+    let def = parse(&bpmn(
+        "p",
+        r#"
+        <bpmn:startEvent id="s">
+          <bpmn:outgoing>e0</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:parallelGateway id="g1">
+          <bpmn:outgoing>e1</bpmn:outgoing>
+          <bpmn:outgoing>e2</bpmn:outgoing>
+        </bpmn:parallelGateway>
+        <bpmn:serviceTask id="b1" ruleforge:taskType="action" ruleforge:method="set_a">
+          <bpmn:outgoing>e1_to_g2</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:serviceTask id="b2" ruleforge:taskType="action" ruleforge:method="set_b">
+          <bpmn:outgoing>e2_to_g2</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:parallelGateway id="g2">
+          <bpmn:outgoing>e_g2_post</bpmn:outgoing>
+        </bpmn:parallelGateway>
+        <bpmn:serviceTask id="post" ruleforge:taskType="action" ruleforge:method="post_action">
+          <bpmn:outgoing>e_post_end</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="end"/>
+        <bpmn:sequenceFlow id="e0" sourceRef="s" targetRef="g1"/>
+        <bpmn:sequenceFlow id="e1" sourceRef="g1" targetRef="b1"/>
+        <bpmn:sequenceFlow id="e2" sourceRef="g1" targetRef="b2"/>
+        <bpmn:sequenceFlow id="e1_to_g2" sourceRef="b1" targetRef="g2"/>
+        <bpmn:sequenceFlow id="e2_to_g2" sourceRef="b2" targetRef="g2"/>
+        <bpmn:sequenceFlow id="e_g2_post" sourceRef="g2" targetRef="post"/>
+        <bpmn:sequenceFlow id="e_post_end" sourceRef="post" targetRef="end"/>
+    "#,
+    ));
+    let outcome = traverse(def, FlowContext::new("p1"), reg);
+    // Sync case — both branches completed, join crossed,
+    // post ran with union-merged vars, end reached.
+    match outcome {
+        TraverseOutcome::Completed(t) => {
+            // We end at `end` (the userTask/post_saw
+            // node ran without suspending).
+            assert_eq!(t.ctx().current_node_id.as_deref(), Some("end"));
+            // Union-merge: both branches' writes
+            // survive into the post node.
+            assert_eq!(
+                t.ctx().vars.get("var_a"),
+                Some(&json!("from_b1"))
+            );
+            assert_eq!(
+                t.ctx().vars.get("var_b"),
+                Some(&json!("from_b2"))
+            );
+            // The post node saw both vars together —
+            // the format string proves it.
+            let post_saw = t
+                .ctx()
+                .vars
+                .get("post_saw")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            assert!(
+                post_saw.contains("from_b1") && post_saw.contains("from_b2"),
+                "post node should see both branches' writes, got: {post_saw}"
+            );
+        }
+        other => panic!("expected Completed, got {other:?}"),
+    }
+}
+
+#[test]
+fn parallel_join_missing_falls_back_to_p0_behavior() {
+    // The "no explicit join" case: start → g (fork, 2 outgoing) → b1 → end1
+    //                                                    → b2 → end2
+    // There is NO downstream `parallelGateway`, so
+    // `find_join_target` returns `None`. The executor
+    // preserves the P0 behaviour: each branch runs to its
+    // own end event, the parent finishes with `next = None`
+    // after the union merge. The current_node_id is the
+    // last branch's end node.
+    let action_reg = Arc::new(
+        MockActionRegistry::new()
+            .register("set_a", |vars| {
+                vars.insert("var_a", json!(1));
+                Ok(())
+            })
+            .register("set_b", |vars| {
+                vars.insert("var_b", json!(2));
+                Ok(())
+            }),
+    );
+    let mut reg = (*rule_registry()).clone();
+    reg.action = Arc::new(ActionExecutor::new(action_reg));
+    let reg = Arc::new(reg);
+
+    let def = parse(&bpmn(
+        "p",
+        r#"
+        <bpmn:startEvent id="s">
+          <bpmn:outgoing>e0</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:parallelGateway id="g">
+          <bpmn:outgoing>e1</bpmn:outgoing>
+          <bpmn:outgoing>e2</bpmn:outgoing>
+        </bpmn:parallelGateway>
+        <bpmn:serviceTask id="b1" ruleforge:taskType="action" ruleforge:method="set_a">
+          <bpmn:outgoing>e1_out</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:serviceTask id="b2" ruleforge:taskType="action" ruleforge:method="set_b">
+          <bpmn:outgoing>e2_out</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="end1"/>
+        <bpmn:endEvent id="end2"/>
+        <bpmn:sequenceFlow id="e0" sourceRef="s" targetRef="g"/>
+        <bpmn:sequenceFlow id="e1" sourceRef="g" targetRef="b1"/>
+        <bpmn:sequenceFlow id="e2" sourceRef="g" targetRef="b2"/>
+        <bpmn:sequenceFlow id="e1_out" sourceRef="b1" targetRef="end1"/>
+        <bpmn:sequenceFlow id="e2_out" sourceRef="b2" targetRef="end2"/>
+    "#,
+    ));
+    let outcome = traverse(def, FlowContext::new("p1"), reg);
+    match outcome {
+        TraverseOutcome::Completed(t) => {
+            // V5.28 P0 last-wins for current_node_id is
+            // preserved (the second branch's end event
+            // is the one surfaced). The vars are still
+            // union-merged (P6 contract).
+            let nid = t.ctx().current_node_id.as_deref();
+            assert!(
+                nid == Some("end1") || nid == Some("end2"),
+                "expected end1 or end2, got {nid:?}"
+            );
+            assert_eq!(t.ctx().vars.get("var_a"), Some(&json!(1)));
+            assert_eq!(t.ctx().vars.get("var_b"), Some(&json!(2)));
+        }
+        other => panic!("expected Completed, got {other:?}"),
+    }
+}
+
+#[test]
+fn parallel_fork_async_branch_still_suspends_above() {
+    // V5.28 P6 v0 — async barrier is **not** implemented
+    // yet. A branch that hits a `userTask` suspends the
+    // entire flow (P0 behaviour, preserved). The
+    // post-merge step is short-circuited by the
+    // `Suspended` arm in the `traverse_branch` loop.
+    //
+    // This test pins the v0 contract: when one branch
+    // suspends, the parent suspends too — even if other
+    // branches are still running / would have completed.
+    // V5.29 (Multi-Instance) will replace this with a
+    // true async barrier; until then, the v0 behaviour is
+    // the documented behaviour.
+    const DIAMOND_BPMN: &str = r#"
+    <bpmn:startEvent id="s">
+      <bpmn:outgoing>e0</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="g1">
+      <bpmn:outgoing>e1</bpmn:outgoing>
+      <bpmn:outgoing>e2</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="b1" ruleforge:decisionField="approve">
+      <bpmn:outgoing>e1_to_g2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="b2" ruleforge:taskType="action" ruleforge:method="noop">
+      <bpmn:outgoing>e2_to_g2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:parallelGateway id="g2">
+      <bpmn:outgoing>e_g2_post</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="end"/>
+    <bpmn:sequenceFlow id="e0" sourceRef="s" targetRef="g1"/>
+    <bpmn:sequenceFlow id="e1" sourceRef="g1" targetRef="b1"/>
+    <bpmn:sequenceFlow id="e2" sourceRef="g1" targetRef="b2"/>
+    <bpmn:sequenceFlow id="e1_to_g2" sourceRef="b1" targetRef="g2"/>
+    <bpmn:sequenceFlow id="e2_to_g2" sourceRef="b2" targetRef="g2"/>
+    <bpmn:sequenceFlow id="e_g2_post" sourceRef="g2" targetRef="end"/>
+"#;
+    let action_reg = Arc::new(
+        MockActionRegistry::new().register("noop", |_vars| Ok(())),
+    );
+    let mut reg = (*rule_registry()).clone();
+    reg.action = Arc::new(ActionExecutor::new(action_reg));
+    let reg = Arc::new(reg);
+
+    let def = parse(&bpmn("p", DIAMOND_BPMN));
+    let outcome = traverse(def, FlowContext::new("p1"), reg);
+    // Branch 1 hits the userTask and suspends. The
+    // parent suspends too (P0 + P6 v0 behaviour). The
+    // current_node_id is the userTask (the activity
+    // that triggered the suspend).
+    match outcome {
+        TraverseOutcome::Suspended(t, info) => {
+            assert_eq!(t.ctx().current_node_id.as_deref(), Some("b1"));
+            assert_eq!(info.wait_ref, "approve");
+        }
+        other => panic!("expected Suspended at b1, got {other:?}"),
     }
 }
