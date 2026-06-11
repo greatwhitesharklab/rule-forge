@@ -146,6 +146,56 @@ pub enum NodeKind {
     SubProcess {
         attrs: Attrs,
     },
+    /// V5.31 P0 — `bpmn:compensateStartEvent`. Marks
+    /// the entry of a compensation scope. When the
+    /// dispatcher lands here, the
+    /// `CompensationStartExecutor` pushes a
+    /// `CompensationScope` onto
+    /// `ctx.compensation_stack` (id = `scope_id`,
+    /// derived from `ruleforge:scopeId` attr or
+    /// defaulting to `node_id`). Pair with
+    /// [`NodeKind::CompensationEnd`] to close the
+    /// scope. Anything that throws an `ErrorEnd` /
+    /// `EscalationEnd` while a scope is on the stack
+    /// triggers LIFO compensation rollback.
+    ///
+    /// `attrs` is always present (mirrors
+    /// `StartEvent` / `EndEvent` shape) so the
+    /// executor reads `scopeId` uniformly.
+    CompensationStart { scope_id: String, attrs: Attrs },
+    /// V5.31 P0 — `bpmn:compensateEndEvent`. Closes
+    /// a compensation scope. The
+    /// `CompensationEndExecutor` pops the
+    /// `CompensationScope` whose id matches
+    /// `scope_id` (warns on mismatched stack top,
+    /// never fails the flow for a stack-shape error).
+    /// Pair with [`NodeKind::CompensationStart`].
+    CompensationEnd { scope_id: String, attrs: Attrs },
+    /// V5.31 P0 — `bpmn:compensateThrowEvent`.
+    /// Triggers the compensation rollback. The
+    /// `CompensationThrowExecutor` runs the scope's
+    /// registered handlers LIFO (each handler is a
+    /// sub-flow starting at its `handler_node_id`).
+    /// `scope_ref` = `ruleforge:scopeRef` (default
+    /// `"compensate"` — BPMN's "current scope"
+    /// default; v0 ignores the ref and pops the
+    /// innermost scope, which is the conservative
+    /// reading).
+    CompensationThrow { scope_ref: String, attrs: Attrs },
+    /// V5.31 P0 — `bpmn:compensateIntermediateThrowEvent`.
+    /// Sits on the edge of an activity like a
+    /// boundary event; v0 is a **no-op executor**
+    /// (handler registration happens at
+    /// `CompensationThrow` time by iterating
+    /// `def.attached_compensations`, NOT at
+    /// intermediate-event visit). This is
+    /// deliberately conservative — running all
+    /// declared handlers in the scope at throw
+    /// time (instead of just the ones whose activity
+    /// has "completed") is the V5.31 P0 v0
+    /// simplification. V5.31+ refines with a
+    /// completed-activities set.
+    CompensationIntermediate { attached_to: Option<String>, attrs: Attrs },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

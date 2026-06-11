@@ -130,6 +130,14 @@ impl BpmnXmlParser {
         // when an activity throws, the first matching
         // boundary in document order wins.
         let mut attached_boundaries: BTreeMap<String, Vec<String>> = BTreeMap::new();
+        // V5.31 P0 — `activity_id → compensation_handler_ids`
+        // reverse-lookup, mirroring `attached_boundaries`.
+        // Built from each
+        // `<compensateIntermediateThrowEvent
+        // attachedToRef="..."/>`. Multiple handlers per
+        // activity are allowed; v0 uses the first
+        // (document order).
+        let mut attached_compensations: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for n in nodes.values() {
             match &n.kind {
                 NodeKind::StartEvent { .. } => {
@@ -144,6 +152,15 @@ impl BpmnXmlParser {
                     ..
                 } => {
                     attached_boundaries
+                        .entry(activity_id.clone())
+                        .or_default()
+                        .push(n.node_id.clone());
+                }
+                NodeKind::CompensationIntermediate {
+                    attached_to: Some(activity_id),
+                    ..
+                } => {
+                    attached_compensations
                         .entry(activity_id.clone())
                         .or_default()
                         .push(n.node_id.clone());
@@ -166,6 +183,7 @@ impl BpmnXmlParser {
             start,
             ends,
             attached_boundaries,
+            attached_compensations,
             source_xml: bpmn_xml.to_string(),
             source_xml_hash,
             parsed_at: Utc::now(),
@@ -261,6 +279,52 @@ fn build_node_kind(
             })
         }
         "subProcess" => Some(NodeKind::SubProcess { attrs: ext.clone() }),
+        // V5.31 P0 — BPMN canonical local
+        // names for the four compensation
+        // node kinds. `scope_id` defaults to
+        // the node's id (mirrors BPMN's
+        // "current scope" default for
+        // `CompensationThrow`).
+        "compensateStartEvent" => {
+            let scope_id = ext
+                .ruleforge("scopeId")
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| el.attribute("id").unwrap_or("").to_string());
+            Some(NodeKind::CompensationStart {
+                scope_id,
+                attrs: ext.clone(),
+            })
+        }
+        "compensateEndEvent" => {
+            let scope_id = ext
+                .ruleforge("scopeId")
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| el.attribute("id").unwrap_or("").to_string());
+            Some(NodeKind::CompensationEnd {
+                scope_id,
+                attrs: ext.clone(),
+            })
+        }
+        "compensateThrowEvent" => {
+            let scope_ref = ext
+                .ruleforge("scopeRef")
+                .unwrap_or("compensate")
+                .to_string();
+            Some(NodeKind::CompensationThrow {
+                scope_ref,
+                attrs: ext.clone(),
+            })
+        }
+        "compensateIntermediateThrowEvent" => {
+            let attached_to = el
+                .attribute((NS_BPMN, "attachedToRef"))
+                .or_else(|| el.attribute("attachedToRef"))
+                .map(|s| s.to_string());
+            Some(NodeKind::CompensationIntermediate {
+                attached_to,
+                attrs: ext.clone(),
+            })
+        }
         _ => None,
     };
     Ok(kind)

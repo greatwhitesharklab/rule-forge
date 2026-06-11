@@ -67,4 +67,28 @@ pub enum FlowError {
     /// in-flight tokens across all flows).
     #[error("flow terminated")]
     Terminated,
+
+    /// V5.31 P0 — a compensation handler
+    /// failed (the sub-flow inside a
+    /// `CompensationThrow` exited with
+    /// `TraverseOutcome::Failed`). The carried
+    /// `String` is the Display form of the
+    /// handler's own `FlowError` (typically a
+    /// `FlowError::Action(...)` wrap). The
+    /// outer flow's terminal state remains
+    /// `Failed` regardless of compensation
+    /// success; this variant exists for the
+    /// compensation trace appended to the
+    /// outer `FlowError::Action` message at
+    /// the traverser seam.
+    #[error("compensation failure: {0}")]
+    Compensation(String),
+
+    /// V5.31 P0 — `CompensationThrow` ran with
+    /// an empty stack (no `CompensationStart`
+    /// to match). Outer flow exits as `Failed`
+    /// with this error so the misconfiguration
+    /// surfaces in HTTP responses.
+    #[error("compensation throw with no open scope")]
+    CompensationNoScope,
 }

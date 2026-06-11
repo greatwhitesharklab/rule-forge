@@ -35,6 +35,7 @@ use std::sync::Arc;
 use rf_ir::flow_definition::FlowDefinition;
 use rf_ir::node_kind::NodeKind;
 
+use crate::compensation;
 use crate::dispatch::{dispatch, ExecutorRegistry};
 use crate::error::FlowError;
 use crate::flow_context::FlowContext;
@@ -166,7 +167,7 @@ pub fn traverse(
 /// gets its own `FlowContext` (cloned by the gateway
 /// executor) and its own `visited` set, so writes are
 /// isolated and loop detection is local.
-fn traverse_branch(
+pub(crate) fn traverse_branch(
     def: Arc<FlowDefinition>,
     start: String,
     ctx: FlowContext,
@@ -590,16 +591,46 @@ impl Traverser<Running> {
             // channel; reusing it keeps the
             // `TraverseOutcome` shape stable.
             NodeResult::Fail(msg) => {
-                // V5.30 — terminal failure. The
-                // carried `String` is the
-                // `Display` form of the
-                // `FlowError` (typically
-                // `FlowError::ErrorEnd(ref).to_string()`).
-                // Wrap into `FlowError::Action`
-                // for the `TraverseOutcome::Failed`
-                // channel — keeps the failure
-                // variants discoverable via the
-                // existing HTTP layer.
+                // V5.31 P0 — run compensation
+                // sub-flows BEFORE exiting
+                // as Failed. Mirrors SAGA
+                // pattern: best-effort
+                // rollback before reporting
+                // failure. The outer flow
+                // is still `Failed` — the
+                // compensation trace is
+                // appended to the
+                // `FlowError::Action`
+                // message but doesn't
+                // suppress the failure.
+                let mut msg = msg;
+                if !self.ctx.compensation_stack.is_empty() {
+                    let reg_arc = self.reg.clone();
+                    let def = Arc::clone(&self.def);
+                    match compensation::run_handlers(
+                        &def,
+                        &mut self.ctx,
+                        &reg_arc,
+                    ) {
+                        Ok(trace) => {
+                            let suffix =
+                                compensation::trace_suffix(&trace);
+                            if !suffix.is_empty() {
+                                msg.push_str(&suffix);
+                            }
+                        }
+                        Err((_outcome, _info)) => {
+                            // Handler suspended —
+                            // we still report
+                            // Failed (v0
+                            // conservative).
+                            tracing::warn!(
+                                flow_run_id = %self.ctx.flow_run_id,
+                                "compensation sub-flow suspended during Fail-arm rollback; outer flow still Failed"
+                            );
+                        }
+                    }
+                }
                 let failed = self.into_failed();
                 Err((failed, FlowError::Action(msg)))
             }

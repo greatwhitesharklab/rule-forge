@@ -560,6 +560,8 @@ mod tests {
             thrown_error: None,
             join_arrivals: Default::default(),
             vars,
+            compensation_stack: Vec::new(),
+            compensated_handlers: std::collections::BTreeSet::new(),
         };
         let writes =
             MultiInstanceExecutor::collect_child_writes(&before, &after, "item");

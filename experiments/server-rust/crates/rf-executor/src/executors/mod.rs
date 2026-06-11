@@ -31,9 +31,20 @@
 //!   escalation / terminate end = `Fail(FlowError::...)` → traverser
 //!   exits with `TraverseOutcome::Failed`. Mirrors `StartEventExecutor`'s
 //!   shape (read `endType` attr → branch on `end_kind`).
+//! - `CompensationStartExecutor` / `CompensationEndExecutor` /
+//!   `CompensationThrowExecutor` / `CompensationIntermediateExecutor` —
+//!   V5.31 P0. The BPMN 2.0 `<compensate*Event>` quartet that
+//!   implements the SAGA-pattern compensation rollback.
+//!   `CompensationThrowExecutor` uses `execute_with` to recursively
+//!   traverse handler sub-flows via
+//!   `crate::compensation::run_handlers`.
 
 pub mod action;
 pub mod boundary_event;
+pub mod compensation_end;
+pub mod compensation_intermediate;
+pub mod compensation_start;
+pub mod compensation_throw;
 pub mod end_event;
 pub mod gateway;
 pub mod intermediate_event;
@@ -46,6 +57,10 @@ pub mod user_task;
 
 pub use action::{ActionExecutor, ActionFn, MockActionRegistry};
 pub use boundary_event::{BoundaryEventError, BoundaryEventExecutor, BoundaryEventKind};
+pub use compensation_end::CompensationEndExecutor;
+pub use compensation_intermediate::CompensationIntermediateExecutor;
+pub use compensation_start::CompensationStartExecutor;
+pub use compensation_throw::CompensationThrowExecutor;
 pub use end_event::EndEventExecutor;
 // V5.30 — `EndEventKind` and `EndEventError` are
 // defined in `rf_ir::node_kind` (parser-side

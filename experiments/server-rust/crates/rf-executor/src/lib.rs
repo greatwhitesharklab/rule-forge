@@ -5,6 +5,7 @@
 
 #![allow(dead_code)]
 
+pub mod compensation;
 pub mod condition;
 pub mod dispatch;
 pub mod error;

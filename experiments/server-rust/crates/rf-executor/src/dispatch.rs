@@ -58,6 +58,20 @@ pub struct ExecutorRegistry {
     /// terminate end). Mirrors the
     /// `StartEventExecutor` (V5.28 P7) shape.
     pub end_event: Arc<dyn NodeExecutor>,
+    /// V5.31 P0 — compensation event
+    /// executors (4). The dispatcher routes
+    /// `CompensationStart` / `CompensationEnd`
+    /// / `CompensationIntermediate` to
+    /// no-op `Continue`s and
+    /// `CompensationThrow` to the
+    /// `execute_with` arm (which
+    /// recursively traverses handler
+    /// sub-flows via
+    /// `crate::compensation::run_handlers`).
+    pub compensation_start: Arc<dyn NodeExecutor>,
+    pub compensation_end: Arc<dyn NodeExecutor>,
+    pub compensation_throw: Arc<dyn NodeExecutor>,
+    pub compensation_intermediate: Arc<dyn NodeExecutor>,
     /// `Option` so the default registry (used by unit tests that
     /// don't care about sub-flows) doesn't have to wire a
     /// resolver. `rf-http` sets this to an adapter that wraps
@@ -111,6 +125,22 @@ impl std::fmt::Debug for ExecutorRegistry {
                 &std::any::type_name_of_val(&*self.multi_instance),
             )
             .field(
+                "compensation_start",
+                &std::any::type_name_of_val(&*self.compensation_start),
+            )
+            .field(
+                "compensation_end",
+                &std::any::type_name_of_val(&*self.compensation_end),
+            )
+            .field(
+                "compensation_throw",
+                &std::any::type_name_of_val(&*self.compensation_throw),
+            )
+            .field(
+                "compensation_intermediate",
+                &std::any::type_name_of_val(&*self.compensation_intermediate),
+            )
+            .field(
                 "flow_resolver",
                 &self
                     .flow_resolver
@@ -150,6 +180,18 @@ impl ExecutorRegistry {
             start_event: Arc::new(crate::executors::start_event::StartEventExecutor),
             multi_instance: Arc::new(crate::executors::multi_instance::MultiInstanceExecutor::new()),
             end_event: Arc::new(crate::executors::end_event::EndEventExecutor),
+            compensation_start: Arc::new(
+                crate::executors::compensation_start::CompensationStartExecutor,
+            ),
+            compensation_end: Arc::new(
+                crate::executors::compensation_end::CompensationEndExecutor,
+            ),
+            compensation_throw: Arc::new(
+                crate::executors::compensation_throw::CompensationThrowExecutor,
+            ),
+            compensation_intermediate: Arc::new(
+                crate::executors::compensation_intermediate::CompensationIntermediateExecutor,
+            ),
             flow_resolver: None,
             def: None,
         }
@@ -179,6 +221,18 @@ impl Default for ExecutorRegistry {
             start_event: Arc::new(crate::executors::start_event::StartEventExecutor),
             multi_instance: Arc::new(crate::executors::multi_instance::MultiInstanceExecutor::new()),
             end_event: Arc::new(crate::executors::end_event::EndEventExecutor),
+            compensation_start: Arc::new(
+                crate::executors::compensation_start::CompensationStartExecutor,
+            ),
+            compensation_end: Arc::new(
+                crate::executors::compensation_end::CompensationEndExecutor,
+            ),
+            compensation_throw: Arc::new(
+                crate::executors::compensation_throw::CompensationThrowExecutor,
+            ),
+            compensation_intermediate: Arc::new(
+                crate::executors::compensation_intermediate::CompensationIntermediateExecutor,
+            ),
             flow_resolver: None,
             def: None,
         }
@@ -293,6 +347,27 @@ pub async fn dispatch(
         // traverse the sub-flow. `execute_with` carries it in.
         NodeKind::SubProcess { .. } => {
             reg.sub_process.execute_with(node, ctx, reg).await
+        }
+        // V5.31 P0 — 4 compensation event
+        // arms. Start/End/Intermediate are
+        // straight `execute`s (no-op or
+        // stack push/pop). Throw needs
+        // `execute_with` for sub-flow
+        // recursion (it walks the
+        // compensation stack and runs
+        // handler sub-flows via
+        // `crate::compensation::run_handlers`).
+        NodeKind::CompensationStart { .. } => {
+            reg.compensation_start.execute(node, ctx).await
+        }
+        NodeKind::CompensationEnd { .. } => {
+            reg.compensation_end.execute(node, ctx).await
+        }
+        NodeKind::CompensationThrow { .. } => {
+            reg.compensation_throw.execute_with(node, ctx, reg).await
+        }
+        NodeKind::CompensationIntermediate { .. } => {
+            reg.compensation_intermediate.execute(node, ctx).await
         }
     }
 }

@@ -34,6 +34,20 @@ pub struct FlowDefinition {
     /// error boundary per `errorRef`).
     #[serde(default)]
     pub attached_boundaries: BTreeMap<String, Vec<String>>,
+    /// V5.31 P0 — `activity_id → compensation_handler_id`
+    /// reverse-lookup. Built by the parser from each
+    /// `compensateIntermediateThrowEvent`'s
+    /// `attachedToRef` attribute. When a
+    /// compensation scope is thrown, the executor
+    /// walks the scope's `handlers` LIFO and looks
+    /// up the first handler for each registered
+    /// activity id here. Multiple handlers per
+    /// activity are allowed (mirrors the boundary
+    /// shape) but v0 only invokes the first one
+    /// per activity on throw. Document order is
+    /// preserved (BTreeMap iteration is stable).
+    #[serde(default)]
+    pub attached_compensations: BTreeMap<String, Vec<String>>,
     /// Original BPMN XML, kept so the executor can hash it again to detect
     /// external mutation (mirrors Java `FlowDefinition.sourceXml`).
     pub source_xml: String,
