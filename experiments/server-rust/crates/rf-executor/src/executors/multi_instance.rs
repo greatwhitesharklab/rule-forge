@@ -388,6 +388,24 @@ async fn run_sequential(
                     node.node_id
                 )));
             }
+            // V5.30 — inner executor hit an
+            // error/escalation/terminate end (only
+            // possible if a scriptTask inside MI
+            // body wrote `ctx.thrown_error`, but
+            // v0 task executors don't do that).
+            // Propagate the failure — the MI
+            // wrapper doesn't have a way to
+            // "convert" Fail to Continue without
+            // losing the failure semantics.
+            NodeResult::Fail(msg) => {
+                // V5.30 — inner executor hit a
+                // configured error/escalation end.
+                // Wrap the carried `String` into
+                // `FlowError::Action` so the
+                // terminal-failure channel stays
+                // consistent.
+                return Err(FlowError::Action(msg.to_string()));
+            }
         }
     }
     if let Some(out) = output_var {
@@ -473,6 +491,24 @@ async fn run_parallel_inline(
                     "multi-instance: inner executor {} returned Fork (unsupported in v0)",
                     node.node_id
                 )));
+            }
+            // V5.30 — inner executor hit an
+            // error/escalation/terminate end (only
+            // possible if a scriptTask inside MI
+            // body wrote `ctx.thrown_error`, but
+            // v0 task executors don't do that).
+            // Propagate the failure — the MI
+            // wrapper doesn't have a way to
+            // "convert" Fail to Continue without
+            // losing the failure semantics.
+            NodeResult::Fail(msg) => {
+                // V5.30 — inner executor hit a
+                // configured error/escalation end.
+                // Wrap the carried `String` into
+                // `FlowError::Action` so the
+                // terminal-failure channel stays
+                // consistent.
+                return Err(FlowError::Action(msg.to_string()));
             }
         }
     }

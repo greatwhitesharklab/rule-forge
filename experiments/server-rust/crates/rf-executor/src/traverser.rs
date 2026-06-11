@@ -579,6 +579,30 @@ impl Traverser<Running> {
                 let suspended = self.into_suspended();
                 Ok(StepOutcome::Suspended(suspended, info))
             }
+            // V5.30 — terminal failure (error /
+            // escalation / terminate end). The
+            // traverser turns this into
+            // `TraverseOutcome::Failed` by
+            // returning `Err` from `step()` — the
+            // same path dispatch errors take. The
+            // `Traverser<Failed>` + `FlowError`
+            // pair is the existing terminal-failure
+            // channel; reusing it keeps the
+            // `TraverseOutcome` shape stable.
+            NodeResult::Fail(msg) => {
+                // V5.30 — terminal failure. The
+                // carried `String` is the
+                // `Display` form of the
+                // `FlowError` (typically
+                // `FlowError::ErrorEnd(ref).to_string()`).
+                // Wrap into `FlowError::Action`
+                // for the `TraverseOutcome::Failed`
+                // channel — keeps the failure
+                // variants discoverable via the
+                // existing HTTP layer.
+                let failed = self.into_failed();
+                Err((failed, FlowError::Action(msg)))
+            }
         }
     }
 

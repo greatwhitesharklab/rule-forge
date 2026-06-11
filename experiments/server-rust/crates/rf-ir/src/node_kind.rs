@@ -61,7 +61,37 @@ pub enum NodeKind {
     /// `Attrs` for legacy BPMN files that don't set
     /// `startTrigger`.
     StartEvent { attrs: Attrs },
-    EndEvent,
+    /// `bpmn:endEvent`. V5.30 — evolved from the
+    /// V5.27 unit variant to carry an `end_kind`
+    /// discriminator + attrs, mirroring
+    /// `StartEvent` / `BoundaryEvent` /
+    /// `IntermediateEvent` shape. v0 supports:
+    ///
+    /// - `end_kind = None` — no `endType` (the
+    ///   default). Normal end → `Continue` →
+    ///   `TraverseOutcome::Completed`.
+    /// - `end_kind = Error { error_ref }` —
+    ///   `ruleforge:endType="error"` +
+    ///   `ruleforge:errorRef` (default `"error"`).
+    ///   The end marks the flow as failed at a
+    ///   business level (e.g. loan rejected); the
+    ///   traverser returns `Failed(FlowError::ErrorEnd(ref))`.
+    /// - `end_kind = Escalation { escalation_ref }` —
+    ///   `ruleforge:endType="escalation"` +
+    ///   `ruleforge:escalationRef`. v0 collapses
+    ///   to the same `Fail` path as `Error`
+    ///   (escalation is a "softer" error in BPMN
+    ///   spec — V5.31 CompensationScope will refine
+    ///   the parent-scope-continuation behaviour).
+    /// - `end_kind = Terminate` —
+    ///   `ruleforge:endType="terminate"`. v0 is
+    ///   equivalent to `Error`; V5.31 P1 adds real
+    ///   token-kill semantics.
+    ///
+    /// The `attrs` field is always present so the
+    /// executor can read the discriminator uniformly
+    /// (matches `StartEvent`'s V5.28 P7 pattern).
+    EndEvent { end_kind: EndEventKind, attrs: Attrs },
     ServiceTask {
         task_type: TaskType,
         attrs: Attrs,
@@ -124,6 +154,83 @@ pub enum TaskType {
     Action,
     Package,
     RulesPackage,
+}
+
+/// `EndEventKind` — V5.30 discriminator for
+/// `NodeKind::EndEvent`. Mirrors the
+/// `IntermediateEventKind` / `BoundaryEventKind`
+/// pattern (`from_attrs` reads `ruleforge:endType`
+/// + the type-specific `ref` attr).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum EndEventKind {
+    /// Default — no `endType`. The end is a normal
+    /// "flow finished" marker → `Continue` →
+    /// `Completed`.
+    None,
+    /// `ruleforge:endType="error"` +
+    /// `ruleforge:errorRef` (default `"error"`).
+    /// The end marks the flow as failed at a
+    /// business level; the traverser exits with
+    /// `Failed(FlowError::ErrorEnd(error_ref))`.
+    Error { error_ref: String },
+    /// `ruleforge:endType="escalation"` +
+    /// `ruleforge:escalationRef` (default
+    /// `"escalation"`). v0 takes the same
+    /// `Fail` path as `Error`; V5.31 will
+    /// refine the parent-scope behaviour.
+    Escalation { escalation_ref: String },
+    /// `ruleforge:endType="terminate"`. v0 is
+    /// equivalent to `Error`; V5.31 P1 adds
+    /// real token-kill semantics.
+    Terminate,
+}
+
+/// `EndEventError` — V5.30 parse errors for
+/// `EndEventKind::from_attrs`. Wrapped into
+/// `FlowError::Action` at the dispatch site.
+#[derive(Debug, thiserror::Error)]
+pub enum EndEventError {
+    #[error("end event unknown endType: {kind}")]
+    UnknownEndType { kind: String },
+}
+
+impl EndEventKind {
+    /// Parse the `ruleforge:endType` attribute. Mirrors
+    /// `IntermediateEventKind::from_attrs` and
+    /// `BoundaryEventKind::from_attrs`.
+    ///
+    /// - `None` (or `endType=""` / `endType="none"`) → `None`
+    /// - `endType="error"` → `Error { error_ref }`
+    ///   (default `"error"`)
+    /// - `endType="escalation"` → `Escalation { escalation_ref }`
+    ///   (default `"escalation"`)
+    /// - `endType="terminate"` → `Terminate`
+    /// - anything else → `Err(EndEventError::UnknownEndType)`
+    pub fn from_attrs(attrs: &Attrs) -> Result<Self, EndEventError> {
+        let end_type = attrs.ruleforge("endType");
+        match end_type {
+            None => Ok(EndEventKind::None),
+            Some("") | Some("none") => Ok(EndEventKind::None),
+            Some("error") => {
+                let error_ref = attrs
+                    .ruleforge("errorRef")
+                    .unwrap_or("error")
+                    .to_string();
+                Ok(EndEventKind::Error { error_ref })
+            }
+            Some("escalation") => {
+                let escalation_ref = attrs
+                    .ruleforge("escalationRef")
+                    .unwrap_or("escalation")
+                    .to_string();
+                Ok(EndEventKind::Escalation { escalation_ref })
+            }
+            Some("terminate") => Ok(EndEventKind::Terminate),
+            Some(other) => Err(EndEventError::UnknownEndType {
+                kind: other.to_string(),
+            }),
+        }
+    }
 }
 
 impl TaskType {

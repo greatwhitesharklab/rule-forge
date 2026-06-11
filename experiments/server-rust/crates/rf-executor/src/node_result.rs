@@ -36,6 +36,23 @@ pub enum NodeResult {
     /// [`SuspendInfo`] back to the caller, which persists it to the
     /// state table and returns `PENDING` to the HTTP client.
     Suspend(SuspendInfo),
+    /// V5.30 — terminal failure. The node is a
+    /// configured "error/escalation/terminate end"
+    /// and the flow should exit with `Failed`.
+    /// The carried `String` is the
+    /// `Display` form of the `FlowError` that
+    /// will be wrapped at the traverser (e.g.
+    /// `"flow reached error end: loan_rejected"`,
+    /// `"flow reached escalation end: manual_review"`,
+    /// `"flow terminated"`). We use a `String`
+    /// rather than a full `FlowError` to avoid
+    /// the `thiserror` + `Serialize` derive
+    /// conflict (`FlowError` is a rich enum with
+    /// `thiserror` derives that don't play well
+    /// with `serde`); the `String` round-trip
+    /// is fine for the terminal-failure case
+    /// where the message is the only payload.
+    Fail(String),
 }
 
 /// One branch of a parallel split. Carries the per-branch

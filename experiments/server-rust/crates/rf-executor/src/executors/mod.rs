@@ -27,9 +27,14 @@
 //!   `NodeResult::Continue` at the outer level (the wrapper runs the
 //!   children synchronously — see the executor's docstring for why
 //!   `NodeResult::Fork` would re-fire the wrapper recursively).
+//! - `EndEventExecutor` — V5.30. Normal end = `Continue`; error /
+//!   escalation / terminate end = `Fail(FlowError::...)` → traverser
+//!   exits with `TraverseOutcome::Failed`. Mirrors `StartEventExecutor`'s
+//!   shape (read `endType` attr → branch on `end_kind`).
 
 pub mod action;
 pub mod boundary_event;
+pub mod end_event;
 pub mod gateway;
 pub mod intermediate_event;
 pub mod multi_instance;
@@ -41,6 +46,14 @@ pub mod user_task;
 
 pub use action::{ActionExecutor, ActionFn, MockActionRegistry};
 pub use boundary_event::{BoundaryEventError, BoundaryEventExecutor, BoundaryEventKind};
+pub use end_event::EndEventExecutor;
+// V5.30 — `EndEventKind` and `EndEventError` are
+// defined in `rf_ir::node_kind` (parser-side
+// mirror); the executor uses them via
+// `from_attrs`. Re-export here so callers that
+// only depend on `rf_executor` don't have to
+// pull in `rf_ir` directly.
+pub use rf_ir::node_kind::{EndEventError, EndEventKind};
 pub use gateway::GatewayExecutor;
 pub use intermediate_event::{IntermediateEventError, IntermediateEventExecutor, IntermediateEventKind};
 pub use multi_instance::{MultiInstanceError, MultiInstanceExecutor};

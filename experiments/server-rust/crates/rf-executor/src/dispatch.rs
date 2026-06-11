@@ -50,6 +50,14 @@ pub struct ExecutorRegistry {
     /// `reg.user_task` to invoke the inner
     /// executor.
     pub multi_instance: Arc<dyn NodeExecutor>,
+    /// V5.30 — `EndEvent` is no longer a
+    /// parameterless no-op. The executor reads the
+    /// `endType` attr to decide whether to
+    /// `Continue` (normal end) or
+    /// `Fail(FlowError::...)` (error / escalation /
+    /// terminate end). Mirrors the
+    /// `StartEventExecutor` (V5.28 P7) shape.
+    pub end_event: Arc<dyn NodeExecutor>,
     /// `Option` so the default registry (used by unit tests that
     /// don't care about sub-flows) doesn't have to wire a
     /// resolver. `rf-http` sets this to an adapter that wraps
@@ -141,6 +149,7 @@ impl ExecutorRegistry {
             sub_process: Arc::new(crate::executors::sub_process::SubProcessExecutor),
             start_event: Arc::new(crate::executors::start_event::StartEventExecutor),
             multi_instance: Arc::new(crate::executors::multi_instance::MultiInstanceExecutor::new()),
+            end_event: Arc::new(crate::executors::end_event::EndEventExecutor),
             flow_resolver: None,
             def: None,
         }
@@ -169,6 +178,7 @@ impl Default for ExecutorRegistry {
             sub_process: Arc::new(crate::executors::sub_process::SubProcessExecutor),
             start_event: Arc::new(crate::executors::start_event::StartEventExecutor),
             multi_instance: Arc::new(crate::executors::multi_instance::MultiInstanceExecutor::new()),
+            end_event: Arc::new(crate::executors::end_event::EndEventExecutor),
             flow_resolver: None,
             def: None,
         }
@@ -242,7 +252,18 @@ pub async fn dispatch(
         // the traverser when it sees an end node, not by
         // the executor).
         NodeKind::StartEvent { .. } => reg.start_event.execute(node, ctx).await,
-        NodeKind::EndEvent => Ok(NodeResult::Continue),
+        // V5.30 — `EndEvent` now has attrs +
+        // `end_kind` discriminator. The executor
+        // returns `Continue` (normal end) or
+        // `Fail(FlowError::...)` (error /
+        // escalation / terminate end). The
+        // dispatcher's job here is just to route
+        // to the executor; the end-of-flow
+        // detection (no outgoing edges) is still
+        // handled by the traverser's `next_node`
+        // resolver and the new `NodeResult::Fail`
+        // pattern in `step()`.
+        NodeKind::EndEvent { .. } => reg.end_event.execute(node, ctx).await,
         NodeKind::ServiceTask { task_type, .. } => match task_type {
             rf_ir::node_kind::TaskType::Rule => reg.rule.execute(node, ctx).await,
             rf_ir::node_kind::TaskType::Action => reg.action.execute(node, ctx).await,

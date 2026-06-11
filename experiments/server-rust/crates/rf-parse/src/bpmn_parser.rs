@@ -23,7 +23,7 @@ use rf_ir::attrs::{Attrs, NS_FLOWABLE, NS_RULEFORGE};
 use rf_ir::flow_definition::FlowDefinition;
 use rf_ir::flow_node::FlowNode;
 use rf_ir::ir_error::IrError;
-use rf_ir::node_kind::{NodeKind, TaskType};
+use rf_ir::node_kind::{EndEventKind, NodeKind, TaskType};
 use rf_ir::sequence_flow::SequenceFlow;
 use roxmltree::Document;
 use sha2::{Digest, Sha256};
@@ -138,7 +138,7 @@ impl BpmnXmlParser {
                     }
                     start = Some(n.node_id.clone());
                 }
-                NodeKind::EndEvent => ends.push(n.node_id.clone()),
+                NodeKind::EndEvent { .. } => ends.push(n.node_id.clone()),
                 NodeKind::BoundaryEvent {
                     attached_to: Some(activity_id),
                     ..
@@ -180,7 +180,18 @@ fn build_node_kind(
 ) -> Result<Option<NodeKind>, IrError> {
     let kind = match local {
         "startEvent" => Some(NodeKind::StartEvent { attrs: ext.clone() }),
-        "endEvent" => Some(NodeKind::EndEvent),
+        // V5.30 — `endEvent` is now a struct
+        // variant. The parser fills `end_kind`
+        // with `None` (the default) and `attrs`
+        // with the node's extension attrs; the
+        // `EndEventExecutor` reads `endType` /
+        // `errorRef` / `escalationRef` at
+        // execution time (mirrors `startEvent`'s
+        // V5.28 P7 pattern).
+        "endEvent" => Some(NodeKind::EndEvent {
+            end_kind: EndEventKind::None,
+            attrs: ext.clone(),
+        }),
         "serviceTask" => {
             let task_type_raw = ext.ruleforge("taskType").ok_or_else(|| {
                 IrError::UnknownTaskType(
