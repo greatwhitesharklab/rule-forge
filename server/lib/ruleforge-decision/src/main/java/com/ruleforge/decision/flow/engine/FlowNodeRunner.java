@@ -58,7 +58,6 @@ import java.util.UUID;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class FlowNodeRunner {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -66,9 +65,41 @@ public class FlowNodeRunner {
 
     private final NodeExecutorRegistry registry;
     private final ConditionEvaluator conditionEvaluator;
-    /** nullable — 测试场景不走 DB 时为 null。 */
+    /**
+     * V5.35 A4 — 复合原子化写 service。null 时退回 direct mapper(测试场景)。
+     * 6 处 updateById 中的 5 处(RUNNING / FAIL-after-catch / SUSPEND / FAIL / COMPLETED)
+     * 走 {@code persistenceService.serializeForAtomicUpdate(state, ctx)} 单次 UPDATE;
+     * PENDING 起步的 insert 走 {@code stateMapper.insert}(id 必须先存在才能 updateAtomic)。
+     */
+    private final com.ruleforge.decision.flow.state.FlowStatePersistenceService persistenceService;
+    /** nullable — 测试场景不走 DB 时为 null(PENDING 起步 insert 路径仍走这个)。 */
     private final DecisionFlowStateMapper stateMapper;
     private final Random random = new Random();
+
+    /**
+     * 测试场景 ctor(3 参)— persistenceService 从 mapper lazy 派生(null mapper → null service)。
+     */
+    public FlowNodeRunner(NodeExecutorRegistry registry, ConditionEvaluator conditionEvaluator,
+                          DecisionFlowStateMapper stateMapper) {
+        this.registry = registry;
+        this.conditionEvaluator = conditionEvaluator;
+        this.stateMapper = stateMapper;
+        this.persistenceService = stateMapper == null
+            ? null
+            : new com.ruleforge.decision.flow.state.FlowStatePersistenceService(stateMapper);
+    }
+
+    /**
+     * Production ctor(4 参 Spring 注入)— 显式传 service,避免再 new 一份。
+     */
+    public FlowNodeRunner(NodeExecutorRegistry registry, ConditionEvaluator conditionEvaluator,
+                          DecisionFlowStateMapper stateMapper,
+                          com.ruleforge.decision.flow.state.FlowStatePersistenceService persistenceService) {
+        this.registry = registry;
+        this.conditionEvaluator = conditionEvaluator;
+        this.stateMapper = stateMapper;
+        this.persistenceService = persistenceService;
+    }
 
     /**
      * V5.33 A0 — traverse 入口,worklist 多 token 模型。
@@ -119,12 +150,12 @@ public class FlowNodeRunner {
             while (nodeId != null) {
                 // 防环(per-token)
                 if (token.getVisited().size() > 1000) {
-                    failState(state, "Possible infinite loop: token " + token.getTokenId()
+                    failState(state, ctx, "Possible infinite loop: token " + token.getTokenId()
                         + " visited > 1000 nodes");
                     throw new FlowExecutionException("Possible infinite loop: visited > 1000 nodes");
                 }
                 if (!token.visit(nodeId)) {
-                    failState(state, "Loop detected: node " + nodeId + " visited twice in token "
+                    failState(state, ctx, "Loop detected: node " + nodeId + " visited twice in token "
                         + token.getTokenId());
                     throw new FlowExecutionException("Loop detected: node " + nodeId
                         + " visited twice in token " + token.getTokenId());
@@ -132,7 +163,7 @@ public class FlowNodeRunner {
 
                 FlowNode node = def.getNode(nodeId);
                 if (node == null) {
-                    failState(state, "Node not found: " + nodeId);
+                    failState(state, ctx, "Node not found: " + nodeId);
                     throw new FlowExecutionException("Node not found: " + nodeId);
                 }
 
@@ -142,7 +173,8 @@ public class FlowNodeRunner {
                     state.setCurrentNodeId(nodeId);
                     state.setCurrentNodeType(node.getType().name());
                     state.setFlowXmlVersion(def.getSourceXmlHash());
-                    stateMapper.updateById(state);
+                    // V5.35 A4 — 单次 atomic UPDATE(rowVars + joinArrivals + 业务字段一次写)
+                    persistenceService.serializeForAtomicUpdate(state, ctx);
                 }
 
                 NodeExecutor executor = registry.resolve(node);
@@ -156,7 +188,8 @@ public class FlowNodeRunner {
                     if (stateMapper != null) {
                         state.setStatus(DecisionFlowState.STATUS_FAILED);
                         state.setErrorMessage(ex.getClass().getSimpleName() + ": " + ex.getMessage());
-                        stateMapper.updateById(state);
+                        // V5.35 A4 — atomic update
+                        persistenceService.serializeForAtomicUpdate(state, ctx);
                     }
                     throw new FlowExecutionException(
                         "Node " + nodeId + " failed: " + ex.getMessage(), ex);
@@ -250,7 +283,8 @@ public class FlowNodeRunner {
             if (state.getCreateTime() != null) {
                 state.setTotalExecutionMs(System.currentTimeMillis() - state.getCreateTime().getTime());
             }
-            stateMapper.updateById(state);
+            // V5.35 A4 — atomic update(complete 收口单次写)
+            persistenceService.serializeForAtomicUpdate(state, ctx);
         }
         log.info("[FLOW-COMPLETED] flowId={} flowRunId={} nodes={} forked={}",
             def.getProcessId(), ctx.getFlowRunId(), visitedCount, forkedAtLeastOnce);
@@ -407,20 +441,15 @@ public class FlowNodeRunner {
 
     private DecisionFlowState onSuspend(DecisionFlowState state, FlowContext ctx,
                                         Token token, AsyncNodeSuspendException ex) {
-        // V5.33 A0:vars 委托给 currentToken;序列化时取 currentToken.vars
-        Map<String, Object> varsToSerialize = ctx.getVars();
+        // V5.33 A0:vars 委托给 currentToken;序列化由 V5.35 A4 接管
         if (stateMapper != null) {
             state.setCurrentNodeId(token.getCurrentNodeId());
-            try {
-                state.setRowVars(MAPPER.writeValueAsString(varsToSerialize));
-            } catch (Exception e) {
-                log.warn("Failed to serialize rowVars: {}", e.getMessage());
-            }
             state.setWaitRef(ex.getWaitRef());
             state.setNextRetryAt(ex.getNextRetryAt() == null ? null : java.util.Date.from(ex.getNextRetryAt()));
             state.setErrorMessage("WAIT_TYPE=" + ex.getWaitType());
             state.setStatus(DecisionFlowState.STATUS_WAITING_CALLBACK);
-            stateMapper.updateById(state);
+            // V5.35 A4 — atomic update(suspend 单次写 rowVars + joinArrivals + waitRef)
+            persistenceService.serializeForAtomicUpdate(state, ctx);
         }
         log.info("[FLOW-SUSPENDED] flowId={} flowRunId={} nodeId={} waitType={} waitRef={}",
             state.getFlowId(), ctx.getFlowRunId(), token.getCurrentNodeId(), ex.getWaitType(), ex.getWaitRef());
@@ -428,11 +457,12 @@ public class FlowNodeRunner {
     }
 
     /** 失败状态写库(null-safe)。 */
-    private void failState(DecisionFlowState state, String message) {
+    private void failState(DecisionFlowState state, FlowContext ctx, String message) {
         if (stateMapper == null) return;
         state.setStatus(DecisionFlowState.STATUS_FAILED);
         state.setErrorMessage(message);
-        stateMapper.updateById(state);
+        // V5.35 A4 — atomic update(fail 单次写)
+        persistenceService.serializeForAtomicUpdate(state, ctx);
     }
 
     private DecisionFlowState upsertState(FlowDefinition def, FlowContext ctx,

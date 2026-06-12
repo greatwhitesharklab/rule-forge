@@ -133,6 +133,58 @@ public class FlowStatePersistenceService {
     }
 
     /**
+     * V5.35 A4 — 复合原子化写 payload。
+     * <p>rowVarsJson + joinArrivalsJson 是从 ctx 序列化出的 JSON 字符串,
+     * 配合 {@link DecisionFlowStateMapper#updateAtomic} 单次 UPDATE 一次写。
+     * 字段为 null 表示"不覆盖"(MyBatis-Plus updateStrategy=NOT_NULL 默认行为)。
+     */
+    public record AtomicUpdate(String rowVarsJson, String joinArrivalsJson) {}
+
+    /**
+     * V5.35 A4 — 序列化 ctx.vars + joinArrivals → JSON 字符串,调一次
+     * {@link DecisionFlowStateMapper#updateAtomic} 写库。Fail-soft:
+     * 序列化失败 → 写空 Map {@code "{}"},traverse 不阻断。
+     *
+     * <p>v0 简化:<b>不</b>覆盖 6 处 updateById 的所有字段语义;Caller 已经在 state
+     * 上 setStatus / setCurrentNodeId / setErrorMessage 等业务字段,这里只负责
+     * 序列化 + 一次原子化 UPDATE。
+     *
+     * @param state 已由 caller 设好 status / currentNodeId / errorMessage 等业务字段
+     * @param ctx   流程上下文(vars 走 currentToken,joinArrivals 走 ctx 字段)
+     * @return 序列化 payload(供 caller 调试 / verify)
+     */
+    public AtomicUpdate serializeForAtomicUpdate(DecisionFlowState state, FlowContext ctx) {
+        // 1. rowVars — fail-soft
+        String rowVarsJson;
+        try {
+            Map<String, Object> vars = ctx.getVars(); // 委托 currentToken
+            rowVarsJson = vars == null || vars.isEmpty() ? null : MAPPER.writeValueAsString(vars);
+        } catch (Exception e) {
+            log.warn("Failed to serialize row_vars for flowRunId={}: {}",
+                ctx.getFlowRunId(), e.getMessage());
+            rowVarsJson = "{}";
+        }
+
+        // 2. joinArrivals — fail-soft
+        String joinArrivalsJson;
+        try {
+            Map<String, Integer> joinArrivals = ctx.getJoinArrivals();
+            joinArrivalsJson = joinArrivals == null || joinArrivals.isEmpty()
+                ? null
+                : MAPPER.writeValueAsString(joinArrivals);
+        } catch (Exception e) {
+            log.warn("Failed to serialize join_arrivals for flowRunId={}: {}",
+                ctx.getFlowRunId(), e.getMessage());
+            joinArrivalsJson = "{}";
+        }
+
+        // 3. 一次原子化 UPDATE
+        mapper.updateAtomic(state, rowVarsJson, joinArrivalsJson);
+
+        return new AtomicUpdate(rowVarsJson, joinArrivalsJson);
+    }
+
+    /**
      * 释放锁。
      */
     public void releaseLock(Long id) {
