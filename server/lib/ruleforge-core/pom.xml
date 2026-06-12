@@ -78,6 +78,28 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
         </dependency>
+        <!--
+            V5.40 — 决策表 → DMN 1.4 切格式。
+            Kie DMN 10.1.0 (2025-04, Kogito 10 稳定线) 提供 DMN 1.4 解析 +
+            DMNModel 编译 + FEEL 表达式求值。Apache 2.0,3 个公开 API
+            (DMNRuntime / DMNCompiler / DMNModel) 跟 8.44.2 / 10.2.0 字节码 100% 一致。
+            10.1.0 = Kogito 10 主线,传递依赖 efesto 体系 ~2-3MB。
+        -->
+        <dependency>
+            <groupId>org.kie</groupId>
+            <artifactId>kie-dmn-core</artifactId>
+            <version>10.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kie</groupId>
+            <artifactId>kie-dmn-api</artifactId>
+            <version>10.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kie</groupId>
+            <artifactId>kie-dmn-feel</artifactId>
+            <version>10.1.0</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

@@ -8,6 +8,7 @@ import com.ruleforge.builder.table.DecisionTableRulesBuilder;
 import com.ruleforge.builder.table.ScriptDecisionTableRulesBuilder;
 import com.ruleforge.dsl.DSLRuleSetBuilder;
 import com.ruleforge.exception.RuleException;
+import com.ruleforge.ir.dmn.DmnResourceDispatcher;
 import com.ruleforge.model.crosstab.CrosstabDefinition;
 import com.ruleforge.model.decisiontree.DecisionTree;
 import com.ruleforge.model.library.ResourceLibrary;
@@ -39,6 +40,12 @@ public class KnowledgeBuilder extends AbstractBuilder {
     private ScriptDecisionTableRulesBuilder scriptDecisionTableRulesBuilder;
     private DSLRuleSetBuilder dslRuleSetBuilder;
     private CrosstabRulesBuilder crosstabRulesBuilder;
+    /**
+     * V5.40 — DMN 1.3 资源分流器。资源路径以 {@code .dmn} 结尾时,绕过老 .xml 解析路径,
+     * 走 Kie DMN 编译 + 反序列化。{@code .xml} 决策表老路径**完全保留**(破坏性更新是
+     * V5.41/V5.42 推 V5.40 这一刀不删 .xml)。
+     */
+    private DmnResourceDispatcher dmnResourceDispatcher;
     public static final String BEAN_ID = "ruleforge.knowledgeBuilder";
 
     public KnowledgeBuilder() {
@@ -70,6 +77,16 @@ public class KnowledgeBuilder extends AbstractBuilder {
                         this.buildRulesPath(ruleSet.getRules(), path);
                         rules.addAll(ruleSet.getRules());
                     }
+                } else if (path != null && path.toLowerCase().endsWith(".dmn")) {
+                    // V5.40 — DMN 1.3 决策表路径,绕过老 .xml 解析,直接走 Kie DMN 编译
+                    if (this.dmnResourceDispatcher == null) {
+                        this.dmnResourceDispatcher = new DmnResourceDispatcher();
+                    }
+                    DecisionTable table = this.dmnResourceDispatcher.dispatch(path, resource.getContent());
+                    this.addToLibraryMap(libMap, table.getLibraries());
+                    List tableRules = this.decisionTableRulesBuilder.buildRules(table);
+                    this.buildRulesPath(tableRules, path);
+                    rules.addAll(tableRules);
                 } else {
                     Element root = this.parseResource(resource.getContent());
                     for (ResourceBuilder<?> builder : this.resourceBuilders) {

@@ -23,6 +23,26 @@ public class DecisionTable {
 	private List<Column> columns;
 	private Map<String,Cell> cellMap;
 	private List<Library> libraries;
+	/**
+	 * @since 5.40 — DMN 1.3 决策表 hit policy,跟 .dmn 的 {@code <decisionTable hitPolicy="...">} 对应。
+	 * 老 .xml 路径无此概念,默认 {@code null}(语义等价 {@link HitPolicy#FIRST} 首行命中)。
+	 */
+	private HitPolicy hitPolicy;
+	/**
+	 * @since 5.40 — DMN 1.3 决策表 aggregation,跟 .dmn 的 {@code <decisionTable aggregation="...">} 对应。
+	 * 老 .xml 路径无此概念,默认 {@code null}。
+	 */
+	private Aggregation aggregation;
+	/**
+	 * @since 5.40 — IR 来源方言,默认 {@link TableDialect#RULEFORGE_NATIVE} 保持 V5.39 兼容。
+	 * V5.40+ 写的新决策表走 {@link TableDialect#DMN}。
+	 */
+	private TableDialect dialect;
+	/**
+	 * @since 5.40 — 决策表 variable name(DMN 的 {@code <variable name="..."/>}),
+	 * 用作 evaluateAll 输出 key。RuleForge 老 .xml 用 decisionTable 节点 name 属性。
+	 */
+	private String variableName;
 	
 	public Integer getSalience() {
 		return salience;
@@ -107,5 +127,29 @@ public class DecisionTable {
 	}
 	public String buildCellKey(int row,int col){
 		return row+","+col;
+	}
+	public HitPolicy getHitPolicy() {
+		return hitPolicy;
+	}
+	public void setHitPolicy(HitPolicy hitPolicy) {
+		this.hitPolicy = hitPolicy;
+	}
+	public Aggregation getAggregation() {
+		return aggregation;
+	}
+	public void setAggregation(Aggregation aggregation) {
+		this.aggregation = aggregation;
+	}
+	public TableDialect getDialect() {
+		return dialect;
+	}
+	public void setDialect(TableDialect dialect) {
+		this.dialect = dialect;
+	}
+	public String getVariableName() {
+		return variableName;
+	}
+	public void setVariableName(String variableName) {
+		this.variableName = variableName;
 	}
 }

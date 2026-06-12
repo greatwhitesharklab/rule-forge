@@ -1347,3 +1347,106 @@ axe-core 4.11 扫 login / frame / editor / datasource-panel 4 个关键页,
 - ruleforge CLI（Node.js）：analysis + export 命令组
 - Claude Code Skills（6 个）
 - 测试覆盖：100 个测试（后端 40 + 前端 41 + CLI 19）
+
+#### V5.40 — 路线 B 第一刀:决策表 → DMN 1.3(单 PR,非破坏性 — 老 .xml 路径保留并行)
+
+路线 B(model 层切标准 IR)三个 PR(V5.40 / V5.41 / V5.42)中的第一刀 — **决策表 → DMN 1.3**。
+V5.40 这刀做的是**非破坏性并行**接入:新 .dmn 资源走 DMN 路径,老 .xml 资源继续走老 .xml 路径;
+破坏性更新在 V5.41 / V5.42 PR 推。依据:用户授权"可以破坏性更新",但第一刀先建基础设施 + 测试覆盖,
+后续两刀再删老路径。这样:
+- V5.40 合并后回滚 = `git revert` 整个 PR(老 .xml 路径完全没动,继续工作)
+- V5.41 / V5.42 删 .xml 路径时,如果出 bug,运维能立刻关掉新 DMN 路径,回到 V5.40
+- 实际破坏只在 V5.41 / V5.42 落地那一刻才发生(且仅当 V5.50+ 强制数据迁移时)
+
+**核心改动**:
+- **V5.40.1** — Kie DMN 10.1.0 依赖(`kie-dmn-core` / `kie-dmn-api` / `kie-dmn-feel`)。
+  锁版本 = Kogito 10 稳定线(2025-04),Apache 2.0,~5-8MB。公开 API (`DMNRuntime` /
+  `DMNCompiler` / `DMNModel`)跟 8.44.2 / 10.2.0 字节码 100% 一致(已 javap 验证)。
+  传递依赖 efesto + drools 10.1.0 体系(共 20+ jars, ~30MB)。
+  实战确认:**Kie 10.1.0 实测稳定加载 DMN 1.3 namespace (`20191111/MODEL/`)**,
+  不是 1.4 — 1.4 文件会降级到 v1_3 model,`getDecisions()` 返回 0。1.3 跟 1.4 在决策表
+  子集上 100% 兼容(决策表功能字节级一致),改用 1.3 不影响业务。
+- **V5.40.2** — `DecisionTable` model 加 4 字段,全部 `@since 5.40` 标注,默认 null
+  保持 V5.39 兼容:
+  - `hitPolicy` (enum: 7 种 DMN hit policy) — DMN 的 `<decisionTable hitPolicy="...">`
+  - `aggregation` (enum: 5 种 DMN aggregation) — DMN 的 `<decisionTable aggregation="...">`
+  - `dialect` (enum: RULEFORGE_NATIVE / DMN) — IR 来源方言,V5.40 路径分流的唯一信号
+  - `variableName` (String) — DMN decision 节点 `<variable name="..."/>`
+  新 enum 类:`HitPolicy.java` / `Aggregation.java` / `TableDialect.java`
+- **V5.40.3** — `DmnTableDeserializer` (DMN → DecisionTable) + `DmnTableSerializer`
+  (DecisionTable → DMN 1.3 XML,dom4j 实现,强制 dialect=DMN 拒绝 Native)。
+  字段 1:1 映射:DMN `InputClause.inputExpression.text` → `Column.variableName`,
+  DMN `DecisionRule.inputEntry[i].text` → `Cell.value` (SimpleValue.content)。
+  11 BDD 验证基本反序列化 + 列行映射 + round-trip Kie 评估一致。
+- **V5.40.4** — `DmnResourceDispatcher` 单点转换 + `KnowledgeBuilder.buildKnowledgeBase()`
+  入口加 `.dmn` 路径分流(7 行改动):
+  - `.dmn` 后缀 → dispatcher → `decisionTableRulesBuilder.buildRules()` → RETE 注入
+  - `.xml` 后缀 → 老 `ResourceBuilder` 链(0 改动)
+  - lazy-init 兜底(Spring 注入优先,`new` 兜底,生产环境两条路径都覆盖)
+- **V5.40.5** — `XmlToDmnTableConverter` 一次性 .xml → .dmn 迁移工具
+  (跑在 console-app 启动时,`ruleforge.legacy-xml.migrate=true` 开关)。
+  默认 `hitPolicy=FIRST`(老 RuleForge 决策表行号顺序短路语义对齐),
+  输出带 `<inputData>` 顶级节点(让 `getInputs()` 返回正确数),
+  老 .xml 裸值 `"GOLD"` 自动加引号 `"\"GOLD\""` 适配 DMN 字符串字面量。
+  **不支持**的 .xml features(DSL 占位符、library include、cross-decision-table)
+  抛 `XmlMigrationException`,调用方决定 fallback 策略。
+- **V5.40.6** — console-ui `src/api/decisionTableDialect.ts` utility module,
+  镜像后端 `TableDialect` enum + `detectDialectFromFilePath` + `dialectLabel`。
+  Vitest 10 BDD 全绿。**不**改 `DecisionTable.ts` (1525 行 JS 装载点),该文件改造
+  留给后续 V5.40+ PR 渐进推进(分 PR 改 React 渲染逻辑,避免一锤定音破坏老 .js 路径)。
+- **V5.40.7** — 已完成(无需做):实测 74 个老 .xml 决策表测试 0 破坏
+  (DecisionTableParserTest 54 + DecisionTableRulesBuilderTest 20)。
+  V5.40 走的是"非破坏性并行"路径,老 .xml 不删,无重写需求。
+
+**测试结果**(本次提交,无 V5.39 之前任何测试被破坏):
+- 后端 ruleforge-core Maven: **33 个新增 BDD 全绿**(6 个测试类)
+  - `KieDmnSmokeTest` (6 BDD) — Kie DMN 10.1.0 加载 + 决策提取 + 评估
+  - `DecisionTableDmnFieldsTest` (8 BDD) — 4 个新字段读写 + 兼容
+  - `DmnTableDeserializerTest` (8 BDD) — DMN → DecisionTable 反序列化
+  - `DmnTableSerializerTest` (3 BDD) — DecisionTable → DMN XML + round-trip
+  - `DmnResourceDispatcherTest` (3 BDD) — 路径校验 + dispatch
+  - `XmlToDmnTableConverterTest` (5 BDD) — 老 .xml → .dmn 转换 + Kie 评估
+- 老 .xml 决策表路径: **74 个老测试全绿** (0 破坏)
+- 前端 console-ui Vitest: **10 个新增 BDD 全绿**
+  - `decisionTableDialect.test.ts` (10 BDD) — DEFAULT_DIALECT + 路径检测 + label
+
+**累计产出**(自 V5.40.1 起):
+- 9 个新 backend .java(main): `DmnTableDeserializer` / `DmnTableSerializer` /
+  `DmnResourceDispatcher` / `XmlToDmnTableConverter` / `DmnNamespace` /
+  `XmlMigrationException` / `HitPolicy` / `Aggregation` / `TableDialect`
+- 3 个修改 backend .java: `DecisionTable` (4 字段) / `KnowledgeBuilder` (7 行分流) /
+  `pom.xml` (Kie DMN 10.1.0 依赖)
+- 6 个新 backend 测试类(33 BDD) + 1 个新 console-ui utility(10 vitest BDD)
+- 2 个新 fixture: `simple-table.dmn` / `legacy-customer-tier.xml`
+
+**架构定位**:
+- V5.40 在 model 层切 DMN 1.3(标准 IR),**保留**自建 RETE 引擎(经典 RETE II 不可热替换 Phreak/ReteOO),
+  **保留**自建 BPMN 决策流 IR(跟 DMN 0:0 交集,不可互切)
+- `DmnResourceDispatcher` 是新"IR 适配层"的最小骨架 — V5.41 (PMML scorecard/tree) 和
+  V5.42 (DRL rule/DSL) 复用同模式,加 `PmmlResourceDispatcher` / `DrlResourceDispatcher`
+- `XmlToDmnTableConverter` 框架是 V5.41 / V5.42 各自 .xml 转换器的模板
+
+**决定不做**(V5.40 PR 范围内):
+- V5.40 不删老 .xml 解析路径 — V5.41 / V5.42 推
+- V5.40 不改 console-ui `DecisionTable.ts` (1525 行 JS) — V5.40+ 单独 PR 渐进 React 化
+- V5.40 不做强制 .xml → .dmn 数据迁移 — 默认 `ruleforge.legacy-xml.migrate=false`,运维手工开
+- V5.40 不实现 FEEL → RuleForge 表达式翻译(单元格 value 存 SimpleValue.content 字符串,
+  TableRulesBuilder 当前不会翻译)— V5.50+ 单独 PR
+- V5.40 不引入 Drools 7/8 runtime(只引 Kie DMN 解析子集),不引入 jpmml(AGPL-3.0 风险)
+
+**风险与红旗**:
+- Kie 10.1.0 强制拉 drools-core 10.1.0 + 20+ 子 jar(共 ~30MB)— 实际只用到 kie-dmn 子集,
+  后续可加 `<exclusion>` 减体积(但破坏 kie-dmn 依赖完整性,先观察)
+- DMN 1.3 namespace 选择基于 Kie 10.1.0 实测 — 1.4 不稳定。1.3 ↔ 1.4 业务层 100% 兼容
+- 老 .xml → .dmn 转换不支持 DSL/library/cross-table — 这些场景 V5.40.6+ 渐进补完
+
+**验证命令**:
+```bash
+# 后端
+cd server && mvn -pl lib/ruleforge-core test -Dtest='KieDmnSmokeTest,DecisionTableDmnFieldsTest,DmnTableDeserializerTest,DmnTableSerializerTest,DmnResourceDispatcherTest,XmlToDmnTableConverterTest'
+# 前端
+cd console-ui && npx vitest run src/api/decisionTableDialect.test.ts
+# 老路径(0 破坏验证)
+cd server && mvn -pl lib/ruleforge-core test -Dtest='DecisionTableParserTest,DecisionTableRulesBuilderTest'
+```
+

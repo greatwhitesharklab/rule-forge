@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+             xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
+             xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
+             id="customer_tier"
+             name="CustomerTier"
+             namespace="http://ruleforge.com/dmn/customer-tier">
+
+    <inputData id="i_age_data" name="age">
+        <variable name="age" typeRef="number"/>
+    </inputData>
+    <inputData id="i_income_data" name="income">
+        <variable name="income" typeRef="number"/>
+    </inputData>
+
+    <decision id="d_customer_tier" name="Customer Tier">
+        <variable name="Customer Tier" typeRef="string"/>
+        <decisionTable id="dt_customer_tier" hitPolicy="FIRST">
+            <input id="i_age" name="Age" label="Age">
+                <inputExpression id="ie_age" typeRef="number">
+                    <text>age</text>
+                </inputExpression>
+            </input>
+            <input id="i_income" name="Income" label="Income">
+                <inputExpression id="ie_income" typeRef="number">
+                    <text>income</text>
+                </inputExpression>
+            </input>
+            <output id="o_tier" name="Tier" label="Tier" typeRef="string">
+                <outputValues>
+                    <text>"GOLD", "SILVER", "BRONZE"</text>
+                </outputValues>
+            </output>
+
+            <rule id="r_gold">
+                <inputEntry id="ie_r_gold_1"><text>&gt;= 30</text></inputEntry>
+                <inputEntry id="ie_r_gold_2"><text>&gt;= 100000</text></inputEntry>
+                <outputEntry id="oe_r_gold"><text>"GOLD"</text></outputEntry>
+            </rule>
+            <rule id="r_silver">
+                <inputEntry id="ie_r_silver_1"><text>&gt;= 25</text></inputEntry>
+                <inputEntry id="ie_r_silver_2"><text>&gt;= 50000</text></inputEntry>
+                <outputEntry id="oe_r_silver"><text>"SILVER"</text></outputEntry>
+            </rule>
+            <rule id="r_bronze">
+                <inputEntry id="ie_r_bronze_1"><text>-</text></inputEntry>
+                <inputEntry id="ie_r_bronze_2"><text>-</text></inputEntry>
+                <outputEntry id="oe_r_bronze"><text>"BRONZE"</text></outputEntry>
+            </rule>
+        </decisionTable>
+    </decision>
+</definitions>

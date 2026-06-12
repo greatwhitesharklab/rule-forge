@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rule-config>
+    <decision-table name="Customer Tier" salience="0">
+        <columns>
+            <column num="0" name="age" type="Criteria" datatype="Integer"/>
+            <column num="1" name="income" type="Criteria" datatype="Integer"/>
+            <column num="2" name="tier" type="Assignment" datatype="String"/>
+        </columns>
+        <rows>
+            <row num="0">
+                <cell col="0" value=">= 30"/>
+                <cell col="1" value=">= 100000"/>
+                <cell col="2" value="GOLD"/>
+            </row>
+            <row num="1">
+                <cell col="0" value=">= 25"/>
+                <cell col="1" value=">= 50000"/>
+                <cell col="2" value="SILVER"/>
+            </row>
+            <row num="2">
+                <cell col="0" value="-"/>
+                <cell col="1" value="-"/>
+                <cell col="2" value="BRONZE"/>
+            </row>
+        </rows>
+    </decision-table>
+</rule-config>
