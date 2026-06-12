@@ -150,4 +150,130 @@ public final class BpmnCollaborationFixtures {
         "    <sequenceFlow id=\"s2\" sourceRef=\"start2\" targetRef=\"end2\"/>\n" +
         "  </process>\n" +
         "</definitions>\n";
+
+    // -------- V5.37 B1 — Choreography 专用 fixture --------
+
+    /**
+     * 独立 choreography + 1 task:
+     *   - 无 collab,无 process
+     *   - 1 choreographyTask CT1:p_a 主动 → p_b,引用 "MF_NOT_IN_COLLAB"(独立时无校验)
+     */
+    public static final String STANDALONE_CHOREO_XML =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        "<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n" +
+        "             targetNamespace=\"http://ruleforge.com/test\">\n" +
+        "  <choreography id=\"Ch_Loan\" name=\"Loan Choreography\">\n" +
+        "    <choreographyTask id=\"CT1\" name=\"credit-notify-uw\"\n" +
+        "                      initiatingParticipantRef=\"p_a\"\n" +
+        "                      firstParticipantRef=\"p_a\"\n" +
+        "                      secondParticipantRef=\"p_b\"\n" +
+        "                      messageFlowRef=\"MF_NOT_IN_COLLAB\"/>\n" +
+        "  </choreography>\n" +
+        "</definitions>\n";
+
+    /**
+     * 独立 choreography + 2 task + outgoing 顺序:
+     *   CT1 (p_a→p_b) → CT2 (p_b→p_a)
+     */
+    public static final String STANDALONE_CHOREO_TWO_TASK_XML =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        "<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n" +
+        "             targetNamespace=\"http://ruleforge.com/test\">\n" +
+        "  <choreography id=\"Ch_Two\">\n" +
+        "    <choreographyTask id=\"CT1\" name=\"ask\"\n" +
+        "                      initiatingParticipantRef=\"p_a\"\n" +
+        "                      firstParticipantRef=\"p_a\"\n" +
+        "                      secondParticipantRef=\"p_b\">\n" +
+        "      <outgoing>Flow_CT1_CT2</outgoing>\n" +
+        "    </choreographyTask>\n" +
+        "    <choreographyTask id=\"CT2\" name=\"reply\"\n" +
+        "                      initiatingParticipantRef=\"p_b\"\n" +
+        "                      firstParticipantRef=\"p_b\"\n" +
+        "                      secondParticipantRef=\"p_a\"/>\n" +
+        "  </choreography>\n" +
+        "</definitions>\n";
+
+    /** 独立 choreography + 0 task(空 choreography — 不抛,允许)。 */
+    public static final String STANDALONE_CHOREO_EMPTY_XML =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        "<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n" +
+        "             targetNamespace=\"http://ruleforge.com/test\">\n" +
+        "  <choreography id=\"Ch_Empty\"/>\n" +
+        "</definitions>\n";
+
+    /**
+     * Collaboration 内嵌 choreography(task 引用 collab 里的 MF1 — 校验通过):
+     *   - collab 含 MF1(p_credit/sendLoanDecision → p_uw/recvLoanDecision)
+     *   - choreographyTask CT1 引用 messageFlowRef="MF1"
+     */
+    public static final String COLLAB_WITH_CHOREO_XML =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        "<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n" +
+        "             xmlns:ruleforge=\"http://ruleforge.com/schema\"\n" +
+        "             targetNamespace=\"http://ruleforge.com/test\">\n" +
+        "  <collaboration id=\"Collab_Loan_Choreo\">\n" +
+        "    <participant id=\"p_credit\" name=\"Credit\" processRef=\"Process_Credit\"/>\n" +
+        "    <participant id=\"p_uw\" name=\"UW\" processRef=\"Process_UW\"/>\n" +
+        "    <messageFlow id=\"MF1\" name=\"loan_approved\"\n" +
+        "                 sourceRef=\"sendLoanDecision\" targetRef=\"recvLoanDecision\"/>\n" +
+        "    <choreography id=\"Ch_Loan\">\n" +
+        "      <choreographyTask id=\"CT1\" name=\"credit-notify-uw\"\n" +
+        "                        initiatingParticipantRef=\"p_credit\"\n" +
+        "                        firstParticipantRef=\"p_credit\"\n" +
+        "                        secondParticipantRef=\"p_uw\"\n" +
+        "                        messageFlowRef=\"MF1\"/>\n" +
+        "    </choreography>\n" +
+        "  </collaboration>\n" +
+        "  <process id=\"Process_Credit\" name=\"Credit\">\n" +
+        "    <startEvent id=\"startCredit\"/>\n" +
+        "    <endEvent id=\"sendLoanDecision\">\n" +
+        "      <extensionElements>\n" +
+        "        <ruleforge:messageFlowRef id=\"MF1\"/>\n" +
+        "      </extensionElements>\n" +
+        "    </endEvent>\n" +
+        "    <sequenceFlow id=\"sc1\" sourceRef=\"startCredit\" targetRef=\"sendLoanDecision\"/>\n" +
+        "  </process>\n" +
+        "  <process id=\"Process_UW\" name=\"UW\">\n" +
+        "    <startEvent id=\"recvLoanDecision\">\n" +
+        "      <extensionElements>\n" +
+        "        <ruleforge:messageFlowRef id=\"MF1\"/>\n" +
+        "      </extensionElements>\n" +
+        "    </startEvent>\n" +
+        "    <endEvent id=\"endUW\"/>\n" +
+        "    <sequenceFlow id=\"uw1\" sourceRef=\"recvLoanDecision\" targetRef=\"endUW\"/>\n" +
+        "  </process>\n" +
+        "</definitions>\n";
+
+    /**
+     * Collaboration 内嵌 choreography 但 task 引用不存在的 MF_BAD — 应抛:
+     *   - collab 含 MF1,但 choreographyTask CT1 引用 "MF_BAD"
+     *   - parser 交叉校验失败,抛 FlowExecutionException
+     */
+    public static final String COLLAB_WITH_BAD_CHOREO_XML =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        "<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n" +
+        "             targetNamespace=\"http://ruleforge.com/test\">\n" +
+        "  <collaboration id=\"Collab_Bad_Choreo\">\n" +
+        "    <participant id=\"p_a\" name=\"A\" processRef=\"Process_A\"/>\n" +
+        "    <participant id=\"p_b\" name=\"B\" processRef=\"Process_B\"/>\n" +
+        "    <messageFlow id=\"MF1\" sourceRef=\"send1\" targetRef=\"recv1\"/>\n" +
+        "    <choreography id=\"Ch_Bad\">\n" +
+        "      <choreographyTask id=\"CT1\" name=\"bad-ref\"\n" +
+        "                        initiatingParticipantRef=\"p_a\"\n" +
+        "                        firstParticipantRef=\"p_a\"\n" +
+        "                        secondParticipantRef=\"p_b\"\n" +
+        "                        messageFlowRef=\"MF_BAD\"/>\n" +
+        "    </choreography>\n" +
+        "  </collaboration>\n" +
+        "  <process id=\"Process_A\" name=\"A\">\n" +
+        "    <startEvent id=\"start1\"/>\n" +
+        "    <endEvent id=\"send1\"/>\n" +
+        "    <sequenceFlow id=\"sa1\" sourceRef=\"start1\" targetRef=\"send1\"/>\n" +
+        "  </process>\n" +
+        "  <process id=\"Process_B\" name=\"B\">\n" +
+        "    <startEvent id=\"recv1\"/>\n" +
+        "    <endEvent id=\"end1\"/>\n" +
+        "    <sequenceFlow id=\"sb1\" sourceRef=\"recv1\" targetRef=\"end1\"/>\n" +
+        "  </process>\n" +
+        "</definitions>\n";
 }

@@ -7,19 +7,22 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * V5.37 B0 — BPMN 2.0 顶层 IR(record)。
+ * V5.37 B0/B1 — BPMN 2.0 顶层 IR(record)。
  *
- * <p>两个组成:
+ * <p>三个组成:
  * <ul>
- *   <li>{@code collaboration}: 可空 — 单 process 时 null;多池时含 N 个 participant + M 条 message flow</li>
+ *   <li>{@code collaboration}: 可空 — 单 process 时 null;多池时含 N 个 participant + M 条 message flow(§12)</li>
  *   <li>{@code processes}: processId → {@link FlowDefinition},多池时含 1+ process</li>
+ *   <li>{@code choreography}: 可空 — §11 对话协议层(独立 choreography 时有,内嵌在 collab 时也有) </li>
  * </ul>
  *
- * <p>向后兼容:单 process caller 用 {@link #ofSingleProcess(FlowDefinition)} 包装。
+ * <p>向后兼容:单 process caller 用 {@link #ofSingleProcess(FlowDefinition)} 包装(B1 同样
+ * choreography = null)。
  */
 public record BpmnDefinition(
     Collaboration collaboration,
-    Map<String, FlowDefinition> processes
+    Map<String, FlowDefinition> processes,
+    Choreography choreography
 ) {
 
     /** 紧凑 ctor — 防御性复制 processes map + values。 */
@@ -29,10 +32,10 @@ public record BpmnDefinition(
             : Map.copyOf(processes);
     }
 
-    /** 单 process 向后兼容 wrapper(collaboration = null)。 */
+    /** 单 process 向后兼容 wrapper(collaboration = null, choreography = null)。 */
     public static BpmnDefinition ofSingleProcess(FlowDefinition def) {
         if (def == null) throw new FlowExecutionException("FlowDefinition is null");
-        return new BpmnDefinition(null, Map.of(def.getProcessId(), def));
+        return new BpmnDefinition(null, Map.of(def.getProcessId(), def), null);
     }
 
     /** 取 process(找不到抛错)。 */

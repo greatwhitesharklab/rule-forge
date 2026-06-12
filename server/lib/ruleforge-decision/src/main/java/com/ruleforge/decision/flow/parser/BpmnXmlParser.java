@@ -2,6 +2,8 @@ package com.ruleforge.decision.flow.parser;
 
 import com.ruleforge.decision.exception.FlowExecutionException;
 import com.ruleforge.decision.flow.ir.BpmnDefinition;
+import com.ruleforge.decision.flow.ir.Choreography;
+import com.ruleforge.decision.flow.ir.ChoreographyTask;
 import com.ruleforge.decision.flow.ir.Collaboration;
 import com.ruleforge.decision.flow.ir.FlowDefinition;
 import com.ruleforge.decision.flow.ir.FlowNode;
@@ -56,11 +58,12 @@ public class BpmnXmlParser {
     private static final String NS_FLOWABLE = "http://flowable.org/bpmn";
 
     /**
-     * V5.37 B0 — 顶层解析入口。返 {@link BpmnDefinition}。
+     * V5.37 B0/B1 — 顶层解析入口。返 {@link BpmnDefinition}。
      *
      * <p>检测根:
      * <ul>
-     *   <li>含 {@code <bpmn:collaboration>} → 走多池路径</li>
+     *   <li>含 {@code <bpmn:collaboration>} → 多池路径(可内嵌 {@code <choreography>})</li>
+     *   <li>含 {@code <bpmn:choreography>} 但无 collab → 独立 choreography(§11)</li>
      *   <li>无 → 单 process 路径(向后兼容)</li>
      * </ul>
      */
@@ -81,16 +84,24 @@ public class BpmnXmlParser {
             throw new FlowExecutionException("BPMN root missing namespace " + NS_BPMN);
         }
 
-        // 找 collaboration 根(优先) / process 根(向后兼容)
+        // 找 collaboration 根(优先) / choreography 根 / process 根(向后兼容)
         Element collaboration = findChild(root, NS_BPMN, "collaboration");
         if (collaboration != null) {
             return parseCollaboration(collaboration, bpmnXml);
         }
 
+        // V5.37 B1 — 独立 choreography(无 collab)
+        Element choreography = findChild(root, NS_BPMN, "choreography");
+        if (choreography != null) {
+            Choreography choreo = parseChoreography(choreography, null);
+            return new BpmnDefinition(null, Map.of(), choreo);
+        }
+
         // 单 process 路径
         Element process = findChild(root, NS_BPMN, "process");
         if (process == null) {
-            throw new FlowExecutionException("BPMN has no <collaboration> or <process> element");
+            throw new FlowExecutionException(
+                "BPMN has no <collaboration>, <choreography>, or <process> element");
         }
         FlowDefinition def = parseSingleProcessFromElement(process, bpmnXml);
         return BpmnDefinition.ofSingleProcess(def);
@@ -240,7 +251,62 @@ public class BpmnXmlParser {
         }
 
         Collaboration collab = new Collaboration(collabId, collabName, participants, resolved);
-        return new BpmnDefinition(collab, processes);
+        // V5.37 B1 — collab 内嵌 choreography(可选)
+        Choreography choreo = null;
+        Element choreoEl = findChild(collabEl, NS_BPMN, "choreography");
+        if (choreoEl != null) {
+            choreo = parseChoreography(choreoEl, collab);
+        }
+        return new BpmnDefinition(collab, processes, choreo);
+    }
+
+    // -------- V5.37 B1 — choreography 解析 --------
+
+    /**
+     * 解析 {@code <bpmn:choreography>} 元素。collaboration 可空(独立 choreography 时
+     * 不做 messageFlowRef 校验,因为没有 collab;collaboration=非空时交叉校验)。
+     */
+    @SuppressWarnings("unchecked")
+    private Choreography parseChoreography(Element choreoEl, Collaboration collab) {
+        String id = choreoEl.attributeValue("id");
+        String name = choreoEl.attributeValue("name");
+        List<ChoreographyTask> tasks = new ArrayList<>();
+        for (Element el : (List<Element>) choreoEl.elements()) {
+            String local = el.getName();
+            String elNs = el.getNamespaceURI();
+            if (!NS_BPMN.equals(elNs)) continue;
+            if ("choreographyTask".equals(local)) {
+                String tid = el.attributeValue("id");
+                String tname = el.attributeValue("name");
+                String initiator = el.attributeValue("initiatingParticipantRef");
+                String first = el.attributeValue("firstParticipantRef");
+                String second = el.attributeValue("secondParticipantRef");
+                String mfRef = el.attributeValue("messageFlowRef");
+                if (tid == null || tid.isBlank()) {
+                    throw new FlowExecutionException(
+                        "BPMN <choreographyTask> missing id in choreography " + id);
+                }
+                if (initiator == null || first == null || second == null) {
+                    throw new FlowExecutionException(
+                        "BPMN <choreographyTask> " + tid
+                        + " missing initiatingParticipantRef/firstParticipantRef/secondParticipantRef");
+                }
+                // outgoing sequenceFlow(可选,audit)
+                List<String> outgoing = new ArrayList<>();
+                for (Element sf : (List<Element>) el.elements()) {
+                    if (!NS_BPMN.equals(sf.getNamespaceURI())) continue;
+                    if ("outgoing".equals(sf.getName())) {
+                        String v = sf.getTextTrim();
+                        if (v != null && !v.isBlank()) outgoing.add(v);
+                    }
+                }
+                tasks.add(new ChoreographyTask(tid, tname, initiator, first, second, mfRef, outgoing));
+            }
+        }
+        Choreography choreo = new Choreography(id, name, tasks);
+        // 交叉校验 messageFlowRef(只在 collab 存在时)
+        choreo.validateMessageFlowRefs(collab);
+        return choreo;
     }
 
     /** 找引用了 {@code <ruleforge:messageFlowRef id="<mfId>"/>} 的某 type 节点 id。 */
