@@ -452,9 +452,16 @@ public class BpmnXmlParser {
                 }
             }
 
+            // V5.38 C1 — Send/Receive Task 的 messageRef 从 BPMN 顶层属性读
+            // <bpmn:sendTask id="..." messageRef="..."/> / <bpmn:receiveTask ...>
+            String messageRef = null;
+            if (type == NodeType.SEND_TASK || type == NodeType.RECEIVE_TASK) {
+                messageRef = el.attributeValue("messageRef");
+            }
+
             FlowNode node = new FlowNode(nodeId, type, el.attributeValue("name"),
                 ext, scriptText, scriptFormat, outgoing, async,
-                null, messageFlowRef);
+                null, messageFlowRef, messageRef);
             nodes.put(nodeId, node);
         }
 
@@ -598,7 +605,8 @@ public class BpmnXmlParser {
                 if (myLaneId != null) {
                     rebuilt.put(e.getKey(), new FlowNode(orig.getNodeId(), orig.getType(), orig.getName(),
                         orig.getExtensionAttrs(), orig.getScriptText(), orig.getScriptFormat(),
-                        orig.getOutgoingIds(), orig.isAsync(), myLaneId, orig.getMessageFlowId()));
+                        orig.getOutgoingIds(), orig.isAsync(),
+                        myLaneId, orig.getMessageFlowId(), orig.getMessageRef()));
                 } else {
                     rebuilt.put(e.getKey(), orig);
                 }
@@ -620,6 +628,9 @@ public class BpmnXmlParser {
             case "serviceTask"       -> NodeType.SERVICE_TASK;
             case "scriptTask"        -> NodeType.SCRIPT_TASK;
             case "userTask"          -> NodeType.USER_TASK;
+            // V5.38 C1 — Send/Receive Task(BPMN 标准节点)
+            case "sendTask"          -> NodeType.SEND_TASK;
+            case "receiveTask"       -> NodeType.RECEIVE_TASK;
             case "exclusiveGateway"  -> NodeType.EXCLUSIVE_GATEWAY;
             case "parallelGateway"   -> NodeType.PARALLEL_GATEWAY;
             case "intermediateCatchEvent" -> NodeType.INTERMEDIATE_EVENT;

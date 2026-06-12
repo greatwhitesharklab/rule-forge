@@ -27,21 +27,40 @@ public final class FlowNode {
      * 仅 START_EVENT / END_EVENT 节点用;值 = {@link com.ruleforge.decision.flow.ir.MessageFlow#getId()}。
      */
     private final String messageFlowId;
+    /**
+     * V5.38 C1 — 单 pool 内 send/receive 消息引用(nullable — 非 SEND/RECEIVE_TASK 节点时为 null)。
+     * 跟 {@link #messageFlowId} 字段正交:
+     * <ul>
+     *   <li>messageFlowId — B0 跨池 message flow 端点(START/END_EVENT 节点带)</li>
+     *   <li>messageRef — C1 单 pool send/receive 消息引用(SEND_TASK/RECEIVE_TASK 节点带)</li>
+     * </ul>
+     */
+    private final String messageRef;
 
     public FlowNode(String nodeId, NodeType type, String name,
                     Map<String, String> extensionAttrs,
                     String scriptText, String scriptFormat,
                     List<String> outgoingIds, boolean async) {
         this(nodeId, type, name, extensionAttrs, scriptText, scriptFormat, outgoingIds, async,
-            null, null);
+            null, null, null);
     }
 
-    /** V5.37 B0 — 10-field ctor(laneId + messageFlowId)。 */
+    /** V5.37 B0 — 10-field ctor(laneId + messageFlowId),向后兼容 C1 之前 caller。 */
     public FlowNode(String nodeId, NodeType type, String name,
                     Map<String, String> extensionAttrs,
                     String scriptText, String scriptFormat,
                     List<String> outgoingIds, boolean async,
                     String laneId, String messageFlowId) {
+        this(nodeId, type, name, extensionAttrs, scriptText, scriptFormat, outgoingIds, async,
+            laneId, messageFlowId, null);
+    }
+
+    /** V5.38 C1 — 11-field ctor(+ messageRef)。 */
+    public FlowNode(String nodeId, NodeType type, String name,
+                    Map<String, String> extensionAttrs,
+                    String scriptText, String scriptFormat,
+                    List<String> outgoingIds, boolean async,
+                    String laneId, String messageFlowId, String messageRef) {
         this.nodeId = nodeId;
         this.type = type;
         this.name = name;
@@ -52,6 +71,7 @@ public final class FlowNode {
         this.async = async;
         this.laneId = laneId;
         this.messageFlowId = messageFlowId;
+        this.messageRef = messageRef;
     }
 
     public String getNodeId() { return nodeId; }
@@ -64,6 +84,7 @@ public final class FlowNode {
     public boolean isAsync() { return async; }
     public String getLaneId() { return laneId; }
     public String getMessageFlowId() { return messageFlowId; }
+    public String getMessageRef() { return messageRef; }
 
     public String attr(String key) { return extensionAttrs.get(key); }
     public String attr(String namespace, String name) {
@@ -81,6 +102,6 @@ public final class FlowNode {
         Map<String, String> newExt = new java.util.HashMap<>(extensionAttrs);
         newExt.remove(key);
         return new FlowNode(nodeId, type, name, newExt, scriptText, scriptFormat, outgoingIds, async,
-            laneId, messageFlowId);
+            laneId, messageFlowId, messageRef);
     }
 }
