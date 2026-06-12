@@ -5,6 +5,7 @@ import com.ruleforge.decision.exception.FlowExecutionException;
 import com.ruleforge.decision.flow.bus.FlowResumer;
 import com.ruleforge.decision.flow.bus.InMemoryMessageBus;
 import com.ruleforge.decision.flow.bus.MessageBusPublisher;
+import com.ruleforge.decision.flow.bus.MessageBusRegistry;
 import com.ruleforge.decision.flow.engine.FlowContext;
 import com.ruleforge.decision.flow.ir.BpmnDefinition;
 import com.ruleforge.decision.flow.ir.FlowNode;
@@ -51,7 +52,7 @@ class MessageFlowExecutorTest {
     void setUp() {
         parser = new BpmnXmlParser();
         bus = new InMemoryMessageBus();
-        publisher = new MessageBusPublisher(bus);
+        publisher = new MessageBusPublisher(new MessageBusRegistry(java.util.List.of(bus)));
         bpmn = parser.parse(BpmnCollaborationFixtures.TWO_POOL_LOAN_XML);
     }
 
@@ -145,7 +146,7 @@ class MessageFlowExecutorTest {
         void end_payload_includes_bridge_fields() {
             // 替换 publisher 记 payload
             Map<String, Object> capturedPayload = new HashMap<>();
-            MessageBusPublisher spyingPublisher = new MessageBusPublisher(bus) {
+            MessageBusPublisher spyingPublisher = new MessageBusPublisher(new MessageBusRegistry(java.util.List.of(bus))) {
                 // 重写困难(没 override 设计)— 退而求其次:用 subscriber 在 publish 时截 payload
             };
             bus.subscribe("pool:p_credit_to_p_uw:loan_approved",

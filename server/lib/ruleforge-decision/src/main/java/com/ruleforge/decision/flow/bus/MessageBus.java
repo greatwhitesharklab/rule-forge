@@ -21,7 +21,7 @@ import java.util.Set;
  *   <li>channel 命名 — 走 {@link MessageKind#channelFor} 集中拼,bus 不假定 prefix 格式</li>
  * </ul>
  */
-public interface MessageBus {
+public interface MessageBus extends MessageBusProvider {
 
     /**
      * 同步发布一条 message 到其 channel。

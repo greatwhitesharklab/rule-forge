@@ -3,6 +3,7 @@ package com.ruleforge.decision.flow.executor;
 import com.ruleforge.decision.exception.FlowExecutionException;
 import com.ruleforge.decision.flow.bus.InMemoryMessageBus;
 import com.ruleforge.decision.flow.bus.MessageBusPublisher;
+import com.ruleforge.decision.flow.bus.MessageBusRegistry;
 import com.ruleforge.decision.flow.engine.FlowContext;
 import com.ruleforge.decision.flow.ir.FlowNode;
 import com.ruleforge.decision.flow.ir.NodeType;
@@ -41,7 +42,7 @@ class SendTaskExecutorTest {
     @BeforeEach
     void setUp() {
         bus = new InMemoryMessageBus();
-        publisher = new MessageBusPublisher(bus);
+        publisher = new MessageBusPublisher(new MessageBusRegistry(java.util.List.of(bus)));
         executor = new SendTaskExecutor(publisher);
     }
 

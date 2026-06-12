@@ -19,7 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MessageBusPublisher {
 
-    private final MessageBus bus;
+    private final MessageBusRegistry registry;
 
     /**
      * C1 SendTask 用:发一条 {@code message:<name>}。
@@ -35,7 +35,7 @@ public class MessageBusPublisher {
             .sourceNodeId(sourceNodeId)
             .timestamp(Instant.now())
             .build();
-        return bus.publish(m);
+        return registry.primary().publish(m);
     }
 
     /**
@@ -53,7 +53,7 @@ public class MessageBusPublisher {
             .sourceNodeId(sourceNodeId)
             .timestamp(Instant.now())
             .build();
-        return bus.publish(m);
+        return registry.primary().publish(m);
     }
 
     /**
@@ -72,6 +72,6 @@ public class MessageBusPublisher {
             .sourceNodeId(sourceNodeId)
             .timestamp(Instant.now())
             .build();
-        return bus.publish(m);
+        return registry.primary().publish(m);
     }
 }
