@@ -34,7 +34,7 @@ class ParallelGatewayExecutorTest {
     private final BpmnXmlParser parser = new BpmnXmlParser();
 
     private FlowDefinition parse(String xml) {
-        return parser.parse(xml);
+        return parser.parseSingleProcess(xml);
     }
 
     @Nested

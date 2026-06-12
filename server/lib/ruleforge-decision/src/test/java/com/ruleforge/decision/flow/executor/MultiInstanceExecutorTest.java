@@ -131,7 +131,7 @@ class MultiInstanceExecutorTest {
                                       ruleforge:elementVar="item"
                                       ruleforge:outputVariable="outputs"/>
                 """;
-            FlowDefinition def = parser.parse(miXml(taskNode));
+            FlowDefinition def = parser.parseSingleProcess(miXml(taskNode));
             FlowContext ctx = newCtx();
             ctx.getVars().put("items", Arrays.asList("a", "b", "c"));
 
@@ -161,7 +161,7 @@ class MultiInstanceExecutorTest {
                                       ruleforge:method="tag_with_item"/>
                     <bpmn:sequenceFlow id="fp" sourceRef="post" targetRef="e"/>
                 """;
-            FlowDefinition def = parser.parse(miXml(taskNode));
+            FlowDefinition def = parser.parseSingleProcess(miXml(taskNode));
             FlowContext ctx = newCtx();
             ctx.getVars().put("items", Arrays.asList("x", "y"));
 
@@ -190,7 +190,7 @@ class MultiInstanceExecutorTest {
                                       ruleforge:elementVar="item"
                                       ruleforge:outputVariable="outputs"/>
                 """;
-            FlowDefinition def = parser.parse(miXml(taskNode));
+            FlowDefinition def = parser.parseSingleProcess(miXml(taskNode));
             FlowContext ctx = newCtx();
             ctx.getVars().put("items", new ArrayList<>());
 
@@ -228,7 +228,7 @@ class MultiInstanceExecutorTest {
                                       ruleforge:collection="items"
                                       ruleforge:elementVar="item"/>
                 """;
-            FlowDefinition def = parser.parse(miXml(taskNode));
+            FlowDefinition def = parser.parseSingleProcess(miXml(taskNode));
             FlowContext ctx = newCtx();
             ctx.getVars().put("items", Arrays.asList("a", "b", "c"));
 
@@ -256,7 +256,7 @@ class MultiInstanceExecutorTest {
                                       ruleforge:collection="items"
                                       ruleforge:elementVar="item"/>
                 """;
-            FlowDefinition def = parser.parse(miXml(taskNode));
+            FlowDefinition def = parser.parseSingleProcess(miXml(taskNode));
             FlowContext ctx = newCtx();
             ctx.getVars().put("items", new ArrayList<>());
 
@@ -285,7 +285,7 @@ class MultiInstanceExecutorTest {
                     <bpmn:serviceTask id="t" ruleforge:taskType="action"
                                       ruleforge:method="tag_with_item"/>
                 """;
-            FlowDefinition def = parser.parse(miXml(taskNode));
+            FlowDefinition def = parser.parseSingleProcess(miXml(taskNode));
             FlowContext ctx = newCtx();
             ctx.getVars().put("items", Arrays.asList("a", "b", "c"));
 
@@ -316,7 +316,7 @@ class MultiInstanceExecutorTest {
                                       ruleforge:elementVar="item"
                                       ruleforge:outputVariable="outputs"/>
                 """;
-            FlowDefinition def = parser.parse(miXml(taskNode));
+            FlowDefinition def = parser.parseSingleProcess(miXml(taskNode));
             FlowContext ctx = newCtx();
             ctx.getVars().put("items", null);
 
@@ -343,7 +343,7 @@ class MultiInstanceExecutorTest {
                                       ruleforge:elementVar="item"
                                       ruleforge:outputVariable="outputs"/>
                 """;
-            FlowDefinition def = parser.parse(miXml(taskNode));
+            FlowDefinition def = parser.parseSingleProcess(miXml(taskNode));
             FlowContext ctx = newCtx();
             ctx.getVars().put("items", "not-a-list");
 

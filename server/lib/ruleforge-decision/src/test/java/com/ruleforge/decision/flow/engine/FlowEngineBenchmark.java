@@ -43,7 +43,7 @@ public class FlowEngineBenchmark {
         int warmup = 200;
 
         BpmnXmlParser parser = new BpmnXmlParser();
-        FlowDefinition def = parser.parse(SIMPLE_FLOW);
+        FlowDefinition def = parser.parseSingleProcess(SIMPLE_FLOW);
 
         // Warmup
         for (int i = 0; i < warmup; i++) {

@@ -35,13 +35,24 @@ public final class FlowDefinition {
      * 解析而来,linkThrow 节点通过 def.linkTargets[name] 跳到 catch)。
      */
     private final Map<String, String> linkTargets;
+    /**
+     * V5.37 B0 — 所属 collaboration id(nullable — 单 process 时为 null)。
+     * 关联回 {@link com.ruleforge.decision.flow.ir.BpmnDefinition#collaboration()} 的 id。
+     */
+    private final String collaborationId;
+    /**
+     * V5.37 B0 — lane id → {@link Lane}。v0 简化:lane 仅 audit 记录,executor 不 gate;
+     * cross-process lane sharing 不支持。
+     */
+    private final Map<String, Lane> lanes;
 
     public FlowDefinition(String processId, String name,
                           Map<String, FlowNode> nodes, List<SequenceFlow> edges,
                           String startNodeId, List<String> endNodeIds,
                           String sourceXml, String sourceXmlHash, Instant parsedAt) {
         this(processId, name, nodes, edges, startNodeId, endNodeIds,
-            sourceXml, sourceXmlHash, parsedAt, java.util.Map.of(), java.util.Map.of());
+            sourceXml, sourceXmlHash, parsedAt, java.util.Map.of(), java.util.Map.of(),
+            null, java.util.Map.of());
     }
 
     public FlowDefinition(String processId, String name,
@@ -50,7 +61,8 @@ public final class FlowDefinition {
                           String sourceXml, String sourceXmlHash, Instant parsedAt,
                           Map<String, List<String>> attachedCompensations) {
         this(processId, name, nodes, edges, startNodeId, endNodeIds,
-            sourceXml, sourceXmlHash, parsedAt, attachedCompensations, java.util.Map.of());
+            sourceXml, sourceXmlHash, parsedAt, attachedCompensations, java.util.Map.of(),
+            null, java.util.Map.of());
     }
 
     public FlowDefinition(String processId, String name,
@@ -59,6 +71,20 @@ public final class FlowDefinition {
                           String sourceXml, String sourceXmlHash, Instant parsedAt,
                           Map<String, List<String>> attachedCompensations,
                           Map<String, String> linkTargets) {
+        this(processId, name, nodes, edges, startNodeId, endNodeIds,
+            sourceXml, sourceXmlHash, parsedAt, attachedCompensations, linkTargets,
+            null, java.util.Map.of());
+    }
+
+    /** V5.37 B0 — 13-field ctor(collaborationId + lanes)。 */
+    public FlowDefinition(String processId, String name,
+                          Map<String, FlowNode> nodes, List<SequenceFlow> edges,
+                          String startNodeId, List<String> endNodeIds,
+                          String sourceXml, String sourceXmlHash, Instant parsedAt,
+                          Map<String, List<String>> attachedCompensations,
+                          Map<String, String> linkTargets,
+                          String collaborationId,
+                          Map<String, Lane> lanes) {
         this.processId = processId;
         this.name = name;
         this.nodes = Map.copyOf(nodes);
@@ -76,6 +102,8 @@ public final class FlowDefinition {
         this.linkTargets = linkTargets == null
             ? java.util.Map.of()
             : Map.copyOf(linkTargets);
+        this.collaborationId = collaborationId;
+        this.lanes = lanes == null ? java.util.Map.of() : Map.copyOf(lanes);
     }
 
     public String getProcessId() { return processId; }
@@ -90,6 +118,8 @@ public final class FlowDefinition {
     public Instant getParsedAt() { return parsedAt; }
     public Map<String, List<String>> getAttachedCompensations() { return attachedCompensations; }
     public Map<String, String> getLinkTargets() { return linkTargets; }
+    public String getCollaborationId() { return collaborationId; }
+    public Map<String, Lane> getLanes() { return lanes; }
 
     public FlowNode getNode(String nodeId) { return nodes.get(nodeId); }
     public SequenceFlow getEdge(String edgeId) { return edgesById.get(edgeId); }

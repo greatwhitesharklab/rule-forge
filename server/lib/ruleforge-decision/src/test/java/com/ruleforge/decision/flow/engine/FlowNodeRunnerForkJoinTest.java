@@ -171,7 +171,7 @@ class FlowNodeRunnerForkJoinTest {
                   </bpmn:process>
                 </bpmn:definitions>
                 """;
-            FlowDefinition def = parser.parse(xml);
+            FlowDefinition def = parser.parseSingleProcess(xml);
             FlowNodeRunner runner = newRunner(action);
             FlowContext ctx = newCtx("r1");
             try {
@@ -213,7 +213,7 @@ class FlowNodeRunnerForkJoinTest {
                   </bpmn:process>
                 </bpmn:definitions>
                 """;
-            FlowDefinition def = parser.parse(xml);
+            FlowDefinition def = parser.parseSingleProcess(xml);
             FlowNodeRunner runner = newRunner(action);
             FlowContext ctx = newCtx("r2");
             runner.traverse(def, ctx, def.getStartNodeId());
@@ -255,7 +255,7 @@ class FlowNodeRunnerForkJoinTest {
                   </bpmn:process>
                 </bpmn:definitions>
                 """;
-            FlowDefinition def = parser.parse(xml);
+            FlowDefinition def = parser.parseSingleProcess(xml);
             FlowNodeRunner runner = newRunner(action);
             FlowContext ctx = newCtx("r3");
             runner.traverse(def, ctx, def.getStartNodeId());
@@ -292,7 +292,7 @@ class FlowNodeRunnerForkJoinTest {
                   </bpmn:process>
                 </bpmn:definitions>
                 """;
-            FlowDefinition def = parser.parse(xml);
+            FlowDefinition def = parser.parseSingleProcess(xml);
             FlowNodeRunner runner = newRunner(action);
             FlowContext ctx = newCtx("r4");
             runner.traverse(def, ctx, def.getStartNodeId());
@@ -348,7 +348,7 @@ class FlowNodeRunnerForkJoinTest {
                   </bpmn:process>
                 </bpmn:definitions>
                 """;
-            FlowDefinition def = parser.parse(xml);
+            FlowDefinition def = parser.parseSingleProcess(xml);
             List<NodeExecutor> list = new java.util.ArrayList<>(List.of(action, userTask));
             list.add(new EventNodeExecutor());
             list.add(new GatewayNodeExecutor());

@@ -76,6 +76,23 @@ public class FlowContext {
      * 同样给 V5.35 A5 LinkThrow 拿 linkTargets 用。
      */
     private com.ruleforge.decision.flow.ir.FlowDefinition currentDef;
+    /**
+     * V5.37 B0 — 当前 traverse 的 BpmnDefinition(transient,Runner traverse 在 dispatch 前 set)。
+     * MessageFlow executor 拿它找 message flow 4-tuple + (poolId, nodeId) 路由。
+     */
+    private com.ruleforge.decision.flow.ir.BpmnDefinition currentBpmn;
+    /**
+     * V5.37 B0 — 当前正在跑的 pool id(participantId)。transient,Runner traverse 在
+     * {@code traverse(BpmnDefinition, ctx, participantId, ...)} 重载里 set。
+     * MessageFlow executor 拿它定位 (sourcePool/targetPool, sourceNode/targetNode) 4-tuple。
+     */
+    private String currentPoolId;
+    /**
+     * V5.37 B0 — 当前 flow 累积的 bus subscriptions。SUSPEND 时**保留**(等 resume)、
+     * COMPLETED/FAIL 时**关闭**。ReceiveTask / MessageFlowStart 都 stash 进来。
+     */
+    private final List<com.ruleforge.decision.flow.bus.MessageBus.Subscription> busSubscriptions =
+        new java.util.ArrayList<>();
 
     public String getFlowRunId() { return flowRunId; }
     public void setFlowRunId(String flowRunId) { this.flowRunId = flowRunId; }
@@ -194,5 +211,26 @@ public class FlowContext {
     public com.ruleforge.decision.flow.ir.FlowDefinition getCurrentDef() { return currentDef; }
     public void setCurrentDef(com.ruleforge.decision.flow.ir.FlowDefinition currentDef) {
         this.currentDef = currentDef;
+    }
+
+    // -------- V5.37 B0 — currentBpmn / currentPoolId / busSubscriptions(transient) --------
+
+    public com.ruleforge.decision.flow.ir.BpmnDefinition getCurrentBpmn() { return currentBpmn; }
+    public void setCurrentBpmn(com.ruleforge.decision.flow.ir.BpmnDefinition currentBpmn) {
+        this.currentBpmn = currentBpmn;
+    }
+
+    public String getCurrentPoolId() { return currentPoolId; }
+    public void setCurrentPoolId(String currentPoolId) {
+        this.currentPoolId = currentPoolId;
+    }
+
+    public List<com.ruleforge.decision.flow.bus.MessageBus.Subscription> getBusSubscriptions() {
+        return busSubscriptions;
+    }
+
+    /** MessageFlowStart / ReceiveTask 用:把新订阅塞进 list,SUSPEND 时不关,COMPLETED/FAIL 时 Runner 关。 */
+    public void addBusSubscription(com.ruleforge.decision.flow.bus.MessageBus.Subscription s) {
+        if (s != null) busSubscriptions.add(s);
     }
 }

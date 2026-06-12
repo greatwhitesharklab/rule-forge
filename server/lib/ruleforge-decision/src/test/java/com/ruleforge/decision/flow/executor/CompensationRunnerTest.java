@@ -168,7 +168,7 @@ class CompensationRunnerTest {
             .register("mark_b", (n, c) -> {})
             .register("mark_handler_a", (n, c) -> appendCompensated(c, "ha"))
             .register("mark_handler_b", (n, c) -> appendCompensated(c, "hb"));
-        FlowDefinition def = parser.parse(BASIC_FIXTURE);
+        FlowDefinition def = parser.parseSingleProcess(BASIC_FIXTURE);
         NodeExecutorRegistry reg = newRegistry(action, def);
         FlowContext ctx = newCtx();
 
@@ -194,7 +194,7 @@ class CompensationRunnerTest {
             .register("mark_b", (n, c) -> {})
             .register("mark_handler_a", (n, c) -> appendCompensated(c, "ha"))
             .register("mark_handler_b", (n, c) -> appendCompensated(c, "hb"));
-        FlowDefinition def = parser.parse(BASIC_FIXTURE);
+        FlowDefinition def = parser.parseSingleProcess(BASIC_FIXTURE);
         NodeExecutorRegistry reg = newRegistry(action, def);
         FlowContext ctx = newCtx();
 
@@ -217,7 +217,7 @@ class CompensationRunnerTest {
             .register("mark_b", (n, c) -> {})
             .register("mark_handler_a", (n, c) -> c.getVars().put("ha_wrote", "handler_a_done"))
             .register("mark_handler_b", (n, c) -> c.getVars().put("hb_wrote", "handler_b_done"));
-        FlowDefinition def = parser.parse(BASIC_FIXTURE);
+        FlowDefinition def = parser.parseSingleProcess(BASIC_FIXTURE);
         NodeExecutorRegistry reg = newRegistry(action, def);
         FlowContext ctx = newCtx();
 
@@ -269,7 +269,7 @@ class CompensationRunnerTest {
               </bpmn:process>
             </bpmn:definitions>
             """;
-        FlowDefinition def = parser.parse(xml);
+        FlowDefinition def = parser.parseSingleProcess(xml);
         NodeExecutorRegistry reg = newRegistry(action, def);
         FlowContext ctx = newCtx();
 
@@ -303,7 +303,7 @@ class CompensationRunnerTest {
               </bpmn:process>
             </bpmn:definitions>
             """;
-        FlowDefinition def = parser.parse(xml);
+        FlowDefinition def = parser.parseSingleProcess(xml);
         NodeExecutorRegistry reg = newRegistry(action, def);
         FlowContext ctx = newCtx();
 
@@ -324,7 +324,7 @@ class CompensationRunnerTest {
         @DisplayName("Given 无 consecutive duplicate,When start,Then push scope 到 stack")
         void start_pushes_scope_to_stack() throws Exception {
             StubAction action = new StubAction();
-            FlowDefinition def = parser.parse(BASIC_FIXTURE);
+            FlowDefinition def = parser.parseSingleProcess(BASIC_FIXTURE);
             NodeExecutorRegistry reg = newRegistry(action, def);
             FlowContext ctx = newCtx();
 
@@ -338,7 +338,7 @@ class CompensationRunnerTest {
         @DisplayName("Given consecutive duplicate same id,When start 第二次,Then 第二次不 push(幂等)")
         void start_idempotent_on_consecutive_same_id() throws Exception {
             StubAction action = new StubAction();
-            FlowDefinition def = parser.parse(BASIC_FIXTURE);
+            FlowDefinition def = parser.parseSingleProcess(BASIC_FIXTURE);
             NodeExecutorRegistry reg = newRegistry(action, def);
             FlowContext ctx = newCtx();
 
@@ -359,7 +359,7 @@ class CompensationRunnerTest {
         @DisplayName("Given matching scope_id 在 stack 顶,When end,Then pop 成功,stack -1")
         void end_pops_matching_scope() throws Exception {
             StubAction action = new StubAction();
-            FlowDefinition def = parser.parse(CE_FIXTURE);
+            FlowDefinition def = parser.parseSingleProcess(CE_FIXTURE);
             NodeExecutorRegistry reg = newRegistry(action, def);
             FlowContext ctx = newCtx();
 
@@ -373,7 +373,7 @@ class CompensationRunnerTest {
         @DisplayName("Given stack top 是不同 scope_id,When end,Then warn + 留着 stack(不 pop)")
         void end_mismatched_warns_and_leaves_stack() throws Exception {
             StubAction action = new StubAction();
-            FlowDefinition def = parser.parse(CE_FIXTURE);
+            FlowDefinition def = parser.parseSingleProcess(CE_FIXTURE);
             NodeExecutorRegistry reg = newRegistry(action, def);
             FlowContext ctx = newCtx();
 

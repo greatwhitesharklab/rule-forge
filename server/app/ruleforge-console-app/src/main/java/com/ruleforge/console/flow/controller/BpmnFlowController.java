@@ -100,7 +100,9 @@ public class BpmnFlowController {
             // V5.21+: 不再调 Flowable 部署。改为解析 IR(校验 XML 格式) + 通知 executor
             // invalidate。返回 deploymentId 用 file 名占位(前端 alert 成功,字段语义保留)。
             // 真正的"部署"语义由 executor 端 evaluate 时 lazy 拉最新 BPMN 完成。
-            FlowDefinition def = bpmnXmlParser.parse(bpmnXml);
+            // V5.37 B0: BpmnXmlParser.parse BREAKING 返 BpmnDefinition;此处只校验单 process
+            // 部署格式(collaboration 走 V5.37 B1+ 多池部署 path),用 parseSingleProcess 保留契约。
+            FlowDefinition def = bpmnXmlParser.parseSingleProcess(bpmnXml);
             log.info("[DEPLOY-BPMN] parsed flowId={} nodes={} xmlHash={}",
                 def.getProcessId(), def.getNodes().size(), def.getSourceXmlHash());
             notifyExecutorInvalidate(file);

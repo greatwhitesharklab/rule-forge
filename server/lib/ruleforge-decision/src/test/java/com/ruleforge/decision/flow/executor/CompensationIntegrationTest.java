@@ -117,7 +117,7 @@ class CompensationIntegrationTest {
               </bpmn:process>
             </bpmn:definitions>
             """;
-        FlowDefinition def = parser.parse(xml);
+        FlowDefinition def = parser.parseSingleProcess(xml);
 
         FlowContext ctx = new FlowContext();
         ctx.setFlowRunId("test-comp-" + System.nanoTime());

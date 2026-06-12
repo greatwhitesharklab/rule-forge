@@ -4,6 +4,7 @@ import com.ruleforge.decision.exception.FlowExecutionException;
 import com.ruleforge.decision.flow.EndEventKind;
 import com.ruleforge.decision.flow.engine.FlowContext;
 import com.ruleforge.decision.flow.ir.FlowNode;
+import com.ruleforge.decision.flow.ir.NodeType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +36,20 @@ public class EventNodeExecutor implements NodeExecutor {
 
     @Override
     public void execute(FlowNode node, FlowContext context) {
+        // V5.37 B0 — messageFlow 端点早返(START 节点带 messageFlowId → MessageFlowStartExecutor;
+        // END 节点带 messageFlowId → MessageFlowEndExecutor)。不抛的 end 让 source flow 走完;
+        // start 抛 AsyncNodeSuspendException 走 Runner 收口。
+        if (node.getMessageFlowId() != null) {
+            if (node.getType() == NodeType.START_EVENT) {
+                MessageFlowStartExecutor.Bridge.resolve().execute(node, context);
+                return;  // unreachable — MessageFlowStart always throws
+            }
+            if (node.getType() == NodeType.END_EVENT) {
+                MessageFlowEndExecutor.Bridge.resolve().execute(node, context);
+                return;
+            }
+        }
+
         switch (node.getType()) {
             case START_EVENT -> log.debug("[FLOW-START] {}", node.getName());
             case END_EVENT   -> handleEnd(node, context);

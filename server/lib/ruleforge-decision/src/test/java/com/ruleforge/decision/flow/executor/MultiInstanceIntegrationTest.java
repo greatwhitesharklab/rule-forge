@@ -73,7 +73,7 @@ class MultiInstanceIntegrationTest {
               </bpmn:process>
             </bpmn:definitions>
             """;
-        FlowDefinition def = parser.parse(xml);
+        FlowDefinition def = parser.parseSingleProcess(xml);
 
         // V5.33 A0:ctx.getVars() 委托 currentToken;pre-init token + setCurrentNodeId,
         // 让 traverse 不重建根 token(保留 items vars)

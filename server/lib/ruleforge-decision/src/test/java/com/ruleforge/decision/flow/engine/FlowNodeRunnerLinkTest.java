@@ -119,7 +119,7 @@ class FlowNodeRunnerLinkTest {
               </bpmn:process>
             </bpmn:definitions>
             """;
-        FlowDefinition def = parser.parse(xml);
+        FlowDefinition def = parser.parseSingleProcess(xml);
         FlowNodeRunner runner = newRunner(action);
         FlowContext ctx = newCtx("link-ok");
 
@@ -151,7 +151,7 @@ class FlowNodeRunnerLinkTest {
               </bpmn:process>
             </bpmn:definitions>
             """;
-        FlowDefinition def = parser.parse(xml);
+        FlowDefinition def = parser.parseSingleProcess(xml);
         FlowNodeRunner runner = newRunner(action);
         FlowContext ctx = newCtx("link-missing");
 

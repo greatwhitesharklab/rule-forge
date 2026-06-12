@@ -17,11 +17,31 @@ public final class FlowNode {
     private final String scriptFormat;
     private final List<String> outgoingIds;
     private final boolean async;
+    /**
+     * V5.37 B0 — 所属 lane id(nullable — 单 process / 不在 laneSet 时为 null)。
+     * v0 简化:lane 仅 audit 记录,executor 不 gate。
+     */
+    private final String laneId;
+    /**
+     * V5.37 B0 — 关联 message flow id(nullable — 非 message flow 端点时为 null)。
+     * 仅 START_EVENT / END_EVENT 节点用;值 = {@link com.ruleforge.decision.flow.ir.MessageFlow#getId()}。
+     */
+    private final String messageFlowId;
 
     public FlowNode(String nodeId, NodeType type, String name,
                     Map<String, String> extensionAttrs,
                     String scriptText, String scriptFormat,
                     List<String> outgoingIds, boolean async) {
+        this(nodeId, type, name, extensionAttrs, scriptText, scriptFormat, outgoingIds, async,
+            null, null);
+    }
+
+    /** V5.37 B0 — 10-field ctor(laneId + messageFlowId)。 */
+    public FlowNode(String nodeId, NodeType type, String name,
+                    Map<String, String> extensionAttrs,
+                    String scriptText, String scriptFormat,
+                    List<String> outgoingIds, boolean async,
+                    String laneId, String messageFlowId) {
         this.nodeId = nodeId;
         this.type = type;
         this.name = name;
@@ -30,6 +50,8 @@ public final class FlowNode {
         this.scriptFormat = scriptFormat == null ? "groovy" : scriptFormat;
         this.outgoingIds = outgoingIds == null ? List.of() : List.copyOf(outgoingIds);
         this.async = async;
+        this.laneId = laneId;
+        this.messageFlowId = messageFlowId;
     }
 
     public String getNodeId() { return nodeId; }
@@ -40,6 +62,8 @@ public final class FlowNode {
     public String getScriptFormat() { return scriptFormat; }
     public List<String> getOutgoingIds() { return outgoingIds; }
     public boolean isAsync() { return async; }
+    public String getLaneId() { return laneId; }
+    public String getMessageFlowId() { return messageFlowId; }
 
     public String attr(String key) { return extensionAttrs.get(key); }
     public String attr(String namespace, String name) {
@@ -56,6 +80,7 @@ public final class FlowNode {
         if (key == null || !extensionAttrs.containsKey(key)) return this;
         Map<String, String> newExt = new java.util.HashMap<>(extensionAttrs);
         newExt.remove(key);
-        return new FlowNode(nodeId, type, name, newExt, scriptText, scriptFormat, outgoingIds, async);
+        return new FlowNode(nodeId, type, name, newExt, scriptText, scriptFormat, outgoingIds, async,
+            laneId, messageFlowId);
     }
 }

@@ -46,7 +46,7 @@ class BpmnXmlParserTest {
                   </bpmn:process>
                 </bpmn:definitions>
                 """;
-            FlowDefinition def = parser.parse(xml);
+            FlowDefinition def = parser.parseSingleProcess(xml);
 
             assertEquals("loan", def.getProcessId());
             assertEquals("贷款决策流", def.getName());
@@ -79,7 +79,7 @@ class BpmnXmlParserTest {
                   </bpmn:process>
                 </bpmn:definitions>
                 """;
-            FlowDefinition def = parser.parse(xml);
+            FlowDefinition def = parser.parseSingleProcess(xml);
             assertEquals(NodeType.USER_TASK, def.getNode("review").getType());
             assertEquals("binary", def.getNode("review").attr("ruleforge", "decisionType"));
             assertEquals("approved", def.getNode("review").attr("ruleforge", "decisionField"));
@@ -104,7 +104,7 @@ class BpmnXmlParserTest {
                   </bpmn:process>
                 </bpmn:definitions>
                 """;
-            FlowDefinition def = parser.parse(xml);
+            FlowDefinition def = parser.parseSingleProcess(xml);
             assertEquals(Integer.valueOf(70), def.getEdge("e1").getPercent());
             assertEquals(Integer.valueOf(30), def.getEdge("e2").getPercent());
         }
@@ -179,7 +179,7 @@ class BpmnXmlParserTest {
                   </bpmn:process>
                 </bpmn:definitions>
                 """;
-            FlowDefinition def = parser.parse(xml);
+            FlowDefinition def = parser.parseSingleProcess(xml);
             assertNotNull(def.getNode("start"));
             assertNotNull(def.getNode("end"));
             assertNull(def.getNode("ghost"));

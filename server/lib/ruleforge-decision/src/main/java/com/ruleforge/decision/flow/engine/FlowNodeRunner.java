@@ -110,6 +110,29 @@ public class FlowNodeRunner {
      * @return 最终状态(RUNNING / WAITING_CALLBACK / COMPLETED / FAILED)
      */
     public DecisionFlowState traverse(FlowDefinition def, FlowContext ctx, String startNodeId) {
+        return traverseInternal(def, ctx, startNodeId);
+    }
+
+    /**
+     * V5.37 B0 — 多池 traverse 重载。resolve participant → setCurrentPoolId + setCurrentBpmn
+     * → delegate 到 traverse(FlowDefinition, ctx, startNodeId)。
+     */
+    public DecisionFlowState traverse(com.ruleforge.decision.flow.ir.BpmnDefinition bpmn,
+                                      FlowContext ctx, String participantId, String startNodeId) {
+        if (bpmn == null) {
+            throw new FlowExecutionException("BpmnDefinition is null");
+        }
+        com.ruleforge.decision.flow.ir.Participant p = bpmn.findParticipant(participantId)
+            .orElseThrow(() -> new FlowExecutionException(
+                "Participant not found: " + participantId
+                + (bpmn.collaboration() != null ? " in collaboration " + bpmn.collaboration().getId() : "")));
+        FlowDefinition def = bpmn.requireProcess(p.getProcessRef());
+        ctx.setCurrentPoolId(participantId);
+        ctx.setCurrentBpmn(bpmn);
+        return traverseInternal(def, ctx, startNodeId);
+    }
+
+    private DecisionFlowState traverseInternal(FlowDefinition def, FlowContext ctx, String startNodeId) {
         if (startNodeId == null) {
             throw new FlowExecutionException("Flow has no start node: " + def.getProcessId());
         }
@@ -196,6 +219,8 @@ public class FlowNodeRunner {
                         // V5.35 A4 — atomic update
                         persistenceService.serializeForAtomicUpdate(state, ctx);
                     }
+                    // V5.37 B0 — FAIL 出口 closeBusSubscriptions
+                    closeBusSubscriptions(ctx);
                     throw new FlowExecutionException(
                         "Node " + nodeId + " failed: " + ex.getMessage(), ex);
                 }
@@ -279,6 +304,9 @@ public class FlowNodeRunner {
             }
             ctx.setCurrentToken(rootToken);
         }
+
+        // V5.37 B0 — COMPLETED 出口 closeBusSubscriptions(SUSPEND 不关,等 resume 后关)
+        closeBusSubscriptions(ctx);
 
         if (stateMapper != null) {
             state.setStatus(DecisionFlowState.STATUS_COMPLETED);
@@ -468,6 +496,22 @@ public class FlowNodeRunner {
         state.setErrorMessage(message);
         // V5.35 A4 — atomic update(fail 单次写)
         persistenceService.serializeForAtomicUpdate(state, ctx);
+    }
+
+    /**
+     * V5.37 B0 — 关闭 ctx.busSubscriptions 全部订阅(idempotent — Subscription.close 自身幂等)。
+     * Runner traverse 在 COMPLETED / FAIL 出口调;SUSPEND 出口不调(等 resume 继续持有)。
+     */
+    private void closeBusSubscriptions(FlowContext ctx) {
+        if (ctx == null || ctx.getBusSubscriptions() == null) return;
+        for (com.ruleforge.decision.flow.bus.MessageBus.Subscription s : ctx.getBusSubscriptions()) {
+            try {
+                s.close();
+            } catch (Exception e) {
+                log.warn("Failed to close bus subscription: {}", e.getMessage());
+            }
+        }
+        ctx.getBusSubscriptions().clear();
     }
 
     private DecisionFlowState upsertState(FlowDefinition def, FlowContext ctx,

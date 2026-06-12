@@ -2,6 +2,7 @@ package com.ruleforge.decision.flow.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruleforge.decision.exception.FlowExecutionException;
+import com.ruleforge.decision.flow.ir.BpmnDefinition;
 import com.ruleforge.decision.flow.ir.FlowDefinition;
 import com.ruleforge.decision.flow.parser.BpmnXmlParser;
 import org.slf4j.Logger;
@@ -32,6 +33,8 @@ public class FlowDefinitionRepo {
     private static final Logger log = LoggerFactory.getLogger(FlowDefinitionRepo.class);
 
     private final ConcurrentMap<String, FlowDefinition> cache = new ConcurrentHashMap<>();
+    /** V5.37 B0 — BpmnDefinition 缓存(多池 XML 走这里)。 */
+    private final ConcurrentMap<String, BpmnDefinition> bpmnCache = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Object> loadLocks = new ConcurrentHashMap<>();
     private final BpmnXmlParser parser;
     private final RestTemplate consoleRestTemplate;
@@ -63,7 +66,8 @@ public class FlowDefinitionRepo {
             def = cache.get(flowId);
             if (def != null) return def;
             String xml = loadBpmnXml(flowId);
-            def = parser.parse(xml);
+            // V5.37 B0 — 走 parseSingleProcess 保持单 process 契约(BpmnDefinition 留 B0.5 getOrLoadBpmn)
+            def = parser.parseSingleProcess(xml);
             cache.put(flowId, def);
             log.info("Loaded flow definition from console: flowId={}, nodes={}", flowId, def.getNodes().size());
             return def;
@@ -72,8 +76,30 @@ public class FlowDefinitionRepo {
 
     public void invalidate(String flowId) {
         FlowDefinition removed = cache.remove(flowId);
-        if (removed != null) {
+        BpmnDefinition removedBpmn = bpmnCache.remove(flowId);
+        if (removed != null || removedBpmn != null) {
             log.info("Invalidated flow definition: flowId={}", flowId);
+        }
+    }
+
+    /**
+     * V5.37 B0 — 多池启动走这里。从 console 拉 XML,parser.parse 返 BpmnDefinition
+     * (走 collaboration 路径)。缓存独立于单 process cache(因为底层 IR 不同)。
+     */
+    public BpmnDefinition getOrLoadBpmn(String flowId) {
+        BpmnDefinition bpmn = bpmnCache.get(flowId);
+        if (bpmn != null) return bpmn;
+        Object lock = loadLocks.computeIfAbsent(flowId, k -> new Object());
+        synchronized (lock) {
+            bpmn = bpmnCache.get(flowId);
+            if (bpmn != null) return bpmn;
+            String xml = loadBpmnXml(flowId);
+            bpmn = parser.parse(xml);
+            bpmnCache.put(flowId, bpmn);
+            log.info("Loaded BPMN definition from console: flowId={} processes={} collab={}",
+                flowId, bpmn.processes().size(),
+                bpmn.collaboration() != null ? bpmn.collaboration().getId() : "none");
+            return bpmn;
         }
     }
 

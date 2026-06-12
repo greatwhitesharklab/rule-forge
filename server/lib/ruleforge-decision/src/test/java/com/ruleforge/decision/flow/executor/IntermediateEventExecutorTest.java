@@ -193,7 +193,7 @@ class IntermediateEventExecutorTest {
                   </bpmn:process>
                 </bpmn:definitions>
                 """;
-            FlowDefinition def = parser.parse(xml);
+            FlowDefinition def = parser.parseSingleProcess(xml);
             FlowNode lt = def.getNode("lt");
             FlowContext ctx = newCtx();
             ctx.setCurrentDef(def);
@@ -222,7 +222,7 @@ class IntermediateEventExecutorTest {
                   </bpmn:process>
                 </bpmn:definitions>
                 """;
-            FlowDefinition def = parser.parse(xml);
+            FlowDefinition def = parser.parseSingleProcess(xml);
             FlowNode lt = def.getNode("lt");
             FlowContext ctx = newCtx();
             ctx.setCurrentDef(def);
@@ -253,7 +253,7 @@ class IntermediateEventExecutorTest {
                   </bpmn:process>
                 </bpmn:definitions>
                 """;
-            FlowDefinition def = parser.parse(xml);
+            FlowDefinition def = parser.parseSingleProcess(xml);
             FlowNode lc = def.getNode("lc");
             FlowContext ctx = newCtx();
             ctx.setCurrentDef(def);

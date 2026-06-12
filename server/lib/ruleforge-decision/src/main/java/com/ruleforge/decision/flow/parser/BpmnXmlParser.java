@@ -1,9 +1,14 @@
 package com.ruleforge.decision.flow.parser;
 
 import com.ruleforge.decision.exception.FlowExecutionException;
+import com.ruleforge.decision.flow.ir.BpmnDefinition;
+import com.ruleforge.decision.flow.ir.Collaboration;
 import com.ruleforge.decision.flow.ir.FlowDefinition;
 import com.ruleforge.decision.flow.ir.FlowNode;
+import com.ruleforge.decision.flow.ir.Lane;
+import com.ruleforge.decision.flow.ir.MessageFlow;
 import com.ruleforge.decision.flow.ir.NodeType;
+import com.ruleforge.decision.flow.ir.Participant;
 import com.ruleforge.decision.flow.ir.SequenceFlow;
 import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
@@ -24,22 +29,22 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * BPMN 2.0 XML 解析器。读 BPMN → FlowDefinition。
+ * BPMN 2.0 XML 解析器。读 BPMN → BpmnDefinition。
  * <p>
  * 命名空间:
  *   bpmn      = http://www.omg.org/spec/BPMN/20100524/MODEL
  *   ruleforge = http://ruleforge.com/schema
  *   flowable  = http://flowable.org/bpmn  (V5.x 兼容,识别 flowable: 扩展属性但不执行)
  * <p>
- * 关键提取:
- * - process.id (key)
- * - startEvent / endEvent / serviceTask / scriptTask / userTask / exclusiveGateway / parallelGateway
- * - extensionAttrs: ruleforge:taskType / file / project / version / bean / method / packageId / decisionType / decisionField / rulesList / percent / decisionValue / async
- * - sequenceFlow: conditionExpression / ruleforge:percent / ruleforge:decisionValue
- * <p>
- * V5.21+ 行为变化:已不再把 BPMN 部署到 Flowable 引擎。本解析器仍识别 flowable:
- * 扩展属性(V5.x 老 BPMN 可能用到),放进 FlowNode.extensionAttrs 但不执行 —
- * 自建 FlowEngine 只读 ruleforge: 属性,flowable: 走 NoOp 兜底。
+ * V5.37 B0 — 升级:
+ * <ul>
+ *   <li>顶层 IR 是 {@link BpmnDefinition}(record:collaboration + processes map)</li>
+ *   <li>支持 {@code <bpmn:collaboration>} 根:多 participant + 多 process + messageFlow</li>
+ *   <li>单 process(老 caller)走 {@code BpmnDefinition.ofSingleProcess(parseSingleProcess(...))}</li>
+ *   <li>lane 解析到 {@link FlowDefinition#getLanes()};{@link FlowNode#getLaneId()} 写回</li>
+ *   <li>messageFlow 端点 → {@code FlowNode.messageFlowId}(规则:START/END 节点带
+ *       {@code <ruleforge:messageFlowRef id="..."/>} 扩展元素)</li>
+ * </ul>
  */
 @Component
 public class BpmnXmlParser {
@@ -50,8 +55,17 @@ public class BpmnXmlParser {
     private static final String NS_RULEFORGE = "http://ruleforge.com/schema";
     private static final String NS_FLOWABLE = "http://flowable.org/bpmn";
 
+    /**
+     * V5.37 B0 — 顶层解析入口。返 {@link BpmnDefinition}。
+     *
+     * <p>检测根:
+     * <ul>
+     *   <li>含 {@code <bpmn:collaboration>} → 走多池路径</li>
+     *   <li>无 → 单 process 路径(向后兼容)</li>
+     * </ul>
+     */
     @SuppressWarnings("unchecked")
-    public FlowDefinition parse(String bpmnXml) {
+    public BpmnDefinition parse(String bpmnXml) {
         if (bpmnXml == null || bpmnXml.isBlank()) {
             throw new FlowExecutionException("BPMN XML is empty");
         }
@@ -61,25 +75,248 @@ public class BpmnXmlParser {
         } catch (Exception e) {
             throw new FlowExecutionException("Invalid BPMN XML: " + e.getMessage(), e);
         }
-
         Element root = doc.getRootElement();
         Namespace bpmnNs = root.getNamespaceForURI(NS_BPMN);
         if (bpmnNs == null) {
             throw new FlowExecutionException("BPMN root missing namespace " + NS_BPMN);
         }
 
-        // 找 process 元素(plain 遍历,避免 dom4j XPath 触发 jaxen 依赖)
-        Element process = null;
-        for (Element e : (List<Element>) root.elements()) {
-            if ("process".equals(e.getName()) && NS_BPMN.equals(e.getNamespaceURI())) {
-                process = e;
-                break;
-            }
-        }
-        if (process == null) {
-            throw new FlowExecutionException("BPMN has no <process> element");
+        // 找 collaboration 根(优先) / process 根(向后兼容)
+        Element collaboration = findChild(root, NS_BPMN, "collaboration");
+        if (collaboration != null) {
+            return parseCollaboration(collaboration, bpmnXml);
         }
 
+        // 单 process 路径
+        Element process = findChild(root, NS_BPMN, "process");
+        if (process == null) {
+            throw new FlowExecutionException("BPMN has no <collaboration> or <process> element");
+        }
+        FlowDefinition def = parseSingleProcessFromElement(process, bpmnXml);
+        return BpmnDefinition.ofSingleProcess(def);
+    }
+
+    /**
+     * V5.37 B0 — 便利方法,老 caller(单 process)用。
+     * 等同 {@code parse(xml).requireProcess(processId)} 的快捷写法。
+     */
+    public FlowDefinition parseSingleProcess(String bpmnXml) {
+        BpmnDefinition bpmn = parse(bpmnXml);
+        if (bpmn.collaboration() != null) {
+            throw new FlowExecutionException(
+                "parseSingleProcess called on a collaboration XML; use parse() to get BpmnDefinition");
+        }
+        // 单 process,取唯一 process
+        if (bpmn.processes().size() != 1) {
+            throw new FlowExecutionException(
+                "Expected single process, got " + bpmn.processes().size());
+        }
+        return bpmn.processes().values().iterator().next();
+    }
+
+    // -------- V5.37 B0 — collaboration 路径 --------
+
+    @SuppressWarnings("unchecked")
+    private BpmnDefinition parseCollaboration(Element collabEl, String bpmnXml) {
+        String collabId = collabEl.attributeValue("id");
+        String collabName = collabEl.attributeValue("name");
+
+        // 1. 解析 participants
+        List<Participant> participants = new ArrayList<>();
+        Map<String, Element> processElements = new LinkedHashMap<>();
+        for (Element el : (List<Element>) collabEl.elements()) {
+            String local = el.getName();
+            String elNs = el.getNamespaceURI();
+            if (!NS_BPMN.equals(elNs)) continue;
+            if ("participant".equals(local)) {
+                String pid = el.attributeValue("id");
+                String pname = el.attributeValue("name");
+                String processRef = el.attributeValue("processRef");
+                if (pid == null || pid.isBlank()) {
+                    throw new FlowExecutionException(
+                        "BPMN <participant> missing id in collaboration " + collabId);
+                }
+                if (processRef == null || processRef.isBlank()) {
+                    throw new FlowExecutionException(
+                        "BPMN <participant> " + pid + " missing processRef");
+                }
+                participants.add(new Participant(pid, pname, processRef));
+                // 暂存 process element reference(稍后 parse)
+                processElements.put(processRef, null);
+            }
+        }
+
+        // 2. 解析 messageFlow
+        List<MessageFlow> messageFlows = new ArrayList<>();
+        for (Element el : (List<Element>) collabEl.elements()) {
+            if (!NS_BPMN.equals(el.getNamespaceURI())) continue;
+            if (!"messageFlow".equals(el.getName())) continue;
+            String mfId = el.attributeValue("id");
+            String mfName = el.attributeValue("name");
+            String src = el.attributeValue("sourceRef");
+            String tgt = el.attributeValue("targetRef");
+            if (src == null || src.isBlank() || tgt == null || tgt.isBlank()) {
+                throw new FlowExecutionException(
+                    "BPMN <messageFlow> " + mfId + " missing sourceRef or targetRef");
+            }
+            // sourceRef / targetRef 在 BPMN 2.0 里可以指 participant id 或 node id。
+            // v0 简化:暂存字符串,运行时按 (participantId, nodeId) tuple 解析。
+            // 解析时:如果 src 是某个 participant id,绑定到 participant;否则按 node id 查。
+            // 这里 sourceParticipantId / targetParticipantId 暂时存 src 字符串,等下
+            // 走完 process 解析后做 endpoint resolution。
+            messageFlows.add(new MessageFlow(mfId, mfName, src, src, tgt, tgt));
+            // 注:上面构造的 MessageFlow 4-tuple 实际是 (src=src, sourceNode=src, target=tgt, targetNode=tgt) —
+            // 因为 v0 简化假设 sourceRef/targetRef 直接是 nodeId(从 bpmn-js 导出常见)或者
+            // participant id(从 Camunda Modeler 导出常见)。下面 endpoint resolution 阶段
+            // 会做校正。
+        }
+
+        // 3. 找所有 referenced <bpmn:process>(在 root 下,不在 collabEl 下)
+        // dom4j 实际允许 process 在 collab 兄弟节点(我们的 fixture 就是这样)
+        Element parent = collabEl.getParent();
+        for (Participant p : participants) {
+            Element processEl = findProcessElement(parent, p.getProcessRef());
+            if (processEl == null) {
+                throw new FlowExecutionException(
+                    "BPMN <process> " + p.getProcessRef() + " not found for participant " + p.getId());
+            }
+            processElements.put(p.getProcessRef(), processEl);
+        }
+
+        // 4. 解析每个 process
+        Map<String, FlowDefinition> processes = new LinkedHashMap<>();
+        for (Participant p : participants) {
+            Element processEl = processElements.get(p.getProcessRef());
+            FlowDefinition def = parseSingleProcessFromElement(processEl, bpmnXml, collabId, messageFlows, p.getId());
+            processes.put(p.getProcessRef(), def);
+        }
+
+        // 5. 校正 messageFlow 4-tuple(endpoint resolution)
+        // bpmn-js 风格:sourceRef = node id(在 source participant 池里)
+        // Camunda Modeler 风格:sourceRef = participant id(在 collab 里,需解析)
+        // v0:遍历每个 messageFlow,先按 (participantId, nodeId) tuple 找;找不到
+        // 就把 sourceRef/targetRef 整个当 nodeId,归属到当前池
+        List<MessageFlow> resolved = new ArrayList<>();
+        for (MessageFlow mf : messageFlows) {
+            String src = mf.getSourceParticipantId();
+            String tgt = mf.getTargetParticipantId();
+            // 尝试:sourceRef = participant id?
+            Participant srcP = participants.stream()
+                .filter(p -> p.getId().equals(src))
+                .findFirst().orElse(null);
+            Participant tgtP = participants.stream()
+                .filter(p -> p.getId().equals(tgt))
+                .findFirst().orElse(null);
+            if (srcP != null && tgtP != null) {
+                // 找到 endpoint node id = <mf.id>_target / <mf.id>_source?
+                // 实际:走 extensionElements 的 <ruleforge:messageFlowRef id="MF1"/> 在哪个节点上
+                String srcNode = findEndpointNodeId(processes, srcP.getProcessRef(),
+                    mf.getId(), NodeType.END_EVENT);
+                String tgtNode = findEndpointNodeId(processes, tgtP.getProcessRef(),
+                    mf.getId(), NodeType.START_EVENT);
+                if (srcNode == null || tgtNode == null) {
+                    throw new FlowExecutionException(
+                        "BPMN <messageFlow> " + mf.getId() + " endpoints not found in processes "
+                        + "(source participant=" + srcP.getId() + " target participant=" + tgtP.getId() + ")");
+                }
+                resolved.add(new MessageFlow(mf.getId(), mf.getName(),
+                    srcP.getId(), srcNode,
+                    tgtP.getId(), tgtNode));
+            } else {
+                // sourceRef 直接是 node id 风格 — 找这个 node 属于哪个 participant
+                String srcNodeId = src;
+                String tgtNodeId = tgt;
+                Participant ownerSrc = findOwnerParticipant(processes, srcNodeId, participants);
+                Participant ownerTgt = findOwnerParticipant(processes, tgtNodeId, participants);
+                if (ownerSrc == null || ownerTgt == null) {
+                    throw new FlowExecutionException(
+                        "BPMN <messageFlow> " + mf.getId()
+                        + " endpoints not resolvable: sourceRef=" + src + " targetRef=" + tgt);
+                }
+                resolved.add(new MessageFlow(mf.getId(), mf.getName(),
+                    ownerSrc.getId(), srcNodeId,
+                    ownerTgt.getId(), tgtNodeId));
+            }
+        }
+
+        Collaboration collab = new Collaboration(collabId, collabName, participants, resolved);
+        return new BpmnDefinition(collab, processes);
+    }
+
+    /** 找引用了 {@code <ruleforge:messageFlowRef id="<mfId>"/>} 的某 type 节点 id。 */
+    private String findEndpointNodeId(Map<String, FlowDefinition> processes,
+                                      String processRef, String mfId, NodeType type) {
+        FlowDefinition def = processes.get(processRef);
+        if (def == null) return null;
+        for (FlowNode n : def.getNodes().values()) {
+            if (n.getType() != type) continue;
+            String ref = n.attr("ruleforge", "messageFlowRef");
+            if (mfId.equals(ref)) return n.getNodeId();
+        }
+        return null;
+    }
+
+    /** 找拥有 {@code nodeId} 的 participant(node id 在 process 内的归属)。 */
+    private Participant findOwnerParticipant(Map<String, FlowDefinition> processes,
+                                              String nodeId, List<Participant> participants) {
+        for (Participant p : participants) {
+            FlowDefinition def = processes.get(p.getProcessRef());
+            if (def != null && def.getNode(nodeId) != null) return p;
+        }
+        return null;
+    }
+
+    /** 找子元素 — dom4j child(避免 xpath)。 */
+    @SuppressWarnings("unchecked")
+    private Element findChild(Element parent, String ns, String localName) {
+        for (Element el : (List<Element>) parent.elements()) {
+            if (ns.equals(el.getNamespaceURI()) && localName.equals(el.getName())) {
+                return el;
+            }
+        }
+        return null;
+    }
+
+    /** 找 process element(在 root 或任意父节点下)。 */
+    @SuppressWarnings("unchecked")
+    private Element findProcessElement(Element root, String processId) {
+        for (Element el : (List<Element>) root.elements()) {
+            if (NS_BPMN.equals(el.getNamespaceURI())
+                && "process".equals(el.getName())
+                && processId.equals(el.attributeValue("id"))) {
+                return el;
+            }
+        }
+        return null;
+    }
+
+    // -------- 单 process 解析(parseSingleProcess 复用) --------
+
+    /**
+     * 单 process 解析(无 collab 上下文)。返 {@link FlowDefinition},无 messageFlow 解析。
+     * {@code parseSingleProcess(String)} 公开便利方法走这里。
+     */
+    private FlowDefinition parseSingleProcessFromElement(Element process, String bpmnXml) {
+        return parseSingleProcessFromElement(process, bpmnXml, null, List.of(), null);
+    }
+
+    /**
+     * V5.37 B0 — 单 process 解析,带可选 collab 上下文。
+     *
+     * <p>collab 上下文存在时:
+     * <ul>
+     *   <li>{@code FlowDefinition.collaborationId} = collabId</li>
+     *   <li>检查节点带 {@code <ruleforge:messageFlowRef id="..."/>} → 写回
+     *       {@code FlowNode.messageFlowId}</li>
+     *   <li>解析 {@code <bpmn:laneSet>}/{@code <bpmn:lane>} → 写回
+     *       {@code FlowDefinition.lanes} + {@code FlowNode.laneId}</li>
+     * </ul>
+     */
+    @SuppressWarnings("unchecked")
+    private FlowDefinition parseSingleProcessFromElement(Element process, String bpmnXml,
+                                                          String collabId,
+                                                          List<MessageFlow> messageFlows,
+                                                          String participantId) {
         String processId = process.attributeValue("id");
         if (processId == null || processId.isBlank()) {
             throw new FlowExecutionException("BPMN <process> missing id attribute");
@@ -93,13 +330,11 @@ public class BpmnXmlParser {
         // 遍历所有 flowElement
         for (Element el : (List<Element>) process.elements()) {
             String local = el.getName();
-            String elQName = el.getQualifiedName();
             String nodeId = el.attributeValue("id");
             if (nodeId == null || nodeId.isBlank()) continue;
 
             Map<String, String> ext = extractExtensionAttrs(el);
             List<String> outgoing = new ArrayList<>();
-            // 收集所有 outgoing 引用(从子元素 <bpmn:outgoing> 读)
             for (Element out : (List<Element>) el.elements()) {
                 if ("outgoing".equals(out.getName())) {
                     outgoing.add(out.getTextTrim());
@@ -131,12 +366,33 @@ public class BpmnXmlParser {
 
             boolean async = Boolean.parseBoolean(ext.get("ruleforge:async"));
 
+            // V5.37 B0 — 节点级 messageFlowId 提取(只 START/END 节点需要)
+            // BPMN 2.0 习惯:扩展属性放 <extensionElements><ruleforge:messageFlowRef id="..."/></extensionElements>
+            // 这里从子元素里读 id 属性
+            String messageFlowRef = null;
+            if (collabId != null) {
+                for (Element child : (List<Element>) el.elements()) {
+                    if (!"extensionElements".equals(child.getName())) continue;
+                    for (Element extEl : (List<Element>) child.elements()) {
+                        if (!"messageFlowRef".equals(extEl.getName())) continue;
+                        if (!NS_RULEFORGE.equals(extEl.getNamespaceURI())) continue;
+                        String ref = extEl.attributeValue("id");
+                        if (ref != null && !ref.isBlank()) {
+                            messageFlowRef = ref;
+                            break;
+                        }
+                    }
+                    if (messageFlowRef != null) break;
+                }
+            }
+
             FlowNode node = new FlowNode(nodeId, type, el.attributeValue("name"),
-                ext, scriptText, scriptFormat, outgoing, async);
+                ext, scriptText, scriptFormat, outgoing, async,
+                null, messageFlowRef);
             nodes.put(nodeId, node);
         }
 
-        // 解析所有 sequenceFlow 元素
+        // 解析所有 sequenceFlow
         for (Element el : (List<Element>) process.elements()) {
             if (!"sequenceFlow".equals(el.getName())) continue;
             String id = el.attributeValue("id");
@@ -161,12 +417,7 @@ public class BpmnXmlParser {
             edges.add(new SequenceFlow(id, src, tgt, conditionExpression, percent, isDefault, ext));
         }
 
-        // V5.33 A0 — 兜底:如果节点的 outgoingIds 仍为空,从 edges 按 sourceRef 推导。
-        // bpmn-js 导出的 BPMN 偶尔用 self-closing 节点没带 <bpmn:outgoing> 子元素,
-        // 这种情况下我们靠 sequenceFlow 的 sourceRef 反推 outgoing edge id 列表。
-        // 已经显式声明的 outgoing 不会被覆盖。
-        // 注意:nodes 是 LinkedHashMap,FlowNode 的 outgoingIds 是 List.copyOf 不可变;
-        // 这里重建节点,把 sourceRef 反推的 edge id 合并进去。
+        // outgoing 兜底反推
         for (java.util.Map.Entry<String, FlowNode> entry : nodes.entrySet()) {
             FlowNode n = entry.getValue();
             if (!n.getOutgoingIds().isEmpty()) continue;
@@ -179,12 +430,12 @@ public class BpmnXmlParser {
             if (!derived.isEmpty()) {
                 FlowNode replaced = new FlowNode(n.getNodeId(), n.getType(), n.getName(),
                     n.getExtensionAttrs(), n.getScriptText(), n.getScriptFormat(),
-                    derived, n.isAsync());
+                    derived, n.isAsync(), n.getLaneId(), n.getMessageFlowId());
                 nodes.put(entry.getKey(), replaced);
             }
         }
 
-        // 找 startNode / endNodes
+        // 找 start / end
         String startNodeId = null;
         List<String> endNodeIds = new ArrayList<>();
         for (FlowNode n : nodes.values()) {
@@ -204,15 +455,12 @@ public class BpmnXmlParser {
             throw new FlowExecutionException("No endEvent in process " + processId);
         }
 
-        // 校验 id 唯一(seenNodeIds 只记录真实节点,跟 nodes.size() 应一致)
         if (nodes.size() != seenNodeIds.size()) {
             throw new FlowExecutionException("Inconsistent node tracking in process " + processId);
         }
 
-        // V5.34 A3 — 收集 attachedCompensations(从 compensateIntermediateThrowEvent 的
-        // ruleforge:attachedToRef 倒推 activity → handler_node_id 列表;handler_node_id 即
-        // compensateIntermediateThrowEvent 节点自己的 id;解析顺序保留 → LIFO 用 reverse 遍历)
-        Map<String, List<String>> attachedCompensations = new java.util.LinkedHashMap<>();
+        // attachedCompensations
+        Map<String, List<String>> attachedCompensations = new LinkedHashMap<>();
         for (FlowNode n : nodes.values()) {
             if (n.getType() != NodeType.COMPENSATION_INTERMEDIATE) continue;
             String attachedTo = n.attr("ruleforge", "attachedToRef");
@@ -225,9 +473,8 @@ public class BpmnXmlParser {
                 .add(n.getNodeId());
         }
 
-        // V5.35 A5 — 收集 linkTargets(从 linkCatch 节点的 ruleforge:linkName → catchNodeId)
-        // linkThrow 节点通过 def.linkTargets[name] 跳到 catch。
-        Map<String, String> linkTargets = new java.util.LinkedHashMap<>();
+        // linkTargets
+        Map<String, String> linkTargets = new LinkedHashMap<>();
         for (FlowNode n : nodes.values()) {
             if (n.getType() != NodeType.INTERMEDIATE_EVENT) continue;
             String eventType = n.attr("ruleforge", "eventType");
@@ -245,11 +492,59 @@ public class BpmnXmlParser {
             linkTargets.put(linkName, n.getNodeId());
         }
 
+        // V5.37 B0 — lane 解析
+        Map<String, Lane> lanes = new LinkedHashMap<>();
+        for (Element el : (List<Element>) process.elements()) {
+            if (!"laneSet".equals(el.getName())) continue;
+            for (Element laneEl : (List<Element>) el.elements()) {
+                if (!"lane".equals(laneEl.getName())) continue;
+                String lid = laneEl.attributeValue("id");
+                String lname = laneEl.attributeValue("name");
+                String parentLane = laneEl.attributeValue("ruleforge", "parentLaneId");
+                List<String> nodeRefs = new ArrayList<>();
+                for (Element refEl : (List<Element>) laneEl.elements()) {
+                    if ("flowNodeRef".equals(refEl.getName())) {
+                        nodeRefs.add(refEl.getTextTrim());
+                    }
+                }
+                if (lid == null || lid.isBlank()) {
+                    log.warn("Lane missing id in process {}, skipping", processId);
+                    continue;
+                }
+                if (lanes.containsKey(lid)) {
+                    throw new FlowExecutionException("Duplicate lane id: " + lid + " in process " + processId);
+                }
+                lanes.put(lid, new Lane(lid, lname, parentLane, nodeRefs));
+            }
+        }
+        // lane id → node.laneId 写回
+        if (!lanes.isEmpty()) {
+            Map<String, FlowNode> rebuilt = new LinkedHashMap<>();
+            for (Map.Entry<String, FlowNode> e : nodes.entrySet()) {
+                FlowNode orig = e.getValue();
+                String myLaneId = null;
+                for (Lane lane : lanes.values()) {
+                    if (lane.getFlowNodeRefs().contains(orig.getNodeId())) {
+                        myLaneId = lane.getId();
+                        break;
+                    }
+                }
+                if (myLaneId != null) {
+                    rebuilt.put(e.getKey(), new FlowNode(orig.getNodeId(), orig.getType(), orig.getName(),
+                        orig.getExtensionAttrs(), orig.getScriptText(), orig.getScriptFormat(),
+                        orig.getOutgoingIds(), orig.isAsync(), myLaneId, orig.getMessageFlowId()));
+                } else {
+                    rebuilt.put(e.getKey(), orig);
+                }
+            }
+            nodes = rebuilt;
+        }
+
         String xmlHash = sha256(bpmnXml);
 
         return new FlowDefinition(processId, name, nodes, edges,
             startNodeId, endNodeIds, bpmnXml, xmlHash, Instant.now(),
-            attachedCompensations, linkTargets);
+            attachedCompensations, linkTargets, collabId, lanes);
     }
 
     private NodeType mapType(String local, Map<String, String> ext) {
@@ -263,7 +558,6 @@ public class BpmnXmlParser {
             case "parallelGateway"   -> NodeType.PARALLEL_GATEWAY;
             case "intermediateCatchEvent" -> NodeType.INTERMEDIATE_EVENT;
             case "subProcess"        -> NodeType.SUB_PROCESS;
-            // V5.34 A3 — BPMN 2.0 补偿 / SAGA 节点
             case "compensateStartEvent"      -> NodeType.COMPENSATION_START;
             case "compensateEndEvent"        -> NodeType.COMPENSATION_END;
             case "compensateIntermediateThrowEvent" -> NodeType.COMPENSATION_INTERMEDIATE;
@@ -272,7 +566,6 @@ public class BpmnXmlParser {
         };
     }
 
-    /** 提取 BPMN 元素上 ruleforge:* 和 flowable:* 扩展属性。 */
     private Map<String, String> extractExtensionAttrs(Element el) {
         Map<String, String> ext = new HashMap<>();
         for (Object attrObj : el.attributes()) {

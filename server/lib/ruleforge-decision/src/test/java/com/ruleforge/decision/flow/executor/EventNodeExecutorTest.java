@@ -50,7 +50,7 @@ class EventNodeExecutorTest {
               </bpmn:process>
             </bpmn:definitions>
             """.formatted(attrsBlock);
-        FlowDefinition def = parser.parse(xml);
+        FlowDefinition def = parser.parseSingleProcess(xml);
         return def.getNode("end");
     }
 
@@ -117,7 +117,7 @@ class EventNodeExecutorTest {
               </bpmn:process>
             </bpmn:definitions>
             """;
-        FlowDefinition def = parser.parse(xml);
+        FlowDefinition def = parser.parseSingleProcess(xml);
         executor.execute(def.getNode("s"), ctx);
         // 仅 log,无副作用
     }
