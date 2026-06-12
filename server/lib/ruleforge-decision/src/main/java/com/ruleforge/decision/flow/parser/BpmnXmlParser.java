@@ -225,10 +225,31 @@ public class BpmnXmlParser {
                 .add(n.getNodeId());
         }
 
+        // V5.35 A5 — 收集 linkTargets(从 linkCatch 节点的 ruleforge:linkName → catchNodeId)
+        // linkThrow 节点通过 def.linkTargets[name] 跳到 catch。
+        Map<String, String> linkTargets = new java.util.LinkedHashMap<>();
+        for (FlowNode n : nodes.values()) {
+            if (n.getType() != NodeType.INTERMEDIATE_EVENT) continue;
+            String eventType = n.attr("ruleforge", "eventType");
+            if (!"linkCatch".equals(eventType)) continue;
+            String linkName = n.attr("ruleforge", "linkName");
+            if (linkName == null || linkName.isBlank()) {
+                log.warn("IntermediateCatch linkCatch node {} has no ruleforge:linkName — skipping", n.getNodeId());
+                continue;
+            }
+            if (linkTargets.containsKey(linkName)) {
+                throw new FlowExecutionException(
+                    "Duplicate linkCatch name=" + linkName + " (nodes: "
+                    + linkTargets.get(linkName) + ", " + n.getNodeId() + ")");
+            }
+            linkTargets.put(linkName, n.getNodeId());
+        }
+
         String xmlHash = sha256(bpmnXml);
 
         return new FlowDefinition(processId, name, nodes, edges,
-            startNodeId, endNodeIds, bpmnXml, xmlHash, Instant.now(), attachedCompensations);
+            startNodeId, endNodeIds, bpmnXml, xmlHash, Instant.now(),
+            attachedCompensations, linkTargets);
     }
 
     private NodeType mapType(String local, Map<String, String> ext) {

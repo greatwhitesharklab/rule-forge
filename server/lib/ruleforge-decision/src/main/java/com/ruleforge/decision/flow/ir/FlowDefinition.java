@@ -29,13 +29,19 @@ public final class FlowDefinition {
      * 解析而来,顺序 = 解析顺序 = 倒序遍历的"末班" = LIFO 跑)。
      */
     private final Map<String, List<String>> attachedCompensations;
+    /**
+     * V5.35 A5 — linkName → catchNodeId(从
+     * {@code <bpmn:intermediateCatchEvent ruleforge:eventType="linkCatch" ruleforge:linkName="..."/>}
+     * 解析而来,linkThrow 节点通过 def.linkTargets[name] 跳到 catch)。
+     */
+    private final Map<String, String> linkTargets;
 
     public FlowDefinition(String processId, String name,
                           Map<String, FlowNode> nodes, List<SequenceFlow> edges,
                           String startNodeId, List<String> endNodeIds,
                           String sourceXml, String sourceXmlHash, Instant parsedAt) {
         this(processId, name, nodes, edges, startNodeId, endNodeIds,
-            sourceXml, sourceXmlHash, parsedAt, java.util.Map.of());
+            sourceXml, sourceXmlHash, parsedAt, java.util.Map.of(), java.util.Map.of());
     }
 
     public FlowDefinition(String processId, String name,
@@ -43,6 +49,16 @@ public final class FlowDefinition {
                           String startNodeId, List<String> endNodeIds,
                           String sourceXml, String sourceXmlHash, Instant parsedAt,
                           Map<String, List<String>> attachedCompensations) {
+        this(processId, name, nodes, edges, startNodeId, endNodeIds,
+            sourceXml, sourceXmlHash, parsedAt, attachedCompensations, java.util.Map.of());
+    }
+
+    public FlowDefinition(String processId, String name,
+                          Map<String, FlowNode> nodes, List<SequenceFlow> edges,
+                          String startNodeId, List<String> endNodeIds,
+                          String sourceXml, String sourceXmlHash, Instant parsedAt,
+                          Map<String, List<String>> attachedCompensations,
+                          Map<String, String> linkTargets) {
         this.processId = processId;
         this.name = name;
         this.nodes = Map.copyOf(nodes);
@@ -57,6 +73,9 @@ public final class FlowDefinition {
         this.attachedCompensations = attachedCompensations == null
             ? java.util.Map.of()
             : attachedCompensations;
+        this.linkTargets = linkTargets == null
+            ? java.util.Map.of()
+            : Map.copyOf(linkTargets);
     }
 
     public String getProcessId() { return processId; }
@@ -70,6 +89,7 @@ public final class FlowDefinition {
     public String getSourceXmlHash() { return sourceXmlHash; }
     public Instant getParsedAt() { return parsedAt; }
     public Map<String, List<String>> getAttachedCompensations() { return attachedCompensations; }
+    public Map<String, String> getLinkTargets() { return linkTargets; }
 
     public FlowNode getNode(String nodeId) { return nodes.get(nodeId); }
     public SequenceFlow getEdge(String edgeId) { return edgesById.get(edgeId); }

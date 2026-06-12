@@ -180,6 +180,11 @@ public class FlowNodeRunner {
                 NodeExecutor executor = registry.resolve(node);
                 try {
                     executor.execute(node, ctx);
+                } catch (com.ruleforge.decision.flow.executor.IntermediateEventExecutor.BranchTransition bt) {
+                    // V5.35 A5 — linkThrow 跳到 linkCatch(跳过 throw 出边)
+                    nodeId = bt.targetNodeId();
+                    log.info("[LINK-BRANCH] flowRunId={} → {}", ctx.getFlowRunId(), nodeId);
+                    continue;
                 } catch (AsyncNodeSuspendException ex) {
                     // V5.28 P6:first Suspend 短路整 fork
                     return onSuspend(state, ctx, token, ex);
@@ -497,7 +502,7 @@ public class FlowNodeRunner {
 
     /** V5.33 A0 — nextTransition 子结构。 */
     private static class NodeTransition {
-        enum Kind { END, NEXT, FORK, JOIN }
+        enum Kind { END, NEXT, FORK, JOIN, BRANCH }
         final Kind kind;
         // NEXT
         final String nextNodeId;
@@ -533,6 +538,10 @@ public class FlowNodeRunner {
         }
         static NodeTransition joinSingle(String joinNodeId, int expected, String joinOutgoing, Set<String> parentVisited) {
             return new NodeTransition(Kind.JOIN, null, null, joinNodeId, expected, joinOutgoing, parentVisited);
+        }
+        /** V5.35 A5 — linkThrow 跳到 linkCatch(跳过 throw 出边)。 */
+        static NodeTransition branch(String targetNodeId) {
+            return new NodeTransition(Kind.BRANCH, targetNodeId, null, null, 0, null, null);
         }
     }
 }
