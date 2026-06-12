@@ -7,10 +7,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * UEL 条件表达式解析器。最小子集,支持:
+ * V5.36 A7 — UEL 条件表达式解析器。最小子集,支持:
  *   - ${variable}                  字面变量引用
  *   - ${variable op value}          op ∈ {>, <, >=, <=, ==, !=}
  *   - ${a.b.c}                      点号路径访问(嵌套 Map)
+ *   - ${true} / ${false} / ${null}  boolean / null 字面量
+ *   - ${a == 'literal'}             单/双引号字符串字面量
+ *   - ${1.5 < 2.0}                  浮点字面量
+ *   - ${absent == null}             null path(Mirror Rust condition.rs)
  *
  * 不支持(Phase 1 不强求):函数调用、列表字面量、三元、&& / ||。复杂表达式 fallback 留到后续。
  */
@@ -31,9 +35,15 @@ public class ConditionEvaluator {
 
         Matcher m = UEL.matcher(expr);
         if (!m.matches()) {
-            // 简单变量引用
-            Object v = resolveVariable(expr, vars);
-            return Boolean.TRUE.equals(v);
+            // 无 operator — 解析 token 成 Object 后判 truthy
+            // (Mirror Rust condition.rs:truthy if as_bool == Some(true))
+            Object v = resolveValue(expr, vars);
+            if (v == null) return false;
+            if (v instanceof Boolean b) return b;
+            // 数字非零 / 字符串非空 / Map/非空集合 / 任意非 null 对象
+            if (v instanceof Number n) return n.doubleValue() != 0.0;
+            if (v instanceof CharSequence cs) return cs.length() > 0;
+            return true;
         }
         Object lhs = resolveValue(m.group(1), vars);
         Object rhs = resolveValue(m.group(3), vars);
@@ -43,25 +53,32 @@ public class ConditionEvaluator {
 
     private Object resolveValue(String token, Map<String, Object> vars) {
         token = token.trim();
-        // 数字
-        try {
-            if (token.contains(".")) return Double.parseDouble(token);
-            return Long.parseLong(token);
-        } catch (NumberFormatException ignore) {
-        }
+        // null 字面量(Mirror Rust:大小写不敏感)
+        if ("null".equalsIgnoreCase(token)) return null;
         // boolean
         if ("true".equalsIgnoreCase(token)) return Boolean.TRUE;
         if ("false".equalsIgnoreCase(token)) return Boolean.FALSE;
         // 引号字符串
-        if ((token.startsWith("\"") && token.endsWith("\"")) ||
-            (token.startsWith("'") && token.endsWith("'"))) {
+        if (token.length() >= 2
+            && ((token.startsWith("\"") && token.endsWith("\""))
+                || (token.startsWith("'") && token.endsWith("'")))) {
             return token.substring(1, token.length() - 1);
         }
-        // 变量引用
+        // 数字 — 先试 int,再 double(Mirror Rust)
+        try {
+            return Long.parseLong(token);
+        } catch (NumberFormatException ignore) {
+        }
+        try {
+            return Double.parseDouble(token);
+        } catch (NumberFormatException ignore) {
+        }
+        // 变量引用(点号路径)
         return resolveVariable(token, vars);
     }
 
     private Object resolveVariable(String path, Map<String, Object> vars) {
+        if (vars == null) return null;
         String[] parts = path.split("\\.");
         Object cur = vars;
         for (String p : parts) {
@@ -78,6 +95,7 @@ public class ConditionEvaluator {
     @SuppressWarnings({"rawtypes", "unchecked"})
     private boolean compare(Object lhs, Object rhs, String op) {
         if (lhs == null || rhs == null) {
+            // null path:只有 == / != 走恒等比较(Mirror Rust)
             return switch (op) {
                 case "==" -> lhs == rhs;
                 case "!=" -> lhs != rhs;
@@ -97,6 +115,28 @@ public class ConditionEvaluator {
                 default -> throw new FlowExecutionException("Unknown op: " + op);
             };
         }
+        // 字符串 ==/!=/>/>=/</<= (Mirror Rust:both sides as_str)
+        if (lhs instanceof CharSequence && rhs instanceof CharSequence) {
+            int cmp = String.valueOf(lhs).compareTo(String.valueOf(rhs));
+            return switch (op) {
+                case "==" -> cmp == 0;
+                case "!=" -> cmp != 0;
+                case ">"  -> cmp >  0;
+                case "<"  -> cmp <  0;
+                case ">=" -> cmp >= 0;
+                case "<=" -> cmp <= 0;
+                default -> throw new FlowExecutionException("Unknown op: " + op);
+            };
+        }
+        // 布尔 ==/!= (Mirror Rust:only ==/!= for bool)
+        if (lhs instanceof Boolean && rhs instanceof Boolean) {
+            return switch (op) {
+                case "==" -> lhs.equals(rhs);
+                case "!=" -> !lhs.equals(rhs);
+                default -> throw new FlowExecutionException("bool op not supported: " + op);
+            };
+        }
+        // 同类 Comparable
         if (lhs instanceof Comparable && lhs.getClass().equals(rhs.getClass())) {
             int cmp = ((Comparable) lhs).compareTo(rhs);
             return switch (op) {
@@ -109,7 +149,7 @@ public class ConditionEvaluator {
                 default -> throw new FlowExecutionException("Unknown op: " + op);
             };
         }
-        // fallback: toString 比较
+        // fallback: toString ==
         int cmp = String.valueOf(lhs).compareTo(String.valueOf(rhs));
         return switch (op) {
             case "==" -> cmp == 0;
