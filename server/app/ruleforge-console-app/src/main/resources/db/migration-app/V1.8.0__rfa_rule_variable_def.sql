@@ -1,20 +1,18 @@
 -- V5.18.0: 重建 nd_rule_variable_def 表
+-- V5.53: rename nd_ -> rfa_, 移到 migration-app/ (ruleforge_app_db)
 --
--- 背景: DecisionServiceImpl.findAll() (executor-app 决策热路径) 查 nd_rule_variable_def,
+-- 背景: DecisionServiceImpl.findAll() (executor-app 决策热路径) 查 rfa_rule_variable_def,
 -- 但这张表**从未**在任何 Flyway migration 里创建。RuleVariableDef entity + mapper
 -- 存在,代码假定表存在,executor 启动 OK,只要 /api/loan/evaluate 一调就
--- "Table 'ruleforge_db.nd_rule_variable_def' doesn't exist" — 整个生产决策
+-- "Table 'ruleforge_app_db.rfa_rule_variable_def' doesn't exist" — 整个生产决策
 -- 路径 100% 跑不起来。
---
--- 这张表原本可能是手工建在 dev 环境的(看 entity 注释 "根据 nd_rule_variable_def
--- 表生成的实体" 像 MyBatis-Plus auto-generator 的产物),但从来没进 git / Flyway。
 --
 -- 字段对齐: RuleVariableDef entity 14 个字段,1:1 映射(clazz/name/label/datatype/
 -- act/default_value/ds_status/format_hint/sort_no/ext_json + 4 个时间戳/审计字段)。
 -- 索引: (clazz, sort_no) 用于 DecisionServiceImpl.prepareVariableDefinitions
 -- 分组 + 排序查询。
 
-CREATE TABLE IF NOT EXISTS nd_rule_variable_def (
+CREATE TABLE IF NOT EXISTS rfa_rule_variable_def (
     id            BIGINT       AUTO_INCREMENT PRIMARY KEY,
     clazz         VARCHAR(256) NOT NULL COMMENT '实体类全限定名,如 com.ruleforge.ADVModel',
     name          VARCHAR(128) NOT NULL COMMENT '字段名',

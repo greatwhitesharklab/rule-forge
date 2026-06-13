@@ -12,7 +12,7 @@ import java.util.Date;
  * 数据源注册中心
  */
 @Data
-@TableName("nd_datasource")
+@TableName("rfa_datasource")
 public class Datasource {
 
     @TableId(value = "id", type = IdType.AUTO)

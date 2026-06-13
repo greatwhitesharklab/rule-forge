@@ -15,7 +15,7 @@ public class AgentModels {
      * 聊天会话
      */
     @Data
-    @TableName("nd_agent_chat_session")
+    @TableName("rfa_agent_chat_session")
     public static class ChatSession {
         @TableId(type = IdType.ASSIGN_UUID)
         private String id;
@@ -40,7 +40,7 @@ public class AgentModels {
      * 聊天消息
      */
     @Data
-    @TableName("nd_agent_chat_message")
+    @TableName("rfa_agent_chat_message")
     public static class ChatMessage {
         @TableId(type = IdType.ASSIGN_UUID)
         private String id;

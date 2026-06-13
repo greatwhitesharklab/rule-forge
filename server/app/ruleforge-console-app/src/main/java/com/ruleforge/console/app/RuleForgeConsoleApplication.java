@@ -10,6 +10,11 @@ import com.ruleforge.decision.service.impl.DatasourceServiceImpl;
 import com.ruleforge.decision.service.impl.GrayStrategyServiceImpl;
 import com.ruleforge.decision.service.impl.RuleVariableDefServiceImpl;
 import com.ruleforge.decision.service.impl.ShadowConfigServiceImpl;
+// V5.53.2 — FlywayConfig 跟 RuleForgeConsoleAutoConfiguration 都在
+//   com.ruleforge.console.config 包(@SpringBootApplication 扫不到),
+//   @ComponentScan 写在那 2 个 @Configuration 类里也被主类的 scan 覆盖。
+//   显式 @Import 才能让 ruleforge_db Flyway bean 进入 context。
+import com.ruleforge.console.config.FlywayConfig;
 
 
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
@@ -31,7 +36,9 @@ import com.ruleforge.decision.service.impl.ShadowConfigServiceImpl;
         GrayStrategyServiceImpl.class,
         RuleVariableDefServiceImpl.class,
         ShadowConfigServiceImpl.class,
-        RuleForgeDecisionAutoConfiguration.class
+        RuleForgeDecisionAutoConfiguration.class,
+        // V5.53.2 — 上面 FlywayConfig import 的同款,显式带进 context,见 import 段注释。
+        FlywayConfig.class
 })
 public class RuleForgeConsoleApplication {
 

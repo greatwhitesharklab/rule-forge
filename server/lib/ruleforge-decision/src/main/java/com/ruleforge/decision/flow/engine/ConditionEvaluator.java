@@ -1,6 +1,7 @@
 package com.ruleforge.decision.flow.engine;
 
 import com.ruleforge.decision.exception.FlowExecutionException;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -17,7 +18,13 @@ import java.util.regex.Pattern;
  *   - ${absent == null}             null path(Mirror Rust condition.rs)
  *
  * 不支持(Phase 1 不强求):函数调用、列表字面量、三元、&& / ||。复杂表达式 fallback 留到后续。
+ *
+ * <p>V5.53.1:加 {@code @Component} 让 Spring 4 参 ctor resolve。
+ * FlowNodeRunner 4 参 prod ctor 注入 ConditionEvaluator,该类原本是普通 class,
+ * Spring context 没这个 bean → "No default constructor found" → console/executor 启动 fail。
+ * 类本身 stateless(全是 static Pattern + 实例方法无 fields),singleton safe。
  */
+@Component
 public class ConditionEvaluator {
 
     private static final Pattern UEL = Pattern.compile(

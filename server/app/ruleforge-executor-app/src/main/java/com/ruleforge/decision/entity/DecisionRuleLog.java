@@ -12,7 +12,7 @@ import java.util.Date;
  * 决策规则执行明细表
  */
 @Data
-@TableName("nd_decision_rule_log")
+@TableName("rfa_decision_rule_log")
 public class DecisionRuleLog {
 
     @TableId(value = "id", type = IdType.AUTO)

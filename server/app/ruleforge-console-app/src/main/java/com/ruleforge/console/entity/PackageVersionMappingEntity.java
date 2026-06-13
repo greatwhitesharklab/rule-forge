@@ -8,7 +8,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("gr_package_version_mapping")
+@TableName("rf_package_version_mapping")
 public class PackageVersionMappingEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

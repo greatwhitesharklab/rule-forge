@@ -1,15 +1,16 @@
-create table gr_file
+-- V1.0.0: Init base tables (V5.53: rename gr_ -> rf_)
+create table rf_file
 (
     id          bigint auto_increment,
     name        varchar(128) null,
     file_type   int default 0 null,
     create_time datetime null,
     update_time datetime null,
-    constraint gr_file_pk
+    constraint rf_file_pk
         primary key (id)
 );
 
-create table gr_file_relation
+create table rf_file_relation
 (
     id         bigint auto_increment
         primary key,
@@ -18,7 +19,7 @@ create table gr_file_relation
     distance   int null
 );
 
-create table gr_file_version
+create table rf_file_version
 (
     id             bigint auto_increment
         primary key,

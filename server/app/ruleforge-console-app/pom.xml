@@ -18,6 +18,9 @@
     <properties>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- V5.53.2 — console-app 不继承 ruleforge-parent(spring-boot-starter-parent 是父),
+             自己声明 ${revision} 跟 lib/ 对齐。 -->
+        <revision>5.47.0</revision>
     </properties>
 
     <dependencies>
@@ -51,7 +54,11 @@
         <dependency>
             <groupId>com.ruleforge</groupId>
             <artifactId>ruleforge-decision</artifactId>
-            <version>5.0.0</version>
+            <!-- V5.53.2 — 用 ${revision} 跟 lib/ 模块对齐(原来是写死 5.0.0,
+                 5.0.0 那版 lib 还带 V5.45.4 删掉的 dslRuleSetBuilder setter,
+                 启动 Spring 时 XML 装配 ruleforge.knowledgeBuilder 找不到
+                 那个 bean 报错)。lib 升 ${revision} 后这个死引用自然消失。 -->
+            <version>${revision}</version>
         </dependency>
 
         <!-- V5.21+: 拆 Flowable 依赖 — 自建 FlowEngine 取代 Flowable 8 starter -->

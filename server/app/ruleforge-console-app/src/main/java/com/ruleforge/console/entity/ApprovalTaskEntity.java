@@ -8,7 +8,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("gr_approval_task")
+@TableName("rf_approval_task")
 public class ApprovalTaskEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

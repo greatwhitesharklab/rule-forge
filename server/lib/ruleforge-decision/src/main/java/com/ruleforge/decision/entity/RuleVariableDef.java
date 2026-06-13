@@ -11,7 +11,7 @@ import java.util.Date;
  * 根据 nd_rule_variable_def 表生成的实体
  */
 @Data
-@TableName("nd_rule_variable_def")
+@TableName("rfa_rule_variable_def")
 public class RuleVariableDef {
 
     @TableId(value = "id")

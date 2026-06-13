@@ -9,7 +9,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("nd_metrics_snapshot")
+@TableName("rfa_metrics_snapshot")
 public class MetricsSnapshot {
 
     @TableId(value = "id", type = IdType.AUTO)

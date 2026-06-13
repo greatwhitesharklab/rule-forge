@@ -1,14 +1,15 @@
 -- V5.19.0: 自建决策流执行器状态表(替代 Flowable ACT_RU_*)
+-- V5.53: rename nd_ -> rfa_, 移到 migration-app/ (ruleforge_app_db)
 --
--- 背景: V5.20+ 撤掉 Flowable 8,每条 evaluate 一行 nd_decision_flow_state。同步主路径走完
+-- 背景: V5.20+ 撤掉 Flowable 8,每条 evaluate 一行 rfa_decision_flow_state。同步主路径走完
 --       直接 COMPLETED;异步节点(userTask / async)挂起 WAITING_CALLBACK,
---       @Scheduled 30s 扫一次恢复挂起超时的任务。结构照搬 nd_batch_test_session (V5.1.0)。
+--       @Scheduled 30s 扫一次恢复挂起超时的任务。结构照搬 rfa_batch_test_session (V5.1.0)。
 --
 -- 命名遵循 V{Major}.{Feature}.{Fix} 规范(CLAUDE.md)。
 
-CREATE TABLE IF NOT EXISTS nd_decision_flow_state (
+CREATE TABLE IF NOT EXISTS rfa_decision_flow_state (
     id                  BIGINT AUTO_INCREMENT PRIMARY KEY,
-    flow_id             VARCHAR(200)  NOT NULL                COMMENT 'BPMN process id, 关联 gr_file',
+    flow_id             VARCHAR(200)  NOT NULL                COMMENT 'BPMN process id, 关联 rf_file',
     flow_run_id         VARCHAR(64)   NOT NULL                COMMENT '单次执行 UUID',
     user_id             VARCHAR(64)   NULL                    COMMENT '触发 evaluate 的用户',
     order_no            VARCHAR(64)   NULL                    COMMENT '业务订单号',

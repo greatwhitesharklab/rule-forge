@@ -12,7 +12,7 @@ import java.util.Date;
  * 决策流执行主流水表
  */
 @Data
-@TableName("nd_decision_flow_log")
+@TableName("rfa_decision_flow_log")
 public class DecisionFlowLog {
 
     @TableId(value = "id", type = IdType.AUTO)

@@ -1,5 +1,6 @@
 -- 灰度发布策略配置表
-CREATE TABLE IF NOT EXISTS gr_gray_strategy (
+-- V5.53: rename gr_ -> rf_
+CREATE TABLE IF NOT EXISTS rf_gray_strategy (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     project_id BIGINT NOT NULL,
     package_id VARCHAR(200) NOT NULL,
@@ -17,8 +18,5 @@ CREATE TABLE IF NOT EXISTS gr_gray_strategy (
     INDEX idx_pkg_enabled (project_id, package_id, enabled)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='灰度发布策略配置';
 
--- 决策日志扩展灰度标记
-ALTER TABLE nd_decision_flow_log
-    ADD COLUMN is_gray TINYINT DEFAULT 0 COMMENT '是否灰度流量',
-    ADD COLUMN gray_strategy_id BIGINT DEFAULT NULL COMMENT '命中的灰度策略ID',
-    ADD COLUMN gray_git_tag VARCHAR(200) DEFAULT NULL COMMENT '灰度使用的版本';
+-- V5.53: 决策日志扩展灰度标记 — nd_decision_flow_log 部分已迁到
+-- migration-app/V3.13.0a__rfa_decision_flow_log_gray_columns.sql(ruleforge_app_db)

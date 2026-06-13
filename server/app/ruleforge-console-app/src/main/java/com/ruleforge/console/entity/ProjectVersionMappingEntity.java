@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("gr_project_version_mapping")
+@TableName("rf_project_version_mapping")
 public class ProjectVersionMappingEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

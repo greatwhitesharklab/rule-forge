@@ -12,7 +12,7 @@ import java.util.Date;
  * 决策陪跑规则明细表
  */
 @Data
-@TableName("nd_decision_shadow_rule_log")
+@TableName("rfa_decision_shadow_rule_log")
 public class ShadowRuleLog {
 
     @TableId(value = "id", type = IdType.AUTO)

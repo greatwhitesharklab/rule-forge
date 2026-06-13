@@ -11,6 +11,7 @@ import com.ruleforge.decision.flow.ir.FlowDefinition;
 import com.ruleforge.decision.mapper.DecisionFlowStateMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -50,7 +51,7 @@ public class FlowResumer {
 
     /** Spring 装配用(只取 engine + repo,stateMapper 后续 setter 注入)。 */
     @Autowired
-    public FlowResumer(FlowEngine engine, FlowDefinitionRepo repo) {
+    public FlowResumer(@Lazy FlowEngine engine, FlowDefinitionRepo repo) {
         this(engine, repo, null);
     }
 

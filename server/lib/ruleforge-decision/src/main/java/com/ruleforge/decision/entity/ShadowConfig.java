@@ -12,7 +12,7 @@ import java.util.Date;
  * 决策陪跑配置表
  */
 @Data
-@TableName("nd_decision_shadow_config")
+@TableName("rfa_decision_shadow_config")
 public class ShadowConfig {
 
     @TableId(value = "id", type = IdType.AUTO)

@@ -1,5 +1,6 @@
 -- 陪跑结果对比表
-CREATE TABLE IF NOT EXISTS nd_decision_shadow_comparison (
+-- V5.53: rename nd_ -> rfa_, 移到 migration-app/ (ruleforge_app_db)
+CREATE TABLE IF NOT EXISTS rfa_decision_shadow_comparison (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     main_flow_log_id BIGINT NOT NULL COMMENT '主决策流日志ID',
     shadow_flow_log_id BIGINT NOT NULL COMMENT '陪跑决策流日志ID',

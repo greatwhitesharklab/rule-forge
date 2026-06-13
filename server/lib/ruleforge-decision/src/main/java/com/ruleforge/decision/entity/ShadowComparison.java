@@ -12,7 +12,7 @@ import java.util.Date;
  * 陪跑结果对比表
  */
 @Data
-@TableName("nd_decision_shadow_comparison")
+@TableName("rfa_decision_shadow_comparison")
 public class ShadowComparison {
 
     @TableId(value = "id", type = IdType.AUTO)

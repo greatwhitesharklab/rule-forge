@@ -8,7 +8,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("gr_deployment_config")
+@TableName("rf_deployment_config")
 public class DeploymentConfigEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("gr_project_import_flow")
+@TableName("rf_project_import_flow")
 public class ProjectImportFlowEntity {
 
     @TableId(type = IdType.AUTO)

@@ -78,7 +78,16 @@ public class FlowNodeRunner {
 
     /**
      * 测试场景 ctor(3 参)— persistenceService 从 mapper lazy 派生(null mapper → null service)。
+     *
+     * <p>V5.53.1:加 {@code @Autowired} 让 Spring 明确选这个 ctor。
+     * 原 4 参 prod ctor 要求 Spring context 里有 {@code ConditionEvaluator} bean,
+     * 但 {@code ConditionEvaluator} 是个普通类(没 @Component),Spring 4 参解析失败 →
+     * "No default constructor found" — 整个 console-app / executor-app 启动 fail。
+     * 3 参 ctor 行为等价(prod path 下 stateMapper != null → persistenceService 走 mapper 派生
+     * 4 参 ctor 那个 new 出来的实例,值跟"new FlowStatePersistenceService(stateMapper)"一致),
+     * 所以 3 参 ctor 加 @Autowired 是最小侵入修法。
      */
+    @org.springframework.beans.factory.annotation.Autowired
     public FlowNodeRunner(NodeExecutorRegistry registry, ConditionEvaluator conditionEvaluator,
                           DecisionFlowStateMapper stateMapper) {
         this.registry = registry;

@@ -20,7 +20,7 @@ import java.util.Date;
  * 替代原来 HttpSession 存储方式，支持重启恢复和历史追溯。
  */
 @Data
-@TableName("nd_batch_test_session")
+@TableName("rfa_batch_test_session")
 public class BatchTestSessionEntity {
 
     @TableId(value = "id", type = IdType.AUTO)

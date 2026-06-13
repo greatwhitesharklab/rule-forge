@@ -12,7 +12,7 @@ import java.util.Date;
  * 仿真对比结果 — 对应 nd_simulation_result 表
  */
 @Data
-@TableName("nd_simulation_result")
+@TableName("rfa_simulation_result")
 public class SimulationResultEntity {
 
     @TableId(value = "id", type = IdType.AUTO)

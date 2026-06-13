@@ -13,7 +13,7 @@ import java.util.Date;
  * 存储出入参和实体数据，后续可迁移至 AWS DynamoDB / S3 等服务
  */
 @Data
-@TableName("nd_decision_flow_params")
+@TableName("rfa_decision_flow_params")
 public class DecisionFlowParams {
 
     @TableId(value = "id", type = IdType.AUTO)

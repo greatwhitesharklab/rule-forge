@@ -12,7 +12,7 @@ import java.util.Date;
  * 仿真执行记录 — 对应 nd_simulation_run 表
  */
 @Data
-@TableName("nd_simulation_run")
+@TableName("rfa_simulation_run")
 public class SimulationRunEntity {
 
     @TableId(value = "id", type = IdType.AUTO)

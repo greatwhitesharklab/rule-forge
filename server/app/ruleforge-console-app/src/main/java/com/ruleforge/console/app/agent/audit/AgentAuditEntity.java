@@ -15,7 +15,7 @@ import java.util.Date;
  * <p>权限域:app_db (跟 nd_agent_chat_session / nd_agent_chat_message 同源)
  */
 @Data
-@TableName("nd_agent_audit")
+@TableName("rfa_agent_audit")
 public class AgentAuditEntity {
 
     public static final String STATUS_OK = "OK";

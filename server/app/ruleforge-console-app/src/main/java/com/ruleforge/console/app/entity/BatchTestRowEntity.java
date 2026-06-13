@@ -18,7 +18,7 @@ import lombok.Data;
  *   - error_code: 错误码(FLOW = RuleException label, DATASOURCE = HTTP/connector code)
  */
 @Data
-@TableName("nd_batch_test_row")
+@TableName("rfa_batch_test_row")
 public class BatchTestRowEntity {
 
     @TableId(value = "id", type = IdType.AUTO)

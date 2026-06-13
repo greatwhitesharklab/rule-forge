@@ -15,7 +15,7 @@ import java.util.Date;
  * WAITING_CALLBACK,@Scheduled 30s 扫一次恢复挂起超时的任务。结构照搬 nd_batch_test_session。
  */
 @Data
-@TableName("nd_decision_flow_state")
+@TableName("rfa_decision_flow_state")
 public class DecisionFlowState {
 
     @TableId(value = "id", type = IdType.AUTO)

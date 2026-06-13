@@ -12,7 +12,7 @@ import java.util.Date;
  * 决策陪跑主流水表
  */
 @Data
-@TableName("nd_decision_shadow_flow_log")
+@TableName("rfa_decision_shadow_flow_log")
 public class ShadowFlowLog {
 
     @TableId(value = "id", type = IdType.AUTO)

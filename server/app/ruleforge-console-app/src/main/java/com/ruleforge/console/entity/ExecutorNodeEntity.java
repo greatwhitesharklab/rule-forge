@@ -8,7 +8,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("gr_executor_node")
+@TableName("rf_executor_node")
 public class ExecutorNodeEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
