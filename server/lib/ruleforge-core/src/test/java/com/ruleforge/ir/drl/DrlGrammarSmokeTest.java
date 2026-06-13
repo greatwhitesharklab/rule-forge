@@ -409,37 +409,50 @@ class DrlGrammarSmokeTest {
     }
 
     // ============================================================
-    // === V5.50.1 migration 收口:PENDING_LHS 标 @Deprecated,V5.51 才删 ===
+    // === V5.51.2 migration 收口:PENDING_LHS 字段已删,caller 切到 Rule.lhs.criterion 链 ===
     // ============================================================
     //
-    // DrlDeserializer.PENDING_LHS 静态 map(DrlDeserializer.java L68-73)是 V5.42.4
-    // 迁移期 hack。V5.50.1 的合同是:
-    //   - 字段标 @Deprecated(V5.51 才删)
-    //   - extractLhs 内部新写 from / collect / accumulate 时直接挂 Rule.lhs.criterion
-    //     链,不再 put 进 PENDING_LHS
-    // 本 nested 锁这个合同。
+    // V5.50.1 的 PENDING_LHS 字段 + getPendingLhsCriteria 方法已删(V5.51.2
+    // migration 收口)。PropertyCriteria 全部走 extractLhs → toCriteria →
+    // And.addCriterion → Lhs.setCriterion 链。caller 读 rule.getLhs().getCriterion()
+    // 链拿到 And → Criteria。本 nested 锁:
+    //   - PENDING_LHS 字段 0 引用(反射 NoSuchFieldException = 成功路径)
+    //   - getPendingLhsCriteria 方法 0 引用(反射 NoSuchMethodException = 成功路径)
 
     @Nested
-    @DisplayName("V5.50.1 migration — PENDING_LHS 标 @Deprecated(V5.51 才删)")
+    @DisplayName("V5.51.2 migration — PENDING_LHS 字段 + 方法已删(合同兑现)")
     class V5_50_1_PendingLhsMigration {
 
         @Test
-        @DisplayName("DrlDeserializer.PENDING_LHS 字段必须标 @Deprecated(V5.50.1 合同,V5.51 删)")
-        void pendingLhsFieldShouldBeDeprecated() {
-            // Given — 用反射读 DrlDeserializer.PENDING_LHS 字段
-            java.lang.reflect.Field f;
+        @DisplayName("DrlDeserializer.PENDING_LHS 字段必须不存在(V5.51.2 删字段)")
+        void pendingLhsFieldShouldBeGone() {
+            // Given/When — 反射读 DrlDeserializer.PENDING_LHS
+            // Then — 抛 NoSuchFieldException 是**成功**路径(V5.51.2 已删字段)
             try {
                 Class<?> cls = Class.forName("com.ruleforge.ir.drl.DrlDeserializer");
-                f = cls.getDeclaredField("PENDING_LHS");
-            } catch (ClassNotFoundException | NoSuchFieldException e) {
-                fail("DrlDeserializer.PENDING_LHS 字段已不存在 — V5.51 删了?本 nested 是 V5.50.1 合同,删了说明跳号,可删本测试: " + e);
-                return;
+                cls.getDeclaredField("PENDING_LHS");
+                fail("DrlDeserializer.PENDING_LHS 字段不应该存在 — V5.51.2 必须删字段 + 切 caller");
+            } catch (NoSuchFieldException e) {
+                // success path
+            } catch (ClassNotFoundException e) {
+                fail("DrlDeserializer 类找不到: " + e);
             }
-            // When/Then — 字段必须 @Deprecated
-            Deprecated dep = f.getAnnotation(Deprecated.class);
-            assertNotNull(dep,
-                "DrlDeserializer.PENDING_LHS 字段必须标 @Deprecated(V5.50.1 合同),"
-                + "V5.51 才会真正删。如果本测试失败:是 PR 没把 @Deprecated 标上。");
+        }
+
+        @Test
+        @DisplayName("DrlDeserializer.getPendingLhsCriteria(Rule) 方法必须不存在(V5.51.2 删方法)")
+        void getPendingLhsCriteriaMethodShouldBeGone() {
+            // Given/When — 反射读 DrlDeserializer.getPendingLhsCriteria
+            // Then — 抛 NoSuchMethodException 是**成功**路径(V5.51.2 已删方法)
+            try {
+                Class<?> cls = Class.forName("com.ruleforge.ir.drl.DrlDeserializer");
+                cls.getDeclaredMethod("getPendingLhsCriteria", com.ruleforge.model.rule.Rule.class);
+                fail("DrlDeserializer.getPendingLhsCriteria 方法不应该存在 — V5.51.2 必须删方法 + 切 caller");
+            } catch (NoSuchMethodException e) {
+                // success path
+            } catch (ClassNotFoundException e) {
+                fail("DrlDeserializer 类找不到: " + e);
+            }
         }
     }
 

@@ -3,10 +3,13 @@ package com.ruleforge.ir.drl;
 import com.ruleforge.ir.dsl.DslMappingSet;
 import com.ruleforge.ir.dsl.DslParser;
 import com.ruleforge.ir.dsl.PlaceholderExpander;
+import com.ruleforge.model.rule.Op;
 import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.rule.RuleSet;
+import com.ruleforge.model.rule.lhs.And;
+import com.ruleforge.model.rule.lhs.Criteria;
 import com.ruleforge.model.rule.lhs.Lhs;
-import com.ruleforge.model.rule.lhs.PropertyCriteria;
+import com.ruleforge.model.rule.lhs.VariableLeftPart;
 import com.ruleforge.model.rule.Rhs;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -172,21 +175,28 @@ class DrlEndToEndTest {
     }
 
     // ============================================================
-    // === V5.42.4 lhs PropertyCriteria 暂存可读 ===
+    // === V5.51.2 lhs 内部可读:Rule.lhs.criterion 链 ===
     // ============================================================
+    //
+    // V5.42.4 时 PENDING_LHS 静态 map 暂存,V5.51.2 删字段后 caller 全部走
+    // Lhs.criterion 链(And Junction → Criteria → Left/LeftPart)。
 
     @Nested
-    @DisplayName("Given V5.42.4 PENDING_LHS,When 反查,Then 跟 parse 出的 PropertyCriteria 一致")
+    @DisplayName("Given V5.51.2 Lhs.criterion,When 反查,Then 跟 parse 出的 Criteria 一致")
     class LhsPendingReadback {
 
         @Test
-        @DisplayName("Applicant(age > 18) parse 后 lhs 内部可读")
+        @DisplayName("Applicant(age > 18) parse 后 Lhs.criterion 链能读到 Criteria")
         void pendingLhsReadable() {
             List<Rule> rules = DrlDeserializer.parseDrl(
                 "rule \"R1\" when Applicant(age > 18) then end", resolver);
-            List<PropertyCriteria> pending = DrlDeserializer.getPendingLhsCriteria(rules.get(0));
-            assertEquals(1, pending.size());
-            assertEquals("age", pending.get(0).getProperty());
+            // V5.51.2 migration:PropertyCriteria 全部挂到 Lhs.criterion(And) 链
+            assertNotNull(rules.get(0).getLhs().getCriterion());
+            And and = (And) rules.get(0).getLhs().getCriterion();
+            assertEquals(1, and.getCriterions().size());
+            Criteria c = (Criteria) and.getCriterions().get(0);
+            assertEquals("age", ((VariableLeftPart) c.getLeft().getLeftPart()).getVariableName());
+            assertEquals(Op.GreaterThen, c.getOp());
         }
     }
 }

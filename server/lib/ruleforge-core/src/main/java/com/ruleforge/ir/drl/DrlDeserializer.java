@@ -10,8 +10,13 @@ import com.ruleforge.model.rule.Rhs;
 import com.ruleforge.model.rule.SimpleValue;
 import com.ruleforge.model.rule.Value;
 import com.ruleforge.model.rule.ValueType;
+import com.ruleforge.model.rule.lhs.And;
+import com.ruleforge.model.rule.lhs.Criteria;
+import com.ruleforge.model.rule.lhs.Left;
+import com.ruleforge.model.rule.lhs.LeftType;
 import com.ruleforge.model.rule.lhs.Lhs;
 import com.ruleforge.model.rule.lhs.PropertyCriteria;
+import com.ruleforge.model.rule.lhs.VariableLeftPart;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -25,7 +30,6 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
@@ -58,29 +62,6 @@ import java.util.TimeZone;
  * @since 5.42
  */
 public class DrlDeserializer {
-
-    /**
-     * V5.42.4 — 暂存:PropertyCriteria 列表(rule name → criteria)。
-     * V5.42.4 范围内 PropertyCriteria 暂不能进 {@link Rule#getLhs()}(老 PropertyCriteria
-     * 不是 Criterion,Junction.addCriterion 链挂不上),放本 map 暂存,V5.42.5 重新设计
-     * lhs model 包装(NamedCriteria + CriteriaUnit 链路)再迁入。
-     *
-     * <p><b>V5.50.1 migration 合同</b>:本字段标 {@link Deprecated},V5.51 才删。
-     * V5.50.1 改完 from / collect / accumulate 后,新写 PropertyCriteria 直接挂
-     * Rule.lhs.criterion 链,不再 put 进本 map。V5.51 caller 全部切走才删字段。
-     */
-    @Deprecated
-    private static final java.util.Map<String, List<PropertyCriteria>> PENDING_LHS =
-        new java.util.concurrent.ConcurrentHashMap<>();
-
-    /**
-     * V5.50.1 migration 合同:本方法标 {@link Deprecated},V5.51 才删。
-     * V5.50.1 后 caller 应读 {@code rule.getLhs().getCriterion()}。
-     */
-    @Deprecated
-    public static List<PropertyCriteria> getPendingLhsCriteria(Rule rule) {
-        return PENDING_LHS.getOrDefault(rule.getName(), Collections.emptyList());
-    }
 
     // ============================================================
     // === 入口 ===
@@ -270,27 +251,53 @@ public class DrlDeserializer {
      * <ul>
      *   <li>walk lhsPattern → 找每条 lhsUnary(drlPattern alt)</li>
      *   <li>每条 drlPattern:用 lexer 拆 (field op value) 三元组,产出 PropertyCriteria</li>
-     *   <li>全部收集到 Junction(AND) — 单条也走 Junction 包装(跟老 Rule 行为一致)</li>
+     *   <li>全部转成 {@link Criteria}(Left=VariableLeftPart 持 property 名),装进
+     *       {@link And} Junction,挂到 {@link Lhs#setCriterion} — 单条也走 Junction 包装
+     *       (跟老 Rule 行为一致)</li>
      * </ul>
      *
      * <p>不处理:and / or / not / exists / eval / from / collect / accumulate 内部,
      * V5.42.5 再补。
+     *
+     * <p><b>V5.51.2 migration 收口</b>:V5.42.4 暂存 PENDING_LHS 字段 + getPendingLhsCriteria
+     * 已删,PropertyCriteria 全部走 Lhs.criterion(And → Criteria)链。
      */
     private static Lhs extractLhs(ParsedDrlRule p, DatatypeResolver resolver) {
         Lhs lhs = new Lhs();
         if (p.getLhsParseTree() == null) {
             return lhs;
         }
-        // V5.42.4 简化:用 visitor 单独走 lhsParseTree,产出一组 PropertyCriteria,
-        // 暂存到 PENDING_LHS map(criterion 字段保留 null,V5.42.5 再迁入 Rule.lhs 内部)
-        @SuppressWarnings("deprecation")
         List<PropertyCriteria> pcs = new LhsPropertyVisitor(resolver).extract(p.getLhsParseTree());
-        if (!pcs.isEmpty()) {
-            @SuppressWarnings("deprecation")
-            java.util.Map<String, List<PropertyCriteria>> pendingRef = PENDING_LHS;
-            pendingRef.put(p.getName(), pcs);
+        if (pcs.isEmpty()) {
+            return lhs;
         }
+        // V5.51.2:PropertyCriteria → Criteria(Left=VariableLeftPart(property))→ And Junction
+        And and = new And();
+        for (PropertyCriteria pc : pcs) {
+            and.addCriterion(toCriteria(pc));
+        }
+        lhs.setCriterion(and);
         return lhs;
+    }
+
+    /**
+     * V5.51.2:把 DRL shorthand {@code PropertyCriteria(field, op, value)}
+     * 转成 lhs model {@link Criteria}。Left 用 {@link VariableLeftPart} 持
+     * variableName/variableLabel(都用 property 名 — DRL shorthand 没有 binding
+     * 类型信息,跟 DecisionTable 的 CellContentBuilder 路径对齐)。
+     */
+    private static Criteria toCriteria(PropertyCriteria pc) {
+        Criteria c = new Criteria();
+        Left left = new Left();
+        VariableLeftPart part = new VariableLeftPart();
+        part.setVariableName(pc.getProperty());
+        part.setVariableLabel(pc.getProperty());
+        left.setLeftPart(part);
+        left.setType(LeftType.variable);
+        c.setLeft(left);
+        c.setOp(pc.getOp());
+        c.setValue(pc.getValue());
+        return c;
     }
 
     // ============================================================

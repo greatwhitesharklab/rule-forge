@@ -2,11 +2,14 @@ package com.ruleforge.ir.drl;
 
 import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.rule.Rhs;
+import com.ruleforge.model.rule.lhs.And;
+import com.ruleforge.model.rule.lhs.Criteria;
 import com.ruleforge.model.rule.lhs.Criterion;
 import com.ruleforge.model.rule.lhs.Junction;
 import com.ruleforge.model.rule.lhs.JunctionType;
 import com.ruleforge.model.rule.lhs.Lhs;
 import com.ruleforge.model.rule.lhs.PropertyCriteria;
+import com.ruleforge.model.rule.lhs.VariableLeftPart;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -180,19 +183,23 @@ class DrlDeserializerTest {
     // BDD 的"lhs 内部结构"测试在 V5.42.5(NamedCriteria 包装 + Junction 链路)。
 
     @Nested
-    @DisplayName("Given lhs 第一版,When deserialize,Then Lhs 初始化 + lhs 内部留 V5.42.5")
+    @DisplayName("Given lhs 第一版,When deserialize,Then Lhs.criterion 链挂 And → Criteria(V5.51.2)")
     class LhsFirstVersion {
 
         @Test
-        @DisplayName("Lhs 初始化(V5.42.4 不展开内部,留 V5.42.5)")
+        @DisplayName("Lhs 初始化 + criterion 链上能读到 'age > 18' Conditions")
         void lhsInitialized() {
             List<Rule> rules = DrlDeserializer.parseDrl(
                 "rule \"R1\" when Applicant(age > 18) then end", resolver);
             Rule r = rules.get(0);
             assertNotNull(r.getLhs(), "Lhs 应初始化");
-            // V5.42.4 决定:lhs.criterion 留 V5.42.5 展开,本版置 null
-            // (走 LhsPropertyVisitor 暂存到 Lhs._pendingPropertyCriteria,
-            // 通过 Rule.getLhs().getCriterion() 仍是 null,设计上保持老 Rule 兼容)
+            // V5.51.2 migration:PropertyCriteria 全部挂到 Lhs.criterion(And) 链
+            assertNotNull(r.getLhs().getCriterion(),
+                "V5.51.2 后 Lhs.criterion 不再是 null,PropertyCriteria 走 And → Criteria 链");
+            And and = (And) r.getLhs().getCriterion();
+            assertEquals(1, and.getCriterions().size());
+            Criteria c = (Criteria) and.getCriterions().get(0);
+            assertEquals("age", ((VariableLeftPart) c.getLeft().getLeftPart()).getVariableName());
         }
 
         @Test
@@ -207,15 +214,16 @@ class DrlDeserializerTest {
         }
 
         @Test
-        @DisplayName("DrlDeserializer.getPendingLhsCriteria(rule) — V5.42.4 暂存 lhs 内部数据")
+        @DisplayName("Lhs.criterion 链反查:Applicant(age > 18) 1 个 Criteria(variableName=age)")
         void pendingLhsCriteriaAccessible() {
-            // V5.42.4 暂存:PropertyCriteria 列表挂在 deserializer 静态 map,V5.42.5
-            // 再迁到 Rule.lhs 内部 NamedCriteria 树
+            // V5.51.2 migration:V5.42.4 PENDING_LHS 暂存路径已删,改走 Lhs.criterion
+            // 链(And Junction → Criteria → Left/LeftPart)。
             List<Rule> rules = DrlDeserializer.parseDrl(
                 "rule \"R1\" when Applicant(age > 18) then end", resolver);
-            List<PropertyCriteria> pending = DrlDeserializer.getPendingLhsCriteria(rules.get(0));
-            assertEquals(1, pending.size());
-            assertEquals("age", pending.get(0).getProperty());
+            And and = (And) rules.get(0).getLhs().getCriterion();
+            assertEquals(1, and.getCriterions().size());
+            Criteria c = (Criteria) and.getCriterions().get(0);
+            assertEquals("age", ((VariableLeftPart) c.getLeft().getLeftPart()).getVariableName());
         }
     }
 
