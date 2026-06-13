@@ -40,6 +40,8 @@ DRL_RULE           : 'rule';
 DRL_QUERY          : 'query';
 DRL_FUNCTION       : 'function';
 DRL_DECLARE        : 'declare';
+// V5.50.3: function body 内的 return 语句支持
+DRL_RETURN         : 'return';
 DRL_WHEN           : 'when';
 DRL_THEN           : 'then';
 DRL_END            : 'end';

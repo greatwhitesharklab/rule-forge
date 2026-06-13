@@ -192,6 +192,7 @@ accumulateInit
 
 initBody
     : (IDENTIFIER | DRL_COUNT | DRL_SUM | DRL_AVG | DRL_MIN | DRL_MAX) ASSIGN expr (COMMA expr)*
+    | fieldType IDENTIFIER ASSIGN expr   // V5.50.3:int total := 0 typed decl
     | statement (SEMI statement)*
     | expr (COMMA expr)*
     ;
@@ -254,7 +255,13 @@ rhsConsequence
 statement
     : assignStatement
     | methodCallStatement
+    | returnStatement
     | expr
+    ;
+
+// V5.50.3: function body 内 `return expr;` 形式
+returnStatement
+    : DRL_RETURN expr?
     ;
 
 assignStatement
@@ -321,7 +328,7 @@ atom
     | methodChain
     | IDENTIFIER LBRACK stringMethod RBRACK
     | IDENTIFIER
-    | DOLLAR IDENTIFIER
+    | DOLLAR (IDENTIFIER | DRL_COUNT | DRL_SUM | DRL_AVG | DRL_MIN | DRL_MAX)
     | DRL_COUNT | DRL_SUM | DRL_AVG | DRL_MIN | DRL_MAX
     | PLACEHOLDER
     ;
@@ -345,7 +352,8 @@ exprList
 // ====================================================================
 
 queryStatement
-    : DRL_QUERY ruleName LPAREN parameters? RPAREN (ARROW queryBody)?
+    : DRL_QUERY ruleName LPAREN parameters? RPAREN (ARROW | DRL_WHEN) queryBody
+    | DRL_QUERY ruleName LPAREN parameters? RPAREN queryBody    // V5.50.3:无 ARROW 也行(裸 query,param 后直接 end)
     ;
 
 queryBody
@@ -357,8 +365,10 @@ parameters
     ;
 
 parameter
-    : IDENTIFIER COLON IDENTIFIER
-    | IDENTIFIER
+    : UPPER_IDENTIFIER DOLLAR (IDENTIFIER | DRL_COUNT | DRL_SUM | DRL_AVG | DRL_MIN | DRL_MAX)  // V5.50.3:Integer $min
+    | UPPER_IDENTIFIER (IDENTIFIER | DRL_COUNT | DRL_SUM | DRL_AVG | DRL_MIN | DRL_MAX)         // V5.50.3:Integer x
+    | IDENTIFIER COLON (IDENTIFIER | UPPER_IDENTIFIER)        // V5.50.3:min : Integer
+    | IDENTIFIER                            // V5.50.3:光 ident
     ;
 
 // ====================================================================
@@ -370,7 +380,8 @@ functionStatement
     ;
 
 returnType
-    : IDENTIFIER
+    : UPPER_IDENTIFIER  // V5.50.3:Integer / String
+    | IDENTIFIER
     ;
 
 functionBody

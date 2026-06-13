@@ -154,12 +154,11 @@ class DrlGrammarSmokeTest {
         }
 
         @Test
-        @DisplayName("accumulate 5 内置 sum — V5.42.1 边缘,留给 V5.42.5")
-        @org.junit.jupiter.api.Disabled("V5.42.1 grammar edge — accumulate V5.42.5")
+        @DisplayName("accumulate 5 内置 sum — V5.50.3 收口")
         void lhsAccumulateSum() {
             String drl = "rule \"R1\" " +
                 "when $s : Integer() from accumulate(Loan(amount > 1000), " +
-                "init(int total = 0), " +
+                "init(int total := 0), " +
                 "action($s.setValue(total + $loan.getAmount())), " +
                 "result(total)) " +
                 "then end";
@@ -203,8 +202,7 @@ class DrlGrammarSmokeTest {
         }
 
         @Test
-        @DisplayName("query 基础子集 — V5.42.1 query grammar 简化版,留给 V5.42.5")
-        @org.junit.jupiter.api.Disabled("V5.42.1 grammar edge — query parameter type,V5.42.5 再补")
+        @DisplayName("query 基础子集 — V5.50.3 收口")
         void queryBasic() {
             String drl = "package com.ruleforge\n" +
                 "query \"Q1\"(Integer $min) $a : Applicant(age > $min) end";
@@ -212,8 +210,7 @@ class DrlGrammarSmokeTest {
         }
 
         @Test
-        @DisplayName("function 基础子集 — V5.42.1 grammar 简化,留给 V5.42.5")
-        @org.junit.jupiter.api.Disabled("V5.42.1 grammar edge — function returnType,V5.42.5 再补")
+        @DisplayName("function 基础子集 — V5.50.3 收口")
         void functionBasic() {
             String drl = "package com.ruleforge\n" +
                 "function Integer myFn(Integer x) { return x + 1; }";
