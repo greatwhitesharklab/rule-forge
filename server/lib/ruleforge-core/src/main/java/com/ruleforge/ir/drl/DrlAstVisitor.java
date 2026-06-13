@@ -49,6 +49,17 @@ public class DrlAstVisitor extends DrlParserBaseVisitor<Void> {
      */
     private final java.util.LinkedHashSet<String> imports = new java.util.LinkedHashSet<>();
     /**
+     * V5.45.1 — declare 段收集的 declared types。{@code Map<String, TypeInfo>}
+     * 形式,key=type 名(顶层 + 嵌套都进 map),value=完整 TypeInfo(字段 +
+     * extendsName + annotations)。DrlDeserializer / LibraryParser(V5.45.2)调
+     * {@link #getDeclaredTypes()} 拿 map 推到 resolver。
+     *
+     * <p>用 LinkedHashMap 保持插入顺序 + dedupe — 同名 type 出现两次取后者
+     * (V5.45.1 不报错;V5.46+ 可加 warn 日志)。
+     */
+    private final java.util.LinkedHashMap<String, DatatypeResolver.TypeInfo> declaredTypes =
+        new java.util.LinkedHashMap<>();
+    /**
      * V5.44.4 — lenient 模式。{@code true} 时,unknown type 不抛 DrlParseException,
      * 只记到 {@link ParsedDrlRule} 的 unresolvedTypes 字段,继续 walk 后续节点。
      * console-ui editor open 路径(CommonController.parseDrlSummary)用 lenient=true
@@ -83,6 +94,11 @@ public class DrlAstVisitor extends DrlParserBaseVisitor<Void> {
         return new ArrayList<>(imports);
     }
 
+    /** V5.45.1 — 收集的 declare 段 declared types(嵌套 declare 也 flatten 到 map)。 */
+    public java.util.Map<String, DatatypeResolver.TypeInfo> getDeclaredTypes() {
+        return new java.util.LinkedHashMap<>(declaredTypes);
+    }
+
     // ============================================================
     // === compilationUnit 入口 ===
     // ============================================================
@@ -100,6 +116,18 @@ public class DrlAstVisitor extends DrlParserBaseVisitor<Void> {
             visit(u);
         }
         return null;
+    }
+
+    @Override
+    public Void visitUnitStatement(DrlParser.UnitStatementContext ctx) {
+        // V5.45.1 — unitStatement 是 alt(rule / query / function / declare)。
+        // ANTLR base visitor 默认 visitChildren 会逐个 visit 各个 alt,但本
+        // visitor 显式 override 来确保 declareStatement 也走我们的 visit hook。
+        if (ctx.declareStatement() != null) {
+            return visit(ctx.declareStatement());
+        }
+        // rule / query / function 走默认 visitChildren(后续 visitRuleStatement 等)
+        return visitChildren(ctx);
     }
 
     // ============================================================
@@ -303,6 +331,109 @@ public class DrlAstVisitor extends DrlParserBaseVisitor<Void> {
         // V5.42.4 才会展开内部 constraint 跟 binding;
         // V5.42.2 只校验 type known
         return null;
+    }
+
+    // ============================================================
+    // === declare 段(V5.45.1 完整化:annotation + 嵌套 + extends) ===
+    // ============================================================
+    //
+    // grammar 行为(DrlParser.g4):
+    //   declareStatement:
+    //     annotation* DRL_DECLARE IDENTIFIER
+    //         ( extendsDecl | fieldsDecl | annotation | declareStatement )*
+    //     DRL_END SEMI?
+    //
+    // V5.45.1 visitor 行为:
+    //   - 1 个 declareStatement 对应 1 个 TypeInfo 进 declaredTypes map
+    //   - 嵌套 declare(grammar 第 4 alt 是 declareStatement 自身)由 ANTLR base visitor
+    //     默认 visitChildren 自动深入;这里也显式 visit 一下保险
+    //   - annotation 段出现在 head / fields 之间两种位置都收集
+    //   - extendsDecl / fieldsDecl 各自只出现一次(grammar 不强制但实际 DRl 惯例)
+    //   - 0 字段 declare 也合法(只 annotation + extends 段,纯 metadata)
+
+    @Override
+    public Void visitDeclareStatement(DrlParser.DeclareStatementContext ctx) {
+        // 1. 顶层 annotation(head) — grammar: annotation* DRL_DECLARE
+        // V5.45.1 关键:annotation 列表可能含**父 declare 头部的 annotation**,但 grammar
+        // 第 4 alt 是 declareStatement 自身(嵌套)。ANTLR 把所有 alt 平铺到 annotation() /
+        // declareStatement() 列表里,只靠 start token 位置区分。
+        // 简化做法:本方法只收集直接属于本 declare 的 annotation(start position <
+        // DRL_DECLARE token 自身),嵌套 declare 的 annotation 留给递归 visit 处理。
+        // V5.45.1 修复:必须用 DRL_DECLARE token 的 .getSymbol().getStartIndex() 拿
+        // token 绝对位置 — ctx.DRL_DECLARE().getSourceInterval() 拿的是 rule context
+        // 范围(整个 declare 段),不是 token 位置,等价于 0,filter 失效。
+        int declareStart = ctx.DRL_DECLARE().getSymbol().getStartIndex();
+        java.util.Map<String, String> annotations = new java.util.LinkedHashMap<>();
+        for (DrlParser.AnnotationContext ann : ctx.annotation()) {
+            if (ann.getStart().getStartIndex() < declareStart) {
+                collectAnnotation(ann, annotations);
+            }
+        }
+
+        // V5.45.1 关键修复:递归 visit 嵌套 declareStatement(grammar 第 4 alt)。
+        // ANTLR base visitor 默认 visitChildren 会逐个 visit,但本方法返回 null 前
+        // 必须显式 visit 嵌套,否则内层 declare 不会进 declaredTypes map。
+        for (DrlParser.DeclareStatementContext nested : ctx.declareStatement()) {
+            visit(nested);
+        }
+
+        // 2. UPPER_IDENTIFIER(type 名)— grammar 第二个 token。
+        // V5.45.1 grammar 修复:declare 段 type 名必须大写开头(Applicant 之类),
+        // 跟 drlPattern lhs 同款。V5.42.1 老 grammar 用 IDENTIFIER 错(IDENTIFIER
+        // 是 [a-z_] 前缀,Applicant 走 UPPER_IDENTIFIER 分支,所以 parser 一直报
+        // 语法错,V5.42.1 缺 BDD 漏检)。
+        String typeName = ctx.UPPER_IDENTIFIER().getText();
+
+        // 3. extendsDecl(可能没有)
+        String extendsName = null;
+        for (DrlParser.ExtendsDeclContext ext : ctx.extendsDecl()) {
+            if (extendsName == null) {
+                // V5.45.1:extends 后的 type 名也是 UPPER_IDENTIFIER(Person 之类)
+                extendsName = ext.UPPER_IDENTIFIER().getText();
+            }
+        }
+
+        // 4. fieldsDecl(可能 0+)
+        java.util.List<String> fields = new java.util.ArrayList<>();
+        for (DrlParser.FieldsDeclContext fd : ctx.fieldsDecl()) {
+            // V5.45.1 grammar 调整:fieldsDecl: IDENTIFIER COLON fieldType (COMMA fieldType)* —
+            // 第一个 IDENTIFIER 是字段名(单数 terminal,不是 list),后面 fieldType 列表是
+            // 类型名(支持 UPPER_IDENTIFIER + IDENTIFIER 两种,跟 V5.45.1 之前 IDENTIFIER
+            // 单一形式兼容 — V5.42.1 缺 BDD 漏检导致 type name "int" 走 DRL_TIMER_INT
+            // 关键字分支报语法错,V5.45.1 才显式兼容 primitive 类型名)。
+            fields.add(fd.IDENTIFIER().getText());
+        }
+
+        // 5. 进 declaredTypes map(同 name 取后者,V5.45.1 不报错)
+        DatatypeResolver.TypeInfo info = new DatatypeResolver.TypeInfo(
+            typeName, fields, false, extendsName, annotations);
+        declaredTypes.put(typeName, info);
+        return null;
+    }
+
+    /**
+     * V5.45.1 — 把单个 annotation 段挂到 annotations map。简化:不拆
+     * {@code key=val} 形式(grammar 接受 {@code IDENTIFIER ASSIGN STRING} alt,
+     * V5.45.1 把整体形参文本当 value;V5.46+ 拆结构化)。
+     */
+    private void collectAnnotation(DrlParser.AnnotationContext ann,
+                                   java.util.Map<String, String> annotations) {
+        String name = ann.IDENTIFIER().getText();
+        String argsText = "";
+        if (ann.annotationArgs() != null) {
+            java.util.List<String> argStrs = new java.util.ArrayList<>();
+            for (DrlParser.AnnotationArgContext arg : ann.annotationArgs().annotationArg()) {
+                if (arg.IDENTIFIER() != null && arg.STRING() != null) {
+                    argStrs.add(arg.IDENTIFIER().getText() + "=" + stripQuotes(arg.STRING().getText()));
+                } else if (arg.IDENTIFIER() != null) {
+                    argStrs.add(arg.IDENTIFIER().getText());
+                } else if (arg.STRING() != null) {
+                    argStrs.add(stripQuotes(arg.STRING().getText()));
+                }
+            }
+            argsText = String.join(",", argStrs);
+        }
+        annotations.put(name, argsText);
     }
 
     // ============================================================

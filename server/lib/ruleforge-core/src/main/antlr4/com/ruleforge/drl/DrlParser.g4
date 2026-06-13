@@ -363,17 +363,59 @@ functionBody
     ;
 
 // ====================================================================
-// === declare(基础子集) ===
+// === declare(基础子集 + V5.45.1 完整化:annotation + 嵌套 declare) ===
 // ====================================================================
+//
+// V5.42.1 基础 schema:
+//   declare X extends Y field1 : T1, T2 field2 : T3 end
+//
+// V5.45.1 扩展:
+//   - annotation 段:出现在 DRL_DECLARE 关键字前 / fields 之间,`@name` 或
+//     `@name(args)` 形式,args 是 `IDENTIFIER | STRING | IDENTIFIER = STRING`
+//     逗号分隔列表(Drools 6 兼容子集)
+//   - 嵌套 declare:父 declare 段 body 内允许再 declare(grammar 接受,
+//     语义层由 DrlAstVisitor 把嵌套 declare 也提到顶层 declaredTypes map)
 
 declareStatement
-    : DRL_DECLARE IDENTIFIER (extendsDecl | fieldsDecl)* DRL_END SEMI?
+    : annotation* DRL_DECLARE UPPER_IDENTIFIER
+          ( extendsDecl | fieldsDecl | annotation | declareStatement )*
+      DRL_END SEMI?
     ;
 
 extendsDecl
-    : DRL_EXTENDS IDENTIFIER
+    : DRL_EXTENDS UPPER_IDENTIFIER
     ;
 
 fieldsDecl
-    : IDENTIFIER COLON IDENTIFIER (COMMA IDENTIFIER)*
+    : IDENTIFIER COLON fieldType (COMMA fieldType)*
+    ;
+
+// V5.45.1 — field type 名允许三种形式:
+//   - UPPER_IDENTIFIER(String / Integer / Applicant 等大写开头的类名)
+//   - IDENTIFIER(double / float / long / short 等 Java primitive 关键字以外的
+//     小写标识符)
+//   - DRL_TIMER_INT / DRL_TIMER_CRON(int / cron 这俩 token 在 V5.42.1 关键字表里,
+//     但 declare 段 type 名需要支持 "int" / "cron" — 否则 DRL 6.x 老 declare 段
+//     大量 int 字段全报语法错)
+// 不接受其他 DRL 关键字(DRL_END 等)— 这限制是合理的:Drools 6.x 自己也禁。
+fieldType
+    : UPPER_IDENTIFIER
+    | IDENTIFIER
+    | DRL_TIMER_INT
+    | DRL_TIMER_CRON
+    ;
+
+// V5.45.1 — annotation 段(顶层 declareStatement 头,或 fields 之间)
+annotation
+    : AT IDENTIFIER (LPAREN annotationArgs RPAREN)?
+    ;
+
+annotationArgs
+    : annotationArg (COMMA annotationArg)*
+    ;
+
+annotationArg
+    : IDENTIFIER
+    | STRING
+    | IDENTIFIER ASSIGN STRING
     ;

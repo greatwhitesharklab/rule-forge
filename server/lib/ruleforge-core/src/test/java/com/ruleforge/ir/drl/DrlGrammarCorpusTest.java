@@ -194,7 +194,7 @@ class DrlGrammarCorpusTest {
     // ============================================================
 
     @TestFactory
-    @DisplayName("Given 非法 DRL 4 片段(import / function / declare / accumulate reverse),When 解析,Then 报 syntax error")
+    @DisplayName("Given 非法 DRL 4 片段(import / function / query / accumulate reverse),When 解析,Then 报 syntax error")
     Iterable<DynamicTest> negativeCorpus() {
         List<Object[]> cases = Arrays.asList(
             // import(D4 禁)
@@ -203,9 +203,10 @@ class DrlGrammarCorpusTest {
             // function
             new Object[]{"function 段",
                 "function boolean isAdult(int age) { return age > 18; }\nrule \"R1\" when eval(isAdult(20)) then end\n"},
-            // declare
-            new Object[]{"declare 类型声明",
-                "declare Applicant\n  name : String\nend\nrule \"R1\" when Applicant(age > 18) then end\n"},
+            // declare 段:V5.42.1 老 grammar 把 declare 当 negative(grammar 错,不能 parse)—
+            // V5.45.1 修 grammar(加 UPPER_IDENTIFIER / primitive type 兼容 / annotation /
+            // 嵌套)后,declare 是**合法**顶层段(DrlDeclareGrammarTest 8 BDD 锁)。
+            // 这里把 declare 移出 negativeCorpus,declaration 正面行为已搬 DrlDeclareGrammarTest。
             // query
             new Object[]{"query 段",
                 "query \"q1\" Applicant(age > 18) end\nrule \"R1\" when then end\n"},

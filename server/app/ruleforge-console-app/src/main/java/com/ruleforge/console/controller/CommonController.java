@@ -13,7 +13,6 @@ import com.ruleforge.console.repository.model.FileType;
 import com.ruleforge.console.repository.model.RepositoryFile;
 import com.ruleforge.console.servlet.common.ErrorInfo;
 import com.ruleforge.console.servlet.common.RefFile;
-import com.ruleforge.dsl.DSLRuleSetBuilder;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.rule.RuleSet;
 import com.ruleforge.model.function.FunctionDescriptor;
@@ -81,7 +80,12 @@ public class CommonController extends BaseController {
     private final List<FunctionDescriptor> coll;
     private List<Deserializer<?>> deserializers = new ArrayList<>(6);
     private final List<FunctionDescriptor> functionDescriptors = new ArrayList<>();
-    private final DSLRuleSetBuilder dslRuleSetBuilder;
+    /**
+     * V5.45.4 — DSL chain runtime 真删:CommonController 不再持有 DSLRuleSetBuilder
+     * 引用(老 .ul save-time validation 链路 V5.45.4 删掉 — 跟 KnowledgeBuilder 行为
+     * 一致:老 .ul 资源走 0 rule 静默跳过,不在 save 阶段强校验语法)。
+     */
+
 
     // todo
     private final ProjectRepository projectRepository;
@@ -346,9 +350,11 @@ public class CommonController extends BaseController {
             content = Utils.decodeURL(content);
 
             Resource resource = new Resource(content, file, "");
-            if (this.dslRuleSetBuilder.support(resource)) {
-                this.dslRuleSetBuilder.build(resource.getContent());
-            } else {
+            // V5.45.4 — DSL chain runtime 真删:save 阶段不再调
+            // dslRuleSetBuilder.support() / .build() 校验 .ul 老格式语法。
+            // .ul 资源跟 .xml 老格式一样,fall through 到 deserializer 链(无 match
+            // 静默跳过 — 跟 V5.43 行为一致,不抛错)。
+            {
                 InputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
                 Element element = parseXml(inputStream);
                 for (Deserializer<?> des : deserializers) {

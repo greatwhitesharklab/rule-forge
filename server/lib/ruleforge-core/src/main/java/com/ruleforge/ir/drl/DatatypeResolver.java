@@ -138,16 +138,43 @@ public class DatatypeResolver {
      *
      * <p>字段列表 + isFact 标记:V5.42.2 只放最基础字段,
      * V5.42.4 DrlDeserializer 才会解析到 Rule.lhs.criterion.propertyCriteria。
+     *
+     * <p><b>V5.45.1</b>:加 {@code extendsName} + {@code annotations} 字段:
+     * <ul>
+     *   <li>{@code extendsName} — DRL 顶层 {@code declare X extends Y} 段抽出,
+     *       V5.45.2 library loader 用作"resolve 顺序 builtin → imports → extends 链"
+     *       的入口(实际 V5.45.2 还没消费,V5.45.1 先建字段)</li>
+     *   <li>{@code annotations} — DRL 顶层 {@code @role(event)} / {@code @timestamp("created")}
+     *       段抽出,key=annotation 名,value=annotation 整体形参文本
+     *       (V5.45.1 简化:不拆 {@code key=val} 形式,整体当 string)</li>
+     * </ul>
      */
     public static class TypeInfo {
         private final String name;
         private final List<String> fields;
         private final boolean fact;
+        /** V5.45.1 — declare X extends Y 的 Y;null 表示无 extends */
+        private final String extendsName;
+        /** V5.45.1 — declare 段 annotation 列表;key=annotation 名,value=形参文本(简化) */
+        private final Map<String, String> annotations;
 
         public TypeInfo(String name, List<String> fields, boolean fact) {
+            this(name, fields, fact, null, java.util.Collections.emptyMap());
+        }
+
+        /**
+         * V5.45.1 — 完整构造器(extendsName + annotations)。V5.45.1+ caller 走这条;
+         * V5.42.2 老 caller 走 3 参版本默认 null + empty map,行为兼容。
+         */
+        public TypeInfo(String name, List<String> fields, boolean fact,
+                        String extendsName, Map<String, String> annotations) {
             this.name = name;
             this.fields = fields;
             this.fact = fact;
+            this.extendsName = extendsName;
+            this.annotations = annotations == null
+                ? java.util.Collections.emptyMap()
+                : Collections.unmodifiableMap(new HashMap<>(annotations));
         }
 
         public static TypeInfo fact(String name, List<String> fields) {
@@ -161,5 +188,11 @@ public class DatatypeResolver {
         public String getName() { return name; }
         public List<String> getFields() { return fields; }
         public boolean isFact() { return fact; }
+
+        /** V5.45.1 — declare 段 extends 名;null 表示无 extends */
+        public String getExtendsName() { return extendsName; }
+
+        /** V5.45.1 — declare 段 annotation 列表(key=annotation 名,value=形参文本);never null */
+        public Map<String, String> getAnnotations() { return annotations; }
     }
 }

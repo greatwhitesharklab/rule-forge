@@ -51,7 +51,6 @@
         <property name="rulesRebuilder" ref="ruleforge.rulesRebuilder"/>
         <property name="resourceLibraryBuilder" ref="ruleforge.resourceLibraryBuilder"/>
         <property name="decisionTableRulesBuilder" ref="ruleforge.decisionTableRulesBuilder"/>
-        <property name="dslRuleSetBuilder" ref="ruleforge.dslRuleSetBuilder"/>
         <property name="decisionTreeRulesBuilder" ref="ruleforge.decisionTreeRulesBuilder"/>
         <property name="crosstabRulesBuilder" ref="ruleforge.crosstabRulesBuilder"/>
     </bean>

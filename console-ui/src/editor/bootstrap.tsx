@@ -23,6 +23,7 @@ const editors: Record<string, () => Promise<unknown>> = {
     decisiontree:          () => import('./decisiontree/index.jsx'),
     crosstab:              () => import('./crosstab/index.jsx'),
     complexscorecard:      () => import('./complexscorecard/index.jsx'),
+    drl:                   () => import('./drleditor/index.jsx'),
     flowbpmn:              () => import('../flow-bpmn/index.jsx'),
     scorecard:             () => import('../scorecard/index.jsx'),
     ul:                    () => import('./ul/index.jsx'),

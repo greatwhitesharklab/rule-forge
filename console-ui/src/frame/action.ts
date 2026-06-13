@@ -333,7 +333,8 @@ const FILE_TYPE_MAP: Record<string, string> = {
     'rs.xml': 'Ruleset', 'rsl.xml': 'RulesetLib', 'ul': 'UL',
     'dt.xml': 'DecisionTable', 'ct.xml': 'Crosstab', 'dts.xml': 'ScriptDecisionTable',
     'dtree.xml': 'DecisionTree', 'sc': 'Scorecard', 'scc': 'ComplexScorecard',
-    'rl.xml': 'RuleFlow'
+    'rl.xml': 'RuleFlow',
+    'drl': 'Drl',
 };
 
 export function buildType(fileType: string): string {
@@ -378,6 +379,9 @@ export function buildType(fileType: string): string {
             break;
         case "sc":
             type = "评分卡";
+            break;
+        case "drl":
+            type = "DRL 规则";
             break;
         case "scc":
             type = "复杂评分卡";
