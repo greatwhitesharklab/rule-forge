@@ -41,7 +41,37 @@ import {
     buildProjectNameFromFile,
     handleResponseError,
     nextIFrameId,
+    buildEditorUrl,
 } from './Utils.js';
+
+describe('Utils - buildEditorUrl', () => {
+    // GIVEN/WHEN/THEN — 修复 B-0:dev 环境编辑器空白 bug
+    it('GIVEN editorPath already containing a query string WHEN building url THEN it should append file with &', () => {
+        const url = buildEditorUrl('/html/editor.html?type=ruleset', '/e2e-test/rs-demo.rs.xml');
+        expect(url).toBe('/html/editor.html?type=ruleset&file=/e2e-test/rs-demo.rs.xml');
+    });
+
+    it('GIVEN editorPath without query string WHEN building url THEN it should start file param with ?', () => {
+        const url = buildEditorUrl('/html/editor.html', '/p/f.xml');
+        expect(url).toBe('/html/editor.html?file=/p/f.xml');
+    });
+
+    it('GIVEN any editorPath WHEN building url THEN it must NOT produce double "html/" path or double "?" (B-0 regression guard)', () => {
+        const url = buildEditorUrl('/html/editor.html?type=ruleset', '/p/f.xml');
+        expect(url).not.toContain('/html/html/');
+        expect(url).not.toMatch(/\?[^/]*\?/);
+    });
+
+    it('GIVEN a resource package file WHEN building url THEN it should append the file verbatim', () => {
+        const url = buildEditorUrl('/html/editor.html?type=package', 'myproj.rp');
+        expect(url).toBe('/html/editor.html?type=package&file=myproj.rp');
+    });
+
+    it('GIVEN editorPath as a debug function (non-file node) WHEN building url THEN it should return empty string (safe degradation)', () => {
+        expect(buildEditorUrl(() => {}, '/p/f.xml')).toBe('');
+    });
+});
+
 describe('Utils - formatDate', () => {
     it('GIVEN a Date object and "yyyy-MM-dd" format WHEN formatDate is called THEN it should return formatted date string', () => {
         const date = new Date(2025, 5, 15, 10, 30, 45);

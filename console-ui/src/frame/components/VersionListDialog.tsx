@@ -4,7 +4,7 @@ import * as event from '../event.js';
 import * as action from '../action.js';
 import {seeFileVersions} from '../action.js';
 import * as componentEvent from '../../components/componentEvent.js';
-import {formatDate} from '../../Utils.ts';
+import {formatDate, buildEditorUrl} from '../../Utils.ts';
 
 interface VersionRow {
     name: string;
@@ -120,12 +120,12 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
                                 <td>
                                     <button type="button" className="btn btn-link" style={{padding: '0'}}
                                             onClick={() => {
-                                                let url = '.' + (data.editorPath as string) + "?file=" + (data.fullPath as string) + ':' + row.name;
+                                                let url = buildEditorUrl((data.editorPath as string), (data.fullPath as string) + ':' + row.name);
                                                 let fullPath = (data.fullPath as string) + ':' + row.name;
                                                 let name = (data.name as string) + ':' + row.name;
                                                 if (data.type === 'resourcePackage') {
                                                     const packageName = (data.fullPath as string).split("/")[1];
-                                                    url = '.' + (data.editorPath as string) + "?file=" + packageName + '.rp:' + row.name;
+                                                    url = buildEditorUrl((data.editorPath as string), packageName + '.rp:' + row.name);
                                                     fullPath = '/' + packageName + ':' + row.name;
                                                     name = data.name as string;
                                                 }

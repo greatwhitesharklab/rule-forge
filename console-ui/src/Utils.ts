@@ -30,6 +30,27 @@ export function buildProjectNameFromFile(file: string): string | undefined {
     }
 }
 
+/**
+ * 构造规则编辑器 iframe URL(修复 B-0:dev 环境所有规则编辑器打开后空白)。
+ *
+ * 旧代码 `'.' + editorPath + "?file="` 有两个错误叠加:
+ *  1. `'.' + '/html/editor.html'` = `'./html/editor.html'`,iframe 嵌在 `/html/frame.html` 内,
+ *     相对路径解析成 `/html/html/editor.html`(双 html)→ vite 返回 404。
+ *  2. editorPath 已含 `?type=`,再拼 `?file=` 产生 `?type=xxx?file=`(双 `?`),
+ *     `editor.html` 里 `URLSearchParams.get('type')` 取到 `"xxx?file=..."`,switch-case 失配 → DOM 不注入 → 空白。
+ *
+ * 正确做法:用绝对 editorPath(无 `.` 前缀),用 `&` 拼接 file(editorPath 已含 `?`),无 `?` 时才用 `?`。
+ */
+export function buildEditorUrl(editorPath: string | (() => void), file: string): string {
+    // editorPath 类型为联合:文件节点是 string(实际编辑器 URL),root 等节点是 debug 函数。
+    // 构造 URL 只对 string 有意义;函数(不应在文件点击时出现)安全降级返回空串。
+    if (typeof editorPath !== 'string') {
+        return '';
+    }
+    const sep = editorPath.includes('?') ? '&' : '?';
+    return editorPath + sep + 'file=' + file;
+}
+
 export function handleResponseError(response: Response | { status?: number; text?: () => Promise<string> }, prefix?: string): void | Promise<void> {
     if ((response as Response).status === 401) {
         alert("权限不足，不能进行此操作.");
