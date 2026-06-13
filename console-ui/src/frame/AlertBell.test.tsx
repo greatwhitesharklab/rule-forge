@@ -71,6 +71,28 @@ vi.mock('@/api/client', () => ({
 }));
 
 import AlertBell from './AlertBell';
+import {jsonPost} from '@/api/client';
+
+describe('AlertBell - 失败退避 (B-1)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('GIVEN 连续 list_drafts 失败 WHEN polling THEN 连续 MAX_FAILS(3) 次后停止轮询,不再刷屏 404', async () => {
+        const mocked = vi.mocked(jsonPost);
+        mocked.mockClear();
+        // 前 3 次失败触发退避;用 Once 避免污染后续 describe 的默认 mock 实现
+        mocked.mockRejectedValueOnce(new Error('404'));
+        mocked.mockRejectedValueOnce(new Error('404'));
+        mocked.mockRejectedValueOnce(new Error('404'));
+        render(<AlertBell username="admin" pollIntervalMs={50}/>);
+        // 初始 load(fail=1) + 1 次轮询(fail=2) + 2 次轮询(fail=3)→停止,共 3 次调用
+        await waitFor(() => expect(mocked).toHaveBeenCalledTimes(3), {timeout: 3000});
+        await new Promise(r => setTimeout(r, 300));
+        // 停止后调用次数不再增长
+        expect(mocked).toHaveBeenCalledTimes(3);
+    });
+});
 
 describe('V5.45.5 — Frame AlertBell BDD', () => {
     beforeEach(() => {

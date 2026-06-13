@@ -70,6 +70,12 @@ public class ToolRegistry {
     }
 
     public ToolDef getTool(String name) {
+        // 修复 B-1:懒加载 — toolDefs 仅在 getAllTools() 首次调用时填充(registerAll)。
+        // 若 AlertBell 等早期调用方先于 getAllTools() 走 invokeTool → getTool,toolDefs 为空,
+        // getTool 返回 null → invokeTool 对所有 tool 返回 404(实测 list_drafts 持续 404)。
+        if (toolDefs.isEmpty()) {
+            registerAll();
+        }
         return toolDefs.get(name);
     }
 

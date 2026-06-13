@@ -49,6 +49,9 @@ interface AlertBellState {
  */
 export default class AlertBell extends Component<AlertBellProps, AlertBellState> {
     private pollTimer: number | null = null;
+    /** B-1:连续失败计数,达到 MAX_FAILS 停止轮询(后端端点不可用时不刷屏 404) */
+    private failCount = 0;
+    private static readonly MAX_FAILS = 3;
 
     state: AlertBellState = {
         drafts: [],
@@ -79,10 +82,17 @@ export default class AlertBell extends Component<AlertBellProps, AlertBellState>
                 {status: 'PENDING_REVIEW', limit: 5},
                 {silent: true}
             );
+            this.failCount = 0;
             this.setState({drafts: data.drafts || [], loading: false});
         } catch {
-            // 静默失败 — 不打扰用户
+            // 静默失败 — 不打扰用户。
+            // B-1 修复:连续失败 MAX_FAILS 次后停止轮询(后端端点不可用时不再刷屏 404)。
+            this.failCount++;
             this.setState({loading: false});
+            if (this.failCount >= AlertBell.MAX_FAILS && this.pollTimer !== null) {
+                window.clearInterval(this.pollTimer);
+                this.pollTimer = null;
+            }
         }
     };
 
