@@ -1,6 +1,5 @@
 import '../css/tailwind-base.css';
 import React, {Component, ChangeEvent, FormEvent} from 'react';
-import {createRoot} from 'react-dom/client';
 import {formPost} from '../api/client.js';
 
 interface LoginState {
@@ -10,7 +9,7 @@ interface LoginState {
     loading: boolean;
 }
 
-class LoginPage extends Component<object, LoginState> {
+export default class LoginPage extends Component<object, LoginState> {
     state: LoginState = {username: '', password: '', error: '', loading: false};
 
     handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
@@ -20,8 +19,10 @@ class LoginPage extends Component<object, LoginState> {
         formPost<{ status: boolean }>('/frame/login', {username, password}, { silent: true }).then((result) => {
             this.setState({loading: false});
             if (result.status) {
-                const redirect = new URLSearchParams(window.location.search).get('redirect') || 'frame.html';
+                const redirect = new URLSearchParams(window.location.search).get('redirect') || '/app';
                 window.location.href = redirect;
+                // SPA 模式(main.tsx 路由内)优先用 navigate('/app'),避免整页刷新;
+                // 但 LoginPage 不直接依赖 router(兼容 login.html 独立访问),阶段 2 在 /app 路由统一处理。
             } else {
                 this.setState({error: '登录失败'});
             }
@@ -84,7 +85,5 @@ class LoginPage extends Component<object, LoginState> {
     }
 }
 
-const container = document.getElementById('root');
-if (container) {
-    createRoot(container).render(<LoginPage/>);
-}
+// 独立挂载(login.html 直接访问)移到 src/login/main.tsx,
+// 避免本模块被 SPA 根入口 src/main.tsx import 时重复 createRoot 同一个 #root。

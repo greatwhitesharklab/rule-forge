@@ -2,7 +2,7 @@ import '@/css/iconfont.css';
 import 'codemirror/lib/codemirror.css';
 import 'bootstrapvalidator/dist/css/bootstrapValidator.css';
 import '../css/tailwind-base.css';
-import {createRoot} from 'react-dom/client';
+import {useEffect, useMemo} from 'react';
 import {applyMiddleware, createStore} from 'redux';
 import {Provider} from 'react-redux';
 import * as ACTIONS from '@/frame/action.js';
@@ -106,14 +106,47 @@ function AppBody({activePanel, store, eventObj}: {activePanel: string; store: St
 
 const AppBodyConnected = connect((state: { ui?: { activePanel?: string } }) => ({activePanel: (state.ui && state.ui.activePanel) || 'rules'}))(AppBody);
 
-document.addEventListener('DOMContentLoaded', function () {
-    window._types = null;
-    window._projectName = null;
-    window.componentEvent = componentEvent;
-    const store = createStore(reducer, applyMiddleware(thunk));
-    (store.dispatch as Function)(ACTIONS.loadData());
+/**
+ * Frame 主框架组件(SPA 阶段 2:从 DOMContentLoaded 回调提取)。
+ *
+ * <p>store 创建 + 副作用(loadData / EXPAND_TREE_NODE 监听)随组件生命周期。
+ * 被 SPA 路由 /app(经 RequireAuth 守卫) 和 frame.html 独立入口(src/frame/main.tsx) 共享。
+ * frame 内部组件仍读 window.__currentUser(RequireAuth / frame.main 都会设置它)。
+ */
+export default function FrameApp() {
+    const store = useMemo(() => {
+        window._types = null;
+        window._projectName = null;
+        window.componentEvent = componentEvent;
+        const s = createStore(reducer, applyMiddleware(thunk));
+        (s.dispatch as Function)(ACTIONS.loadData());
+        return s;
+    }, []);
 
-    createRoot(document.getElementById("container")!).render(
+    useEffect(() => {
+        const handler = (nodeData: TreeNodeData) => {
+            const spanEl = document.getElementById('node-' + nodeData.id);
+            if (spanEl) {
+                const liEl = spanEl.parentElement;
+                if (liEl) {
+                    const parentLi = liEl.closest('li.parent_li');
+                    if (parentLi) {
+                        const liChildren = parentLi.querySelectorAll(':scope > ul > li');
+                        liChildren.forEach(function(child: Element) { (child as HTMLElement).style.display = ''; });
+                    }
+                }
+                const firstI = spanEl.querySelector('i:first-child');
+                if (firstI) {
+                    firstI.classList.add('rf-minus');
+                    firstI.classList.remove('rf-plus');
+                }
+            }
+        };
+        event.eventEmitter.on(event.EXPAND_TREE_NODE, handler);
+        // FrameApp 常驻(frame 主页不卸载),监听器随页面生命周期;event 模块 EventEmitter 也未暴露 off。
+    }, []);
+
+    return (
         <div className="app-layout">
             <Loading show={true}/>
             <Provider store={store}>
@@ -125,25 +158,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 {/* V5.8.0:全局 BatchTestDialog,任意 panel 触发 OPEN_BATCH_TEST_DIALOG 都能弹 */}
                 <BatchTestDialog/>
             </Provider>
-        </div>,
+        </div>
     );
-
-    event.eventEmitter.on(event.EXPAND_TREE_NODE, (nodeData: TreeNodeData) => {
-        const spanEl = document.getElementById('node-' + nodeData.id);
-        if (spanEl) {
-            const liEl = spanEl.parentElement;
-            if (liEl) {
-                const parentLi = liEl.closest('li.parent_li');
-                if (parentLi) {
-                    const liChildren = parentLi.querySelectorAll(':scope > ul > li');
-                    liChildren.forEach(function(child: Element) { (child as HTMLElement).style.display = ''; });
-                }
-            }
-            const firstI = spanEl.querySelector('i:first-child');
-            if (firstI) {
-                firstI.classList.add('rf-minus');
-                firstI.classList.remove('rf-plus');
-            }
-        }
-    });
-});
+}

@@ -2,19 +2,21 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>RuleForge</title>
-    <!--
-      过渡方案:让根路径 / 可访问(修复 B-2)。
-      现状是 MPA 多页结构,入口在 /html/login.html。SPA 改造(V5.54+)后此文件会被
-      真正的单页根入口替代(react-router / → /login)。在此之前用 meta refresh + JS
-      双重重定向,保证用户直接访问 localhost:5173/ 不会 404。
-    -->
-    <meta http-equiv="refresh" content="0; url=/html/login.html">
-    <script>
-        window.location.replace('/html/login.html');
-    </script>
 </head>
 <body>
-    正在跳转到登录页…如未自动跳转,请<a href="/html/login.html">点击这里</a>。
+    <div id="root"></div>
+    <!--
+      SPA 根入口(spa-migration-plan.md 阶段 1+)。
+      取代 V5.54.4 的 meta refresh 重定向 — 现在 / 直接进 SPA 路由(BrowserRouter)。
+      login.html / frame.html / editor.html 仍保留(MPA 回退 + editor 阶段 3 前必需)。
+    -->
+    <!--
+      SPA 根在 /,API 前缀用绝对 /api(login/frame/editor.html 在 /html/ 下用相对 ../api)。
+      vite proxy /api → /ruleforge(见 vite.config.ts)。
+    -->
+    <script>window._server = "/api";</script>
+    <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>
