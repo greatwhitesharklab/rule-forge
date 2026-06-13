@@ -14,7 +14,9 @@
 </div>
 
 > [!NOTE]
-> 金融级 Java 17 + Spring Boot 4 决策引擎,内嵌 **RETE 规则匹配** + **BPMN 2.0 决策流**双推理内核,支持**信贷审批 / 反欺诈 / 评分卡 / 决策流**四大场景,Docker Compose 一键起栈,Web Console + CLI + REST API 全渠道接入。Rust 实验引擎(`experiments/server-rust/`)正在做热点路径性能验证,不进生产流量。
+> 金融级 Java 17 + Spring Boot 4 决策引擎,内嵌 **RETE 规则匹配** + **BPMN 2.0 决策流**双推理内核,  
+> 支持**信贷审批 / 反欺诈 / 评分卡 / 决策流**四大场景,Docker Compose 一键起栈,Web Console + CLI + REST API 全渠道接入。  
+> Rust 实验引擎(`experiments/server-rust/`)正在做热点路径性能验证,不进生产流量。
 
 ## 🎯 快速选择你的路径
 
@@ -22,7 +24,7 @@
 |---|---|
 | **业务分析师 / 产品经理** | [快速开始](#-快速开始) 跑 demo → [规则类型](docs-site/guide/rule-types.md) 看 7 类规则 → [小微信贷审批教程](docs-site/tutorial/sme-loan-approval.md) 跟一遍 |
 | **信贷业务方 / 风控决策方** | [小微信贷审批教程](docs-site/tutorial/sme-loan-approval.md) 端到端场景 → [反欺诈检测教程](docs-site/tutorial/anti-fraud-detection.md) → [架构概览 · 决策审计 / 灰度](docs-site/architecture/overview.md) |
-| **运维 / DevOps** | [🔌 端口速查](#-端口速查) + [🛠️ 技术栈一览](#-技术栈一览) → [开发环境搭建](docs-site/development/setup.md) Docker Compose → [生产部署](docs-site/deployment/production.md) 加固 |
+| **运维 / DevOps** | [端口速查](#-端口速查) + [技术栈一览](#-技术栈一览) → [开发环境搭建](docs-site/development/setup.md) Docker Compose → [生产部署](docs-site/deployment/production.md) 加固 |
 | **二次开发 / 架构师** | [架构概览](docs-site/architecture/overview.md) 双内核边界 → [Rust 引擎架构](experiments/server-rust/ARCHITECTURE.md) → [RETE 引擎详解](docs-site/architecture/rete-engine.md) 算法 → [AI 规则混合架构](docs-site/architecture/ai-rules-hybrid.md) |
 
 ## ✨ 核心特性
@@ -49,8 +51,11 @@ curl localhost:8080/actuator/health    # → {"status":"UP"}
 ## 📐 架构
 
 Java 侧:Console App(8180) + Executor App(8280) + Model Service(8501) + MySQL
+
 三库(app_db / ruleforge_db / flowable_db),Spring Boot 微服务。Rust 侧:
+
 `experiments/server-rust/` 平行的 RETE 引擎 + BPMN 执行器,目前 alpha 阶段。
+
 **完整架构图与执行流程** → [架构概览](docs-site/architecture/overview.md)。
 
 ## 📚 文档站导览
@@ -68,15 +73,17 @@ Java 侧:Console App(8180) + Executor App(8280) + Model Service(8501) + MySQL
 ## 📌 项目状态
 
 Java 引擎 5.0 系列稳定可生产;Rust 实验引擎 alpha 推进中;路线 B(IR 标准化
-DMN / PMML / DRL)V5.40-V5.42 已完成,后续聚焦"删老 .xml / .ul 路径 + Rust
-性能基线收敛"。
 
-**最近里程碑:V5.46.2**(2026-06) — README 重写为读者路径引导。完整版本演进
-→ [CHANGELOG.md](CHANGELOG.md)。
+DMN / PMML / DRL)V5.40-V5.42 已完成,后续聚焦"删老 .xml / .ul 路径 + Rust性能基线收敛"。
+
+**最近里程碑:V5.46.2**(2026-06) — README 重写为读者路径引导。
+
+完整版本演进→ [CHANGELOG.md](CHANGELOG.md)。
 
 ## 🗺️ 路线图
 
 Phase 1-12(数据源 / 灰度 / 陪跑 / 监控)已完成;Rust 引擎 GA → 规则市场
+
 → 多租户 是下一阶段方向。详细路线图 → [docs/roadmap.md](docs/roadmap.md)。
 
 ---
