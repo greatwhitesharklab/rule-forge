@@ -5,6 +5,7 @@ import com.ruleforge.model.rule.lhs.And;
 import com.ruleforge.model.rule.lhs.Criteria;
 import com.ruleforge.model.rule.lhs.FromLeftPart;
 import com.ruleforge.model.rule.lhs.Lhs;
+import com.ruleforge.model.rule.lhs.StatisticType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -146,16 +147,126 @@ class DrlLhsWiringTest {
     }
 
     // ============================================================
-    // === from accumulate(...) — V5.52.1 显式拒收 ===
+    // === from accumulate(...) ===
     // ============================================================
 
     @Nested
-    @DisplayName("Given DRL '$n : Number() from accumulate(...)',When deserialize in V5.52.1,Then DrlParseException")
-    class FromAccumulateDeferred {
+    @DisplayName("Given DRL '$n : Number() from accumulate(InnerPattern, init, action, result)',When deserialize,Then FromLeftPart(fromSource='accumulate', statisticType)")
+    class FromAccumulate {
 
         @Test
-        @DisplayName("from accumulate(count) 在 V5.52.1 抛 DrlParseException(V5.52.3 才接)")
-        void fromAccumulateCountThrowsInV5521() {
+        @DisplayName("from accumulate(count) → FromLeftPart(statisticType=count)")
+        void fromAccumulateCount() {
+            List<Rule> rules = DrlDeserializer.parseDrl(
+                "rule \"R1\" " +
+                    "when $n : Number() from accumulate(Applicant(age > 18), " +
+                    "init(count := 0), " +
+                    "action($n.setValue(count + 1)), " +
+                    "result(count)) " +
+                    "then end",
+                resolver);
+            assertThat(rules).hasSize(1);
+            Lhs lhs = rules.get(0).getLhs();
+            And and = (And) lhs.getCriterion();
+            assertThat(and.getCriterions()).hasSize(1);
+            Criteria c = (Criteria) and.getCriterions().get(0);
+            FromLeftPart fp = (FromLeftPart) c.getLeft().getLeftPart();
+            assertThat(fp.getFromSource()).isEqualTo("accumulate");
+            assertThat(fp.getVariableCategory()).isEqualTo("Number");
+            assertThat(fp.getStatisticType()).isEqualTo(StatisticType.count);
+            // inner multiCondition 应有 age > 18
+            assertThat(fp.getMultiCondition()).isNotNull();
+            assertThat(fp.getMultiCondition().getConditions()).hasSize(1);
+            assertThat(fp.getMultiCondition().getConditions().get(0).getProperty()).isEqualTo("age");
+        }
+
+        @Test
+        @DisplayName("from accumulate(sum) → FromLeftPart(statisticType=sum)")
+        void fromAccumulateSum() {
+            List<Rule> rules = DrlDeserializer.parseDrl(
+                "rule \"R1\" " +
+                    "when $s : Integer() from accumulate(Loan(amount > 1000), " +
+                    "init(sum := 0), " +
+                    "action($s.setValue(sum + $loan.getAmount())), " +
+                    "result(sum)) " +
+                    "then end",
+                resolver);
+            assertThat(rules).hasSize(1);
+            Lhs lhs = rules.get(0).getLhs();
+            And and = (And) lhs.getCriterion();
+            Criteria c = (Criteria) and.getCriterions().get(0);
+            FromLeftPart fp = (FromLeftPart) c.getLeft().getLeftPart();
+            assertThat(fp.getFromSource()).isEqualTo("accumulate");
+            assertThat(fp.getStatisticType()).isEqualTo(StatisticType.sum);
+            assertThat(fp.getMultiCondition().getConditions().get(0).getProperty()).isEqualTo("amount");
+        }
+
+        @Test
+        @DisplayName("from accumulate(avg/min/max) → FromLeftPart(statisticType=对应)")
+        void fromAccumulateAvgMinMax() {
+            // avg
+            List<Rule> rules = DrlDeserializer.parseDrl(
+                "rule \"R1\" " +
+                    "when $a : Number() from accumulate(Loan(amount > 100), " +
+                    "init(avg := 0), " +
+                    "action($a.setValue(avg + $loan.getAmount())), " +
+                    "result(avg)) " +
+                    "then end",
+                resolver);
+            FromLeftPart fp = (FromLeftPart) ((Criteria) ((And) rules.get(0).getLhs().getCriterion())
+                .getCriterions().get(0)).getLeft().getLeftPart();
+            assertThat(fp.getStatisticType()).isEqualTo(StatisticType.avg);
+
+            // min
+            List<Rule> rules2 = DrlDeserializer.parseDrl(
+                "rule \"R2\" " +
+                    "when $m : Number() from accumulate(Loan(amount > 100), " +
+                    "init(min := 999999), " +
+                    "action($m.setValue(min)), " +
+                    "result(min)) " +
+                    "then end",
+                resolver);
+            FromLeftPart fp2 = (FromLeftPart) ((Criteria) ((And) rules2.get(0).getLhs().getCriterion())
+                .getCriterions().get(0)).getLeft().getLeftPart();
+            assertThat(fp2.getStatisticType()).isEqualTo(StatisticType.min);
+
+            // max
+            List<Rule> rules3 = DrlDeserializer.parseDrl(
+                "rule \"R3\" " +
+                    "when $m : Number() from accumulate(Loan(amount > 100), " +
+                    "init(max := 0), " +
+                    "action($m.setValue(max)), " +
+                    "result(max)) " +
+                    "then end",
+                resolver);
+            FromLeftPart fp3 = (FromLeftPart) ((Criteria) ((And) rules3.get(0).getLhs().getCriterion())
+                .getCriterions().get(0)).getLeft().getLeftPart();
+            assertThat(fp3.getStatisticType()).isEqualTo(StatisticType.max);
+        }
+
+        @Test
+        @DisplayName("from accumulate 自定义 result(init(int total := 0) + result(total)) V5.52.3 拒收 — 等 V5.53+")
+        void fromAccumulateCustomResultDeferred() {
+            // V5.50.3 测试用例:init(int total := 0) + result(total) — V5.52.3 走不到
+            // 5 内置 stat 关键字(DRL_COUNT/SUM/AVG/MIN/MAX),拒收
+            assertThatThrownBy(() -> DrlDeserializer.parseDrl(
+                "rule \"R1\" " +
+                    "when $s : Integer() from accumulate(Loan(amount > 1000), " +
+                    "init(int total := 0), " +
+                    "action($s.setValue(total + $loan.getAmount())), " +
+                    "result(total)) " +
+                    "then end",
+                resolver))
+                .isInstanceOf(DrlParseException.class)
+                .hasMessageContaining("V5.53");
+        }
+
+        @Test
+        @DisplayName("from accumulate 外层 type 未注册 → DrlParseException")
+        void fromAccumulateUnknownOuterTypeFails() {
+            DatatypeResolver fresh = new DatatypeResolver();
+            fresh.register("Applicant",
+                DatatypeResolver.TypeInfo.fact("Applicant", Arrays.asList("age")));
             assertThatThrownBy(() -> DrlDeserializer.parseDrl(
                 "rule \"R1\" " +
                     "when $n : Number() from accumulate(Applicant(age > 18), " +
@@ -163,9 +274,8 @@ class DrlLhsWiringTest {
                     "action($n.setValue(count + 1)), " +
                     "result(count)) " +
                     "then end",
-                resolver))
-                .isInstanceOf(DrlParseException.class)
-                .hasMessageContaining("V5.52.3");
+                fresh))
+                .isInstanceOf(DrlParseException.class);
         }
     }
 }

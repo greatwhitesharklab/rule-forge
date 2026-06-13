@@ -509,12 +509,114 @@ public class DrlDeserializer {
         }
 
         /**
-         * V5.52.3 留位:DRL {@code $n : Number() from accumulate(...)}。
-         * 本 sprint **不在 V5.52.1 接** — 抛 DrlParseException 提示,等 V5.52.3 补。
+         * V5.52.3:DRL {@code $n : Number() from accumulate(InnerPattern, init(count := 0),
+         * action(...), result(count))} 形态。
+         *
+         * <p>grammar alt 1 = {@code drlPattern FROM ACCUMULATE(lhsPattern, accumulateInit,
+         * accumulateAction, accumulateResult)}。本 sprint **只接 alt 1** + **只接 5 内置
+         * count/sum/avg/min/max**(从 accumulateResult.expr 的 atom.DRL_COUNT/DRL_SUM/
+         * DRL_AVG/DRL_MIN/DRL_MAX 检测)。自定义 result 形态
+         * ({@code result(total)} with {@code init(int total := 0)}) deferred 到 V5.53+ —
+         * V5.51.3 FromLeftPart.evaluateAccumulate 不接自由 init/action 求值。
+         *
+         * <p>property 字段:
+         * <ul>
+         *   <li>count:property=null(runtime 走 match 计数)</li>
+         *   <li>sum/avg/min/max:property 暂不抓(init/result 都是同 identifier,
+         *       实际 property 在 inner pattern 上)— runtime 用 inner pattern 的
+         *       computeValue 拿 match 列表后,需要 caller 在 inner pattern 上指定
+         *       property;V5.52.3 限制为单字段 pattern(例 {@code Loan(amount > 1000)}),
+         *       property 留 null,runtime 走默认"未指定"路径(走 match 计数)— V5.53+ 再补
+         *       property extraction(从 inner lhsPattern 第一条 PropertyCriteria 抓)</li>
+         * </ul>
          */
         private void handleLhsAccumulate(DrlParser.LhsAccumulateContext ctx) {
-            throw new DrlParseException("V5.52.1 不接 DRL 'from accumulate(...)' — 等 V5.52.3"
-                + " (line " + ctx.getStart().getLine() + ")");
+            DrlParser.DrlPatternContext outer = ctx.drlPattern();
+            DrlParser.LhsPatternContext innerPattern = ctx.lhsPattern();
+            DrlParser.AccumulateResultContext resultCtx = ctx.accumulateResult();
+            if (outer == null || innerPattern == null || resultCtx == null) {
+                // alt 2 (无 binding) — 本 sprint 不接
+                throw new DrlParseException("V5.52.3 only supports 'drlPattern FROM ACCUMULATE(...)' "
+                    + "alt for LhsAccumulate,line " + ctx.getStart().getLine());
+            }
+
+            // 1. 外层 type 校验
+            String outerType = outer.UPPER_IDENTIFIER().getText();
+            if (!resolver.isKnown(outerType)) {
+                throw new DrlParseException("from accumulate 外层 type '" + outerType
+                    + "' 未注册,line " + outer.getStart().getLine());
+            }
+
+            // 2. 抓 inner PropertyCriteria → MultiCondition
+            int savedSize = result.size();
+            walk(innerPattern);
+            List<PropertyCriteria> innerPcs = new ArrayList<>(result.subList(savedSize, result.size()));
+            result.subList(savedSize, result.size()).clear();
+            MultiCondition mc = new MultiCondition();
+            mc.setType(JunctionType.and);
+            mc.setConditions(innerPcs);
+
+            // 3. 解析 accumulateResult.expr 找 DRL_COUNT/DRL_SUM/... → StatisticType
+            StatisticType stat = parseAccumulateStatistic(resultCtx.expr());
+            if (stat == null) {
+                // V5.52.3 R5 防御:自定义 result(init(int total := 0) + result(total) 形态)
+                // 走不到 5 内置 — 拒收,V5.53+ 接
+                throw new DrlParseException(
+                    "V5.52.3 only supports 5 built-in accumulate stats (count/sum/avg/min/max)."
+                    + " 自定义 result(init/result 都用 free-form identifier 形态)deferred 到 V5.53+。"
+                    + " 当前 result='" + resultCtx.expr().getText() + "',line "
+                    + resultCtx.getStart().getLine());
+            }
+
+            FromLeftPart fp = new FromLeftPart();
+            fp.setVariableCategory(outerType);
+            fp.setMultiCondition(mc);
+            fp.setFromSource("accumulate");
+            fp.setStatisticType(stat);
+            // property 留 null — V5.52.3 简化为接 inner pattern 0-field / 1-field 形态
+            //   property 留给 runtime 端 multiCondition 里第一条 PropertyCriteria 推断
+            //   (V5.53+ 改进:从 inner PropertyCriteria 抓 property)
+            fromParts.add(fp);
+        }
+
+        /**
+         * V5.52.3:从 accumulateResult.expr 抓 DRL_COUNT/DRL_SUM/DRL_AVG/DRL_MIN/DRL_MAX
+         * token 决定 StatisticType。expr 顶层是 exprAtom(atom(...))。
+         * <ul>
+         *   <li>{@code result(count)} → atom.DRL_COUNT → StatisticType.count</li>
+         *   <li>{@code result(sum)} → atom.DRL_SUM → StatisticType.sum</li>
+         *   <li>...</li>
+         *   <li>{@code result(total)} → atom.IDENTIFIER → null(R5,自定义 result)</li>
+         * </ul>
+         * 返 null 时 caller 抛 DrlParseException。
+         */
+        private static StatisticType parseAccumulateStatistic(DrlParser.ExprContext expr) {
+            if (expr == null) {
+                return null;
+            }
+            // walk exprAtom 找 atom
+            for (DrlParser.ExprAtomContext ea : expr.exprAtom()) {
+                DrlParser.AtomContext atom = ea.atom();
+                if (atom == null) {
+                    continue;
+                }
+                if (atom.DRL_COUNT() != null) {
+                    return StatisticType.count;
+                }
+                if (atom.DRL_SUM() != null) {
+                    return StatisticType.sum;
+                }
+                if (atom.DRL_AVG() != null) {
+                    return StatisticType.avg;
+                }
+                if (atom.DRL_MIN() != null) {
+                    return StatisticType.min;
+                }
+                if (atom.DRL_MAX() != null) {
+                    return StatisticType.max;
+                }
+            }
+            return null;
         }
 
         private void handleDrlPattern(DrlParser.DrlPatternContext dp) {
