@@ -16,6 +16,7 @@ import com.ruleforge.runtime.response.RuleExecutionResponse;
 import org.springframework.context.ApplicationContext;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -51,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>所有路径 100% production 代码 — {@code ReteBuilder.buildRete(rules, lib)} +
  * {@code KnowledgeSessionImpl.fireRules()}。
  */
+@Tag("perf")
 @DisplayName("V5.46 — Java RETE EvalBenchmark baseline")
 class EvalBenchmark {
 

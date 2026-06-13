@@ -93,9 +93,14 @@ public class RulesRebuilder {
                     }
                 }
             } catch (Exception e) {
+                // P1 — 保留 root cause 链。V5.47 之前 throw new RuleException(errorMsg)
+                // 不传 cause,生产侧 catch RuleException 后拿不到根因(DrlParseException /
+                // Antlr BailingTokenStream 等被吞),日志分析极困难。修复后 messages
+                // 字段保持原"规则【X】包含语法错误"格式(binary + 字符串级兼容),
+                // 业务侧 catch(RuleException) 不变,新行为是 getCause() 不再为 null。
                 String errorMsg = String.format("规则【%s】包含语法错误", rule.getName());
                 log.error(errorMsg, e);
-                throw new RuleException(errorMsg);
+                throw new RuleException(errorMsg, e);
             }
         }
     }

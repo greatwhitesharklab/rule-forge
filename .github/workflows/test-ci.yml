@@ -1,0 +1,62 @@
+name: test-ci
+
+# P0 — PR + main 双触发,3 job 并行(java / vitest)。
+# perf 单独走 perf-bench-nightly.yml(cron),本 workflow @Tag("perf") 排除。
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  java:
+    name: Java + Maven unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Run unit tests (exclude perf tag)
+        run: mvn -B -ntp -pl server -am test -Dgroups='!perf'
+
+      - name: Upload surefire reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-${{ github.run_number }}
+          path: '**/target/surefire-reports/**'
+          retention-days: 7
+
+  vitest:
+    name: console-ui Vitest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: console-ui
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: console-ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run vitest
+        run: npx vitest run --reporter=verbose

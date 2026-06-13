@@ -1,0 +1,42 @@
+name: perf-bench-nightly
+
+# P1 — RETE/perf nightly bench。
+# cron 03:00 UTC(避开 GitHub Actions 高峰);manual dispatch 可立即跑。
+# 用 mvn -Pperf -Dgroups=perf 跑 @Tag("perf") 的测试 (EvalBenchmark + DrlRebuildPerfRegressionTest)。
+# 与 docs-deploy.yml 不同:不 cancel-in-progress,perf run 是独立观察,允许多次跑。
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: perf-bench
+  cancel-in-progress: false
+
+jobs:
+  java-perf:
+    name: Java RETE perf bench
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Run @Tag("perf") tests
+        # parent/pom.xml 的 <profile>perf</profile> 配置 surefire groups=perf +
+        # 显式 include EvalBenchmark.java(它不带 Test 后缀)。
+        run: mvn -B -ntp -pl server/lib/ruleforge-core -am test -Pperf -Dgroups=perf
+
+      - name: Upload perf results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-results-${{ github.run_number }}
+          path: 'server/lib/ruleforge-core/target/surefire-reports/**'
+          retention-days: 30
