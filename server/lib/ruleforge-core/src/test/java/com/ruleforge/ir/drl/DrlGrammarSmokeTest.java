@@ -218,11 +218,30 @@ class DrlGrammarSmokeTest {
         }
 
         @Test
-        @DisplayName("declare 基础子集 — V5.42.1 grammar 简化,留给 V5.42.5")
-        @org.junit.jupiter.api.Disabled("V5.42.1 grammar edge — declare UPPER_IDENTIFIER,V5.42.5 再补")
+        @DisplayName("declare 基础子集 — V5.50.4 收口")
         void declareBasic() {
             String drl = "package com.ruleforge\n" +
                 "declare Applicant extends Person name : String age : Integer end";
+            assertParses(drl, 1, 1);
+        }
+
+        @Test
+        @DisplayName("declare 多 primitive types:long / double / float / short / byte / char / boolean — V5.50.4 收口")
+        void declarePrimitiveTypes() {
+            // V5.45.1 fieldType 已扩 UPPER_IDENTIFIER + IDENTIFIER + DRL_TIMER_INT + DRL_TIMER_CRON,
+            // primitive 关键字(long / double / float / short / byte / char / boolean)走 IDENTIFIER alt。
+            // 本测试锁 V5.50.4 不回退。
+            String drl = "package com.ruleforge\n" +
+                "declare Person\n" +
+                "  age : int\n" +
+                "  salary : long\n" +
+                "  weight : double\n" +
+                "  height : float\n" +
+                "  yearBorn : short\n" +
+                "  flag : byte\n" +
+                "  initial : char\n" +
+                "  active : boolean\n" +
+                "end";
             assertParses(drl, 1, 1);
         }
 
