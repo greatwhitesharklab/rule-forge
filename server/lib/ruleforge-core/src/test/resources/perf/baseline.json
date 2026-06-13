@@ -1,0 +1,27 @@
+{
+  "version": "V5.47",
+  "capturedAt": "2026-06-13",
+  "samples": [
+    {
+      "name": "EvalBenchmark_drl_no_eval_ms",
+      "p50": 0.16,
+      "p95": 0.22,
+      "failMultiplier": 1.5,
+      "note": "V5.46 RETE bench — 2000 fact / DRL only / no eval / per-fact median"
+    },
+    {
+      "name": "EvalBenchmark_drl_eval_ms",
+      "p50": 0.27,
+      "p95": 0.36,
+      "failMultiplier": 1.5,
+      "note": "V5.46 RETE bench — 2000 fact / DRL only / with eval / per-fact median"
+    },
+    {
+      "name": "DrlRebuildPerfRegressionTest_drl_1000_rules_ms",
+      "p50": 4500,
+      "p95": 5200,
+      "failMultiplier": 1.5,
+      "note": "P1 smoke — 1000 minimal Rule 走 RulesRebuilder.rebuildRules total elapsed"
+    }
+  ]
+}

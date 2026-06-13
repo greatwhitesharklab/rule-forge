@@ -140,6 +140,43 @@
         </plugins>
     </build>
 
+    <profiles>
+        <!--
+            P1 — perf nightly profile (-Pperf)。
+            激活时 surefire 只跑 @Tag("perf") 测试,默认 mvn test 跳过这些。
+            P0 test-ci.yml 显式 -Dgroups='!perf' 排除(同效果);本 profile 走 -Pperf
+            路径给 nightly workflow 用,让 2 个入口选择更显式:
+              - mvn test                       → 跑所有非 perf 测试 (CI)
+              - mvn test -Pperf                → 只跑 @Tag("perf") (nightly bench)
+        -->
+        <profile>
+            <id>perf</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <groups>perf</groups>
+                            <reportName>perf-bench</reportName>
+                            <!--
+                                EvalBenchmark 命名不带 "Test" 后缀(它是 V5.46 手动
+                                bench,不是 surefire 自动发现的目标),需要显式 include。
+                                DrlRebuildPerfRegressionTest 走默认 **/*Test.java
+                                模式命中,这里只需额外 include EvalBenchmark。
+                            -->
+                            <includes>
+                                <include>**/EvalBenchmark.java</include>
+                                <include>**/*Test.java</include>
+                                <include>**/*Tests.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <licenses>
         <license>
             <name>The Apache License, Version 2.0</name>
