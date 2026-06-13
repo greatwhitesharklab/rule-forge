@@ -1,0 +1,57 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.ruleforge</groupId>
+        <artifactId>parent</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../parent</relativePath>
+    </parent>
+
+    <name>RuleForge DSL</name>
+    <artifactId>ruleforge-dsl</artifactId>
+    <version>${revision}</version>
+    <description>
+        V5.44.1 — Standalone jar for the legacy .ul DSLRuleSetBuilder chain (ANTLR-generated
+        RuleParserLexer/Parser + BuildRulesVisitor + dsl/builder/*). Split out of ruleforge-core
+        because V5.43 dropped all production callers (LegacyXmlMigrator etc.) — keeping the
+        chain in ruleforge-core means dead classpath gets shipped into the production jar.
+    </description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <!-- ruleforge-core: model classes (Rule, RuleSet, Library) + RulesRebuilder + Resource + RuleException
+             that DSLRuleSetBuilder transitively depends on. -->
+        <dependency>
+            <groupId>com.ruleforge</groupId>
+            <artifactId>ruleforge-core</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- ANTLR 4.13.2 runtime — the DSL chain uses hand-written Java parser/lexer
+             (RuleParserLexer.java / RuleParserParser.java) that depend on antlr4-runtime.
+             The .g4 grammar source is NOT shipped (only generated Java files), so we do
+             NOT need the antlr4-maven-plugin here. -->
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>4.13.2</version>
+        </dependency>
+
+        <!-- Spring context (ApplicationContextAware + BeansException in DSLRuleSetBuilder) -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

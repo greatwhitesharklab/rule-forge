@@ -5,7 +5,6 @@ import com.ruleforge.builder.resource.ResourceBuilder;
 import com.ruleforge.builder.resource.ResourceType;
 import com.ruleforge.builder.table.CrosstabRulesBuilder;
 import com.ruleforge.builder.table.DecisionTableRulesBuilder;
-import com.ruleforge.dsl.DSLRuleSetBuilder;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.ir.dmn.DmnResourceDispatcher;
 import com.ruleforge.ir.pmml.PmmlResourceDispatcher;
@@ -36,7 +35,11 @@ public class KnowledgeBuilder extends AbstractBuilder {
     private RulesRebuilder rulesRebuilder;
     private DecisionTreeRulesBuilder decisionTreeRulesBuilder;
     private DecisionTableRulesBuilder decisionTableRulesBuilder;
-    private DSLRuleSetBuilder dslRuleSetBuilder;
+    /**
+     * V5.44.1 — type 改成 {@link DslRuleSet} 最小接口,实现 DSLRuleSetBuilder 搬到
+     * ruleforge-dsl jar;KnowledgeBuilder 不再 import 具体 DSL 类。
+     */
+    private DslRuleSet dslRuleSetBuilder;
     private CrosstabRulesBuilder crosstabRulesBuilder;
     /**
      * V5.40 — DMN 1.3 资源分流器。资源路径以 {@code .dmn} 结尾时,绕过老 .xml 解析路径,

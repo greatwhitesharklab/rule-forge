@@ -4,6 +4,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Import;
+
+import com.ruleforge.dsl.RuleForgeDslAutoConfiguration;
 
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
 @ComponentScan(basePackages = {
@@ -13,6 +16,9 @@ import org.springframework.context.annotation.ComponentScan;
         // (MemoryKnowledgeCache — KnowledgePackageServiceImpl 依赖)
         "com.ruleforge.runtime.cache"
 })
+// V5.44.1 — 跟 console-app 同款,显式 @Import 启用 lib/ruleforge-dsl jar 里的 4 个
+// DSL bean(dslRuleSetBuilder + 3 个 ContextBuilder),boot 不会自动扫 nested jar
+@Import(RuleForgeDslAutoConfiguration.class)
 public class RuleForgeExecutorApplication {
     public static void main(String[] args) {
         SpringApplication.run(RuleForgeExecutorApplication.class, args);

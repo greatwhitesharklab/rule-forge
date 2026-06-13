@@ -1,5 +1,6 @@
 package com.ruleforge.dsl;
 
+import com.ruleforge.builder.DslRuleSet;
 import com.ruleforge.builder.RulesRebuilder;
 import com.ruleforge.builder.resource.Resource;
 import com.ruleforge.dsl.builder.ContextBuilder;
@@ -16,11 +17,18 @@ import org.springframework.context.ApplicationContextAware;
 import java.util.Collection;
 import java.util.List;
 
-public class DSLRuleSetBuilder implements ApplicationContextAware {
+/**
+ * V5.44.1 — 实现 ruleforge-core 端 {@link DslRuleSet} 最小接口。
+ *
+ * <p>整体实现跟 V5.43 一致(ANTLR 流 + BuildRulesVisitor + RulesRebuilder),
+ * 只是 class 搬到 ruleforge-dsl jar,implements DslRuleSet 替换之前的 concrete-only。
+ */
+public class DSLRuleSetBuilder implements DslRuleSet, ApplicationContextAware {
     public static final String BEAN_ID = "ruleforge.dslRuleSetBuilder";
     private Collection<ContextBuilder> contextBuilders;
     private RulesRebuilder rulesRebuilder;
 
+    @Override
     public RuleSet build(String script) throws RuleException {
         ANTLRInputStream antlrInputStream = new ANTLRInputStream(script);
         RuleParserLexer lexer = new RuleParserLexer(antlrInputStream);
@@ -48,6 +56,7 @@ public class DSLRuleSetBuilder implements ApplicationContextAware {
         this.rulesRebuilder = rulesRebuilder;
     }
 
+    @Override
     public boolean support(Resource resource) {
         String path = resource.getPath();
         return path.toLowerCase().endsWith(Constant.UL_SUFFIX);
