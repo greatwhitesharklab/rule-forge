@@ -12,7 +12,7 @@ import java.util.Date;
  * @date 2024/3/12 11:59
  */
 @Data
-@TableName("gr_lock")
+@TableName("rf_lock")
 public class LockEntity {
 
     @TableId(type = IdType.AUTO)

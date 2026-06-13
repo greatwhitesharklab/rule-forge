@@ -1,7 +1,8 @@
 -- V5.1.1: Rule Simulation tables (Phase 5 续)
+-- V5.53: rename nd_ -> rfa_, 移到 migration-app/ (ruleforge_app_db)
 
 -- 仿真执行记录
-CREATE TABLE IF NOT EXISTS nd_simulation_run (
+CREATE TABLE IF NOT EXISTS rfa_simulation_run (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     rule_package_path VARCHAR(500) NOT NULL COMMENT '规则包路径 (project/packageId)',
     project VARCHAR(100) NOT NULL COMMENT '项目名',
@@ -10,7 +11,7 @@ CREATE TABLE IF NOT EXISTS nd_simulation_run (
     files TEXT COMMENT '规则文件路径（分号分隔）',
     start_time VARCHAR(30) NOT NULL COMMENT '历史数据起始时间',
     end_time VARCHAR(30) NOT NULL COMMENT '历史数据结束时间',
-    batch_test_session_id BIGINT COMMENT '关联 nd_batch_test_session.id',
+    batch_test_session_id BIGINT COMMENT '关联 rfa_batch_test_session.id',
     status VARCHAR(20) DEFAULT 'PENDING' COMMENT 'PENDING/LOADING/RUNNING/COMPARING/COMPLETED/FAILED',
     total_logs INT DEFAULT 0 COMMENT '加载的历史日志数',
     total_compared INT DEFAULT 0 COMMENT '对比完成的条数',
@@ -28,9 +29,9 @@ CREATE TABLE IF NOT EXISTS nd_simulation_run (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仿真执行记录';
 
 -- 逐条对比结果
-CREATE TABLE IF NOT EXISTS nd_simulation_result (
+CREATE TABLE IF NOT EXISTS rfa_simulation_result (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    simulation_run_id BIGINT NOT NULL COMMENT '关联 nd_simulation_run.id',
+    simulation_run_id BIGINT NOT NULL COMMENT '关联 rfa_simulation_run.id',
     original_flow_log_id BIGINT NOT NULL COMMENT '原始决策流日志 ID',
     -- 原始决策
     original_execution_status VARCHAR(20) COMMENT '原始执行状态',

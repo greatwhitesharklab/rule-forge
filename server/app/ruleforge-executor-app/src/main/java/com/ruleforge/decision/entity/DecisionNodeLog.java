@@ -12,7 +12,7 @@ import java.util.Date;
  * 决策节点执行明细表
  */
 @Data
-@TableName("nd_decision_node_log")
+@TableName("rfa_decision_node_log")
 public class DecisionNodeLog {
 
     @TableId(value = "id", type = IdType.AUTO)

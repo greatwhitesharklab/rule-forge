@@ -8,7 +8,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("gr_package")
+@TableName("rf_package")
 public class PackageEntity {
 
     @TableId(type = IdType.AUTO)

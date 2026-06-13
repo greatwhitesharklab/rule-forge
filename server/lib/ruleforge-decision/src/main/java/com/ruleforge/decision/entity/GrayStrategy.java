@@ -12,7 +12,7 @@ import java.util.Date;
  * 灰度发布策略配置
  */
 @Data
-@TableName("gr_gray_strategy")
+@TableName("rf_gray_strategy")
 public class GrayStrategy {
 
     @TableId(value = "id", type = IdType.AUTO)

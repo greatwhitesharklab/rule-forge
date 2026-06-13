@@ -12,7 +12,7 @@ import java.util.Date;
  * 变量字段映射（规则变量名 → 外部字段名）
  */
 @Data
-@TableName("nd_datasource_field_mapping")
+@TableName("rfa_datasource_field_mapping")
 public class DatasourceFieldMapping {
 
     @TableId(value = "id", type = IdType.AUTO)

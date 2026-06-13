@@ -1,7 +1,8 @@
 -- 监控与告警模块表
+-- V5.53: rename nd_ -> rfa_, 移到 migration-app/ (ruleforge_app_db)
 
 -- 指标快照（1分钟聚合）
-create table nd_metrics_snapshot
+create table rfa_metrics_snapshot
 (
     id             bigint auto_increment primary key,
     metric_name    varchar(128)  not null comment '指标名，如 rule.execution.latency',
@@ -23,7 +24,7 @@ create table nd_metrics_snapshot
 ) comment '1分钟聚合指标快照';
 
 -- 告警规则
-create table nd_alert_rule
+create table rfa_alert_rule
 (
     id              bigint auto_increment primary key,
     name            varchar(128)  not null comment '规则名称',
@@ -44,7 +45,7 @@ create table nd_alert_rule
 ) comment '告警规则定义';
 
 -- 告警历史
-create table nd_alert_history
+create table rfa_alert_history
 (
     id              bigint auto_increment primary key,
     alert_rule_id   bigint        not null,

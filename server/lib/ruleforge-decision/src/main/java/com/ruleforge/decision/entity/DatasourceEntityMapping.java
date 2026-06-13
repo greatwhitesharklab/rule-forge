@@ -12,7 +12,7 @@ import java.util.Date;
  * 实体类与数据源映射
  */
 @Data
-@TableName("nd_datasource_entity_mapping")
+@TableName("rfa_datasource_entity_mapping")
 public class DatasourceEntityMapping {
 
     @TableId(value = "id", type = IdType.AUTO)

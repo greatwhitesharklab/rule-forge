@@ -1,6 +1,8 @@
 -- V3.9.0: Multi-node deployment configuration
+-- V5.53: rename gr_ -> rf_
+
 -- Executor nodes registration
-CREATE TABLE IF NOT EXISTS gr_executor_node (
+CREATE TABLE IF NOT EXISTS rf_executor_node (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     node_name VARCHAR(128) NOT NULL UNIQUE COMMENT 'Display name for the executor node',
     node_url VARCHAR(512) NOT NULL COMMENT 'Base URL of the executor, e.g., http://192.168.1.10:8082',
@@ -14,11 +16,11 @@ CREATE TABLE IF NOT EXISTS gr_executor_node (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Registered executor nodes';
 
 -- Deployment configuration: which package version is deployed to which node
-CREATE TABLE IF NOT EXISTS gr_deployment_config (
+CREATE TABLE IF NOT EXISTS rf_deployment_config (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT NOT NULL COMMENT 'References gr_project.id',
+    project_id BIGINT NOT NULL COMMENT 'References rf_project.id',
     package_id VARCHAR(64) NOT NULL COMMENT 'Package identifier within the project',
-    executor_node_id BIGINT NULL COMMENT 'References gr_executor_node.id, null = all nodes in env',
+    executor_node_id BIGINT NULL COMMENT 'References rf_executor_node.id, null = all nodes in env',
     git_tag VARCHAR(128) NOT NULL COMMENT 'Git tag for the deployed version, e.g., pkg/pkg1/1.0.0',
     project_version VARCHAR(32) NOT NULL COMMENT 'Human-readable version number',
     exec_env VARCHAR(32) NOT NULL DEFAULT 'default' COMMENT 'Target environment',

@@ -12,7 +12,7 @@ import java.util.Date;
  * 决策陪跑参数表
  */
 @Data
-@TableName("nd_decision_shadow_flow_params")
+@TableName("rfa_decision_shadow_flow_params")
 public class ShadowFlowParams {
 
     @TableId(value = "id", type = IdType.AUTO)

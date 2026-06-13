@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("gr_file")
+@TableName("rf_file")
 public class FileEntity {
 
     @TableId(type = IdType.AUTO)

@@ -1,7 +1,8 @@
 -- 数据源管理模块表
+-- V5.53: rename nd_ -> rfa_, 移到 migration-app/ (ruleforge_app_db)
 
 -- 1. 数据源注册中心
-create table nd_datasource
+create table rfa_datasource
 (
     id              bigint auto_increment primary key,
     name            varchar(128)  not null comment '数据源名称',
@@ -21,7 +22,7 @@ create table nd_datasource
 ) comment '数据源注册中心';
 
 -- 2. 实体类→数据源映射（每个 clazz 映射到一个数据源）
-create table nd_datasource_entity_mapping
+create table rfa_datasource_entity_mapping
 (
     id             bigint auto_increment primary key,
     clazz          varchar(256) not null comment '实体类名',
@@ -31,7 +32,7 @@ create table nd_datasource_entity_mapping
 ) comment '实体类与数据源映射';
 
 -- 3. 变量字段映射（规则变量名 → 外部字段名，简单别名）
-create table nd_datasource_field_mapping
+create table rfa_datasource_field_mapping
 (
     id              bigint auto_increment primary key,
     datasource_id   bigint       not null comment '数据源ID',
@@ -43,11 +44,11 @@ create table nd_datasource_field_mapping
 ) comment '变量字段映射';
 
 -- 4. 数据源调用日志（用于API响应缓存和审计）
-create table nd_datasource_log
+create table rfa_datasource_log
 (
     id               bigint auto_increment primary key,
     user_id          varchar(64)   not null comment '用户ID',
-    datasource_id    bigint        not null comment '关联 nd_datasource.id',
+    datasource_id    bigint        not null comment '关联 rfa_datasource.id',
     data_source      varchar(64)   not null comment '数据源标识: ADVANCE_AI / REST_API',
     api_endpoint     varchar(128)  not null comment 'API端点标识',
     request_method   varchar(10)   default 'POST',
@@ -65,7 +66,7 @@ create table nd_datasource_log
 ) comment '数据源调用日志(含缓存)';
 
 -- 种子数据：Advance AI 数据源（accessKey/secretKey 通过管理界面配置）
-insert into nd_datasource (name, type, config_json, enabled, description, timeout_ms, cache_enabled, cache_ttl_hours)
+insert into rfa_datasource (name, type, config_json, enabled, description, timeout_ms, cache_enabled, cache_ttl_hours)
 values ('advance-ai', 'ADVANCE_AI',
         '{"baseUrl":"https://mex-api.advance.ai","accessKey":"","secretKey":"","tokenValiditySeconds":3600,"tokenExpireBufferMinutes":5}',
         1, 'Advance AI 风控数据源', 30000, 1, 120);

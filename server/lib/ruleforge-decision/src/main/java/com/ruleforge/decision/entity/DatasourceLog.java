@@ -9,7 +9,7 @@ import java.util.Date;
  * 数据源调用日志（含缓存）
  */
 @Data
-@TableName("nd_datasource_log")
+@TableName("rfa_datasource_log")
 public class DatasourceLog {
 
     @TableId(value = "id", type = IdType.AUTO)

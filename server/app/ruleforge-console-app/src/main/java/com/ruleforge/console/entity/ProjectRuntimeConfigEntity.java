@@ -12,7 +12,7 @@ import java.util.Date;
  * 2025-05-08 16:03
  */
 @Data
-@TableName("gr_project_runtime_config")
+@TableName("rf_project_runtime_config")
 public class ProjectRuntimeConfigEntity {
 
     @TableId(type = IdType.AUTO)

@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
  * Agent 配置实体 — 对应 nd_agent_config 表
  */
 @Data
-@TableName("nd_agent_config")
+@TableName("rfa_agent_config")
 public class AgentConfigEntity {
     @TableId(type = IdType.INPUT)
     private String configKey;

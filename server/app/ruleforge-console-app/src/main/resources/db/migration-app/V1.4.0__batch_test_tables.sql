@@ -1,6 +1,7 @@
 -- V5.1.0: 批量测试数据持久化（替代 HttpSession 存储）
+-- V5.53: rename nd_ -> rfa_, 移到 migration-app/ (ruleforge_app_db)
 -- 批量测试会话：记录一次上传 + 执行的全生命周期
-CREATE TABLE IF NOT EXISTS nd_batch_test_session (
+CREATE TABLE IF NOT EXISTS rfa_batch_test_session (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     project VARCHAR(100) NOT NULL COMMENT '项目名',
     package_id VARCHAR(100) NOT NULL COMMENT '知识包 ID',
@@ -16,7 +17,7 @@ CREATE TABLE IF NOT EXISTS nd_batch_test_session (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='批量测试会话';
 
 -- 测试数据行：每行一条输入数据 + 执行结果
-CREATE TABLE IF NOT EXISTS nd_batch_test_row (
+CREATE TABLE IF NOT EXISTS rfa_batch_test_row (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     session_id BIGINT NOT NULL COMMENT '关联会话 ID',
     row_index INT NOT NULL COMMENT '逻辑行号（从 1 开始）',

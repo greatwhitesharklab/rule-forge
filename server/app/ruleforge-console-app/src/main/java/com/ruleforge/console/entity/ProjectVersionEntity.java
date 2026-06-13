@@ -8,7 +8,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("gr_project_version")
+@TableName("rf_project_version")
 public class ProjectVersionEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

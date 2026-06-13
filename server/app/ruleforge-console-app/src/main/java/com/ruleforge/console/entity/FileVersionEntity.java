@@ -9,7 +9,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("gr_file_version")
+@TableName("rf_file_version")
 public class FileVersionEntity {
 
     @TableId(type = IdType.AUTO)

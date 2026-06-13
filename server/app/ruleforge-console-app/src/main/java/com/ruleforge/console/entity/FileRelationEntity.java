@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("gr_file_relation")
+@TableName("rf_file_relation")
 public class FileRelationEntity {
 
     @TableId(type = IdType.AUTO)

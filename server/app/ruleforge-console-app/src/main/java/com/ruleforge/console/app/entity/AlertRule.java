@@ -9,7 +9,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("nd_alert_rule")
+@TableName("rfa_alert_rule")
 public class AlertRule {
 
     @TableId(value = "id", type = IdType.AUTO)

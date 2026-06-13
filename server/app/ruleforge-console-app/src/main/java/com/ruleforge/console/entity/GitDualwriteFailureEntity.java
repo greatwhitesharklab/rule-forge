@@ -16,7 +16,7 @@ import java.util.Date;
  * 配套 Micrometer counter + 5.10-C admin endpoint.
  */
 @Data
-@TableName("gr_git_dualwrite_failure")
+@TableName("rf_git_dualwrite_failure")
 public class GitDualwriteFailureEntity {
 
     @TableId(type = IdType.AUTO)

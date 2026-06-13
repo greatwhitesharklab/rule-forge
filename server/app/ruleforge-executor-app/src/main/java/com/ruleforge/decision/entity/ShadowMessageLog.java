@@ -12,7 +12,7 @@ import java.util.Date;
  * 决策陪跑消息明细表
  */
 @Data
-@TableName("nd_decision_shadow_message_log")
+@TableName("rfa_decision_shadow_message_log")
 public class ShadowMessageLog {
 
     @TableId(value = "id", type = IdType.AUTO)

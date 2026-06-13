@@ -12,7 +12,7 @@ import java.util.Date;
  * 决策执行消息明细表
  */
 @Data
-@TableName("nd_decision_message_log")
+@TableName("rfa_decision_message_log")
 public class DecisionMessageLog {
 
     @TableId(value = "id", type = IdType.AUTO)

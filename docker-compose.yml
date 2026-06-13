@@ -62,7 +62,7 @@ services:
     environment:
       CONSOLE_PORT: "8180"
       SERVER_PORT: "8180"
-      APP_DB_URL: jdbc:mysql://mysql:3306/app_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      APP_DB_URL: jdbc:mysql://mysql:3306/ruleforge_app_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       APP_DB_USERNAME: root
       APP_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ruleforge}
       RF_DB_URL: jdbc:mysql://mysql:3306/ruleforge_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true

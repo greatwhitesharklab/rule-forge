@@ -1,5 +1,6 @@
 -- Internal approval tasks for version deployment
-CREATE TABLE IF NOT EXISTS gr_approval_task (
+-- V5.53: rename gr_ -> rf_
+CREATE TABLE IF NOT EXISTS rf_approval_task (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     project_id BIGINT NOT NULL,
     package_id VARCHAR(64) NULL,

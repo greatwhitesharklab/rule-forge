@@ -9,7 +9,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName("gr_project")
+@TableName("rf_project")
 public class ProjectEntity {
 
     @TableId(type = IdType.AUTO)
