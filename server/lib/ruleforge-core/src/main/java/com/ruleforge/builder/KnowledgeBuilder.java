@@ -9,8 +9,10 @@ import com.ruleforge.builder.table.ScriptDecisionTableToDrlConverter;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.ir.dmn.DmnResourceDispatcher;
 import com.ruleforge.ir.drl.DatatypeResolver;
+import com.ruleforge.ir.drl.DrlAstVisitor;
 import com.ruleforge.ir.drl.DrlResource;
 import com.ruleforge.ir.drl.DrlResourceBuilder;
+import com.ruleforge.ir.drl.LibraryLoader;
 import com.ruleforge.ir.pmml.PmmlResourceDispatcher;
 import com.ruleforge.model.crosstab.CrosstabDefinition;
 import com.ruleforge.model.decisiontree.DecisionTree;
@@ -58,6 +60,14 @@ public class KnowledgeBuilder extends AbstractBuilder {
      * 跟 V5.40 同款,只加并行新格式,删 .xml 路径是 V5.42/V5.43 后置 PR)。
      */
     private PmmlResourceDispatcher pmmlResourceDispatcher;
+    /**
+     * V5.45.2 — library 加载 SPI。{@code null} 时,.drl 路径退到 V5.44.4 行为(imports
+     * 列表收集但不实际加载);非 null 时,.drl 顶层 import 段每条路径 BFS 递归加载。
+     * console-app 注入 LocalLibraryLoader(读 repository .drl),executor-app 注入
+     * RemoteLibraryLoader(调 console /fileSource 端点),ruleforge-core 单元测试
+     * 注入 mock。
+     */
+    private LibraryLoader libraryLoader;
     public static final String BEAN_ID = "ruleforge.knowledgeBuilder";
 
     public KnowledgeBuilder() {
@@ -114,10 +124,36 @@ public class KnowledgeBuilder extends AbstractBuilder {
                 } else if (path != null && (path.toLowerCase().endsWith(".drl")
                         || path.toLowerCase().endsWith(".drlrd")
                         || path.toLowerCase().endsWith(".dslr"))) {
-                    // V5.44.4 — DRL 4 grammar 资源路径,绕过老 .xml 解析,走 V5.42.4
-                    // DrlResourceBuilder + DrlDeserializer。library 引用走 .drl 顶层
-                    // import 段(grammar V5.44.3 加 DRL_IMPORT,见 DrlLexer.g4)。
-                    List<Rule> drlRules = new DrlResourceBuilder(new DatatypeResolver())
+                    // V5.45.2 — DRL 4 grammar 资源路径,两阶段 parse:
+                    //   阶段 1:lenient 模式 parse,只抽顶层 import 段
+                    //   阶段 2:BFS 调 libraryLoader 拉每个 library declare types,
+                    //          register 进 DatatypeResolver(builtin 优先,不覆盖)
+                    //   阶段 3:用已注册 resolver 跑 DrlResourceBuilder
+                    // V5.44.4 老路径(无 libraryLoader)行为兼容:imports 列表收集但不加载
+                    DatatypeResolver resolver = new DatatypeResolver();
+                    if (this.libraryLoader != null) {
+                        org.antlr.v4.runtime.CharStream input = org.antlr.v4.runtime.CharStreams.fromString(resource.getContent());
+                        com.ruleforge.drl.DrlLexer lexer = new com.ruleforge.drl.DrlLexer(input);
+                        org.antlr.v4.runtime.CommonTokenStream tokens = new org.antlr.v4.runtime.CommonTokenStream(lexer);
+                        com.ruleforge.drl.DrlParser parser = new com.ruleforge.drl.DrlParser(tokens);
+                        DrlAstVisitor phase1 = new DrlAstVisitor(resolver, true);
+                        phase1.visit(parser.compilationUnit());
+
+                        java.util.Deque<String> queue = new java.util.ArrayDeque<>(phase1.getImports());
+                        java.util.Set<String> visited = new java.util.LinkedHashSet<>();
+                        while (!queue.isEmpty()) {
+                            String libPath = queue.poll();
+                            if (!visited.add(libPath)) continue;
+                            java.util.Map<String, DatatypeResolver.TypeInfo> libTypes =
+                                this.libraryLoader.loadLibrary(libPath, path);
+                            for (java.util.Map.Entry<String, DatatypeResolver.TypeInfo> e : libTypes.entrySet()) {
+                                if (!resolver.isKnown(e.getKey())) {
+                                    resolver.register(e.getKey(), e.getValue());
+                                }
+                            }
+                        }
+                    }
+                    List<Rule> drlRules = new DrlResourceBuilder(resolver)
                         .build(new DrlResource(resource.getContent(), path));
                     if (drlRules != null && !drlRules.isEmpty()) {
                         this.buildRulesPath(drlRules, path);
