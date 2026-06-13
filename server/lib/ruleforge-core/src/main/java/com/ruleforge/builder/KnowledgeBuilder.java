@@ -5,7 +5,6 @@ import com.ruleforge.builder.resource.ResourceBuilder;
 import com.ruleforge.builder.resource.ResourceType;
 import com.ruleforge.builder.table.CrosstabRulesBuilder;
 import com.ruleforge.builder.table.DecisionTableRulesBuilder;
-import com.ruleforge.builder.table.ScriptDecisionTableRulesBuilder;
 import com.ruleforge.dsl.DSLRuleSetBuilder;
 import com.ruleforge.exception.ResourceMigrationRequiredException;
 import com.ruleforge.exception.RuleException;
@@ -23,7 +22,6 @@ import com.ruleforge.model.rule.loop.LoopRule;
 import com.ruleforge.model.rule.loop.LoopRuleUnit;
 import com.ruleforge.model.scorecard.runtime.ScoreRule;
 import com.ruleforge.model.table.DecisionTable;
-import com.ruleforge.model.table.ScriptDecisionTable;
 import com.ruleforge.runtime.KnowledgePackageWrapper;
 import com.ruleforge.runtime.service.KnowledgePackageService;
 import lombok.Setter;
@@ -39,7 +37,6 @@ public class KnowledgeBuilder extends AbstractBuilder {
     private RulesRebuilder rulesRebuilder;
     private DecisionTreeRulesBuilder decisionTreeRulesBuilder;
     private DecisionTableRulesBuilder decisionTableRulesBuilder;
-    private ScriptDecisionTableRulesBuilder scriptDecisionTableRulesBuilder;
     private DSLRuleSetBuilder dslRuleSetBuilder;
     private CrosstabRulesBuilder crosstabRulesBuilder;
     /**
@@ -150,14 +147,10 @@ public class KnowledgeBuilder extends AbstractBuilder {
                                     this.buildRulesPath(tableRules, path);
                                     rules.addAll(tableRules);
                                 } else if (type.equals(ResourceType.ScriptDecisionTable)) {
-                                    ScriptDecisionTable table = (ScriptDecisionTable) object;
-                                    ruleSet = this.scriptDecisionTableRulesBuilder.buildRules(table);
-                                    this.addToLibraryMap(libMap, ruleSet.getLibraries());
-                                    if (ruleSet.getRules() != null) {
-                                        // 关联规则与路径
-                                        this.buildRulesPath(ruleSet.getRules(), path);
-                                        rules.addAll(ruleSet.getRules());
-                                    }
+                                    // V5.43.5 — 行为降级:ScriptDecisionTable 走老 .ul DSL
+                                    // ScriptDecisionTableRulesBuilder 已被删,跳过(类似 Flow
+                                    // 处理 — 不产 rule,V5.44 单独 PR 实现 ScriptDecisionTable
+                                    // → DRL 转换)
                                 } else if (type.equals(ResourceType.Flow)) {
                                     // Flow resources are now handled by Flowable BPMN engine
                                     // Skip old flow definition processing
