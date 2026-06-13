@@ -4,12 +4,14 @@
 
 RuleForge 当前已具备的能力：
 
-- **RETE 规则引擎** — 基于 RETE 算法的高性能规则匹配与执行
-- **7 种规则类型** — 向导式规则集、脚本式规则集、决策表、脚本决策表、决策树、评分卡、决策流
+- **RETE 规则引擎** — 基于 RETE 算法的高性能规则匹配与执行(Java 0.16ms / 2000 fact)
+- **7 种规则类型** — DRL · DMN 1.3 · PMML 4.4 · 决策表 · 评分卡 · 决策树 · 决策流
 - **可视化设计器** — React + bpmn-js 的 Web 规则编辑器
-- **决策流编排** — 基于 Flowable 8 的 BPMN 2.0 流程引擎
-- **陪跑测试** — A/B 对比执行，不影响主流程
+- **决策流编排** — 自建 BPMN 2.0 流程引擎(V5.21-V5.39,V5.20 之前是 Flowable 8,已全替)
+- **陪跑测试** — A/B 对比执行,4 维度 × 4 级严重度自动对比
 - **决策日志** — 完整记录输入、输出、执行明细、各阶段耗时
+- **Rust 实验引擎** — `experiments/server-rust/`,alpha,验证 RETE 性能(V5.46:2.12ms / 1000 fact,Rust 17-26x 慢于 Java 端)
+- **路线 B 收口** — 决策表走 DMN 1.3(Kie DMN 10.1.0),评分卡 + 决策树走 PMML 4.4(pmml4s 1.5.6 BSD-2-Clause),规则 + DSL 走 DRL 4 自研 ANTLR4(Apache 2.0 clean,无 Drools runtime)
 
 ## 版本管理
 
@@ -33,11 +35,14 @@ Phase 8 / 9 / 12 完成后,版本号按改动量决定是 patch bump 还是 mino
 ## 实施顺序
 
 ```
-Phase 1-12 ✅ 已完成 → Phase 9 (数据源批量测试 controller 接入) 📋 待收口
+Phase 1-12 ✅ 已完成 → V5.25-V5.47 路线 B 收口 + 删老路径 ✅ 已完成 → V5.48+ 候选方向
 ```
 
 ```
-Phase 9  数据源批量测试   P1  ── 收尾(后端 60%,剩 controller)
+Phase 9   数据源批量测试                 P1  ── 收尾中(后端 60%,剩 controller)
+V5.40-V5.47 路线 B + 删老路径            P0  ── 已完成(冻结历史)
+V5.48+     DRL grammar 扩展 + 编辑器     P0  ── 候选
+V5.48+     Rust alpha index + Drools 7.31 实测  P2  ── 候选
 ```
 
 ## 路线图总览
@@ -54,8 +59,75 @@ Phase 9  数据源批量测试   P1  ── 收尾(后端 60%,剩 controller)
 | 文档与 Demo | GitHub Pages + VitePress | P2 | ✅ 已完成 |
 | PMML/PKL 模型 | Python 模型导入执行 | P2 | ✅ 已完成 |
 | ClickHouse 分析 | 高性能分析数据库 | P1 | ✅ 已完成 |
-| Rust 执行引擎 | RETE 端到端复刻 + BPMN 完整化 (V5.25-V5.27) | P3 | ✅ 已完成 |
+| Rust 执行引擎 | RETE 端到端复刻 + BPMN 完整化 (V5.25-V5.27) | P3 | ✅ 已完成(alpha) |
 | 数据源批量测试 | CSV/JSON 批量导入测试 | P1 | 📋 60% 完成(等接 controller) |
+| **路线 B 收口** | **DMN 1.3 + PMML 4.4 + DRL 4 自研 ANTLR4 (V5.40-V5.42) + 删老 .xml/.ul (V5.43-V5.47)** | P0 | ✅ 已完成 |
+| **RETE perf baseline** | **Java 0.16ms / 2000 fact · Rust 2.12ms / 1000 fact (V5.46)** | P0 | ✅ 已完成 |
+
+---
+
+## ✅ 已完成里程碑(冻结历史,V5.28-V5.47)
+
+> **纪律**:以下里程碑都已发版并入主,代码与变更记录锁定。读者只看"将来
+> 做什么"时,这块可整段跳过;追溯历史 / 理解架构决策时再回看。
+>
+> 详细 commit / 决策 / 数据见 [CHANGELOG.md](../CHANGELOG.md) 对应段。
+
+### V5.28-V5.36:Java 端 BPMN 2.0 完整化
+
+- 8 个 PR 增量落地:ParallelGateway JOIN / Multi-Instance (Sequential + Parallel)/
+  Compensation SAGA / IntermediateEvent (Message / Signal / Timer) / Error /
+  Escalation 触发与捕获
+- FlowEngine 自研 — 全替 Flowable 8 starter(原 5.20 之前用 Flowable 8)
+- 22 字段 god-object `FlowContext` 拆 4 角色:`FlowIdentity` + `BusinessVars` +
+  `ReteSession` + `SuspendRegistry`(V5.39)
+- `MessageBus` SPI 多实现:`InMemoryMessageBus` + Provider/Registry(V5.38)
+- Multi-pool + Choreography 协作(V5.37)
+
+### V5.40-V5.42:路线 B 三刀(IR 标准化)
+
+| 版本 | 主题 | 标准 | 库 |
+|---|---|---|---|
+| **V5.40** | 决策表 → DMN 1.3 | OMG DMN 1.3 | Kie DMN 10.1.0(Apache-2.0) |
+| **V5.41** | 评分卡 + 决策树 → PMML 4.4 | OMG PMML 4.4 | pmml4s 1.5.6(BSD-2-Clause,非 jpmml AGPL-3.0) |
+| **V5.42** | 规则 + DSL → DRL 4 自研 | Drools DRL 子集(95% 业务覆盖) | 自研 ANTLR4 grammar(Apache-2.0 clean) |
+
+- 决策叙事:规则引擎不查数据,只对 facts 跑规则 — LazyGeneralEntity 反模式已废弃
+- 工程叙事:Apache 2.0 clean,无 Drools / Flowable runtime,依赖体积 + 风险双降
+- grammar 缺失:`accumulate reverse` / `import` / `function` / `declare` 不在 V5.42 grammar 范围(V5.48+ 候选)
+
+### V5.43-V5.44:删老解析路径 + 路线 B 后清理
+
+- V5.43 — 删老 .xml rule 链(2 library deserializer 等)+ 删老 .ul DSL 链(`DSLRuleSet` interface
+  + `KnowledgeBuilder.dslRuleSetBuilder` 字段)— 走 0 rule fallback
+- V5.43.2 — 删 `SpringBeanParser` / `NamedJunctionParser` / `RuleSetResourceBuilder` /
+  `RuleSetDeserializer` 4 class,防 refactor 救回
+- V5.44 — 4 library deserializer(Variable/Action/Constant/Parameter)改 DRL 顶层 `import` 段;
+  整 `com.ruleforge.dsl.*` 搬到独立 jar `lib/ruleforge-dsl`
+- V5.45 — DSL chain runtime 真删:`KnowledgeBuilder` 删 `dslRuleSetBuilder` 字段
+- **V5.47** — 删 `com.ruleforge.parse.RuleSetParser`(老 .xml 资源级根解析,71 行)+ 删
+  整个 `lib/ruleforge-dsl` module(17 main + 1 test + pom)— 2 app 入口不 import
+  `com.ruleforge.dsl.*`,classloader 跑 `Class.forName` 全部 CNFE
+
+### V5.46 / V5.46.1 / V5.46.2:RETE 性能基线
+
+- V5.46 — Java + Rust 横向 perf bench:`EvalBenchmark` 锁基线
+  - Java RETE:2000 fact + 3 rule = **0.16ms p50 / 0.27ms p50 with eval**(per-fact 0.08-0.13 μs)
+  - Rust rf-rule:1000 fact + 3 rule = **2.34ms baseline**
+- V5.46.1 — 修 Rust `EvaluationContext` 跨 fact cache bug,1-shot BDD 验证 + bench regression
+  lock,Rust 真值 **2.12ms / 1000 fact**
+- V5.46.2 — 根 README 表格化 + perf 报告落地(`server/lib/ruleforge-core/src/test/java/com/ruleforge/rete/perf/README.md`)
+- **结论**:Java 0.1ms 量级生产无忧;Rust 17-26x 慢(Arc<dyn Activity> 动态分发 / 缺 alpha
+  index / per-fact HashMap clean 重建),**Rust 升格 production 0 收益,继续留 alpha**
+
+### V5.47:文档整改
+
+- 根 README 重写为读者 path 引导 + 折叠细节(154 行,333 → 154)
+- 4 个 `<details>` 折叠块:Rust 实验引擎 / 技术栈一览 / 规则类型一览 / 端口速查 / 规则 IR 演进
+- "🎯 快速选择你的路径" 4 行表:BA / 信贷方 / 运维 / 二次开发 各自起点
+- CHANGELOG 补 V5.40-V5.47 8 段(此前漏更)+ 修 V5.40/V5.41/V5.42 错位(在 [5.0.0] 段下面)
+- Maven `<revision>` 5.0.0 → 5.47.0,跟项目 V 号对齐
+- 删 `lib/ruleforge-dsl` 整个 module + 老 .xml `RuleSetParser` 解析路径
 
 ---
 
@@ -366,3 +438,71 @@ MockRuleEngine;BoundaryEvent / SubProcess executor 补齐 BPMN 2.0
   对比输出)
 - ComplexGateway + ParallelGateway fork/join
 - Rust 路径 Playwright e2e 测试(目前 Playwright 只覆盖 Java console)
+
+---
+
+## 🛣️ 当前 Phase 方向(V5.48+ 候选)
+
+> **纪律**:roadmap 只列 Phase 方向,版本号在 release 时回填(参考上文
+> "版本管理"段)。以下 Phase 编号是 `x.y` 占位,具体发版号跟 PR 走。
+
+### Phase 13:DRL 4 grammar 扩展 — P0
+
+- 背景:V5.42 grammar 覆盖 95% 业务,缺 `accumulate reverse` / `import` / `function` /
+  `declare` 4 段
+- 工作量:ANTLR4 grammar 扩 + AST visitor 扩 + DrlDeserializer 扩,4-6 周
+- 风险:实测业务样本,确认这 4 段是 "想要" 还是 "真必要"(部分语法可以走替代品)
+- 决策:开始前先盘点业务代码,看哪段真用过
+
+### Phase 14:完整 DRL 编辑器(console-ui)重写 — P0
+
+- 背景:V5.42 起 console-ui 只 source format badge(语法高亮 + 大纲),无 IDE 级
+  autocomplete / 类型检查 / 重命名重构
+- 工作量:VS Code 同款 LSP client 集成到 monaco-editor,8-12 周
+- 收益:DRL 编写体验追平 IDE,降低 BA 学习成本
+- 风险:VS Code LSP server 实现成本高,可能做 "half-LSP" — 内部用 bpmn-js
+  风格定制
+
+### Phase 15:Rust alpha index 优化 — P2
+
+- 背景:V5.46.1 测得 Rust 2.12ms / 1000 fact,比 Java 0.16ms / 2000 fact 慢 17-26x
+- 工作量:加 alpha index(节点级哈希索引),从 2.12ms → 0.3ms 量级,2-3 周
+- 风险:**Java 端 0.16ms 已经 0.1ms 量级生产无忧**,即使 Rust 优化到 0.3ms 仍慢
+  ~2x。**升格 production 决策:不做**(V5.46 已定调)
+- 候选:alpha 继续做,Rust 端跑长尾测试场景(fact 10w+)验证上限
+
+### Phase 16:Drools 7.31 真 baseline 实测 — P2
+
+- 背景:V5.46 perf 报告里 Drools 7.31 数字 0.5-2ms 是社区估的,没实测
+- 工作量:搭 Drools 7.31 容器,跑同样 EvalBenchmark,1-2 周
+- 收益:Java 端 0.16ms 跟 Drools 7.31 真值的差距清晰化(可能要宣传 "5x 快" 或
+  "持平")
+- 风险:Drools 7.31 license 是 Apache-2.0,临时引入跑测试 OK,长期不并入
+
+### Phase 17:删老路径后 perf 回归(DRL-only) — P1
+
+- 背景:V5.43-V5.47 删老 .xml / .ul 路径,DRL-only 走生产路径,需回归测试
+  确认 perf 跟功能不退化
+- 工作量:扩展 `EvalBenchmark` 加 DRL-only 场景,1 周
+- 收益:锁 V5.47 后的 perf baseline(0.16ms / 2000 fact),为 Phase 15 / 16 提供
+  起点
+
+### Phase 18:数据源批量测试(controller 接入) — P1
+
+- 继承自 Phase 9,后端 60% 完成,等接 `DatasourceBatchTestController` + 前端
+  `DatasourceBatchTestPanel`
+- 工作量:2-3 周
+- 风险:此 PR 早开工早收口(已挂在 P1 半年)
+
+### 路线图总览(V5.48+ 候选)
+
+| 方向 | 候选 Phase | 优先级 | 状态 |
+|---|---|:---:|:---:|
+| DRL grammar 扩展 | Phase 13 | P0 | 📋 候选(先盘点业务) |
+| 完整 DRL 编辑器 | Phase 14 | P0 | 📋 候选(8-12 周) |
+| Rust alpha index 优化 | Phase 15 | P2 | 📋 候选(2-3 周,继续 alpha) |
+| Drools 7.31 真 baseline | Phase 16 | P2 | 📋 候选(1-2 周) |
+| DRL-only perf 回归 | Phase 17 | P1 | 📋 候选(1 周) |
+| 数据源批量测试收口 | Phase 18 | P1 | 📋 收口(2-3 周) |
+| Rust 升格 production | — | — | ❌ **不做**(V5.46 已定调 0 收益) |
+| Java alpha index 优化 | — | — | ❌ **不做**(0.1ms 节省不抵 1 周改 + 回归) |
