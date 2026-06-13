@@ -3,6 +3,7 @@ import TreeParentItem from './TreeParentItem';
 import Menu from '../../menu/component/Menu';
 import * as event from '../../componentEvent.js';
 import * as ACTIONS from '../../../frame/action.js';
+import {buildEditorUrl} from '../../../Utils.ts';
 
 interface TreeItemProps {
     data: TreeNodeData;
@@ -148,11 +149,11 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                         if (isFile) {
                             const editorBasePath = this.props.treeType === 'public' ? '/html/editor.html?type=resource' : data.editorPath;
 
-                            let url = '.' + editorBasePath + "?file=" + data.fullPath;
+                            let url = buildEditorUrl(editorBasePath, data.fullPath);
                             let fullPath = data.fullPath;
                             if (data.type === 'resourcePackage') {
                                 const packageName = data.fullPath.split("/")[1];
-                                url = '.' + data.editorPath + "?file=" + packageName + '.rp';
+                                url = buildEditorUrl(data.editorPath, packageName + '.rp');
                                 fullPath = '/' + packageName;
                             }
 

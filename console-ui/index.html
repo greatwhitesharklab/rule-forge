@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>RuleForge</title>
+    <!--
+      过渡方案:让根路径 / 可访问(修复 B-2)。
+      现状是 MPA 多页结构,入口在 /html/login.html。SPA 改造(V5.54+)后此文件会被
+      真正的单页根入口替代(react-router / → /login)。在此之前用 meta refresh + JS
+      双重重定向,保证用户直接访问 localhost:5173/ 不会 404。
+    -->
+    <meta http-equiv="refresh" content="0; url=/html/login.html">
+    <script>
+        window.location.replace('/html/login.html');
+    </script>
+</head>
+<body>
+    正在跳转到登录页…如未自动跳转,请<a href="/html/login.html">点击这里</a>。
+</body>
+</html>

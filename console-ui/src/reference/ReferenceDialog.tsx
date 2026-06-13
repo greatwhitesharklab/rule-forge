@@ -3,6 +3,7 @@ import CommonDialog from '../components/dialog/component/CommonDialog.jsx';
 import * as event from './event.js';
 import * as frameEvent from '../frame/event.js';
 import {formPost} from '../api/client.js';
+import {buildEditorUrl} from '../Utils.ts';
 
 interface ReferenceFile {
     path: string;
@@ -308,7 +309,7 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
                                     <td>{file.type}</td>
                                     <td><button type="button" className="btn btn-link" style={{padding:'5px 5px'}} onClick={function() {
                                         const editorPath = '/html' + file.editor;
-                                        const url = '.' + editorPath + '?file=' + file.path;
+                                        const url = buildEditorUrl(editorPath, file.path);
                                         console.log('url:', url);
                                         const config = {
                                             id: file.path,
