@@ -24,7 +24,10 @@ import javax.sql.DataSource;
         // V5.17: audit log mapper(走 ruleforgeSqlSessionFactory 跟 rf_user / rf_user_audit_log 同源)
         "com.ruleforge.console.audit.mapper",
         // V5.22: AI 规则草稿 mapper(rf_draft)
-        "com.ruleforge.console.app.draft"
+        "com.ruleforge.console.app.draft",
+        // V5.53: Agent audit mapper(nd_agent_audit)— V5.22 写的 mapper 类
+        //   AgentAuditService / ToolExecutor 都强依赖,scan 不进来 Spring context refresh fail
+        "com.ruleforge.console.app.agent.audit"
 }, sqlSessionFactoryRef = "ruleforgeSqlSessionFactory")
 public class MybatisPlusConfig {
 
