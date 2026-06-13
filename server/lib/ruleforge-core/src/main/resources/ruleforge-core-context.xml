@@ -49,7 +49,6 @@
     <bean id="ruleforge.knowledgeBuilder" class="com.ruleforge.builder.KnowledgeBuilder">
         <property name="reteBuilder" ref="ruleforge.reteBuilder"/>
         <property name="rulesRebuilder" ref="ruleforge.rulesRebuilder"/>
-        <property name="scriptDecisionTableRulesBuilder" ref="ruleforge.scriptDecisionTableRulesBuilder"/>
         <property name="resourceLibraryBuilder" ref="ruleforge.resourceLibraryBuilder"/>
         <property name="decisionTableRulesBuilder" ref="ruleforge.decisionTableRulesBuilder"/>
         <property name="dslRuleSetBuilder" ref="ruleforge.dslRuleSetBuilder"/>
@@ -177,10 +176,6 @@
         <property name="actionLibraryDeserializer" ref="ruleforge.actionLibraryDeserializer"/>
     </bean>
 
-    <bean id="ruleforge.ruleSetResourceBuilder" class="com.ruleforge.builder.resource.RuleSetResourceBuilder">
-        <property name="ruleSetDeserializer" ref="ruleforge.ruleSetDeserializer"/>
-    </bean>
-
     <bean id="ruleforge.variableLibraryResourceBuilder"
           class="com.ruleforge.builder.resource.VariableLibraryResourceBuilder">
         <property name="variableLibraryDeserializer" ref="ruleforge.variableLibraryDeserializer"/>
@@ -199,14 +194,6 @@
 <bean id="ruleforge.scriptDecisionTableDeserializer"
           class="com.ruleforge.parse.deserializer.ScriptDecisionTableDeserializer">
         <property name="scriptDecisionTableParser" ref="ruleforge.scriptDecisionTableParser"/>
-    </bean>
-
-    <bean id="ruleforge.cellScriptDSLBuilder" class="com.ruleforge.builder.table.CellScriptDSLBuilder"/>
-
-    <bean id="ruleforge.scriptDecisionTableRulesBuilder"
-          class="com.ruleforge.builder.table.ScriptDecisionTableRulesBuilder">
-        <property name="cellScriptDSLBuilder" ref="ruleforge.cellScriptDSLBuilder"/>
-        <property name="dslRuleSetBuilder" ref="ruleforge.dslRuleSetBuilder"/>
     </bean>
 
     <bean id="ruleforge.scriptDecisionTableParser" class="com.ruleforge.parse.table.ScriptDecisionTableParser">
@@ -291,10 +278,6 @@
     <bean id="ruleforge.criteriaBuilder" class="com.ruleforge.model.rete.builder.CriteriaBuilder"/>
     <bean id="ruleforge.andBuilder" class="com.ruleforge.model.rete.builder.AndBuilder"/>
     <bean id="ruleforge.orBuilder" class="com.ruleforge.model.rete.builder.OrBuilder"/>
-
-    <bean id="ruleforge.ruleSetDeserializer" class="com.ruleforge.parse.deserializer.RuleSetDeserializer">
-        <property name="ruleSetParser" ref="ruleforge.ruleSetParser"/>
-    </bean>
 
     <bean id="ruleforge.commonFunctionActionParser" class="com.ruleforge.parse.CommonFunctionActionParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>

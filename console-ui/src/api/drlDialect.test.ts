@@ -7,7 +7,7 @@ import {
     type DrlDialect
 } from './drlDialect.js';
 
-describe('V5.42.7 — drlDialect utility', () => {
+describe('V5.42.7 / V5.43 — drlDialect utility', () => {
     describe('detectDrlDialectFromFilePath', () => {
         test('空 / undefined → DEFAULT_DIALECT', () => {
             expect(detectDrlDialectFromFilePath('')).toBe(DEFAULT_DIALECT);
@@ -18,19 +18,19 @@ describe('V5.42.7 — drlDialect utility', () => {
             expect(detectDrlDialectFromFilePath('rules/main.drl')).toBe('DRL');
         });
 
-        test('.dsl 后缀 → DRL(Drools 6 mapping 文件)', () => {
-            expect(detectDrlDialectFromFilePath('mappings/loan.dsl')).toBe('DRL');
-        });
-
         test('.dslrd 后缀 → DRL(Drools 6 rule descriptor)', () => {
             expect(detectDrlDialectFromFilePath('rules/loan.dslrd')).toBe('DRL');
         });
 
-        test('.xml 后缀 → RULEFORGE_NATIVE(legacy)', () => {
+        test('.dslr 后缀 → DRL(新版 Drools 6 rule descriptor,V5.43 收口后允许)', () => {
+            expect(detectDrlDialectFromFilePath('rules/loan.dslr')).toBe('DRL');
+        });
+
+        test('V5.43+.xml 后缀 → DEFAULT(不再 → RULEFORGE_NATIVE,legacy-free 收口)', () => {
             expect(detectDrlDialectFromFilePath('rules/legacy.xml')).toBe(DEFAULT_DIALECT);
         });
 
-        test('.ul 后缀 → RULEFORGE_NATIVE(legacy,中文改写版)', () => {
+        test('V5.43+.ul 后缀 → DEFAULT(不再 → RULEFORGE_NATIVE,legacy-free 收口)', () => {
             expect(detectDrlDialectFromFilePath('rules/zh.ul')).toBe(DEFAULT_DIALECT);
         });
 
@@ -40,16 +40,16 @@ describe('V5.42.7 — drlDialect utility', () => {
     });
 
     describe('drlDialectLabel', () => {
-        test('null → legacy label', () => {
-            expect(drlDialectLabel(null)).toContain('legacy');
+        test('null → V5.43+ legacy-free label', () => {
+            expect(drlDialectLabel(null)).toContain('V5.43');
         });
 
-        test('RULEFORGE_NATIVE → legacy label', () => {
-            expect(drlDialectLabel('RULEFORGE_NATIVE')).toContain('RuleForge');
+        test('RULEFORGE_NATIVE → V5.43 deprecated label', () => {
+            expect(drlDialectLabel('RULEFORGE_NATIVE')).toContain('V5.43 deprecated');
         });
 
-        test('DRL → V5.42+ label', () => {
-            expect(drlDialectLabel('DRL')).toContain('V5.42');
+        test('DRL → V5.43+ legacy-free label', () => {
+            expect(drlDialectLabel('DRL')).toContain('V5.43+ legacy-free');
         });
     });
 
@@ -65,8 +65,8 @@ describe('V5.42.7 — drlDialect utility', () => {
     });
 
     describe('DEFAULT_DIALECT 常量', () => {
-        test('值是 RULEFORGE_NATIVE(跟 V5.40.6 / V5.41.6 一致)', () => {
-            expect(DEFAULT_DIALECT).toBe<DrlDialect>('RULEFORGE_NATIVE');
+        test('V5.43+ 改 DRL(路线 B 收口后 production 仅支持 DRL 4)', () => {
+            expect(DEFAULT_DIALECT).toBe<DrlDialect>('DRL');
         });
     });
 });

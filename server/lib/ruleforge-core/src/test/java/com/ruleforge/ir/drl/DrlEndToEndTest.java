@@ -172,45 +172,6 @@ class DrlEndToEndTest {
     }
 
     // ============================================================
-    // === V5.42.3b .ul → .drl → Rule 链 ===
-    // ============================================================
-
-    @Nested
-    @DisplayName("Given V5.42.3b UlToDrlConverter,When emit + 走 DrlResourceBuilder,Then 链通")
-    class UlToDrlBridge {
-
-        @Test
-        @DisplayName("emit .drl 文本进 DrlResourceBuilder 不抛错")
-        void emitThenBuild() {
-            com.ruleforge.ir.migration.UlToDrlConverter conv =
-                new com.ruleforge.ir.migration.UlToDrlConverter();
-
-            // 模拟 DSLRuleSetBuilder 输出:RuleSet 含 1 rule
-            RuleSet rs = new RuleSet();
-            rs.setRules(new ArrayList<>());
-            Rule r = new Rule();
-            r.setName("R1");
-            r.setLhs(new Lhs());
-            r.setRhs(new Rhs());
-            r.setSalience(5);
-            rs.getRules().add(r);
-
-            String drl = conv.emit(rs);
-            // 第一版:emit 含 TODO 注释(运维手动补 lhs),但顶层 metadata 正确
-            assertTrue(drl.contains("rule \"R1\""), "emit 应含 rule,实际:" + drl);
-            assertTrue(drl.contains("salience 5"), "emit 应含 salience,实际:" + drl);
-
-            // V5.42.5 决定:emit 第一版**不**走 DrlResourceBuilder(lhs 留 TODO 注释,
-            // 跑 DrlResourceBuilder 会报 "lhs 内部未实现" 或 syntax error)
-            // — emit 是"给运维 review 用",不是"自动跑通"
-            // 验证 emit 文本本身格式稳定即可
-            assertTrue(drl.contains("when"), "emit 应含 when");
-            assertTrue(drl.contains("then"), "emit 应含 then");
-            assertTrue(drl.contains("end"), "emit 应含 end");
-        }
-    }
-
-    // ============================================================
     // === V5.42.4 lhs PropertyCriteria 暂存可读 ===
     // ============================================================
 

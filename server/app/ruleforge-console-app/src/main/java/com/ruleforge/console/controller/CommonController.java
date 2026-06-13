@@ -13,11 +13,7 @@ import com.ruleforge.console.repository.model.FileType;
 import com.ruleforge.console.repository.model.RepositoryFile;
 import com.ruleforge.console.servlet.common.ErrorInfo;
 import com.ruleforge.console.servlet.common.RefFile;
-import com.ruleforge.console.servlet.common.ScriptErrorListener;
-import com.ruleforge.console.servlet.common.ScriptType;
 import com.ruleforge.dsl.DSLRuleSetBuilder;
-import com.ruleforge.dsl.RuleParserLexer;
-import com.ruleforge.dsl.RuleParserParser;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.rule.RuleSet;
 import com.ruleforge.model.function.FunctionDescriptor;
@@ -74,7 +70,6 @@ public class CommonController extends BaseController {
     private final ActionLibraryDeserializer actionLibraryDeserializer;
     private final VariableLibraryDeserializer variableLibraryDeserializer;
     private final ConstantLibraryDeserializer constantLibraryDeserializer;
-    private final RuleSetDeserializer ruleSetDeserializer;
     private final DecisionTableDeserializer decisionTableDeserializer;
     private final CrosstableDeserializer crosstableDeserializer;
     private final ScriptDecisionTableDeserializer scriptDecisionTableDeserializer;
@@ -99,7 +94,6 @@ public class CommonController extends BaseController {
                 this.actionLibraryDeserializer,
                 this.variableLibraryDeserializer,
                 this.constantLibraryDeserializer,
-                this.ruleSetDeserializer,
                 this.decisionTableDeserializer,
                 this.scriptDecisionTableDeserializer,
                 this.decisionTreeDeserializer,
@@ -493,11 +487,6 @@ public class CommonController extends BaseController {
         return result;
     }
 
-    @PostMapping("/scriptValidation")
-    public List<ErrorInfo> scriptValidation(@RequestParam String content, @RequestParam String type) {
-        return scriptValidationText(content, type);
-    }
-
     @PostMapping("/loadReferenceFiles")
     public List<RefFile> loadReferenceFiles(@RequestParam(required = false) String project,
                                             HttpServletRequest req) {
@@ -602,64 +591,11 @@ public class CommonController extends BaseController {
     @PostMapping("/findRuleByKey")
     public List<com.ruleforge.model.rule.Rule> findRuleByKey(@RequestParam String ruleKey,
                                                               @RequestParam String projectName) throws Exception {
-        List<com.ruleforge.model.rule.Rule> ruleList = new ArrayList<>();
-        User user = EnvironmentUtils.getLoginUser(null);
-        FileType[] types = new FileType[]{FileType.RulesetLib};
-        Repository repo = this.ruleforgeRepositoryService.loadRepository(projectName, user, false, types, "");
-        List<RepositoryFile> repositoryFileList = fetchRsl(repo.getRootFile());
-        for (RepositoryFile repositoryFile : repositoryFileList) {
-            try (InputStream inputStream = this.ruleforgeRepositoryService.readFile(repositoryFile.getFullPath(), null)) {
-                Element element = parseXml(inputStream);
-                RuleSet ruleSet = ruleSetDeserializer.deserialize(element);
-                for (com.ruleforge.model.rule.Rule rule : ruleSet.getRules()) {
-                    if (ruleKey.equals(rule.getName())) {
-                        ruleList.add(rule);
-                    }
-                }
-            } catch (Exception ex) {
-                throw new RuleException(ex);
-            }
-        }
-        return ruleList;
-    }
-
-    private List<RepositoryFile> fetchRsl(RepositoryFile repositoryFile) {
-        List<RepositoryFile> list = new ArrayList<>();
-        if (repositoryFile.getType() == com.ruleforge.console.repository.model.Type.rule) {
-            list.add(repositoryFile);
-        } else if (repositoryFile.getChildren() != null) {
-            for (RepositoryFile child : repositoryFile.getChildren()) {
-                list.addAll(fetchRsl(child));
-            }
-        }
-        return list;
-    }
-
-    private List<ErrorInfo> scriptValidationText(String content, String type) {
-        if (StringUtils.isNotBlank(content)) {
-            ScriptType scriptType = ScriptType.valueOf(type);
-            ANTLRInputStream antlrInputStream = new ANTLRInputStream(content);
-            RuleParserLexer lexer = new RuleParserLexer(antlrInputStream);
-            CommonTokenStream steam = new CommonTokenStream(lexer);
-            RuleParserParser parser = new RuleParserParser(steam);
-            parser.removeErrorListeners();
-            ScriptErrorListener errorListener = new ScriptErrorListener();
-            parser.addErrorListener(errorListener);
-            switch (scriptType) {
-                case Script:
-                    parser.ruleSet();
-                    break;
-                case DecisionNode:
-                    parser.condition();
-                    break;
-                case ScriptNode:
-                    parser.actions();
-            }
-            return errorListener.getInfos();
-        }
-
+        // V5.43.3 stub — 老 .xml rule 路径(/findRuleByKey 走老 RuleSetDeserializer 链)
+        // 已删,RuleSet 资源 V5.43 走 DRL,这里保留 method 签名防止 console-ui 老 build
+        // 缓存 404,直接返空 list(前端显示"无结果",业务可接受)。
+        // console-ui V5.43.7 会同步删 /findRuleByKey 调用。
         return new ArrayList<>();
     }
-
 
 }

@@ -3,9 +3,8 @@
  *
  * <p>目的:让前端组件能根据 dialect 决定:
  * <ul>
- *   <li>显示的 schema 类型(老 RuleForge XML/.ul vs DRL 4)</li>
- *   <li>编辑器顶部的 "Source format" 指示器(只读,V5.42+ 单向:XML → DRL, 不回退)</li>
- *   <li>导出按钮的可用性(DRL 资源只能用 "Export as XML/.ul" 备份)</li>
+ *   <li>显示的 schema 类型(DRL 4 only,V5.43+ legacy-free)</li>
+ *   <li>编辑器顶部的 "Source format" 指示器(只读,V5.43+ 单向:DRL 4 唯一)</li>
  * </ul>
  *
  * <p>Rule + DSL(.drl / .dsl / .dslrd)共用此 enum(都走 DRL 4 IR)。
@@ -18,25 +17,30 @@
  * <p>三层 dialect 跟 DMN / PMML 平行 — RuleForge "路线 B" 三个 PR(V5.40 / V5.41 / V5.42)
  * 各自一层 dialect,consistency 是 console-ui 决定"显示哪个 source format badge"的唯一来源。
  *
+ * <p><b>V5.43 — 路线 B 收口</b>:RULEFORGE_NATIVE 仍保留为 enum 值(兼容历史 response 字段),
+ * 但 V5.43 起 production 不再生成 / 不再接受老 .ul / .xml rule 格式;DEFAULT 改 DRL,
+ * detectDrlDialectFromFilePath 不再回退 RULEFORGE_NATIVE。
+ *
  * @since 5.42
  */
 export type DrlDialect = 'RULEFORGE_NATIVE' | 'DRL';
 
 /**
- * Default dialect for V5.41-and-earlier rules(老 .xml rule + .ul DSL)。
- * 老 RuleSet 反序列化后 dialect 字段全 null,前端统一显示为 RULEFORGE_NATIVE。
+ * Default dialect for V5.43+ rules。V5.43 路线 B 收口后 production 仅支持 DRL 4,
+ * RULEFORGE_NATIVE 仅用于老 response 字段(运维不写新)。
  */
-export const DEFAULT_DIALECT: DrlDialect = 'RULEFORGE_NATIVE';
+export const DEFAULT_DIALECT: DrlDialect = 'DRL';
 
 /**
- * V5.42.7 — Detect dialect from file extension (.drl / .dsl / .dslrd → DRL, .xml / .ul → RULEFORGE_NATIVE)。
+ * V5.42.7 — Detect dialect from file extension。V5.43+ 收口后仅 .drl / .drlrd / .dslr
+ * 走 DRL,其它(老 .ul / .xml rule)不再回退 RULEFORGE_NATIVE(返回 DEFAULT = 'DRL')。
  * 这是 console-ui 一侧 "Source format" 指示器显示逻辑的源头(后端 KnowledgeBuilder
  * 在 dispatch 时会按真实文件内容覆盖,前端这个推断只在后端响应未就绪时用)。
  */
 export function detectDrlDialectFromFilePath(filePath: string): DrlDialect {
     if (!filePath) return DEFAULT_DIALECT;
     const lower = filePath.toLowerCase();
-    if (lower.endsWith('.drl') || lower.endsWith('.dsl') || lower.endsWith('.dslrd')) {
+    if (lower.endsWith('.drl') || lower.endsWith('.drlrd') || lower.endsWith('.dslr')) {
         return 'DRL';
     }
     return DEFAULT_DIALECT;
@@ -44,14 +48,15 @@ export function detectDrlDialectFromFilePath(filePath: string): DrlDialect {
 
 /**
  * V5.42.7 — Human-readable label for each dialect(给 console-ui 顶部 "Source format" 指示器用)。
+ * V5.43+ 调整:RULEFORGE_NATIVE 文案改"V5.43 deprecated",DRL 文案强调 V5.43 legacy-free。
  */
 export function drlDialectLabel(dialect: DrlDialect | null | undefined): string {
-    if (!dialect) return 'RuleForge XML/.ul (legacy)';
+    if (!dialect) return 'DRL 4 (V5.43+ legacy-free)';
     switch (dialect) {
         case 'RULEFORGE_NATIVE':
-            return 'RuleForge XML/.ul (legacy)';
+            return 'RULEFORGE_NATIVE (V5.43 deprecated)';
         case 'DRL':
-            return 'DRL 4 (V5.42+)';
+            return 'DRL 4 (V5.43+ legacy-free)';
         default:
             return 'Unknown';
     }

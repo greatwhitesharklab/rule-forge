@@ -25,8 +25,7 @@ import org.springframework.context.annotation.*;
         "com.ruleforge.console.model",
         // V5.8.0: BatchTest 多态化的包(Subject / InputSource / Orchestrator / Controller)
         "com.ruleforge.console.batchtest",
-        // V5.10-B: 老项目 DB→Git migration tool (Service / Controller / CommandLineRunner)
-        "com.ruleforge.console.migration",
+        // V5.43.8 — 路线 B 收口删 com.ruleforge.console.migration 整包
         // V5.10-C: dualWrite 失败可观测 (Controller / RepositoryImpl)
         "com.ruleforge.console.observability",
         // V5.17: user/permission audit log (Entity / Mapper / Service / Controller)

@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>目的:V5.41 PR 切评分卡→PMML 4.4 的"前置条件"——pmml4s 1.5.6 能
  * 加载 PMML 4.4 Scorecard 求值。失败立刻告知,免得后续 PmmlScorecardDeserializer
- * / XmlToPmmlScorecardConverter 写完才发现底层跑不动。
+ * 写完才发现底层跑不动。
  *
  * <p>实测 1.5.6 + Scala 2.13 + Java 17 OK。Scala → Java 桥:
  * <ul>
