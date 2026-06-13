@@ -128,6 +128,10 @@
          libraryContextBuilder) 移到 lib/ruleforge-dsl jar,通过 RuleForgeDslAutoConfiguration 注册。
          旧 bean 仍依赖 ruleforge.rulesRebuilder(由 ruleforge-core 提供),但本身属于 dsl chain。 -->
 
+    <!-- V5.44.3 — 4 library ResourceBuilder bean (actionLibraryResourceBuilder / variableLibraryResourceBuilder /
+         constantLibraryResourceBuilder / parameterLibraryResourceBuilder) 删。library 走 DRL 顶层
+         import 段(grammar V5.44.3 加 DRL_IMPORT),不再走 .xml 库文件 deserializer 链。 -->
+
     <bean id="ruleforge.resourceLibraryBuilder" class="com.ruleforge.builder.ResourceLibraryBuilder">
         <property name="builtInActionLibraryBuilder" ref="ruleforge.builtInActionLibraryBuilder"/>
     </bean>
@@ -156,25 +160,6 @@
         <property name="decisionTableDeserializer" ref="ruleforge.decisionTableDeserializer"/>
     </bean>
 
-    <bean id="ruleforge.parameterLibraryResourceBuilder"
-          class="com.ruleforge.builder.resource.ParameterLibraryResourceBuilder">
-        <property name="parameterLibraryDeserializer" ref="ruleforge.parameterLibraryDeserializer"/>
-    </bean>
-
-    <bean id="ruleforge.constantLibraryResourceBuilder"
-          class="com.ruleforge.builder.resource.ConstantLibraryResourceBuilder">
-        <property name="constantLibraryDeserializer" ref="ruleforge.constantLibraryDeserializer"/>
-    </bean>
-
-    <bean id="ruleforge.actionLibraryResourceBuilder" class="com.ruleforge.builder.resource.ActionLibraryResourceBuilder">
-        <property name="actionLibraryDeserializer" ref="ruleforge.actionLibraryDeserializer"/>
-    </bean>
-
-    <bean id="ruleforge.variableLibraryResourceBuilder"
-          class="com.ruleforge.builder.resource.VariableLibraryResourceBuilder">
-        <property name="variableLibraryDeserializer" ref="ruleforge.variableLibraryDeserializer"/>
-    </bean>
-
     <bean id="ruleforge.cellContentBuilder" class="com.ruleforge.builder.table.CellContentBuilder"/>
     <bean id="ruleforge.decisionTableRulesBuilder" class="com.ruleforge.builder.table.DecisionTableRulesBuilder">
         <property name="cellContentBuilder" ref="ruleforge.cellContentBuilder"/>
@@ -196,24 +181,10 @@
         <property name="scriptCellParser" ref="ruleforge.scriptCellParser"/>
     </bean>
 
-    <bean id="ruleforge.actionLibraryDeserializer" class="com.ruleforge.parse.deserializer.ActionLibraryDeserializer">
-        <property name="actionLibraryParser" ref="ruleforge.actionLibraryParser"/>
-    </bean>
-
-    <bean id="ruleforge.constantLibraryDeserializer" class="com.ruleforge.parse.deserializer.ConstantLibraryDeserializer">
-        <property name="constantLibraryParser" ref="ruleforge.constantLibraryParser"/>
-    </bean>
+    <!-- V5.44.3 — 4 library deserializer bean (actionLibraryDeserializer / variableLibraryDeserializer /
+         constantLibraryDeserializer / parameterLibraryDeserializer) 删。library 走 DRL import 段。 -->
 
     <bean id="ruleforge.assertorEvaluator" class="com.ruleforge.runtime.assertor.AssertorEvaluator"/>
-
-    <bean id="ruleforge.variableLibraryDeserializer" class="com.ruleforge.parse.deserializer.VariableLibraryDeserializer">
-        <property name="variableLibraryParser" ref="ruleforge.variableLibraryParser"/>
-    </bean>
-
-    <bean id="ruleforge.parameterLibraryDeserializer"
-          class="com.ruleforge.parse.deserializer.ParameterLibraryDeserializer">
-        <property name="parameterLibraryParser" ref="ruleforge.parameterLibraryParser"/>
-    </bean>
 
     <bean id="ruleforge.jointParser" class="com.ruleforge.parse.table.JointParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>
@@ -235,14 +206,10 @@
     <bean id="ruleforge.decisionTableDeserializer" class="com.ruleforge.parse.deserializer.DecisionTableDeserializer">
         <property name="decisionTableParser" ref="ruleforge.decisionTableParser"/>
     </bean>
-    <bean id="ruleforge.parameterLibraryParser" class="com.ruleforge.parse.ParameterLibraryParser">
-        <property name="variableParser" ref="ruleforge.variableParser"/>
-    </bean>
     <bean id="ruleforge.parenParser" class="com.ruleforge.parse.ParenParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>
         <property name="arithmeticParser" ref="ruleforge.complexArithmeticParser"/>
     </bean>
-    <bean id="ruleforge.constantLibraryParser" class="com.ruleforge.parse.ConstantLibraryParser"/>
 
     <bean id="ruleforge.endWithAssertor" class="com.ruleforge.runtime.assertor.EndWithAssertor"/>
     <bean id="ruleforge.equalsAssertor" class="com.ruleforge.runtime.assertor.EqualsAssertor"/>
@@ -297,10 +264,6 @@
     </bean>
     <bean id="ruleforge.junctionParser" class="com.ruleforge.parse.JunctionParser"/>
 
-    <bean id="ruleforge.variableLibraryParser" class="com.ruleforge.parse.VariableLibraryParser">
-        <property name="variableCategoryParser" ref="ruleforge.variableCategoryParser"/>
-    </bean>
-    <bean id="ruleforge.actionLibraryParser" class="com.ruleforge.parse.ActionLibraryParser"/>
     <bean id="ruleforge.rhsParser" class="com.ruleforge.parse.RhsParser"/>
     <bean id="ruleforge.ruleParser" class="com.ruleforge.parse.RuleParser">
         <property name="lhsParser" ref="ruleforge.lhsParser"/>

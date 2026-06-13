@@ -88,6 +88,7 @@ export default defineConfig({
             { text: '开发环境搭建', link: '/development/setup' },
             { text: '代码结构', link: '/development/code-structure' },
             { text: '贡献指南', link: '/development/contributing' },
+            { text: 'V5.44.3 老 library 资源迁移手册', link: '/post-road-b-migration' },
           ],
         },
       ],

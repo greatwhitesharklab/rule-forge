@@ -134,7 +134,7 @@ class DatatypeResolverTest {
     class ExceptionPath {
 
         @Test
-        @DisplayName("unknown type → DrlParseException 含 4 部分:type 名 / D4 决定 / 解法 / 已知列表")
+        @DisplayName("unknown type → DrlParseException 含 4 部分:type 名 / V5.44.3 / 解法 / 已知列表")
         void unknownTypeError() {
             resolver.register("Applicant",
                 DatatypeResolver.TypeInfo.fact("Applicant", Arrays.asList("age")));
@@ -143,10 +143,10 @@ class DatatypeResolverTest {
             String msg = ex.getMessage();
             assertTrue(msg.contains("Unknown"),
                 "应包含 type 名,实际:" + msg);
-            assertTrue(msg.contains("D4"),
-                "应点 V5.42 D4 决定,实际:" + msg);
+            assertTrue(msg.contains("V5.44.3"),
+                "应点 V5.44.3 DRL 4 import 段支持,实际:" + msg);
             assertTrue(msg.contains("import"),
-                "应说明 import 不支持,实际:" + msg);
+                "应说明 import 段语法,实际:" + msg);
             assertTrue(msg.contains("declare") || msg.contains("register"),
                 "应给解法(declare 段 / 预 register),实际:" + msg);
             assertTrue(msg.contains("Applicant"),

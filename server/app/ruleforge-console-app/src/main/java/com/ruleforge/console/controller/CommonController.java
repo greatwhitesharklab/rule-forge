@@ -67,19 +67,19 @@ public class CommonController extends BaseController {
     private final ExternalProcessService externalProcessService;
     private final ExternalRepository externalRepository;
 
-    private final ActionLibraryDeserializer actionLibraryDeserializer;
-    private final VariableLibraryDeserializer variableLibraryDeserializer;
-    private final ConstantLibraryDeserializer constantLibraryDeserializer;
+    // V5.44.3 — 4 library deserializer (Action/Variable/Constant/Parameter) 已删,
+    // library 走 DRL 顶层 import 段(grammar V5.44.3 加 DRL_IMPORT,见 DrlLexer.g4)。
+    // 这里只保留 6 个 table/scorecard/crosstab/decisiontree/script deserializer
+    // (V5.40 / V5.41 兜底仍需,跟 V5.44.3 删老 library 链无关)。
     private final DecisionTableDeserializer decisionTableDeserializer;
     private final CrosstableDeserializer crosstableDeserializer;
     private final ScriptDecisionTableDeserializer scriptDecisionTableDeserializer;
     private final DecisionTreeDeserializer decisionTreeDeserializer;
     private final ScorecardDeserializer scorecardDeserializer;
     private final ComplexScorecardDeserializer complexScorecardDeserializer;
-    private final ParameterLibraryDeserializer parameterLibraryDeserializer;
     private final BuiltInActionLibraryBuilder builtInActionLibraryBuilder;
     private final List<FunctionDescriptor> coll;
-    private List<Deserializer<?>> deserializers = new ArrayList<>(11);
+    private List<Deserializer<?>> deserializers = new ArrayList<>(6);
     private final List<FunctionDescriptor> functionDescriptors = new ArrayList<>();
     private final DSLRuleSetBuilder dslRuleSetBuilder;
 
@@ -91,13 +91,9 @@ public class CommonController extends BaseController {
     @PostConstruct
     public void init() {
         this.deserializers = Lists.newArrayList(
-                this.actionLibraryDeserializer,
-                this.variableLibraryDeserializer,
-                this.constantLibraryDeserializer,
                 this.decisionTableDeserializer,
                 this.scriptDecisionTableDeserializer,
                 this.decisionTreeDeserializer,
-                this.parameterLibraryDeserializer,
                 this.scorecardDeserializer,
                 this.complexScorecardDeserializer,
                 this.crosstableDeserializer
@@ -148,9 +144,8 @@ public class CommonController extends BaseController {
                         for (Deserializer<?> des : this.deserializers) {
                             if (des.support(element)) {
                                 result.add(des.deserialize(element, true));
-                                if (des instanceof ActionLibraryDeserializer) {
-                                    isaction = true;
-                                }
+                                // V5.44.3 — 4 library deserializer 已删,isaction 不再由
+                                // ActionLibraryDeserializer 触发;保留 isaction 字段但不再赋值。
                                 break;
                             }
                         }

@@ -28,7 +28,7 @@ options { tokenVocab=DrlLexer; }
 // ====================================================================
 
 compilationUnit
-    : packageStatement? dialectStatement* unitStatement* EOF
+    : packageStatement? dialectStatement* importStatement* unitStatement* EOF
     ;
 
 packageStatement
@@ -38,6 +38,14 @@ packageStatement
 // V5.42 D4 决定:顶层 dialect 仅解析后丢弃
 dialectStatement
     : DRL_DIALECT STRING SEMI?
+    ;
+
+// V5.44.3 — 顶层 import 段,library 替换路径。`import "libs/variables.drl";`
+// STRING 形式(V5.44.3 仅支持 library 文件路径引用,不支持 java 类 import)。
+// DrlAstVisitor.visitImportStatement 收集到 import 列表,DrlDeserializer 端透传给
+// DatatypeResolver(后者查 import 列表再 builtin)。
+importStatement
+    : DRL_IMPORT STRING SEMI?
     ;
 
 dottedName

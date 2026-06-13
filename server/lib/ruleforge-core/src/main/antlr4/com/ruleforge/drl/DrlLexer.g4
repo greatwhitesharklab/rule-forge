@@ -32,6 +32,10 @@ DRL_PACKAGE        : 'package';
 // grammar 用 context 区分(顶层 + rule attribute 槽位)。RuleForge D4 决定:Rule 本身不加 dialect 字段,
 // 顶层 dialect 字符串 visitor 解析后丢弃 — DRL 走自家 visitor,dialect 仅作可选顶层 attribute。
 DRL_DIALECT        : 'dialect';
+// V5.44.3 — 新增 IMPORT 关键字,支持 `import "libs/variables.drl";` 顶层声明。
+// 走 library 替换路径:library 从 .xml (V5.43 删老 RuleSetDeserializer 前的兜底)转 DRL
+// import 段。DatatypeResolver 优先查 import 列表,再 builtin。
+DRL_IMPORT         : 'import';
 DRL_RULE           : 'rule';
 DRL_QUERY          : 'query';
 DRL_FUNCTION       : 'function';

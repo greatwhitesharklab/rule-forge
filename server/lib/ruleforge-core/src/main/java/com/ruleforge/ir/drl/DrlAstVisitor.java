@@ -39,6 +39,15 @@ public class DrlAstVisitor extends DrlParserBaseVisitor<Void> {
 
     private final DatatypeResolver resolver;
     private final List<ParsedDrlRule> rules = new ArrayList<>();
+    /**
+     * V5.44.3 — 顶层 import 段收集。DrlDeserializer 端从 import 列表查 library
+     * 路径(目前 DRL 4 暂不解析 import 路径,只挂到 DatatypeResolver 的 import 列表,
+     * 留给后续 V5.44.x 实现 library 文件读取)。
+     *
+     * <p>用 LinkedHashSet 保持插入顺序 + 去重 — visitor 内部就 dedupe,避免 caller
+     * (DrlDeserializer / test) 拿到重复 import。
+     */
+    private final java.util.LinkedHashSet<String> imports = new java.util.LinkedHashSet<>();
 
     public DrlAstVisitor(DatatypeResolver resolver) {
         this.resolver = resolver;
@@ -49,6 +58,11 @@ public class DrlAstVisitor extends DrlParserBaseVisitor<Void> {
         return rules;
     }
 
+    /** V5.44.3 — 收集的 import 列表(按文件出现顺序,去重)。 */
+    public List<String> getImports() {
+        return new ArrayList<>(imports);
+    }
+
     // ============================================================
     // === compilationUnit 入口 ===
     // ============================================================
@@ -57,9 +71,37 @@ public class DrlAstVisitor extends DrlParserBaseVisitor<Void> {
     public Void visitCompilationUnit(DrlParser.CompilationUnitContext ctx) {
         // packageStatement / dialectStatement 顶层 metadata 走 KnowledgeBuilder
         // 阶段(跟 name mapping 一起),V5.42.2 visitor 不建模
+        // V5.44.3 — import 段:先收集进 imports 列表(grammar 允许 import 出现在
+        //   unitStatement 之前,但本 visitor 不强制 — 实际顺序是 parser 收的)
+        for (DrlParser.ImportStatementContext imp : ctx.importStatement()) {
+            visit(imp);
+        }
         for (DrlParser.UnitStatementContext u : ctx.unitStatement()) {
             visit(u);
         }
+        return null;
+    }
+
+    // ============================================================
+    // === 顶层 import 段 ===
+    // ============================================================
+
+    @Override
+    public Void visitImportStatement(DrlParser.ImportStatementContext ctx) {
+        // V5.44.3 — 仅支持 library 文件路径(STRING 形式,`"libs/variables.drl"`),
+        // 不支持 Drools java 类 import(import com.foo.Bar; 形式 — grammar 没
+        // 单独 rule,会走 unitStatement → reject)。
+        if (ctx.STRING() == null) {
+            throw new DrlParseException(
+                "V5.44.3 顶层 import 仅支持 library 路径(双引号字符串),实际:" + ctx.getText(),
+                ctx);
+        }
+        String path = stripQuotes(ctx.STRING().getText());
+        imports.add(path);
+        // V5.44.3 — 同步推到 resolver。这样后续 visitDrlPattern 调
+        // resolver.isKnown() 时拿得到 import 列表,error 消息能附 import 路径
+        // 提示 caller。
+        resolver.addImport(path);
         return null;
     }
 
@@ -204,12 +246,22 @@ public class DrlAstVisitor extends DrlParserBaseVisitor<Void> {
                 ctx);
         }
         String typeName = typeNameNode.getText();
-        // V5.42 D4:未声明 type → DrlParseException
+        // V5.44.3:未声明 type → DrlParseException(error 信息附 import 列表便于诊断)
         if (!resolver.isKnown(typeName)) {
-            throw new DrlParseException(
-                "DRL pattern references unknown type '" + typeName + "'. "
-                + "V5.42 D4:Drools 'import' 不支持,需要预先 register DatatypeResolver 或同 .drl 用 'declare' 段。",
-                ctx);
+            StringBuilder msg = new StringBuilder();
+            msg.append("DRL pattern references unknown type '").append(typeName).append("'.");
+            List<String> declaredImports = resolver.getImports();
+            if (!declaredImports.isEmpty()) {
+                msg.append(" V5.44.3 — DRL 顶层 import 段已 declare 路径 ")
+                   .append(declaredImports)
+                   .append(" 但 type '").append(typeName).append("' 不在 builtin。"
+                   + "library 文件实际加载 V5.45+ 跟进,届时 type 可解析。");
+            } else {
+                msg.append(" V5.44.3 — 需要预先 register DatatypeResolver,"
+                   + "或在同一 .drl 用 'declare' 段,"
+                   + "或顶层加 'import \"libs/<file>.drl\";' 引用 library(实际加载 V5.45+ 跟进)。");
+            }
+            throw new DrlParseException(msg.toString(), ctx);
         }
         // V5.42.4 才会展开内部 constraint 跟 binding;
         // V5.42.2 只校验 type known

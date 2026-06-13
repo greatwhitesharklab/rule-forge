@@ -86,6 +86,12 @@ public class DrlDeserializer {
         DrlAstVisitor visitor = new DrlAstVisitor(resolver);
         visitor.visit(tree);
         List<ParsedDrlRule> parsed = visitor.getRules();
+        // V5.44.3 — 顶层 import 段收集到的 library 路径塞进 resolver(不解析内容,
+        // V5.45+ library 加载器再消费这个列表)。这一步在 resolve() 之前做完,
+        // 否则 visitor 内部 visitDrlPattern 调 resolver.isKnown() 时拿不到 import hint。
+        for (String imp : visitor.getImports()) {
+            resolver.addImport(imp);
+        }
         // 3. 转 Rule
         List<Rule> rules = new ArrayList<>();
         for (ParsedDrlRule p : parsed) {

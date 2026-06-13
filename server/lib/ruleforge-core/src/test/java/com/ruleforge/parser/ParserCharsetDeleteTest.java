@@ -3,25 +3,27 @@ package com.ruleforge.parser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * V5.43.2 — 删老 rule 链 parser + RuleSetDeserializer 后的"空 class 消失"快照测试。
+ * V5.43.2 / V5.44.3 — 删老 rule 链 parser + 4 library deserializer 后的"空 class 消失"快照测试。
  *
  * <p>本测试**不**测功能,只测源码目录结构:
  * <ul>
  *   <li>V5.43.2 删 {@code SpringBeanParser} + {@code NamedJunctionParser} +
  *       {@code RuleSetResourceBuilder} + {@code RuleSetDeserializer} 后,这些 class
  *       **不能**再被 classloader 找到(防止以后某次 refactor 又把它们救回来)</li>
- *   <li>{@code com.ruleforge.parse.deserializer} 目录**保留** 4 个 library deserializer
- *       + 1 个 base {@code Deserializer.java} + 6 个 table/scorecard/crosstab/decisiontree/script
+ *   <li>V5.44.3 删 4 library deserializer( {@code ActionLibraryDeserializer} /
+ *       {@code ConstantLibraryDeserializer} / {@code VariableLibraryDeserializer} /
+ *       {@code ParameterLibraryDeserializer} )+ 4 library parser + 4 library
+ *       ResourceBuilder + 1 个 {@code VariableLibraryResource}。library 走 DRL
+ *       顶层 import 段(grammar V5.44.3 加 DRL_IMPORT 关键字,见 DrlLexer.g4)</li>
+ *   <li>{@code com.ruleforge.parse.deserializer} 目录**保留** 1 个 base
+ *       {@code Deserializer.java} + 6 个 table/scorecard/crosstab/decisiontree/script
  *       deserializer(V5.40 / V5.41 后 .xml 兜底仍需)</li>
  * </ul>
  *
@@ -30,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @since 5.43
  */
-@DisplayName("V5.43.2 — 删老 rule 链 parser class 不再存在")
+@DisplayName("V5.43.2 / V5.44.3 — 删老 rule 链 + 4 library deserializer class 不再存在")
 class ParserCharsetDeleteTest {
 
     @Test
@@ -55,15 +57,44 @@ class ParserCharsetDeleteTest {
     }
 
     @Test
-    @DisplayName("com.ruleforge.parse.deserializer 仍保留 11 个 deserializer(4 library + 1 base + 6 table/scorecard/crosstab/decisiontree/script)")
-    void libraryAndTableDeserializersKept() {
-        // V5.43.2 保留(运维 + V5.40 / V5.41 兜底需要)
-        List<String> keptClasses = List.of(
-            // library 4
+    @DisplayName("V5.44.3 — 4 library deserializer + 4 library parser + 4 library ResourceBuilder 已删")
+    void libraryChainGone() {
+        // V5.44.3 删:library 走 DRL import 段,不再走 .xml deserializer 链
+        List<String> deletedClasses = List.of(
+            // 4 library deserializer
             "com.ruleforge.parse.deserializer.ActionLibraryDeserializer",
             "com.ruleforge.parse.deserializer.ConstantLibraryDeserializer",
             "com.ruleforge.parse.deserializer.VariableLibraryDeserializer",
             "com.ruleforge.parse.deserializer.ParameterLibraryDeserializer",
+            // 4 library parser
+            "com.ruleforge.parse.ActionLibraryParser",
+            "com.ruleforge.parse.ConstantLibraryParser",
+            "com.ruleforge.parse.VariableLibraryParser",
+            "com.ruleforge.parse.ParameterLibraryParser",
+            // 4 library ResourceBuilder + 1 helper Resource
+            "com.ruleforge.builder.resource.ActionLibraryResourceBuilder",
+            "com.ruleforge.builder.resource.ConstantLibraryResourceBuilder",
+            "com.ruleforge.builder.resource.VariableLibraryResourceBuilder",
+            "com.ruleforge.builder.resource.ParameterLibraryResourceBuilder",
+            "com.ruleforge.builder.resource.VariableLibraryResource"
+        );
+        for (String fqn : deletedClasses) {
+            try {
+                Class.forName(fqn);
+                throw new AssertionError(
+                    "V5.44.3 删的 class '" + fqn + "' 仍可被 classloader 找到 — 删不彻底");
+            } catch (ClassNotFoundException expected) {
+                // 期望:删干净
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("com.ruleforge.parse.deserializer 仍保留 7 个 deserializer(1 base + 6 table/scorecard/crosstab/decisiontree/script)")
+    void tableDeserializersKept() {
+        // V5.43.2 保留 11 个(4 library + 1 base + 6 table);
+        // V5.44.3 删 4 library 后剩 7 个(1 base + 6 table)
+        List<String> keptClasses = List.of(
             // base 1
             "com.ruleforge.parse.deserializer.Deserializer",
             // table / crosstab / scorecard / decisiontree / script 6(V5.40 / V5.41 兜底)
@@ -80,7 +111,7 @@ class ParserCharsetDeleteTest {
                 assertThat(cls).as("保留的 deserializer class 应存在:" + fqn).isNotNull();
             } catch (ClassNotFoundException e) {
                 throw new AssertionError(
-                    "V5.43.2 误删保留的 deserializer class: " + fqn, e);
+                    "V5.44.3 误删保留的 deserializer class: " + fqn, e);
             }
         }
     }

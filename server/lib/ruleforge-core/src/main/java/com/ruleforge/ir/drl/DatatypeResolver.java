@@ -1,27 +1,39 @@
 package com.ruleforge.ir.drl;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * V5.42.2 — Datatype 解析器(V5.42 D4 决定:不依赖 DRL 'import' 段)。
+ * V5.42.2 / V5.44.3 — Datatype 解析器。
  *
- * <p>DRL 完整语法允许 {@code import com.ruleforge.model.Applicant},但 V5.42 plan D4 决定
- * 禁用 import(grammar 缺失,会报 token 错)。DatatypeResolver 接管"如何在 DRL 文本里
- * 知道 'Applicant' 是什么 type":
+ * <p>负责 DRL 文本里 {@code Type(...)} 形式的 type 解析。
+ *
+ * <p><b>V5.42.2 初版</b>:不依赖 DRL 'import' 段。type 通过同 package {@code declare}
+ * 段或 console-ui 显式 register 进入,visitor 调 {@link #resolve(String)} 查表。
+ *
+ * <p><b>V5.44.3</b>:library 资源从老 .xml 改 DRL 顶层 {@code import} 段(grammar 新增
+ * DRL_IMPORT 关键字,见 DrlLexer.g4)。本类在 V5.44.3 加 imports 列表:
  * <ul>
- *   <li>预加载一个 "declared types" Map(从 V5.42.1 同 package 的 {@code declare} 段,
- *       或 console-ui 显式传入)— 跟 Drools 6 "Working Memory" 概念一致</li>
- *   <li>任何 'Type(...)' 形式的 pattern,visitor 调用 {@link #resolve(String)} 拿 type info</li>
- *   <li>type 没在 declared types 里 → 抛 {@link DrlParseException}("unknown type X,add 'declare' or pre-register")</li>
+ *   <li>{@link #addImport(String)} — 累加 DRL 顶层 import 段收集到的 library 路径</li>
+ *   <li>{@link #resolve(String)} — 先查 builtin types,再查 import 列表("library 路径
+ *       → 可能含 type alias" 暂不展开,仅作为 import 列表的 placeholder,V5.45+ 跟进
+ *       library 实际加载 + type alias 抽取)</li>
+ *   <li>若 type 仍未知,fallback 到 library import 列表("library path 内的 type 名
+ *       通过 library 文件加载抽出来,记成 alias" — V5.44.3 仅留位置,实现 V5.45+ 跟进)</li>
  * </ul>
  *
- * <p>V5.42.2 范围内:DatatypeResolver 只 hold 一个 Map<String, TypeInfo>,不查 Class.forName
- * (那需要 ClassLoader 跟 .drl 文件的关联,留 V5.42.4 KnowledgeBuilder 阶段)。
+ * <p>V5.44.3 设计取舍:library 实际**加载**未在 V5.44.3 实现。V5.44.3 只把 import
+ * 段**收集**进 DatatypeResolver,resolve() 顺序改"builtin → imports 列表 →
+ * throw"即可。library 文件加载留 V5.45+ 单独 PR。
  *
- * <p>不变性:register 之后 immutable,所有 V5.42.2 visitor 共享同一 resolver 实例
- * (DrlAstVisitor 构造时注入,跟 RuleForge 老 .xml Builder pattern 一致)。
+ * <p>不变性:register / addImport 之后内部状态 immutable(对调用方),所有 V5.42.2
+ * visitor 共享同一 resolver 实例(DrlAstVisitor 构造时注入,跟 RuleForge 老 .xml
+ * Builder pattern 一致)。
  *
  * @since 5.42
  */
@@ -29,6 +41,12 @@ public class DatatypeResolver {
 
     /** 已知 type 名称 → 描述(type name + 字段列表,V5.42.4 完整化) */
     private final Map<String, TypeInfo> types;
+
+    /**
+     * V5.44.3 — 顶层 import 段收集到的 library 路径列表。按 .drl 出现顺序追加,
+     * 重复 import 路径去重(LinkedHashSet 保留插入顺序)。
+     */
+    private final Set<String> imports = new LinkedHashSet<>();
 
     public DatatypeResolver() {
         this(new HashMap<>());
@@ -50,18 +68,57 @@ public class DatatypeResolver {
     }
 
     /**
+     * V5.44.3 — 顶层 import 段收集到的 library 路径。DrlAstVisitor 在 visit 完
+     * importStatement 列表后调 {@code resolver.addImport(path)} 把每条路径塞进
+     * imports 列表(LinkedHashSet 自动去重)。
+     *
+     * <p>V5.44.3 不解析 library 文件内容(那需要文件 IO + library grammar,留
+     * V5.45+ 跟进)。本方法仅记路径,resolve() 时把"未知 type → import 列表里有
+     * 路径"作为 fallback hint 返给 caller。
+     *
+     * <p>注意:V5.44.3 不会因为 caller 没调这个方法就改行为(DRL 文件没 import
+     * 段时,imports 列表是空,跟 V5.42.2 行为一致)。
+     */
+    public void addImport(String libraryPath) {
+        if (libraryPath == null || libraryPath.isEmpty()) {
+            throw new IllegalArgumentException("libraryPath must not be empty");
+        }
+        imports.add(libraryPath);
+    }
+
+    /**
+     * V5.44.3 — 拿全部 import 路径(不可变 snapshot,按 DRL 出现顺序)。
+     * V5.45+ library 加载器会调这个拿路径列表去并发 fetch。
+     */
+    public List<String> getImports() {
+        return Collections.unmodifiableList(new ArrayList<>(imports));
+    }
+
+    /**
      * 解析 type 名 — 给 {@code Applicant(age > 18)} pattern,visitor 调
      * {@code resolve("Applicant")} 拿 type info;不在则抛 DrlParseException。
+     *
+     * <p>V5.44.3:resolve 顺序:builtin types → import 列表(若 path 命中某个
+     * library,留 V5.45+ 抽出 type alias;V5.44.3 不展开)。仍然 throw 但错误
+     * 信息会附 import 列表便于诊断。
      */
     public TypeInfo resolve(String typeName) {
         TypeInfo info = types.get(typeName);
-        if (info == null) {
+        if (info != null) {
+            return info;
+        }
+        // V5.44.3 — type 不在 builtin:看 import 列表是否有匹配 library
+        // (V5.44.3 不做 library 实际加载,仅作为 hint)
+        if (!imports.isEmpty()) {
             throw new DrlParseException(
                 "Unknown DRL type '" + typeName + "'. "
-                + "V5.42 D4 决定:Drools 'import' 不支持,需要预先 register 或在同一 .drl 用 'declare' 段."
-                + " 已知 types: " + types.keySet());
+                + "V5.44.3:已 declared import 列表 " + imports + " 但本 type 不在 builtin。"
+                + "V5.45+ 跟进 library 文件实际加载,届时 type 可解析。");
         }
-        return info;
+        throw new DrlParseException(
+            "Unknown DRL type '" + typeName + "'. "
+            + "V5.44.3:DRL 'import' 段支持 library 路径(需 'import \"libs/x.drl\";'),"
+            + "或在同一 .drl 用 'declare' 段. 已知 types: " + types.keySet());
     }
 
     /**
