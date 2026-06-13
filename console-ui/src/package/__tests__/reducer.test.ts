@@ -156,7 +156,12 @@ describe('Package Module - Combined Reducer', () => {
             slave: {},
             config: {},
         };
-        const saveDataSpy = vi.spyOn(ACTIONS, 'saveData');
+        // V5.49.3: mockImplementation 替换 — vi.spyOn 默认 call through,会让真
+        // saveData() 内部 jsonPost('/packageeditor/saveResourcePackages') 真发请求 →
+        // ECONNREFUSED(::1:80)。返回 SAVE_COMPLETED 模拟 action.js 真实行为。
+        const saveDataSpy = vi.spyOn(ACTIONS, 'saveData').mockImplementation(() => ({
+            type: ACTIONS.SAVE_COMPLETED,
+        }) as any);
         const action = {
             type: ACTIONS.SAVE,
             newVersion: true,
@@ -188,7 +193,11 @@ describe('Package Module - Combined Reducer', () => {
             slave: {},
             config: {},
         };
-        const applySpy = vi.spyOn(ACTIONS, 'applyNewVersion');
+        // V5.49.3: 同 SAVE,applyNewVersion 内部 formPost('/frame/fileVersions')
+        // 也会真发请求,mockImplementation 挡掉。
+        const applySpy = vi.spyOn(ACTIONS, 'applyNewVersion').mockImplementation(() => ({
+            type: ACTIONS.APPLY_COMPLETED,
+        }) as any);
         const action = {
             type: ACTIONS.APPLY,
             project: 'test-project',

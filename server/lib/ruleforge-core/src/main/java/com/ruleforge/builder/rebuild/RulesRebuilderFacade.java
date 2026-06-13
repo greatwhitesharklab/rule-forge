@@ -24,11 +24,13 @@ public class RulesRebuilderFacade {
     private final List<RuleTypeRebuilder> rebuilders = new ArrayList<>();
 
     public RulesRebuilderFacade(RulesRebuilder delegate) {
-        // 顺序:stub 在前(虽然 supports=false),DrlRuleRebuilder 最后(fallback)
+        // 顺序:stub 在前(Wizard/DecisionTable/Tree inactive supports=false;
+        // Scorecard active 判别 instanceof ScoreRule),DrlRuleRebuilder 最后
+        // (fallback,supports 永远 true)。
         this.rebuilders.add(new WizardRuleRebuilder());
         this.rebuilders.add(new DecisionTableRebuilder());
         this.rebuilders.add(new TreeRebuilder());
-        this.rebuilders.add(new ScorecardRebuilder());
+        this.rebuilders.add(new ScorecardRebuilder(delegate));  // V5.49.8 active
         this.rebuilders.add(new DrlRuleRebuilder(delegate));
     }
 

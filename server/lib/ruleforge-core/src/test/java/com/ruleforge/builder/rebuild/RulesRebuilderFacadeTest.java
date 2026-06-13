@@ -69,35 +69,79 @@ class RulesRebuilderFacadeTest {
     }
 
     @Nested
-    @DisplayName("stub rebuilder supports 返 false(不 active)")
+    @DisplayName("3 stub rebuilder supports 返 false(不 active — V5.49.5/6/7 架构约束)")
     class StubsAreInactive {
 
         @Test
-        @DisplayName("WizardRuleRebuilder.supports() 返 false")
+        @DisplayName("WizardRuleRebuilder.supports() 返 false(无独立 WizardRule class)")
         void wizardNotActive() {
             WizardRuleRebuilder w = new WizardRuleRebuilder();
             assertTrue(!w.supports(new Rule()));
         }
 
         @Test
-        @DisplayName("DecisionTableRebuilder.supports() 返 false")
+        @DisplayName("DecisionTableRebuilder.supports() 返 false(DecisionTable 不 extends Rule)")
         void tableNotActive() {
             DecisionTableRebuilder t = new DecisionTableRebuilder();
             assertTrue(!t.supports(new Rule()));
         }
 
         @Test
-        @DisplayName("TreeRebuilder.supports() 返 false")
+        @DisplayName("TreeRebuilder.supports() 返 false(DecisionTree 不 extends Rule)")
         void treeNotActive() {
             TreeRebuilder t = new TreeRebuilder();
             assertTrue(!t.supports(new Rule()));
         }
+    }
+
+    @Nested
+    @DisplayName("ScorecardRebuilder active — ScoreRule 是唯一 Rule 子类(V5.49.8)")
+    class ScorecardRebuilderActive {
 
         @Test
-        @DisplayName("ScorecardRebuilder.supports() 返 false")
-        void scorecardNotActive() {
-            ScorecardRebuilder s = new ScorecardRebuilder();
+        @DisplayName("ScorecardRebuilder.supports(ScoreRule) 返 true — instanceof 命中")
+        void scorecardSupportsScoreRule() {
+            ScorecardRebuilder s = new ScorecardRebuilder(delegate);
+            com.ruleforge.model.scorecard.runtime.ScoreRule scoreRule = new com.ruleforge.model.scorecard.runtime.ScoreRule();
+            assertTrue(s.supports(scoreRule), "ScoreRule 应被 supports() 识别");
+        }
+
+        @Test
+        @DisplayName("ScorecardRebuilder.supports(plain Rule) 返 false — 普通 Rule 走 DrlRuleRebuilder")
+        void scorecardDoesNotSupportPlainRule() {
+            ScorecardRebuilder s = new ScorecardRebuilder(delegate);
             assertTrue(!s.supports(new Rule()));
+        }
+
+        @Test
+        @DisplayName("ScorecardRebuilder.supports(LoopRule) 返 false — LoopRule 也走 DrlRuleRebuilder")
+        void scorecardDoesNotSupportLoopRule() {
+            ScorecardRebuilder s = new ScorecardRebuilder(delegate);
+            com.ruleforge.model.rule.loop.LoopRule loopRule = new com.ruleforge.model.rule.loop.LoopRule();
+            assertTrue(!s.supports(loopRule), "LoopRule 应走 DrlRuleRebuilder,不是 ScorecardRebuilder");
+        }
+
+        @Test
+        @DisplayName("ScorecardRebuilder.delegate 是构造时传入的 RulesRebuilder 引用")
+        void scorecardDelegateReferencePreserved() {
+            ScorecardRebuilder s = new ScorecardRebuilder(delegate);
+            assertSame(delegate, s.getDelegate());
+        }
+
+        @Test
+        @DisplayName("facade.dispatchRebuild(ScoreRule) 走 ScorecardRebuilder,不抛 UOE")
+        void facadeDispatchesScoreRuleToScorecard() {
+            // Given — minimal ScoreRule
+            com.ruleforge.model.scorecard.runtime.ScoreRule scoreRule = new com.ruleforge.model.scorecard.runtime.ScoreRule();
+            scoreRule.setName("score-rule-test");
+            com.ruleforge.model.rule.Rhs rhs = new com.ruleforge.model.rule.Rhs();
+            rhs.setActions(java.util.Collections.emptyList());
+            scoreRule.setRhs(rhs);
+
+            // When & Then — 不应抛 UnsupportedOperationException(ScorecardRebuilder
+            // 是 V5.49.8 唯一 active 的非 fallback rebuilder,delegate 调用 rebuildAction
+            // 在空 actions 时不抛)
+            assertDoesNotThrow(() -> facade.dispatchRebuild(scoreRule, new ResourceLibrary(), new HashMap<>(), false));
         }
     }
 
