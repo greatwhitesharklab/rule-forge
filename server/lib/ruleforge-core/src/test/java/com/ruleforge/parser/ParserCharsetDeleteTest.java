@@ -22,6 +22,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       {@code ParameterLibraryDeserializer} )+ 4 library parser + 4 library
  *       ResourceBuilder + 1 个 {@code VariableLibraryResource}。library 走 DRL
  *       顶层 import 段(grammar V5.44.3 加 DRL_IMPORT 关键字,见 DrlLexer.g4)</li>
+ *   <li>V5.47 删老资源级 {@code RuleSetParser}(向导式 .xml 根解析)— 配套删
+ *       Spring bean {@code ruleforge.ruleSetParser}。{@code com.ruleforge.parse/}
+ *       49 个字段级 XML 解析器(ActionParser / LhsParser / RhsParser / *CellParser
+ *       等)**保留**(向导式规则体 XML 字段级,跟资源级不是同一层)</li>
  *   <li>{@code com.ruleforge.parse.deserializer} 目录**保留** 1 个 base
  *       {@code Deserializer.java} + 6 个 table/scorecard/crosstab/decisiontree/script
  *       deserializer(V5.40 / V5.41 后 .xml 兜底仍需)</li>
@@ -87,6 +91,33 @@ class ParserCharsetDeleteTest {
                 // 期望:删干净
             }
         }
+    }
+
+    @Test
+    @DisplayName("V5.47 — 资源级 RuleSetParser 已删 + ruleforge.ruleSetParser Spring bean wiring 已移除")
+    void ruleSetParserDeleted() throws Exception {
+        // V5.47 删 com.ruleforge.parse.RuleSetParser(向导式 .xml 根解析,71 行);
+        // 配套删 ruleforge-core-context.xml 里的 <bean id="ruleforge.ruleSetParser"> 块
+        // (3 个 <property>: ruleParser / loopRuleParser / rulesRebuilder)。
+        // 保留:com.ruleforge.parse/ 49 个字段级 XML 解析器(向导式规则体字段级)
+        //      + com.ruleforge.parse.deserializer/ 1 base + 6 table-family deserializer
+        String fqn = "com.ruleforge.parse.RuleSetParser";
+        try {
+            Class.forName(fqn);
+            throw new AssertionError(
+                "V5.47 删的 class '" + fqn + "' 仍可被 classloader 找到 — 删不彻底");
+        } catch (ClassNotFoundException expected) {
+            // 期望:删干净
+        }
+
+        // 验证 XML 资源文件不再含 bean id "ruleforge.ruleSetParser" 块
+        // (xml 里残留的 <property> 引用若没清,Spring 启动报 NoSuchBeanDefinitionException)
+        Path ctxXml = Path.of("src", "main", "resources", "ruleforge-core-context.xml");
+        String xml = Files.readString(ctxXml);
+        assertThat(xml)
+            .as("ruleforge-core-context.xml 不应再含 ruleSetParser bean")
+            .doesNotContain("ruleforge.ruleSetParser")
+            .doesNotContain("com.ruleforge.parse.RuleSetParser");
     }
 
     @Test

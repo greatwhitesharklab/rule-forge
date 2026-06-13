@@ -10,7 +10,6 @@ import com.ruleforge.decision.service.impl.DatasourceServiceImpl;
 import com.ruleforge.decision.service.impl.GrayStrategyServiceImpl;
 import com.ruleforge.decision.service.impl.RuleVariableDefServiceImpl;
 import com.ruleforge.decision.service.impl.ShadowConfigServiceImpl;
-import com.ruleforge.dsl.RuleForgeDslAutoConfiguration;
 
 
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
@@ -25,15 +24,14 @@ import com.ruleforge.dsl.RuleForgeDslAutoConfiguration;
 // - @Import RuleForgeDecisionAutoConfiguration 启用 lib 内的 @Component (BpmnXmlParser /
 //   FlowDefinitionRepo / NodeExecutor / 等),boot 不会扫 nested jar 里的 @Component
 //
-// V5.44.1 — 同样 @Import RuleForgeDslAutoConfiguration(boot 不会扫 nested jar,
-//   .ul 老 DSL 链的 4 个 bean 走显式 @Import,不再靠 ruleforge-core-context.xml 注册)
+// V5.47 — ruleforge-dsl module 整 module 删除,.ul 老 DSL 链彻底下架,
+//   RuleForgeDslAutoConfiguration 跟 4 个 DSL bean 全部不存在,不再 @Import。
 @Import({
         DatasourceServiceImpl.class,
         GrayStrategyServiceImpl.class,
         RuleVariableDefServiceImpl.class,
         ShadowConfigServiceImpl.class,
-        RuleForgeDecisionAutoConfiguration.class,
-        RuleForgeDslAutoConfiguration.class
+        RuleForgeDecisionAutoConfiguration.class
 })
 public class RuleForgeConsoleApplication {
 

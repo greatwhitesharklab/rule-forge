@@ -45,8 +45,9 @@ public class KnowledgeBuilder extends AbstractBuilder {
     /**
      * V5.45.4 — DSL chain runtime 真删:KnowledgeBuilder 不再持有
      * {@link com.ruleforge.builder.DslRuleSet} 引用(老接口 V5.45.4 已删)。
-     * ruleforge-dsl module 仍存在作 archive(可加载 classpath),但 production
-     * runtime 不可达 — KnowledgeBuilder 不会再调 .support() / .build() 老 DSL 链。
+     * V5.47 — ruleforge-dsl module 整 module 删除,KnowledgeBuilder 不会再
+     * 调 .support() / .build() 老 DSL 链,classloader 跑 Class.forName 找不到
+     * com.ruleforge.dsl.*。
      * V5.43 行为兼容:遇到 .ul 老格式静默 0 rule,不抛错。
      */
     private CrosstabRulesBuilder crosstabRulesBuilder;
@@ -95,8 +96,9 @@ public class KnowledgeBuilder extends AbstractBuilder {
             try {
                 // V5.45.4 — DSL chain runtime 真删:KnowledgeBuilder 不再调
                 // dslRuleSetBuilder.support() / .build() — 老 .ul 资源走 0 rule
-                // 静默跳过(跟 V5.43 行为一致),不抛错。ruleforge-dsl module 仍可
-                // 加载作 archive,但 production runtime 不可达。
+                // 静默跳过(跟 V5.43 行为一致),不抛错。
+                // V5.47 — ruleforge-dsl module 整 module 删除,classloader 找
+                // 不到 com.ruleforge.dsl.*,production runtime 永远不可达。
                 if (path != null && path.toLowerCase().endsWith(".dmn")) {
                     // V5.40 — DMN 1.3 决策表路径,绕过老 .xml 解析,直接走 Kie DMN 编译
                     if (this.dmnResourceDispatcher == null) {

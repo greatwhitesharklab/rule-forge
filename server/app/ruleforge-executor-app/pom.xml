@@ -68,15 +68,6 @@
             <version>5.0.0</version>
         </dependency>
 
-        <!-- V5.44.1 — Standalone jar for the legacy .ul DSL chain.
-             KnowledgeBuilder 字段 dslRuleSetBuilder 仍存在,executor 通过
-             KnowledgeBuilder 间接 import DSLRuleSetBuilder,需要 ruleforge-dsl。 -->
-        <dependency>
-            <groupId>com.ruleforge</groupId>
-            <artifactId>ruleforge-dsl</artifactId>
-            <version>5.0.0</version>
-        </dependency>
-
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>

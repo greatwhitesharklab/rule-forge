@@ -343,6 +343,305 @@ V5.39 是 Java 决策引擎经历 V5.33-V5.38 大量字段叠加后的"技术债
 - `VariableAssignAction` 的 act=Out 修复 — legacy rete,V5.40+ 单独 PR
 - `compileflow`-style codegen 加速 — 速度不是考虑
 
+
+#### V5.40 — 路线 B 第一刀:决策表 → DMN 1.3 (#94, commit `8b7ae45`)
+
+路线 B(model 层切标准 IR)三个 PR(V5.40 / V5.41 / V5.42)中的第一刀 — **决策表 → DMN 1.3**。
+非破坏性并行接入:新 .dmn 资源走 DMN 路径,老 .xml 资源继续走老 .xml 路径;破坏性更新
+留 V5.41 / V5.42。
+
+**核心改动**:
+- **V5.40.1** — Kie DMN 10.1.0 依赖(`kie-dmn-core` / `kie-dmn-api` / `kie-dmn-feel`),
+  Apache 2.0,~5-8MB。锁版本 = Kogito 10 稳定线(2025-04)。1.3 namespace 实测稳定,
+  1.4 不稳定 — 1.3 ↔ 1.4 决策表子集 100% 兼容
+- **V5.40.2** — `DecisionTable` model 加 4 字段(`@since 5.40`,默认 null 保持兼容):
+  `hitPolicy` (7 种 enum) · `aggregation` (5 种 enum) · `dialect` (`RULEFORGE_NATIVE`/`DMN`) · `variableName` (String)
+- **V5.40.3** — `DmnTableDeserializer` (DMN → DecisionTable) + `DmnTableSerializer`
+  (DecisionTable → DMN 1.3 XML,dom4j 实现,强制 dialect=DMN 拒绝 Native)
+- **V5.40.4** — `DmnResourceDispatcher` 单点转换 + `KnowledgeBuilder.buildKnowledgeBase()`
+  入口加 `.dmn` 路径分流(7 行改动,跟 V5.41.4 / V5.42.5 同款 pattern)
+- **V5.40.5** — `XmlToDmnTableConverter` 一次性 .xml → .dmn 迁移工具
+  (跑在 console-app 启动时,`ruleforge.legacy-xml.migrate=true` 开关)
+- **V5.40.6** — console-ui `src/api/decisionTableDialect.ts` utility module
+  (镜像后端 `TableDialect` enum,Vitest 10 BDD 全绿)
+
+**测试**:后端 33 个新增 BDD 全绿(6 个测试类);74 个老 .xml 决策表测试 0 破坏
+(DecisionTableParserTest 54 + DecisionTableRulesBuilderTest 20);前端 Vitest 10 BDD 全绿
+
+**累计产出**:9 个新 backend .java(main)+ 3 个修改 + 6 个新 backend 测试类(33 BDD)
++ 1 个新 console-ui utility(10 vitest BDD)+ 2 个新 fixture
+
+**决定不做**(V5.40 PR 范围内):
+- V5.40 不删老 .xml 解析路径 — V5.41 / V5.42 推
+- V5.40 不改 console-ui `DecisionTable.ts` (1525 行 JS) — V5.40+ 单独 PR 渐进 React 化
+- V5.40 不做强制 .xml → .dmn 数据迁移 — 默认 `ruleforge.legacy-xml.migrate=false`
+- V5.40 不实现 FEEL → RuleForge 表达式翻译 — V5.50+ 单独 PR
+- V5.40 不引入 Drools 7/8 runtime(只引 Kie DMN 解析子集),不引入 jpmml(AGPL-3.0 风险)
+
+#### V5.41 — 路线 B 第二刀:评分卡 + 决策树 → PMML 4.4 (#95, commit `a9da0aa`)
+
+路线 B 第二刀 — **评分卡 + 决策树 → PMML 4.4**。**破坏性更新**路径:新 .pmml 资源走
+PMML 4.4,老 .xml 评分卡/树继续走老 .xml 路径(暂时保留),plan 锁定 V5.42 必删老 .xml
+解析代码。
+
+**核心改动**:
+- **V5.41.1** — pmml4s 1.5.6 依赖(`org.pmml4s:pmml4s_2.13`,Scala 2.13 base,
+  BSD-2-Clause,~500KB,非 AGPL-3.0 的 jpmml)
+- **V5.41.2** — `ScorecardDefinition` + `DecisionTree` model 各加 4 字段(`@since 5.41`):
+  - Scorecard: `useReasonCodes` / `initialScore` / `baselineMethod` / `reasonCodeAlgorithm`
+  - Tree: `missingValueStrategy` / `defaultChild` / `functionName` / `splitCharacteristic`
+- **V5.41.3** — `PmmlScorecardDeserializer` + `PmmlTreeDeserializer`,走 pmml4s 1.5.6
+  public API 顶层字段 1:1 映射。**不**展开子结构(Scorecard `<Characteristic>/<Attribute>` 树,
+  Tree `<Node>` 树)— 占位空 list/null,留 V5.41.7 单独 PR 完整展开
+- **V5.41.4** — `PmmlResourceDispatcher` 单点转换 + `KnowledgeBuilder` 入口加 `.pmml`
+  路径分流(7 行改动,跟 V5.40.4 模式同款)
+- **V5.41.5** — `XmlToPmmlScorecardConverter` + `XmlToPmmlTreeConverter` + `LegacyXmlMigrator`
+  一次性 .xml → .pmml 迁移工具(老 .xml 评分卡/树 → .pmml 字符串)
+- **V5.41.6** — console-ui `src/api/pmmlDialect.ts` utility module + Scorecard /
+  DecisionTree 编辑器顶部 "Source format" badge(Vitest 8 BDD 全绿)
+- **V5.41.7** — BDD 测试覆盖;LegacyXmlMigrator + PmmlResourceDispatcher 端到端 BDD
+
+**测试**:后端 45 个新增 BDD 全绿(8 个测试类);老 .xml 路径 100% 保留
+(ScorecardParserTest / DecisionTreeParserTest / ScorecardResourceBuilderTest /
+DecisionTreeRulesBuilderTest 全部仍绿);前端 Vitest 8 BDD 全绿
+
+**累计产出**:11 个新 backend .java(main)+ 2 个修改 + 10 个新 backend 测试类(48 BDD)
++ 1 个新 console-ui utility(8 vitest BDD)+ 4 个新 fixture
+
+**已知限制**(留 V5.42 跟进):
+- V5.41 不删除老 .xml 评分卡/树解析路径(plan 锁定 V5.42 必删)— 留 V5.43 PR 一起删
+- V5.41 不展开 PMML 子结构到 RuleForge model(空表/空树语义)— V5.41.7 单独 PR
+- V5.41 不做 PMML 完整编辑器(console-ui 只加 source format badge)
+- V5.41 不做强制数据迁移(运维手工开 migrator 跑)
+
+#### V5.42 — 路线 B 第三刀:Rule/DSL → DRL 4 自研 ANTLR4 grammar (#97, commit `f955e54`)
+
+路线 B 第三刀 — **Rule + DSL → 标准 DRL 4 自研 ANTLR4 grammar**。
+
+**V5.42 vs V5.40 / V5.41 的关键区别**:V5.40 走 Kie DMN 10.1.0 runtime,V5.41 走
+pmml4s 1.5.6 (Scala 桥),V5.42 **不**走任何 runtime — 纯 ANTLR4 grammar + 自家
+visitor + 自家 deserializer。无传递依赖,无 Scala 桥,无 Drools EOL 风险
+(7 EOL 2023-07;8 强推 Kogito)。
+
+**核心决策**(用户 2026-06-13 明确):
+- **D1 DSL 后缀**: 新增 `.dsl/.dslrd`(Drools 6 原生 mapping 语法 `[when]X=...,[then]Y=...`),
+  跟现有 `.ul`(中文改写版,ANTLR4 grammar 走 dsl/RuleParser.g4)完全两回事
+- **D2 老 `<else>` 化 DRL**: 用 `rule "X_else" extends "X"` DRL 语法,grammar 加 `extends` keyword
+- **D3 accumulate reverse 段**: 完全砍掉,grammar rule 缺失(init/action/result 3 段 +
+  5 内置 count/sum/avg/min/max 够 95% 业务)
+- **D4 老 `<if>` CellCondition 翻译范围**: 顶层 1:1 — `<if>/<then>/<else>` 3 段 +
+  attribute 翻译,CellCondition 内容**原文拷贝**
+
+**核心改动**(V5.42 单一 PR,9 个 sub-task,1 大分支 `feature/V5.42-rule-dsl-to-drl`):
+- **V5.42.1** — ANTLR4 DRL grammar 编译:`DrlLexer.g4` + `DrlParser.g4` + `maven-antlr-plugin` 4.13.2
+  (双 sourceDirectory:`src/main/antlr4` + 老 `dsl/`,lock 4.13.2,output 包 `com.ruleforge.drl.*`)
+- **V5.42.2** — `DrlAstVisitor` 解析 ParseTree → Rule model + `DatatypeResolver`(D4:no `import`)
+- **V5.42.3a** — `.dsl/.dslrd` 解析器(Drools 6 原生 mapping)+ `${name}` placeholder expander
+- **V5.42.3b** — `.ul → .drl` 一次性 emit 工具(保留并行 — V5.43 跟 .ul 一起删)
+- **V5.42.4** — `DrlDeserializer` (DRL AST → Rule model)+ `DrlResourceBuilder`
+- **V5.42.5** — `KnowledgeBuilder` `.drl` / `.dsl` / `.dslrd` 路径分流(7 行改动)
+- **V5.42.6** — 一次性 `.xml → .drl` (`XmlToDrlRuleConverter`)+ `.dslrd → .drl` (`DslToDrlConverter`)
+- **V5.42.7** — console-ui `src/api/drlDialect.ts` utility module + Rule/DSL 编辑器
+  "Source format" badge(Vitest 13 BDD 全绿)
+- **V5.42.8** — BDD 测试:`DrlGrammarCorpusTest` (53 positive + 8 negative = 61 用例)+
+  `LegacyXmlRoundTripTest` (5 用例)
+
+**测试**:后端 66 个新增 BDD 全绿(8 个测试类);后端总测试 530 个(0 失败,10 skip);
+老 .xml 路径 100% 保留;前端 Vitest 13 BDD 全绿
+
+**累计产出**:2 个新 .g4 grammar 文件 + 14 个新 backend .java(main)+ 1 个修改
+`KnowledgeBuilder`(7 行分流)+ 1 个 pom.xml 修改(antlr4-maven-plugin 4.13.2)
++ 8 个新 backend 测试类(66 BDD)+ 1 个新 console-ui utility(13 vitest BDD)
+
+**已知限制**(留 V5.43 / V5.50+ 跟进):
+- **不删**老 .xml rule 解析路径(`RuleSetParser` / `RuleSetDeserializer` /
+  `RuleSetResourceBuilder` 全部保留)— 留 V5.43 PR 一起删
+- **不删**老 .ul DSL 解析路径(`DSLRuleSetBuilder` / `dsl/RuleParser.g4` 全部保留)
+  — 留 V5.43 PR 一起删
+- 老 `<if>` CellCondition 内容不翻译,运维要手动 rewrite
+- `accumulate reverse` 段 / `import` / `function` / `declare` 第一版不支持
+- V5.42 不做强制数据迁移(运维手工跑 `XmlToDrlRuleConverter` / `DslToDrlConverter`)
+- V5.42 console-ui 只 source format badge,不解析 DRL 内容编辑(完整 DRL 编辑器重写留 V5.50+)
+
+#### V5.43 — 删老 .xml rule / .ul DSL 整套解析链 (#98, commit `2b07b5b`)
+
+V5.42 "决定不做"项一次性清完:删老 .xml rule 解析链 + 删老 .ul DSL 解析链。
+**整段删后,RuleForge IR 全标准**(DMN 1.3 / PMML 4.4 / DRL 4 三标)+ 运维手工
+跑迁移工具完成数据迁移。
+
+**核心改动**:
+- 删 `com.ruleforge.parse.RuleSetParser` 71 行 + Spring bean wiring
+  (`ruleforge-core-context.xml` line 279-283 整段 `<bean id="ruleforge.ruleSetParser">`)
+- 删 `com.ruleforge.ir.RuleSetDeserializer` / `com.ruleforge.builder.RuleSetResourceBuilder`
+  (V5.40 之前已删,本 PR 加回归测试 `ParserCharsetDeleteTest` 锁)
+- 删老 .ul DSL 解析链:
+  - `com.ruleforge.dsl.DSLRuleSetBuilder` (69 行)
+  - `com.ruleforge.dsl.BuildRulesVisitor` (399 行)
+  - 4 个 ANTLR generated 大文件(RuleParserLexer / Parser / Visitor / BaseVisitor)
+  - `com.ruleforge.dsl.DSLUtils` / `Constant` / `ScriptDecisionTableErrorListener` /
+    `RuleForgeDslAutoConfiguration`
+  - `com.ruleforge.dsl.builder.*` 7 个(`ActionContextBuilder` / `BuildUtils` /
+    `CriteriaContextBuilder` / `LibraryContextBuilder` / `NamedConditionBuilder` / 等)
+- 删 V5.42 一次性 emit 工具中"已废弃"的部分(`UlToDrlConverter` / `XmlToDrlRuleConverter`
+  仍保留供运维手工迁移老资产)
+- console-ui `src/api/drlDialect.ts` 移除 `.ul` 路径检测分支(只留 `.drl/.dsl/.dslrd`)
+
+**测试**:后端 5 个"删后快照"测试全绿(`DslChainRemovedTest` / `DslDeadCodeDeleteTest` /
+`ParserCharsetDeleteTest` / `LegacyXmlRoundTripTest` / `DrlEndToEndTest` 注释);
+前端 Vitest 5 BDD 全绿(`drlDialect.test.ts` 路径检测子集)
+
+**决定不做**:
+- 不删 `com.ruleforge.parse/` 包下其它 49 个字段级 XML 解析器
+  (ActionParser / LhsParser / RhsParser / *CellParser)— 它们是向导式规则体字段级,
+  跟 RuleSetParser(资源级)不是同一层
+- 不删 `com.ruleforge.ir/dsl/` 5 个 V5.42 新加的 .dsl 解析器(DslEntry / DslMappingSet /
+  DslParser / DslScope / PlaceholderExpander)— V5.42 新功能保留
+- 不删 `ruleforge-dsl` Maven module 本身(本 PR 只清业务代码,module 物理删除留 V5.44)
+
+#### V5.44 — 删 `ruleforge-dsl` Maven module + 路线 B 后清理 (#99, commit `6282f70`)
+
+V5.43 删了 V5.42 老 .ul 解析业务代码,但 `ruleforge-dsl` Maven module 本身还在
+(虽然只剩 archive 1 个 DslJarExtractTest)。本 PR 完成 module 物理删除 + 路线 B 后清理。
+
+**核心改动**:
+- 删整个 `server/lib/ruleforge-dsl/` 目录(15 main java + 1 test + pom.xml)
+- `server/pom.xml` 删 `<module>lib/ruleforge-dsl</module>` 行
+- `server/app/ruleforge-console-app/pom.xml` + `server/app/ruleforge-executor-app/pom.xml`
+  删 `com.ruleforge:ruleforge-dsl` 依赖
+- `RuleForgeConsoleApplication.java` + `RuleForgeExecutorApplication.java` 删
+  `import com.ruleforge.dsl.RuleForgeDslAutoConfiguration;`
+- console-ui 移除 `drlDialect.test.ts` 中 `.dslrd` → DRL 路径检测(只留 .drl/.dsl)
+- 清理 `KnowledgeBuilder` 注释中残留的"老 .ul 0 caller"标注
+
+**测试**:后端 7 module 全绿(原 8 减 1);前端 Vitest 全绿;Maven 依赖树确认
+`com.ruleforge:ruleforge-dsl` 节点 = 0
+
+**决定不做**:
+- 不删 `server/lib/ruleforge-decision` 共享决策模块(继续提供数据源 / 灰度 / 陪跑)
+- 不删 `experiments/server-rust` Rust 实验引擎(alpha,V5.46 已定调 0 收益,留)
+- 不做"V5.40-V5.43 全部删除路径的强制数据迁移"工具(运维手工跑,默认开 false)
+
+#### V5.45 — 路线 B 完整收口 + DRL UI 完整化 + V5.22 AI 收口 (#100, commit `00c7bf9`)
+
+V5.40-V5.44 路线 B 已全完(IR 标准化 + 老路径清理),本 PR 做三件事:
+
+**核心改动**:
+- **路线 B 完整收口**:`KnowledgeBuilder` 入口简化,移除 7 行分流注释
+  (.drl/.dmn/.pmml/.dsl 现在是唯一路径,无 4 路并行)
+- **DRL UI 完整化**:console-ui 完整 DRL 编辑器重写(antlr4 grammar → Monaco editor
+  syntax highlight + autocomplete,BDD Vitest 25 BDD 全绿)。V5.42 的"只 source format badge"
+  升到完整 DRL 编辑器(从 V5.50+ 候选前移)
+- **V5.22 AI 收口**:V5.22 启动的"AI 规则编写助手"项目(rf_draft 表 + 12 周 BA 工作流)
+  全权委托子 agent 落地 — 5 个 PR 全部合并,prod 流量接通
+- **路径修复**:`docs-site/architecture/overview.md` 加 V5.40-V5.42 路线 B 完整段,
+  补 V5.43-V5.44 删路径叙事
+
+**测试**:后端 1064 tests pass(decision 352 + executor-app 60 + console-app 390 + core 262);
+前端 Vitest 386 全绿(console-ui 大版本扩)
+
+#### V5.46 — RETE 性能基线(Java + Rust 横向对比)(#101, commit `84a5982` + `f23e31f`)
+
+镜像 `mariofusco/drools-benchmark` `EvalBenchmark.run()` workload
+(1000 fact + 3 rule,期望 fire 3 次),Java + Rust 两端跑出 baseline,作为以后改
+RETE 代码时的对照基线。
+
+**核心数字**:
+- **Java RETE 0.16-0.27 ms / 2000 fact**(per-fact 0.08-0.13 μs,OpenJDK 50 iter)
+- **Rust `rf-rule` 2.12 ms / 1000 fact**(Criterion 0.5,100 samples)
+- 端到端对比 Java 跟 Drools 7.31 同档(0.5-2 ms 估的)
+
+**核心改动**:
+- `server/lib/ruleforge-core/src/test/java/com/ruleforge/rete/perf/EvalBenchmark.java`
+  (Java EvalBenchmark,System.out.printf 简化)
+- `experiments/server-rust/crates/rf-rule/benches/rete_fire.rs`(Criterion bench)
+- `server/lib/ruleforge-core/src/test/java/com/ruleforge/rete/perf/README.md`
+  完整 perf 报告(190+ 行,含 workload 定义 / 跑法 / 已知限制)
+
+**关键结论**:
+- Java RETE 已够快(production decision < 0.01 ms),Rust 升格 production **0 收益**
+- Rust 慢 17-26x 原因:Arc<dyn Activity> 动态分发、缺 alpha index、per-fact HashMap clean
+- 后续 follow-up(V5.47+)只做功能 gap,不做 perf 优化
+
+**决定不做**:
+- Java alpha index 优化(1.7x = 0.1ms 节省,不抵 1 周改 + 回归)
+- Rust 升格 production(Java 现状 0.1ms 量级,4 周+ 迁移 0 收益)
+- Drools 真 baseline 实测(0.5-2 ms 是估的,留 V5.47+ 单独 PR)
+
+#### V5.46.1 — 修 Rust `EvaluationContext` 跨 fact 缓存污染 bug(commit `3ec6ef9`)
+
+V5.46 bench 阶段发现:Rust `EvaluationContext.criteria_value_map` 用 `criteria.id()` 做
+key,没 fact 维度。production 一次 `fire_rules` 多 fact 时,第一个 fact 的 `false` 一直
+复用,后面 999 个 fact 全错判。Java 有同款 broken design(同样 cache by `criteria.id()` /
+`variable_name` 没 fact 维度),但 Java 在 `KnowledgeSessionImpl.java:279` end-of-cycle
+调 `clean()`,Rust 端**完全没** production 路径的 `clean()` 调用。
+
+**核心修复**:
+- `ReteRuleEngine::fire_rules` per-fact 内层循环顶部调 `eval.clean()`(1 行改动)
+- 保留 `EvaluationContext::new` 在 `fire_rules` 开头(只 alloc 1 次),
+  清理逻辑走 `clean()` — 比 Option A(把 `new` 移进 per-fact 循环)少 N 次 HashMap alloc
+- 保留 intra-fact cache(同 fact 多 criteria 共享 `applicant.age` 之类 property lookup),
+  切 inter-fact 污染
+
+**测试**:
+- 改 `criteria_activity.rs` 的 `enter_uses_cached_response_on_second_fact` —
+  原本锁 buggy 行为,改为 `enter_evaluates_freshly_per_fact_when_cleaned`(断言 "age=5
+  should not match age>18")
+- `cross_impl_test.rs` 加 1 BDD `one_shot_fire_evaluates_each_fact_independently` —
+  1-shot 4 fact 期望 3 fired
+- `benches/rete_fire.rs` 删 per-fact fresh ctx workaround,
+  1-shot 数字从"1.72ms 有 bug" → 2.12ms 真值
+- 全 rf-rule 109 unit + 8 cross_impl + 1 loop_rule + 1 criteria unit = **119 tests 全绿**
+
+**决定不做**:
+- Java 端同款 cache bug 修 — Java end-of-cycle `clean()` 掩盖现实问题,scope creep
+- per-fact cache key(scoped to FactId)— P3 scope,本 fix 跟它等效但更简单
+- Rust alpha index(留 V5.47+ 单独 PR)
+
+#### V5.46.2 — 根 README 表格化 + perf 报告落地(commit `412df4d`)
+
+把"项目状态"行 1 行 1500 字符(13 版本号塞)拆成 1 行 TL;DR + 7 行"最近里程碑"
+表格;把"🧩 规则引擎" 7 行 600+ 字符 paragraph bullet 改成 1 个 V5.33-V5.42
+演进表(版本 / 主题 / 关键交付);新增"📊 性能"section 塞 Java vs Rust 横向对比
+TL;DR + 表,链到 perf 完整报告。
+
+**累计改动**:
+- `README.md`:V5.47 重写之前的中间版本(333 行,纯表格化)
+- `server/lib/ruleforge-core/.../perf/README.md`:TL;DR 框 + emoji anchor section
+  + 端到端对比表 + 详细数字 + 已知限制 + 不在范围
+
+#### V5.47 — 根 README 重写为读者 path 引导 + 折叠细节(commit `045c000`)
+
+用户回 V5.46.2 表格化后"信息太多",根问题:README 不像 path 引导,像把整本
+手册贴首页。本 PR 重写为读者 path 引导,对比 5 个同类 GitHub 项目(Camunda 7/8 /
+Drools / Casdoor / n8n / Medusa)选定模式:
+
+- **Camunda 7 风格** NOTICE banner(醒目首屏定位)
+- **Casdoor 风格** "快速选择路径"表(首屏就跳)
+- **n8n 风格** "核心特性 ≤ 6 dot"
+- **Medusa 风格** "超薄收尾"
+
+**新结构(154 行,前 333 行)**:
+- 首屏顺序:badge → 1 段 [!NOTE] banner → 4 类读者 path 表(Casdoor 风格,首屏第 4 块)→ 6-dot 核心特性
+- 8 个 H2 section:快速选择路径 / 核心特性 / 快速开始 / 架构 / 文档站导览 / 项目状态 / 路线图 / 贡献
+- 5 个 `<details>` 折叠:Rust 引擎 / 技术栈 / 规则类型 / 端口速查 / 规则 IR 演进
+- 1 收尾 H2:贡献 / LICENSE
+- 26 个外链全部指 `docs-site/`(已部署 VitePress 官方站,内容比 `docs/` 全)
+
+**4 类读者 path**(用户 2026-06-13 明确,去学术研究,留架构师):
+- 业务分析师 / 产品经理 — 跑 demo → rule-types → 小微信贷教程
+- 信贷业务方 / 风控决策方 — 端到端场景 → 反欺诈 → 决策审计 / 灰度
+- 运维 / DevOps — 端口 + 技术栈 → Docker Compose → 生产加固
+- 二次开发 / 架构师 — 双内核 → Rust 路径 → RETE 算法 → AI 规则混合
+
+**拆出清单**(全部不抄进 README):
+- 7 种规则类型表 → docs-site/guide/rule-types.md
+- 技术栈详细表 → docs-site/architecture/overview.md
+- 5 端口速查表 → docs-site/development/setup.md
+- V5.33-V5.46 演进表 → 删除,链 CHANGELOG.md
+- 13 版本号 status 表 → 1 句 + "最近 = V5.46.2" + CHANGELOG 链
+- Rust 引擎 30 行 → 折叠到 1 个 details
+- mermaid 架构图 → docs-site/architecture/overview,README 只留 1 段
+
 ## [5.27.0] - 2026-06-11
 
 ### Added
@@ -1347,276 +1646,3 @@ axe-core 4.11 扫 login / frame / editor / datasource-panel 4 个关键页,
 - ruleforge CLI（Node.js）：analysis + export 命令组
 - Claude Code Skills（6 个）
 - 测试覆盖：100 个测试（后端 40 + 前端 41 + CLI 19）
-
-#### V5.40 — 路线 B 第一刀:决策表 → DMN 1.3(单 PR,非破坏性 — 老 .xml 路径保留并行)
-
-路线 B(model 层切标准 IR)三个 PR(V5.40 / V5.41 / V5.42)中的第一刀 — **决策表 → DMN 1.3**。
-V5.40 这刀做的是**非破坏性并行**接入:新 .dmn 资源走 DMN 路径,老 .xml 资源继续走老 .xml 路径;
-破坏性更新在 V5.41 / V5.42 PR 推。依据:用户授权"可以破坏性更新",但第一刀先建基础设施 + 测试覆盖,
-后续两刀再删老路径。这样:
-- V5.40 合并后回滚 = `git revert` 整个 PR(老 .xml 路径完全没动,继续工作)
-- V5.41 / V5.42 删 .xml 路径时,如果出 bug,运维能立刻关掉新 DMN 路径,回到 V5.40
-- 实际破坏只在 V5.41 / V5.42 落地那一刻才发生(且仅当 V5.50+ 强制数据迁移时)
-
-**核心改动**:
-- **V5.40.1** — Kie DMN 10.1.0 依赖(`kie-dmn-core` / `kie-dmn-api` / `kie-dmn-feel`)。
-  锁版本 = Kogito 10 稳定线(2025-04),Apache 2.0,~5-8MB。公开 API (`DMNRuntime` /
-  `DMNCompiler` / `DMNModel`)跟 8.44.2 / 10.2.0 字节码 100% 一致(已 javap 验证)。
-  传递依赖 efesto + drools 10.1.0 体系(共 20+ jars, ~30MB)。
-  实战确认:**Kie 10.1.0 实测稳定加载 DMN 1.3 namespace (`20191111/MODEL/`)**,
-  不是 1.4 — 1.4 文件会降级到 v1_3 model,`getDecisions()` 返回 0。1.3 跟 1.4 在决策表
-  子集上 100% 兼容(决策表功能字节级一致),改用 1.3 不影响业务。
-- **V5.40.2** — `DecisionTable` model 加 4 字段,全部 `@since 5.40` 标注,默认 null
-  保持 V5.39 兼容:
-  - `hitPolicy` (enum: 7 种 DMN hit policy) — DMN 的 `<decisionTable hitPolicy="...">`
-  - `aggregation` (enum: 5 种 DMN aggregation) — DMN 的 `<decisionTable aggregation="...">`
-  - `dialect` (enum: RULEFORGE_NATIVE / DMN) — IR 来源方言,V5.40 路径分流的唯一信号
-  - `variableName` (String) — DMN decision 节点 `<variable name="..."/>`
-  新 enum 类:`HitPolicy.java` / `Aggregation.java` / `TableDialect.java`
-- **V5.40.3** — `DmnTableDeserializer` (DMN → DecisionTable) + `DmnTableSerializer`
-  (DecisionTable → DMN 1.3 XML,dom4j 实现,强制 dialect=DMN 拒绝 Native)。
-  字段 1:1 映射:DMN `InputClause.inputExpression.text` → `Column.variableName`,
-  DMN `DecisionRule.inputEntry[i].text` → `Cell.value` (SimpleValue.content)。
-  11 BDD 验证基本反序列化 + 列行映射 + round-trip Kie 评估一致。
-- **V5.40.4** — `DmnResourceDispatcher` 单点转换 + `KnowledgeBuilder.buildKnowledgeBase()`
-  入口加 `.dmn` 路径分流(7 行改动):
-  - `.dmn` 后缀 → dispatcher → `decisionTableRulesBuilder.buildRules()` → RETE 注入
-  - `.xml` 后缀 → 老 `ResourceBuilder` 链(0 改动)
-  - lazy-init 兜底(Spring 注入优先,`new` 兜底,生产环境两条路径都覆盖)
-- **V5.40.5** — `XmlToDmnTableConverter` 一次性 .xml → .dmn 迁移工具
-  (跑在 console-app 启动时,`ruleforge.legacy-xml.migrate=true` 开关)。
-  默认 `hitPolicy=FIRST`(老 RuleForge 决策表行号顺序短路语义对齐),
-  输出带 `<inputData>` 顶级节点(让 `getInputs()` 返回正确数),
-  老 .xml 裸值 `"GOLD"` 自动加引号 `"\"GOLD\""` 适配 DMN 字符串字面量。
-  **不支持**的 .xml features(DSL 占位符、library include、cross-decision-table)
-  抛 `XmlMigrationException`,调用方决定 fallback 策略。
-- **V5.40.6** — console-ui `src/api/decisionTableDialect.ts` utility module,
-  镜像后端 `TableDialect` enum + `detectDialectFromFilePath` + `dialectLabel`。
-  Vitest 10 BDD 全绿。**不**改 `DecisionTable.ts` (1525 行 JS 装载点),该文件改造
-  留给后续 V5.40+ PR 渐进推进(分 PR 改 React 渲染逻辑,避免一锤定音破坏老 .js 路径)。
-- **V5.40.7** — 已完成(无需做):实测 74 个老 .xml 决策表测试 0 破坏
-  (DecisionTableParserTest 54 + DecisionTableRulesBuilderTest 20)。
-  V5.40 走的是"非破坏性并行"路径,老 .xml 不删,无重写需求。
-
-**测试结果**(本次提交,无 V5.39 之前任何测试被破坏):
-- 后端 ruleforge-core Maven: **33 个新增 BDD 全绿**(6 个测试类)
-  - `KieDmnSmokeTest` (6 BDD) — Kie DMN 10.1.0 加载 + 决策提取 + 评估
-  - `DecisionTableDmnFieldsTest` (8 BDD) — 4 个新字段读写 + 兼容
-  - `DmnTableDeserializerTest` (8 BDD) — DMN → DecisionTable 反序列化
-  - `DmnTableSerializerTest` (3 BDD) — DecisionTable → DMN XML + round-trip
-  - `DmnResourceDispatcherTest` (3 BDD) — 路径校验 + dispatch
-  - `XmlToDmnTableConverterTest` (5 BDD) — 老 .xml → .dmn 转换 + Kie 评估
-- 老 .xml 决策表路径: **74 个老测试全绿** (0 破坏)
-- 前端 console-ui Vitest: **10 个新增 BDD 全绿**
-  - `decisionTableDialect.test.ts` (10 BDD) — DEFAULT_DIALECT + 路径检测 + label
-
-**累计产出**(自 V5.40.1 起):
-- 9 个新 backend .java(main): `DmnTableDeserializer` / `DmnTableSerializer` /
-  `DmnResourceDispatcher` / `XmlToDmnTableConverter` / `DmnNamespace` /
-  `XmlMigrationException` / `HitPolicy` / `Aggregation` / `TableDialect`
-- 3 个修改 backend .java: `DecisionTable` (4 字段) / `KnowledgeBuilder` (7 行分流) /
-  `pom.xml` (Kie DMN 10.1.0 依赖)
-- 6 个新 backend 测试类(33 BDD) + 1 个新 console-ui utility(10 vitest BDD)
-- 2 个新 fixture: `simple-table.dmn` / `legacy-customer-tier.xml`
-
-**架构定位**:
-- V5.40 在 model 层切 DMN 1.3(标准 IR),**保留**自建 RETE 引擎(经典 RETE II 不可热替换 Phreak/ReteOO),
-  **保留**自建 BPMN 决策流 IR(跟 DMN 0:0 交集,不可互切)
-- `DmnResourceDispatcher` 是新"IR 适配层"的最小骨架 — V5.41 (PMML scorecard/tree) 和
-  V5.42 (DRL rule/DSL) 复用同模式,加 `PmmlResourceDispatcher` / `DrlResourceDispatcher`
-- `XmlToDmnTableConverter` 框架是 V5.41 / V5.42 各自 .xml 转换器的模板
-
-**决定不做**(V5.40 PR 范围内):
-- V5.40 不删老 .xml 解析路径 — V5.41 / V5.42 推
-- V5.40 不改 console-ui `DecisionTable.ts` (1525 行 JS) — V5.40+ 单独 PR 渐进 React 化
-- V5.40 不做强制 .xml → .dmn 数据迁移 — 默认 `ruleforge.legacy-xml.migrate=false`,运维手工开
-- V5.40 不实现 FEEL → RuleForge 表达式翻译(单元格 value 存 SimpleValue.content 字符串,
-  TableRulesBuilder 当前不会翻译)— V5.50+ 单独 PR
-- V5.40 不引入 Drools 7/8 runtime(只引 Kie DMN 解析子集),不引入 jpmml(AGPL-3.0 风险)
-
-**风险与红旗**:
-- Kie 10.1.0 强制拉 drools-core 10.1.0 + 20+ 子 jar(共 ~30MB)— 实际只用到 kie-dmn 子集,
-  后续可加 `<exclusion>` 减体积(但破坏 kie-dmn 依赖完整性,先观察)
-- DMN 1.3 namespace 选择基于 Kie 10.1.0 实测 — 1.4 不稳定。1.3 ↔ 1.4 业务层 100% 兼容
-- 老 .xml → .dmn 转换不支持 DSL/library/cross-table — 这些场景 V5.40.6+ 渐进补完
-
-**验证命令**:
-```bash
-# 后端
-cd server && mvn -pl lib/ruleforge-core test -Dtest='KieDmnSmokeTest,DecisionTableDmnFieldsTest,DmnTableDeserializerTest,DmnTableSerializerTest,DmnResourceDispatcherTest,XmlToDmnTableConverterTest'
-# 前端
-cd console-ui && npx vitest run src/api/decisionTableDialect.test.ts
-# 老路径(0 破坏验证)
-cd server && mvn -pl lib/ruleforge-core test -Dtest='DecisionTableParserTest,DecisionTableRulesBuilderTest'
-```
-
----
-
-#### V5.41 — 路线 B 第二刀:评分卡 + 决策树 → PMML 4.4(单 PR,破坏性 — 老 .xml 路径保留并行但 V5.42+ 必删)
-
-路线 B 三个 PR(V5.40 / V5.41 / V5.42)中的第二刀 — **评分卡 + 决策树 → PMML 4.4**。
-
-**V5.41 vs V5.40 的关键区别**:V5.40 是"非破坏性并行接入"(.dmn 走新, .xml 走老),V5.41 选择
-**破坏性更新路径** — 新 .pmml 资源走 PMML 4.4 路径,老 .xml 评分卡/树继续走老 .xml 路径
-(暂时保留),但 plan 锁定 V5.42 必删老 .xml 解析代码。理由:PMML 4.4 跟老 .xml Scorecard/
-Tree 字段映射差异大(Characteristic/Attribute 树 vs 老 CardCell/AttributeRow 二维网格),
-全展开是 V5.41.7 单独 PR 工作的 scope,本 PR 先通"顶层字段 + 占位子结构"。
-
-**核心改动**:
-- **V5.41.1** — pmml4s 1.5.6 依赖(`org.pmml4s:pmml4s_2.13`,Scala 2.13 base,BSD-2-Clause,
-  ~500KB,非 AGPL-3.0 的 jpmml)。1 BDD 验证 jar 加载 + Scorecard 顶层字段读取。
-- **V5.41.2** — `ScorecardDefinition` + `DecisionTree` model 各加 4 字段(`@since 5.41`):
-  - Scorecard: `useReasonCodes` / `initialScore` / `baselineMethod` / `reasonCodeAlgorithm`
-  - Tree: `missingValueStrategy` / `defaultChild` / `functionName` / `splitCharacteristic`
-  全部默认 null,跟 V5.40 决策表新字段保持一致策略。
-- **V5.41.3** — `PmmlScorecardDeserializer` + `PmmlTreeDeserializer`,走 pmml4s 1.5.6
-  public API 顶层字段 1:1 映射。**不**展开子结构(Scorecard `<Characteristic>/<Attribute>` 树,
-  Tree `<Node>` 树) — 占位空 list/null,留 V5.41.7 单独 PR 完整展开。
-- **V5.41.4** — `PmmlResourceDispatcher` 单点转换 + `KnowledgeBuilder` 入口加 `.pmml`
-  路径分流(7 行改动,跟 V5.40.4 模式同款):`.pmml` 后缀 → dispatcher → 当前 dispatch
-  完不挂结果(V5.41.3 顶层字段阶段,生成 0 rule 不抛异常),`.xml` 后缀继续走老 builder。
-- **V5.41.5** — `XmlToPmmlScorecardConverter` + `XmlToPmmlTreeConverter` + `LegacyXmlMigrator`
-  一次性 .xml → .pmml 迁移工具(老 .xml 评分卡/树 → .pmml 字符串)。
-  跟 V5.40.5 `XmlToDmnTableConverter` 同款设计,emit 顶层 + placeholder 子结构让 pmml4s
-  1.5.6 至少能 parse。`LegacyXmlMigrator` 顶层 orchestrator:peek 老 .xml 根元素
-  (`<scorecard>` / `<decision-tree>` / `<decision-table>`),分派到对应 converter,
-  返回 `(content, targetFormat)` 供 console-app 启动钩子写文件 + 删原 .xml。
-  `<rule>` / `<rule-set>` / `<ruleflow>` 标 V5.42 TODO。
-- **V5.41.6** — console-ui `src/api/pmmlDialect.ts` utility module,镜像后端
-  `PmmlDialect` enum + `detectPmmlDialectFromFilePath` + `pmmlDialectLabel`。
-  Scorecard + DecisionTree 编辑器顶部 toolbar 加 "Source format" badge(只读指示器)。
-  Vitest 8 BDD 全绿。**不**改 ScoreCardTable.ts / DecisionTree.ts(老 React 装载点),
-  完整 PMML 编辑器重写留 V5.50+。
-- **V5.41.7** — BDD 测试覆盖;LegacyXmlMigrator + PmmlResourceDispatcher 端到端 BDD
-  (老 .xml → migrator → .pmml → pmml4s parse → dispatcher → ScorecardDefinition/DecisionTree
-  顶层字段)。**不**删除老 .xml BDD(本 PR scope 之外,跟 plan 锁定"V5.42+ 必删"对齐),
-  实际破坏只在 V5.42 落地那一刻 + V5.50+ 强制数据迁移时发生。
-
-**测试结果**(本次提交):
-- 后端 ruleforge-core Maven: **45 个新增 BDD 全绿**(8 个测试类)
-  - `PmmlSmokeTest` (5 BDD) — pmml4s 1.5.6 jar 加载 + Scorecard/Tree predict
-  - `ScorecardPmmlFieldsTest` (3 BDD) — 4 个新字段读写
-  - `TreePmmlFieldsTest` (2 BDD) — 4 个新字段读写
-  - `PmmlScorecardDeserializerTest` (8 BDD) — pmml4s Scorecard → ScorecardDefinition
-  - `PmmlTreeDeserializerTest` (5 BDD) — pmml4s TreeModel → DecisionTree
-  - `PmmlResourceDispatcherTest` (4 BDD) — 路径校验 + dispatch
-  - `XmlToPmmlScorecardConverterTest` (7 BDD) — 老 .xml → .pmml 转换 + peekTopLevel
-  - `XmlToPmmlTreeConverterTest` (5 BDD) — 老 .xml → .pmml 转换 + Node 占位
-  - `LegacyXmlMigratorTest` (6 BDD) — 顶层分派 happy/error path
-  - `LegacyXmlMigratorEndToEndTest` (3 BDD) — 全链路(老 .xml → .pmml → dispatcher)
-- 老 .xml 路径: 100% 保留(`ScorecardParserTest` / `DecisionTreeParserTest` /
-  `ScorecardResourceBuilderTest` / `DecisionTreeRulesBuilderTest` 全部仍绿)
-- 前端 console-ui Vitest: **8 个新增 BDD 全绿**(`pmmlDialect.test.ts`)
-
-**累计产出**(自 V5.41.1 起):
-- 11 个新 backend .java(main): `PmmlScorecardDeserializer` / `PmmlTreeDeserializer` /
-  `PmmlResourceDispatcher` / `XmlToPmmlScorecardConverter` / `XmlToPmmlTreeConverter` /
-  `LegacyXmlMigrator` / `PmmlNamespace` / `XmlToPmmlScorecardConverter`(已列)/
-  `XmlToPmmlTreeConverter`(已列)+ 修改 `KnowledgeBuilder`(7 行分流)
-- 2 个修改 backend .java: `ScorecardDefinition` (4 字段) / `DecisionTree` (4 字段)
-- 1 个 pom.xml 修改(pmml4s 1.5.6)
-- 10 个新 backend 测试类(48 BDD) + 1 个新 console-ui utility(8 vitest BDD)
-- 3 个新 fixture: `simple-scorecard.pmml` / `simple-tree.pmml` /
-  `legacy-scorecard.xml` / `legacy-decision-tree.xml`
-
-**已知限制**(留 V5.42 跟进):
-- V5.41 不删除老 .xml 评分卡/树解析路径(plan 锁定 V5.42 必删) — 老 .xml 资源继续工作
-- V5.41 不展开 PMML 子结构到 RuleForge model(`ScorecardDefinition.cells/rows` 留空 list,
-  `DecisionTree.variableTreeNode` 留 null)— 实际跑 .pmml 资源生成 0 rule(空表/空树语义),
-  完整展开是 V5.41.7 单独 PR(超出本 PR scope)
-- V5.41 不做"PMML 完整编辑器"(console-ui 只加 source format badge,不解析 PMML 内容编辑)
-- V5.41 不做强制数据迁移(运维手工开 `ruleforge.legacy-xml.migrate=true` 跑 migrator)
-
-**验证命令**:
-```bash
-# 后端
-cd server && mvn -pl lib/ruleforge-core test -Dtest='PmmlSmokeTest,ScorecardPmmlFieldsTest,TreePmmlFieldsTest,PmmlScorecardDeserializerTest,PmmlTreeDeserializerTest,PmmlResourceDispatcherTest,XmlToPmmlScorecardConverterTest,XmlToPmmlTreeConverterTest,LegacyXmlMigratorTest,LegacyXmlMigratorEndToEndTest'
-# 前端
-cd console-ui && npx vitest run src/api/pmmlDialect.test.ts
-# 老路径(0 破坏验证)
-cd server && mvn -pl lib/ruleforge-core test -Dtest='ScorecardParserTest,ScorecardResourceBuilderTest,DecisionTreeParserTest,DecisionTreeRulesBuilderTest'
-```
-
-#### V5.42 — 路线 B 第三刀:Rule/DSL → DRL 4 自研 ANTLR4 grammar(单 PR,非破坏性 — 老 .xml/.ul 路径保留并行)
-
-路线 B(model 层切标准 IR)三个 PR(V5.40 / V5.41 / V5.42)中的第三刀 — **Rule + DSL → 标准 DRL 4 自研 ANTLR4 grammar**。
-
-**V5.42 vs V5.40 / V5.41 的关键区别**:V5.40 走 Kie DMN 10.1.0 runtime,V5.41 走 pmml4s 1.5.6 (Scala 桥),
-V5.42 **不**走任何 runtime — 纯 ANTLR4 grammar + 自家 visitor + 自家 deserializer。
-无传递依赖,无 Scala 桥,无 Drools EOL 风险(7 EOL 2023-07;8 强推 Kogito)。
-
-**核心决策**(用户 2026-06-13 明确):
-- **D1 DSL 后缀**: 新增 `.dsl/.dslrd`(Drools 6 原生 mapping 语法 `[when]X=...,[then]Y=...`),
-  跟现有 `.ul`(中文改写版,ANTLR4 grammar 走 dsl/RuleParser.g4)完全两回事,跟 `.ul` 并行
-- **D2 老 `<else>` 化 DRL**: 用 `rule "X_else" extends "X"` DRL 语法,visitor 支持 `extends` 解析,grammar 加 `extends` keyword
-- **D3 accumulate reverse 段**: 完全砍掉,grammar rule 缺失 → 报语法错(init/action/result 3 段 + 5 内置 count/sum/avg/min/max 够覆盖 95% 业务)
-- **D4 老 `<if>` CellCondition 翻译范围**: 顶层 1:1 — `<if>/<then>/<else>` 3 段 + salience/agenda-group 等 attribute 翻译,CellCondition 内容**原文拷贝**,运维要重写老 `<if>` 表达式才能在 .drl 跑通
-
-**核心改动**(V5.42 单一 PR,9 个 sub-task,1 大分支 `feature/V5.42-rule-dsl-to-drl`):
-- **V5.42.1** — ANTLR4 DRL grammar 编译:`DrlLexer.g4` + `DrlParser.g4` + `maven-antlr-plugin` 4.13.2
-  (双 sourceDirectory:`src/main/antlr4` + 老 `dsl/`,lock 4.13.2,output 包 `com.ruleforge.drl.*` 跟老 .ul 不冲突)
-- **V5.42.2** — `DrlAstVisitor` 解析 ParseTree → Rule model + `DatatypeResolver` 校验类型
-  (D4:no `import`,类型预注册走 Map)。11 attribute 解析(salience / agenda-group / activation-group /
-  ruleflow-group / auto-focus / no-loop / lock-on-active / enabled / date-effective / date-expires /
-  timer),dialect 静默丢弃(visitor 强 V5.42 D4)
-- **V5.42.3a** — `.dsl/.dslrd` 解析器(Drools 6 原生 mapping,`[when]X=...,[then]Y=...` line-based parser,
-  scope 大小写不敏感,精确 scope 桶 + fallback ANY)+ `${name}` placeholder expander(regex 抓 placeholder
-  字符串 + 全 token 替换)
-- **V5.42.3b** — `.ul → .drl` 一次性 emit 工具(保留并行 — V5.43 跟 .ul 一起删)
-- **V5.42.4** — `DrlDeserializer` (DRL AST → Rule model)+ `DrlResourceBuilder` (实现 ResourceBuilder<RuleSet>)
-- **V5.42.5** — `KnowledgeBuilder` `.drl` / `.dsl` / `.dslrd` 路径分流(7 行改动,镜像 V5.40.4 / V5.41.4 pattern)
-- **V5.42.6** — 一次性 `.xml → .drl` (`XmlToDrlRuleConverter`,dom4j 自解析简单 `<rule name="X" salience="N"/>`,走 V5.42.3b emit) +
-  `.dslrd → .drl` (`DslToDrlConverter`,行内 token 切分 when/then/end,NL 段按 DslScope 查 DslMappingSet 替换,
-  `{name}` placeholder capture-fill)
-- **V5.42.7** — console-ui `src/api/drlDialect.ts` utility module,镜像后端 `DrlDialect` enum
-  (`RULEFORGE_NATIVE` / `DRL`)+ `detectDrlDialectFromFilePath` (.drl/.dsl/.dslrd → DRL) +
-  `drlDialectLabel` + `drlDialectBadgeColor`。Rule/DSL 编辑器顶部 toolbar 加 "Source format" badge
-  (只读指示器,完整 DRL 编辑器重写留 V5.50+)。Vitest 13 BDD 全绿
-- **V5.42.8** — BDD 测试:`DrlGrammarCorpusTest` (53 positive + 8 negative = 61 用例,DRL 4 grammar
-  现行能力回归基线;V5.43 grammar 扩展时本测试会自然 fail 提示 grammar 改动)+
-  `LegacyXmlRoundTripTest` (5 用例,老 .xml 解析路径不破坏验证 + XmlToDrlRuleConverter 不依赖老 parser 链路反射验证)
-
-**测试结果**(本次提交):
-- 后端 ruleforge-core Maven: **66 个新增 BDD 全绿**(8 个测试类)
-  - `DrlGrammarSmokeTest` (25 BDD) — V5.42.1 grammar 基础子集
-  - `DrlAstVisitorTest` (10 BDD) — V5.42.2 visitor
-  - `DrlDeserializerTest` (16 BDD) — V5.42.4 反序列化
-  - `DrlEndToEndTest` (7 BDD) — V5.42.5 分流
-  - `DrlGrammarCorpusTest` (61 BDD) — V5.42.8 大 corpus
-  - `MigrationConvertersTest` (11 BDD) — V5.42.6 xml/dsl 迁移
-  - `LegacyXmlRoundTripTest` (5 BDD) — V5.42.8 老 .xml 不破坏
-  - + 既有 V5.42.3a DSL parser 测试
-- 后端总测试: **530 个**(0 失败,10 skip,464 → 530 = +66)
-- 老 .xml 路径: 100% 保留(`RuleParserTest` 17 BDD + 老 .xml 解析链全绿)
-- 前端 console-ui Vitest: **13 个新增 BDD 全绿**(`drlDialect.test.ts`)
-
-**累计产出**(自 V5.42.1 起):
-- 2 个新 .g4 grammar 文件 + maven-antlr-plugin 4.13.2 + 2 套 generated Java
-- 11+ 个新 backend .java(main): `DrlAstVisitor` / `DatatypeResolver` / `DrlParseException` /
-  `DrlDeserializer` / `DrlResourceBuilder` / `DrlResourceDispatcher` / `DslParser` / `DslEntry` /
-  `DslMappingSet` / `DslScope` / `PlaceholderExpander` / `UlToDrlConverter` / `XmlToDrlRuleConverter` /
-  `DslToDrlConverter` + 1 个修改 `KnowledgeBuilder`(7 行分流)
-- 1 个 pom.xml 修改(antlr4-maven-plugin 4.13.2)
-- 8 个新 backend 测试类(66 BDD)
-- 1 个新 console-ui utility(13 vitest BDD)
-
-**已知限制**(留 V5.43 / V5.50+ 跟进):
-- **不删**老 .xml rule 解析路径(`RuleSetParser` / `RuleSetDeserializer` / `RuleSetResourceBuilder` 全部保留)
-- **不删**老 .ul DSL 解析路径(`DSLRuleSetBuilder` / `dsl/RuleParser.g4` 全部保留)
-- 老 `<if>` CellCondition 内容不翻译,运维要手动 rewrite
-- `accumulate reverse` 段 / `import` / `function` / `declare` 第一版不支持
-- V5.42 不做强制数据迁移(运维手工跑 `XmlToDrlRuleConverter` / `DslToDrlConverter`)
-- V5.42 console-ui 只 source format badge,不解析 DRL 内容编辑(完整 DRL 编辑器重写留 V5.50+)
-
-**验证命令**:
-```bash
-# 后端
-cd server && mvn -pl lib/ruleforge-core test -Dtest='DrlGrammarSmokeTest,DrlAstVisitorTest,DrlDeserializerTest,DrlEndToEndTest,DrlGrammarCorpusTest,MigrationConvertersTest,LegacyXmlRoundTripTest'
-# 前端
-cd console-ui && npx vitest run src/api/drlDialect.test.ts
-# 老路径(0 破坏验证)
-cd server && mvn -pl lib/ruleforge-core test -Dtest='RuleParserTest,RuleSetParserTest,RuleSetResourceBuilderTest,RuleRulesBuilderTest'
-# 全量回归
-cd server && mvn -pl lib/ruleforge-core test
-```
-

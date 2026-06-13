@@ -123,9 +123,9 @@
         <property name="tempStorePath" value="${ruleforge.tempStorePath:}"/>
     </bean>
 
-    <!-- V5.44.1 — 4 DSL beans (dslRuleSetBuilder / actionContextBuilder / criteriaContextBuilder /
-         libraryContextBuilder) 移到 lib/ruleforge-dsl jar,通过 RuleForgeDslAutoConfiguration 注册。
-         旧 bean 仍依赖 ruleforge.rulesRebuilder(由 ruleforge-core 提供),但本身属于 dsl chain。 -->
+    <!-- V5.47 — 4 DSL beans (dslRuleSetBuilder / actionContextBuilder / criteriaContextBuilder /
+         libraryContextBuilder) 整 module 删除,不再注册。KnowledgeBuilder 的
+         dslRuleSetBuilder 字段 V5.45.4 已删,.ul 老格式走 0 rule fallback。 -->
 
     <!-- V5.44.3 — 4 library ResourceBuilder bean (actionLibraryResourceBuilder / variableLibraryResourceBuilder /
          constantLibraryResourceBuilder / parameterLibraryResourceBuilder) 删。library 走 DRL 顶层
@@ -276,11 +276,6 @@
         <property name="valueParser" ref="ruleforge.valueParser"/>
     </bean>
     <bean id="ruleforge.otherParser" class="com.ruleforge.parse.OtherParser"/>
-    <bean id="ruleforge.ruleSetParser" class="com.ruleforge.parse.RuleSetParser">
-        <property name="ruleParser" ref="ruleforge.ruleParser"/>
-        <property name="loopRuleParser" ref="ruleforge.loopRuleParser"/>
-        <property name="rulesRebuilder" ref="ruleforge.rulesRebuilder"/>
-    </bean>
     <bean id="ruleforge.variableAssignActionParser" class="com.ruleforge.parse.VariableAssignActionParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>
     </bean>

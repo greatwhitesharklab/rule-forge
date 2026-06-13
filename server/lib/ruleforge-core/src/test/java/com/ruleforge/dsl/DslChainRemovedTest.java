@@ -5,26 +5,33 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * V5.45.4 — DSL chain runtime 真删 BDD。
+ * V5.45.4 / V5.47 — DSL chain runtime 真删 BDD。
  *
- * <p>锁 4 件事:
+ * <p>V5.45.4 锁 3 件事(本类 4 个 Nested test 前 3 个):
  * <ol>
  *   <li>{@link DslRuleSet} interface 从 ruleforge-core 删掉 — 0 caller 直接引用</li>
  *   <li>{@link KnowledgeBuilder} 删 {@code dslRuleSetBuilder} 字段 + 不再调
  *       {@code .support()} / {@code .build()} 老 DSL chain</li>
- *   <li>ruleforge-dsl module 仍存在(classpath 加载),但 production runtime
- *       不可达 — 0 caller 调 DSLRuleSetBuilder</li>
- *   <li>ruleforge-dsl dependency 改 optional(ruleforge-core / console-app /
- *       executor-app 编译期不需要,jar 仍在 classpath)</li>
+ *   <li>.ul 老格式走 0 rule fallback(V5.43 行为,删字段后 caller 不会触发
+ *       老 DSL chain)</li>
+ * </ol>
+ *
+ * <p>V5.47 锁第 4 件事(本类 DslModuleArchived Nested test):
+ * <ol start="4">
+ *   <li>ruleforge-dsl module 整 module 删除 + 2 app 入口不 import
+ *       {@code com.ruleforge.dsl.*} — classloader 完全找不到
+ *       {@code DSLRuleSetBuilder} 等</li>
  * </ol>
  *
  * <p>本测试**不**测 .ul 老格式"返 0 rule"(V5.43 行为,本 PR 不动)。
  */
-@DisplayName("V5.45.4 — DSL chain runtime 真删 BDD")
+@DisplayName("V5.45.4 / V5.47 — DSL chain runtime 真删 BDD")
 class DslChainRemovedTest {
 
     @Nested
@@ -83,22 +90,30 @@ class DslChainRemovedTest {
     }
 
     @Nested
-    @DisplayName("Given ruleforge-dsl module,V5.45.4 仍存在但 production 不可达")
+    @DisplayName("Given V5.47 删 ruleforge-dsl module,When classloader 查 DSLRuleSetBuilder,Then 找不到")
     class DslModuleArchived {
 
         @Test
-        @DisplayName("ruleforge-dsl module 不在 ruleforge-core 编译依赖(V5.45.4 验证 — 已无 DslRuleSet interface)")
-        void archived() {
-            // V5.45.4:DslRuleSet interface 删掉后,ruleforge-dsl 的 DSLRuleSetBuilder
-            // 实现就**没有** type 实现了 — 0 caller 调用,DslRuleSet 是"已 archive"
-            // 状态(module 仍可加载,但 production runtime 不可达)
-            // 断言:KnowledgeBuilder.class 加载时,没有 DslRuleSet 类引用需求
-            try {
-                Class.forName("com.ruleforge.builder.DslRuleSet");
-                throw new AssertionError("V5.45.4:DslRuleSet 未删,ruleforge-dsl 仍可达");
-            } catch (ClassNotFoundException expected) {
-                // V5.45.4 期望 DslRuleSet 删掉,ruleforge-dsl module 不可达
-                assertFalse(false, "DslRuleSet 不在 ruleforge-core classpath");
+        @DisplayName("V5.47 删 ruleforge-dsl module — DSLRuleSetBuilder / RuleParserLexer / RuleParserParser 全部 ClassNotFoundException")
+        void moduleDeleted() {
+            // V5.47:整 module lib/ruleforge-dsl 删,2 app 入口不 import com.ruleforge.dsl.*,
+            // classloader 跑 Class.forName 应全部 CNFE(连 optional jar 都不在 classpath)
+            for (String fqn : List.of(
+                "com.ruleforge.dsl.DSLRuleSetBuilder",
+                "com.ruleforge.dsl.RuleParserLexer",
+                "com.ruleforge.dsl.RuleParserParser",
+                "com.ruleforge.dsl.BuildRulesVisitor",
+                "com.ruleforge.dsl.RuleForgeDslAutoConfiguration",
+                "com.ruleforge.dsl.builder.ActionContextBuilder",
+                "com.ruleforge.dsl.builder.CriteriaContextBuilder"
+            )) {
+                try {
+                    Class.forName(fqn);
+                    throw new AssertionError(
+                        "V5.47 删 ruleforge-dsl module 后," + fqn + " 仍可被 classloader 找到 — module 没删干净");
+                } catch (ClassNotFoundException expected) {
+                    // 期望:整 module 删了
+                }
             }
         }
     }

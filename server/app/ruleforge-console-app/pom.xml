@@ -54,15 +54,6 @@
             <version>5.0.0</version>
         </dependency>
 
-        <!-- V5.44.1 — Standalone jar for the legacy .ul DSL chain.
-             KnowledgeBuilder 字段 dslRuleSetBuilder 仍存在,.ul 老路径 fallback
-             仍走 DSL chain。console-app 还在 CommonController 直接 import DSLRuleSetBuilder。 -->
-        <dependency>
-            <groupId>com.ruleforge</groupId>
-            <artifactId>ruleforge-dsl</artifactId>
-            <version>5.0.0</version>
-        </dependency>
-
         <!-- V5.21+: 拆 Flowable 依赖 — 自建 FlowEngine 取代 Flowable 8 starter -->
 
         <dependency>
