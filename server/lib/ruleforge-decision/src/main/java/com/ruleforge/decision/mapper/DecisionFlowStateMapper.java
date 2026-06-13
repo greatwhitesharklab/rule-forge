@@ -12,17 +12,17 @@ import java.util.List;
 @Mapper
 public interface DecisionFlowStateMapper extends BaseMapper<DecisionFlowState> {
 
-    @Select("SELECT * FROM nd_decision_flow_state WHERE flow_run_id = #{flowRunId} LIMIT 1")
+    @Select("SELECT * FROM rfa_decision_flow_state WHERE flow_run_id = #{flowRunId} LIMIT 1")
     DecisionFlowState selectByFlowRunId(@Param("flowRunId") String flowRunId);
 
-    @Select("SELECT * FROM nd_decision_flow_state " +
+    @Select("SELECT * FROM rfa_decision_flow_state " +
             "WHERE status IN ('PENDING_ASYNC','WAITING_CALLBACK') " +
             "AND (next_retry_at IS NULL OR next_retry_at <= NOW()) " +
             "AND (locked_until IS NULL OR locked_until <= NOW()) " +
             "ORDER BY id LIMIT #{limit}")
     List<DecisionFlowState> selectRecoverable(@Param("limit") int limit);
 
-    @Update("UPDATE nd_decision_flow_state " +
+    @Update("UPDATE rfa_decision_flow_state " +
             "SET locked_by = #{workerId}, locked_at = NOW(), locked_until = DATE_ADD(NOW(), INTERVAL 5 MINUTE) " +
             "WHERE id = #{id} AND (locked_until IS NULL OR locked_until <= NOW())")
     int tryLock(@Param("id") Long id, @Param("workerId") String workerId);
@@ -38,7 +38,7 @@ public interface DecisionFlowStateMapper extends BaseMapper<DecisionFlowState> {
      *   - progress / total_execution_ms: 进度 + 累计执行时长
      * <p>MyBatis-Plus 默认行为:null 字段不写入(用 updateStrategy=NOT_NULL),所以未设的字段保留旧值。
      */
-    @Update("UPDATE nd_decision_flow_state "
+    @Update("UPDATE rfa_decision_flow_state "
         + "SET status = #{state.status}, "
         + "    current_node_id = #{state.currentNodeId}, "
         + "    current_node_type = #{state.currentNodeType}, "

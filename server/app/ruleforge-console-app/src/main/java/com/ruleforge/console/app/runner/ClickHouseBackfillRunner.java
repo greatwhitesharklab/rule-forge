@@ -122,7 +122,7 @@ public class ClickHouseBackfillRunner implements CommandLineRunner {
                      "  total_matched_rules, total_fired_rules, total_loaded_fields, " +
                      "  error_message, error_stack_trace, " +
                      "  is_gray, gray_strategy_id, gray_git_tag, created_at " +
-                     "FROM nd_decision_flow_log WHERE id > ? ORDER BY id ASC LIMIT " + BATCH_SIZE)) {
+                     "FROM rfa_decision_flow_log WHERE id > ? ORDER BY id ASC LIMIT " + BATCH_SIZE)) {
             ps.setLong(1, lastId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -209,7 +209,7 @@ public class ClickHouseBackfillRunner implements CommandLineRunner {
     private boolean checkMysqlSchemaCompatible() {
         // 至少查 3 个标志性字段,够用就行
         String probe = "SELECT rule_package_path, total_matched_rules, execution_time_ms " +
-                "FROM nd_decision_flow_log LIMIT 0";
+                "FROM rfa_decision_flow_log LIMIT 0";
         try (Connection conn = appDataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(probe)) {
             ps.executeQuery();

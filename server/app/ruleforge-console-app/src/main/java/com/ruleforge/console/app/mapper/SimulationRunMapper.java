@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public interface SimulationRunMapper extends BaseMapper<SimulationRunEntity> {
 
-    @Update("UPDATE nd_simulation_run SET status = #{status}, total_compared = #{totalCompared}, " +
+    @Update("UPDATE rfa_simulation_run SET status = #{status}, total_compared = #{totalCompared}, " +
             "total_divergent = #{totalDivergent}, divergence_rate = #{divergenceRate}, " +
             "high_severity_count = #{highCount}, medium_severity_count = #{mediumCount}, " +
             "low_severity_count = #{lowCount}, error_message = #{errorMessage}, " +
@@ -29,7 +29,7 @@ public interface SimulationRunMapper extends BaseMapper<SimulationRunEntity> {
                        @Param("lowCount") int lowCount,
                        @Param("errorMessage") String errorMessage);
 
-    @Select("SELECT * FROM nd_simulation_run WHERE rule_package_path = #{path} " +
+    @Select("SELECT * FROM rfa_simulation_run WHERE rule_package_path = #{path} " +
             "ORDER BY created_at DESC LIMIT #{limit} OFFSET #{offset}")
     List<SimulationRunEntity> selectByPackagePath(@Param("path") String rulePackagePath,
                                                    @Param("limit") int limit,

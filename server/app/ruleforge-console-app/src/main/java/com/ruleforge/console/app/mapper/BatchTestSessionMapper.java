@@ -13,10 +13,10 @@ import java.util.Map;
  */
 public interface BatchTestSessionMapper extends BaseMapper<BatchTestSessionEntity> {
 
-    @Select("SELECT * FROM nd_batch_test_session WHERE id = #{id}")
+    @Select("SELECT * FROM rfa_batch_test_session WHERE id = #{id}")
     Map<String, Object> selectMapById(@Param("id") Long id);
 
-    @Update("UPDATE nd_batch_test_session SET status = #{status}, progress = #{progress}, " +
+    @Update("UPDATE rfa_batch_test_session SET status = #{status}, progress = #{progress}, " +
             "error_count = #{errorCount}, update_time = NOW() WHERE id = #{id}")
     int updateStatus(@Param("id") Long id,
                      @Param("status") String status,

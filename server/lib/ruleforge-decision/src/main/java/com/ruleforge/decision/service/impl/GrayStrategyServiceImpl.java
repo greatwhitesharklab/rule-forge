@@ -3,7 +3,7 @@ package com.ruleforge.decision.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ruleforge.decision.dto.GrayResolution;
 import com.ruleforge.decision.entity.GrayStrategy;
-import com.ruleforge.decision.mapper.GrayStrategyMapper;
+import com.ruleforge.decision.mapper.rf.GrayStrategyMapper;
 import com.ruleforge.decision.service.IGrayStrategyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

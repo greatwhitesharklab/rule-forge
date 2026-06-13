@@ -21,8 +21,8 @@ public interface RuleCoverageMapper {
             "  COUNT(*) AS fire_count,",
             "  AVG(rl.duration_ms) AS avg_duration_ms,",
             "  MAX(rl.duration_ms) AS max_duration_ms",
-            " FROM nd_decision_rule_log rl",
-            " JOIN nd_decision_flow_log fl ON rl.flow_log_id = fl.id",
+            " FROM rfa_decision_rule_log rl",
+            " JOIN rfa_decision_flow_log fl ON rl.flow_log_id = fl.id",
             " WHERE fl.created_at &gt;= #{startTime} AND fl.created_at &lt;= #{endTime}",
             " <if test='rulePackagePath != null'> AND fl.rule_package_path = #{rulePackagePath} </if>",
             " GROUP BY rl.rule_name, rl.rule_type, fl.rule_package_path, fl.flow_id",
@@ -38,6 +38,6 @@ public interface RuleCoverageMapper {
     /**
      * 全量曾触发的规则名 — 用于覆盖率对比
      */
-    @Select("SELECT DISTINCT rule_name FROM nd_decision_rule_log")
+    @Select("SELECT DISTINCT rule_name FROM rfa_decision_rule_log")
     List<String> findAllFiredRuleNames();
 }

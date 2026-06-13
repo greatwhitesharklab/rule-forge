@@ -12,6 +12,6 @@ import java.util.List;
 
 public interface FileMapper extends MyBaseMapper<FileEntity> {
 
-    @Select("select f.* from gr_file_relation fr left join gr_file f on fr.descendant = f.id ${ew.customSqlSegment}")
+    @Select("select f.* from rf_file_relation fr left join rf_file f on fr.descendant = f.id ${ew.customSqlSegment}")
     List<FileEntity> selectListByAncestor(@Param(Constants.WRAPPER) Wrapper<FileRelationEntity> queryWrapper);
 }

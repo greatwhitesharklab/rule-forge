@@ -26,7 +26,7 @@ public interface DecisionAnalysisMapper {
             "  AVG(total_time_ms) AS avg_total_time_ms,",
             "  AVG(execution_time_ms) AS avg_execution_time_ms,",
             "  AVG(load_knowledge_time_ms) AS avg_load_time_ms",
-            " FROM nd_decision_flow_log",
+            " FROM rfa_decision_flow_log",
             " WHERE created_at &gt;= #{startTime} AND created_at &lt;= #{endTime}",
             " <if test='rulePackagePath != null'> AND rule_package_path = #{rulePackagePath} </if>",
             " <if test='flowId != null'> AND flow_id = #{flowId} </if>",
@@ -57,7 +57,7 @@ public interface DecisionAnalysisMapper {
             "  SUM(CASE WHEN execution_status = 'REJECT' THEN 1 ELSE 0 END) AS reject_count,",
             "  AVG(total_time_ms) AS avg_total_time_ms,",
             "  MAX(total_time_ms) AS max_total_time_ms",
-            " FROM nd_decision_flow_log",
+            " FROM rfa_decision_flow_log",
             " WHERE created_at &gt;= #{startTime} AND created_at &lt;= #{endTime}",
             " GROUP BY rule_package_path, flow_id",
             " ORDER BY total_count DESC",
@@ -74,7 +74,7 @@ public interface DecisionAnalysisMapper {
     @Select({
             "<script>",
             "SELECT reject_code, reject_reason, COUNT(*) AS count",
-            " FROM nd_decision_flow_log",
+            " FROM rfa_decision_flow_log",
             " WHERE execution_status = 'REJECT'",
             "   AND created_at &gt;= #{startTime} AND created_at &lt;= #{endTime}",
             " <if test='rulePackagePath != null'> AND rule_package_path = #{rulePackagePath} </if>",
@@ -93,7 +93,7 @@ public interface DecisionAnalysisMapper {
     /**
      * 所有规则包路径 — 用于前端下拉选项
      */
-    @Select("SELECT DISTINCT rule_package_path FROM nd_decision_flow_log ORDER BY rule_package_path")
+    @Select("SELECT DISTINCT rule_package_path FROM rfa_decision_flow_log ORDER BY rule_package_path")
     List<String> findAllPackagePaths();
 
     /**
@@ -106,7 +106,7 @@ public interface DecisionAnalysisMapper {
             "  AVG(CASE WHEN execution_status='REJECT' THEN 1.0 ELSE 0.0 END) AS reject_rate,",
             "  AVG(total_time_ms) AS avg_total_time,",
             "  COUNT(*) AS total_count",
-            " FROM nd_decision_flow_log",
+            " FROM rfa_decision_flow_log",
             " WHERE created_at &gt;= #{startTime} AND created_at &lt;= #{endTime}",
             " <if test='rulePackagePath != null'> AND rule_package_path = #{rulePackagePath} </if>",
             "</script>"
@@ -135,7 +135,7 @@ public interface DecisionAnalysisMapper {
             "     AVG(CASE WHEN execution_status='SUCCESS' THEN 1.0 ELSE 0.0 END) AS success_rate,",
             "     AVG(CASE WHEN execution_status='REJECT' THEN 1.0 ELSE 0.0 END) AS reject_rate,",
             "     AVG(total_time_ms) AS avg_total_time",
-            "   FROM nd_decision_flow_log",
+            "   FROM rfa_decision_flow_log",
             "   WHERE created_at &gt;= #{baselineStart} AND created_at &lt; #{currentStart}",
             "   <if test='rulePackagePath != null'> AND rule_package_path = #{rulePackagePath} </if>",
             "   GROUP BY DATE(created_at)",

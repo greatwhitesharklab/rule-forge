@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Primary;
 import javax.sql.DataSource;
 
 /**
- * Executor 数据源配置 — ruleforge / clickhouse。
+ * Executor 数据源配置 — ruleforge / app / clickhouse。
  *
  * <p>和 console-app 的 DataSourceConfig 用同样模式,绕开 Spring Boot 4
  * 的 DataSourceAutoConfiguration,用 @Value + 直接 new HikariDataSource
@@ -17,9 +17,23 @@ import javax.sql.DataSource;
  *
  * <p>V5.21+: flowable DataSource 已删除 — 决策流由自建 FlowEngine 驱动,
  * 不再走 Flowable 8 引擎,flowable_db 也不再被任何 Bean 引用。
+ *
+ * <p>V5.53.3 — 新增 appDataSource(ruleforge_app_db)供 appSqlSessionFactory 使用。
+ * 之前 executor-app 只连 ruleforge_db,导致 DecisionFlowStateMapper 等指向
+ * rfa_* 的 mapper 跨库查询 1146。现在 ruleforge_db 给 GrayStrategyMapper(rf_gray_strategy),
+ * app_db 给其余所有 decision mapper。
  */
 @Configuration
 public class DataSourceConfig {
+
+    @Value("${APP_DB_URL}")
+    private String appDbUrl;
+
+    @Value("${APP_DB_USERNAME:root}")
+    private String appDbUsername;
+
+    @Value("${APP_DB_PASSWORD:}")
+    private String appDbPassword;
 
     @Value("${RF_DB_URL}")
     private String rfDbUrl;
@@ -43,6 +57,11 @@ public class DataSourceConfig {
     @Bean
     public DataSource ruleforgeDataSource() {
         return buildPool("ExecutorCloudSqlCP", rfDbUrl, rfDbUsername, rfDbPassword, 10);
+    }
+
+    @Bean
+    public DataSource appDataSource() {
+        return buildPool("ExecutorAppCP", appDbUrl, appDbUsername, appDbPassword, 10);
     }
 
     @Bean("clickhouseDataSource")

@@ -10,10 +10,10 @@ public interface FileVersionMapper extends MyBaseMapper<FileVersionEntity> {
     @Select({
             "<script>",
             "SELECT v.file_id, v.version_num_real, v.file_content, v.file_path",
-            "FROM gr_file_version v",
+            "FROM rf_file_version v",
             "JOIN (",
             "  SELECT file_id, MAX(version_num_real) AS max_version",
-            "  FROM gr_file_version",
+            "  FROM rf_file_version",
             "  WHERE file_id IN",
             "  <foreach collection='fileIds' item='id' open='(' separator=',' close=')'>",
             "    #{id}",
@@ -26,10 +26,10 @@ public interface FileVersionMapper extends MyBaseMapper<FileVersionEntity> {
 
     @Select({
             "SELECT v.id, v.file_id, v.version_num_real, v.file_content, v.file_path",
-            "FROM gr_file_version v",
+            "FROM rf_file_version v",
             "JOIN (",
             "  SELECT file_id, MAX(version_num_real) AS max_version",
-            "  FROM gr_file_version",
+            "  FROM rf_file_version",
             "  WHERE project_id = ${projectId}",
             "  AND version_num_real < ${maxVersion}",
             "  GROUP BY file_id",

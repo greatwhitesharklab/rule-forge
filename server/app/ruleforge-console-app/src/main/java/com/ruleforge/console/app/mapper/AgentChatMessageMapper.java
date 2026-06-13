@@ -10,6 +10,6 @@ import java.util.List;
 @Mapper
 public interface AgentChatMessageMapper extends BaseMapper<ChatMessage> {
 
-    @Select("SELECT * FROM nd_agent_chat_message WHERE session_id = #{sessionId} ORDER BY create_time ASC")
+    @Select("SELECT * FROM rfa_agent_chat_message WHERE session_id = #{sessionId} ORDER BY create_time ASC")
     List<ChatMessage> findBySessionId(String sessionId);
 }

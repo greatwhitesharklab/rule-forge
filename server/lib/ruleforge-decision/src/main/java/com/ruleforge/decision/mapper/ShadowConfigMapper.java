@@ -15,6 +15,6 @@ public interface ShadowConfigMapper extends BaseMapper<ShadowConfig> {
     /**
      * 根据主规则包路径查询启用的陪跑配置
      */
-    @Select("SELECT * FROM nd_decision_shadow_config WHERE main_rule_package_path = #{mainRulePackagePath} AND enabled = 1")
+    @Select("SELECT * FROM rfa_decision_shadow_config WHERE main_rule_package_path = #{mainRulePackagePath} AND enabled = 1")
     List<ShadowConfig> findEnabledByMainPath(@Param("mainRulePackagePath") String mainRulePackagePath);
 }

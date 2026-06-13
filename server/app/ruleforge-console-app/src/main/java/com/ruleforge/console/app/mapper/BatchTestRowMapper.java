@@ -14,17 +14,17 @@ import java.util.Map;
  */
 public interface BatchTestRowMapper extends BaseMapper<BatchTestRowEntity> {
 
-    @Select("SELECT * FROM nd_batch_test_row WHERE id = #{id}")
+    @Select("SELECT * FROM rfa_batch_test_row WHERE id = #{id}")
     Map<String, Object> selectMapById(@Param("id") Long id);
 
-    @Select("SELECT * FROM nd_batch_test_row WHERE session_id = #{sessionId} ORDER BY row_index")
+    @Select("SELECT * FROM rfa_batch_test_row WHERE session_id = #{sessionId} ORDER BY row_index")
     List<Map<String, Object>> selectBySessionId(@Param("sessionId") Long sessionId);
 
-    @Select("SELECT status, COUNT(*) AS cnt FROM nd_batch_test_row " +
+    @Select("SELECT status, COUNT(*) AS cnt FROM rfa_batch_test_row " +
             "WHERE session_id = #{sessionId} GROUP BY status")
     List<Map<String, Object>> countByStatus(@Param("sessionId") Long sessionId);
 
-    @Update("UPDATE nd_batch_test_row SET status = #{status}, output_data = #{outputData}, " +
+    @Update("UPDATE rfa_batch_test_row SET status = #{status}, output_data = #{outputData}, " +
             "error_message = #{errorMessage}, latency_ms = #{latencyMs}, " +
             "http_status = #{httpStatus}, error_code = #{errorCode} WHERE id = #{id}")
     int updateResult(@Param("id") Long id,
