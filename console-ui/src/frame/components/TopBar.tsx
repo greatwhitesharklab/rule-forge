@@ -1,6 +1,7 @@
 import {Component} from 'react';
 import * as componentEvent from '@/components/componentEvent.js';
 import {formPost} from '@/api/client.js';
+import AlertBell from '@/frame/AlertBell';
 
 interface TopBarProps {
     dispatch?: (action: unknown) => void;
@@ -54,6 +55,8 @@ export default class TopBar extends Component<TopBarProps, TopBarState> {
                 </div>
                 <div style={{flex: 1}}/>
                 <div className="topbar-right">
+                    {/* V5.45.5 — Frame 顶部 AlertBell:待审 draft 通知(铃铛 + 红点 badge) */}
+                    <AlertBell username={username}/>
                     <div className="topbar-user">
                         <button className="topbar-user-btn" onClick={(e) => {
                             e.stopPropagation();
