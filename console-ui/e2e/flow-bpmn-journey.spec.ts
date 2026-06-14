@@ -70,7 +70,7 @@ test.describe('小微信贷决策流 - 完整用户旅程', () => {
 
     // Scenario 1: 用户登录
     test('Scenario 1: 应成功登录并跳转到主页面', async ({ page }) => {
-        await page.goto('/html/login.html');
+        await page.goto('/login');
 
         await expect(page).toHaveTitle(/RuleForge/);
         await page.locator('input[type="text"]').first().fill('admin');
@@ -91,7 +91,7 @@ test.describe('小微信贷决策流 - 完整用户旅程', () => {
     //   project actually persists depends on backend file-system state, which
     //   is not under test-env control. We just verify the form was reachable.)
     test('Scenario 2: 应成功创建新项目 "小微信贷决策"', async ({ page }) => {
-        await page.goto('/html/login.html');
+        await page.goto('/login');
         await page.locator('input[type="text"]').first().fill('admin');
         await page.locator('input[type="password"]').first().fill('123456');
         await page.locator('button[type="submit"]').first().click();
@@ -118,7 +118,7 @@ test.describe('小微信贷决策流 - 完整用户旅程', () => {
     //   present after login.)
     test('Scenario 3-4: 应切换到新项目并创建决策流文件', async ({ page }) => {
         // Login
-        await page.goto('/html/login.html');
+        await page.goto('/login');
         await page.locator('input[type="text"]').first().fill('admin');
         await page.locator('input[type="password"]').first().fill('123456');
         await page.locator('button[type="submit"]').first().click();
@@ -140,7 +140,7 @@ test.describe('小微信贷决策流 - 完整用户旅程', () => {
     //   assertion requires a fixture file, which is a separate effort.)
     test('Scenario 5: 点击决策流文件应打开BPMN编辑器', async ({ page }) => {
         // Login and navigate to project
-        await page.goto('/html/login.html');
+        await page.goto('/login');
         await page.locator('input[type="text"]').first().fill('admin');
         await page.locator('input[type="password"]').first().fill('123456');
         await page.locator('button[type="submit"]').first().click();

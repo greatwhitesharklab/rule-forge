@@ -10,7 +10,7 @@ const SHOT_DIR = '/home/fredgu/git_home/ruleforge/step5-screenshots';
 test.describe('Micro-interaction tour', () => {
     test('button-hover', async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(500);
         // hover QuickStart 卡片第一个
@@ -24,7 +24,7 @@ test.describe('Micro-interaction tour', () => {
 
     test('button-focus', async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(500);
         // focus the 选择项目 button
@@ -38,7 +38,7 @@ test.describe('Micro-interaction tour', () => {
 
     test('activitybar-hover', async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(500);
         // hover 一个 activity bar icon
@@ -52,7 +52,7 @@ test.describe('Micro-interaction tour', () => {
 
     test('tab-hover', async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(500);
         // 切到 release,看 7 个 tab
@@ -69,7 +69,7 @@ test.describe('Micro-interaction tour', () => {
 
     test('input-focus', async ({page}) => {
         // login 页 input focus
-        await page.goto('/html/login.html');
+        await page.goto('/login');
         await page.waitForSelector('.login-container', {timeout: 5000});
         await page.locator('input[type="text"]').focus();
         await page.waitForTimeout(300);

@@ -35,7 +35,7 @@ test.describe('V5.8.4 BatchTest Excel upload (DatasourcePanel)', () => {
 
     test.beforeEach(async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.locator('.activity-bar-icon[title="数据源"]').click();
         await page.waitForSelector('.nav-tabs:has-text("数据源")');
         // 等 datasource 列表加载

@@ -10,7 +10,7 @@ const SHOT_DIR = '/home/fredgu/git_home/ruleforge/step5-screenshots';
 test.describe('Error/Loading/Empty state tour', () => {
     test('release-empty', async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(500);
         await page.locator('.activity-bar-icon[title="版本发布"]').click();
@@ -20,7 +20,7 @@ test.describe('Error/Loading/Empty state tour', () => {
 
     test('monitoring-empty', async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(500);
         await page.locator('.activity-bar-icon[title="监控告警"]').click();
@@ -30,7 +30,7 @@ test.describe('Error/Loading/Empty state tour', () => {
 
     test('simulation-empty', async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(500);
         await page.locator('.activity-bar-icon[title="规则仿真"]').click();
@@ -40,7 +40,7 @@ test.describe('Error/Loading/Empty state tour', () => {
 
     test('agent-empty', async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(500);
         await page.locator('.activity-bar-icon[title="智能分析"]').click();
@@ -50,7 +50,7 @@ test.describe('Error/Loading/Empty state tour', () => {
 
     test('datasource-empty', async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(500);
         await page.locator('.activity-bar-icon[title="数据源"]').click();
@@ -83,7 +83,7 @@ test.describe('Error/Loading/Empty state tour', () => {
             await route.continue();
         });
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(500);
         await page.screenshot({path: `${SHOT_DIR}/state-frame-loading.png`, fullPage: false});

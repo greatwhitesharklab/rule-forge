@@ -14,7 +14,7 @@ test.describe('Login tour', () => {
     });
 
     test('login-empty', async ({page}) => {
-        await page.goto('/html/login.html');
+        await page.goto('/login');
         await page.waitForSelector('.login-container', {timeout: 5000});
         await page.waitForTimeout(500);
         await page.screenshot({path: `${SHOT_DIR}/login-empty.png`, fullPage: false});
@@ -29,7 +29,7 @@ test.describe('Login tour', () => {
                 body: JSON.stringify({status: false, message: '用户名或密码错误'}),
             });
         });
-        await page.goto('/html/login.html');
+        await page.goto('/login');
         await page.waitForSelector('.login-container', {timeout: 5000});
         await page.fill('input[type="text"]', 'wronguser');
         await page.fill('input[type="password"]', 'wrongpassword');
@@ -41,7 +41,7 @@ test.describe('Login tour', () => {
     });
 
     test('login-loading', async ({page}) => {
-        await page.goto('/html/login.html');
+        await page.goto('/login');
         await page.waitForSelector('.login-container', {timeout: 5000});
         await page.fill('input[type="text"]', 'admin');
         await page.fill('input[type="password"]', 'admin');

@@ -9,8 +9,9 @@
     <div id="root"></div>
     <!--
       SPA 根入口(spa-migration-plan.md 阶段 1+)。
-      取代 V5.54.4 的 meta refresh 重定向 — 现在 / 直接进 SPA 路由(BrowserRouter)。
-      login.html / frame.html / editor.html 仍保留(MPA 回退 + editor 阶段 3 前必需)。
+      V5.74.6:已删 frame.html / login.html MPA 入口,本文件是唯一 HTML 入口。
+      / → BrowserRouter 根 <Navigate to="/login"/> → LoginPage;
+      /app → RequireAuth → FrameApp;editor 阶段 3 后所有路由都走 SPA。
     -->
     <!--
       SPA 根在 /,API 前缀用绝对 /api(login/frame/editor.html 在 /html/ 下用相对 ../api)。

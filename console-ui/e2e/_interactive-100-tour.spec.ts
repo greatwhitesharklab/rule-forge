@@ -534,7 +534,7 @@ test.describe('M: deep functional flows', () => {
     test.beforeEach(async ({page}) => { await login(page); });
 
     test('M-01-quicktest-from-frame', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(1000);
         // 选 test_proj
@@ -552,7 +552,7 @@ test.describe('M: deep functional flows', () => {
     });
 
     test('M-02-monitoring-load', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="监控告警"]').click({force: true});
         await page.waitForTimeout(2500);
@@ -560,7 +560,7 @@ test.describe('M: deep functional flows', () => {
     });
 
     test('M-03-simulation-load', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="规则仿真"]').click({force: true});
         await page.waitForTimeout(2500);
@@ -568,7 +568,7 @@ test.describe('M: deep functional flows', () => {
     });
 
     test('M-04-agent-load', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="智能分析"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -576,7 +576,7 @@ test.describe('M: deep functional flows', () => {
     });
 
     test('M-05-datasource-load', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="数据源"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -584,7 +584,7 @@ test.describe('M: deep functional flows', () => {
     });
 
     test('M-06-release-load', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="版本发布"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -592,7 +592,7 @@ test.describe('M: deep functional flows', () => {
     });
 
     test('M-07-project-files-load', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         // rules panel (项目文件) is the default first panel
         await page.locator('.activity-bar-icon[title="规则编辑"]').click({force: true});
@@ -732,21 +732,21 @@ test.describe('O: mobile + theme + search + settings', () => {
 
     test('O-01-mobile-frame', async ({page}) => {
         await page.setViewportSize({width: 375, height: 667});
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForTimeout(2000);
         await shot(page, 'o-mobile-frame');
     });
 
     test('O-02-mobile-login', async ({page}) => {
         await page.setViewportSize({width: 375, height: 667});
-        await page.goto('/html/login.html');
+        await page.goto('/login');
         await page.waitForTimeout(2000);
         await shot(page, 'o-mobile-login');
     });
 
     test('O-03-tablet-frame', async ({page}) => {
         await page.setViewportSize({width: 768, height: 1024});
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForTimeout(2000);
         await shot(page, 'o-tablet-frame');
     });
@@ -758,7 +758,7 @@ test.describe('O: mobile + theme + search + settings', () => {
     });
 
     test('O-05-search-tree', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(1500);
         // select project
@@ -784,7 +784,7 @@ test.describe('O: mobile + theme + search + settings', () => {
     });
 
     test('O-06-settings-load', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="系统设置"]').click({force: true});
         await page.waitForTimeout(2000);

@@ -383,7 +383,7 @@ test.describe('U: 知识包 + 版本管理', () => {
     });
 
     test('U-03-package-save-via-ui', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="规则编辑"]').click({force: true});
         await page.waitForTimeout(1000);
@@ -442,7 +442,7 @@ test.describe('V: 表单校验错误展示', () => {
 
     test('V-01-empty-name-create-project', async ({page}) => {
         // 走 UI: 打开 frame → 创建项目 → 留空
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(1500);
         // 点 "选择项目" 按钮(用 class 更稳)
@@ -465,7 +465,7 @@ test.describe('V: 表单校验错误展示', () => {
     });
 
     test('V-02-invalid-name-create-project', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(1500);
         const dd = page.locator('button.panel-project-btn').first();

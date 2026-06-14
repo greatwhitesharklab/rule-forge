@@ -10,7 +10,7 @@ const SHOT_DIR = '/home/fredgu/git_home/ruleforge/step5-screenshots';
 test.describe('Frame interaction tour', () => {
     test.beforeEach(async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(800);
     });

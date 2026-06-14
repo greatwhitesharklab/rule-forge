@@ -12,7 +12,7 @@ test.describe('Responsive tour', () => {
     test('desktop-frame', async ({page}) => {
         await page.setViewportSize({width: 1440, height: 900});
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(500);
         await page.screenshot({path: `${SHOT_DIR}/resp-desktop-frame.png`, fullPage: false});
@@ -21,7 +21,7 @@ test.describe('Responsive tour', () => {
     test('tablet-frame', async ({page}) => {
         await page.setViewportSize({width: 768, height: 1024});
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(500);
         await page.screenshot({path: `${SHOT_DIR}/resp-tablet-frame.png`, fullPage: false});
@@ -30,7 +30,7 @@ test.describe('Responsive tour', () => {
     test('mobile-frame', async ({page}) => {
         await page.setViewportSize({width: 375, height: 667});
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(500);
         await page.screenshot({path: `${SHOT_DIR}/resp-mobile-frame.png`, fullPage: false});
@@ -38,7 +38,7 @@ test.describe('Responsive tour', () => {
 
     test('mobile-login', async ({page}) => {
         await page.setViewportSize({width: 375, height: 667});
-        await page.goto('/html/login.html');
+        await page.goto('/login');
         await page.waitForSelector('.login-container', {timeout: 5000});
         await page.waitForTimeout(500);
         await page.screenshot({path: `${SHOT_DIR}/resp-mobile-login.png`, fullPage: false});

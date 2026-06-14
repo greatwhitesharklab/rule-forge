@@ -4,14 +4,14 @@ import { test, expect } from '@playwright/test';
  * BDD walkthrough — login flow behaviors
  *
  * Background:
- *   - Vite dev server on localhost:3000, served from /html/login.html
+ *   - Vite dev server on localhost:3000, served from /login
  *   - Backend on localhost:8180, /api/frame/login accepts any credentials
  *     (the legacy ruleforge backend doesn't validate; the frontend gates
  *     subsequent API calls on the JSESSIONID cookie returned)
  */
 test.describe('Login Flow', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/html/login.html');
+        await page.goto('/login');
     });
 
     // ── Passing baseline (kept as-is) ─────────────────────────────────
@@ -27,7 +27,7 @@ test.describe('Login Flow', () => {
     //  And:   user has typed "admin" in the username field
     //  And:   user has typed "admin" in the password field
     // When:   user clicks the submit button
-    // Then:   the browser should navigate to /html/frame.html (within 10s)
+    // Then:   the browser should navigate to /app (within 10s)
     //  And:   a JSESSIONID cookie should be set by the backend
     //   (login.tsx redirects to `frame.html` by default; the legacy
     //   /index.html path no longer exists in the new vite multi-page setup)
@@ -45,7 +45,7 @@ test.describe('Login Flow', () => {
     //  And:   user has typed "admin" / "wrong" in the form
     // When:   user clicks the submit button
     // Then:   a .login-error element should become visible
-    //  And:   the URL should remain on /html/login.html
+    //  And:   the URL should remain on /login
     //  (the redesigned login page uses .login-error instead of bootstrap's
     //   .alert-danger — the new login is a React component under #root)
     test('should show error message with invalid credentials', async ({ page }) => {
@@ -64,7 +64,7 @@ test.describe('Login Flow', () => {
     // Given:  user is on the login page
     //  And:   both username and password fields are empty
     // When:   user clicks the submit button
-    // Then:   the browser should navigate to /html/frame.html (within 10s)
+    // Then:   the browser should navigate to /app (within 10s)
     //  And:   the main frame should render (#container visible)
     test('should login with empty fields since backend accepts any input', async ({ page }) => {
         await page.locator('button[type="submit"]').first().click();
