@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useRef} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import FlowEditor from './FlowEditor';
 import KnowledgeTreeDialog from '../components/dialog/component/KnowledgeTreeDialog';
@@ -9,7 +9,7 @@ import * as event from '../components/componentEvent';
 import * as componentEvent from '../components/componentEvent';
 import {alert} from '@/utils/modal';
 import {ThunderboltOutlined, UploadOutlined} from '@ant-design/icons';
-import {DirtyApi, DirtyContext, ProjectContext} from '@/editor/EditorContexts';
+import {DirtyContext, ProjectContext, useDirtyApi} from '@/editor/EditorContexts';
 
 /**
  * 决策流(bpmn-js)编辑器的 SPA 路由入口。
@@ -26,17 +26,18 @@ import {DirtyApi, DirtyContext, ProjectContext} from '@/editor/EditorContexts';
  * 工具栏按钮 / 对话框 / XML fetch 逻辑与 index.tsx 一致,仅从命令式 DOM 改为声明式 JSX +
  * {@code editorRef}({@code useRef})取代闭包变量。
  *
- * <p>dirty tracking(V5.70 新增):
+ * <p>dirty tracking(V5.70):
  * <ul>
  *   <li>{@link FlowEditor} 订阅 bpmn-js {@code commandStack.changed} 事件 →
  *       {@code dirtyApi.setDirty()}(任何 modeler 操作都标脏)</li>
- *   <li>{@link FlowEditor} importXML 完成后调 {@code dirtyApi.clearDirty()} (新加载 = 未保存状态)</li>
+ *   <li>{@link FlowEditor} importXML/createDiagram 完成后调 {@code dirtyApi.clearDirty()} (新加载 = 未保存状态)</li>
  *   <li>本路由 {@link saveFlow} 服务端保存成功后 {@code dirtyApi.clearDirty()}</li>
- *   <li>工具栏保存按钮根据 {@code dirtyApi.isDirty()} 显示 *保存 / 保存</li>
+ *   <li>工具栏保存按钮根据 {@code isDirty} 显示 *保存 / 保存</li>
  * </ul>
  *
  * <p>本路由提供 {@link ProjectContext}(当前编辑文件所属项目名)+ {@link DirtyContext}
  * (dirty 通知接口),替代历史 {@code window._project} / {@code window._setDirty}。
+ * dirty 状态由 {@link useDirtyApi} hook 构造,文件路径变化时自动清零。
  */
 export default function EditorRoute() {
     const [params] = useSearchParams();
@@ -46,29 +47,8 @@ export default function EditorRoute() {
     // 当前文件所属项目(原 window._project)。一次计算,通过 ProjectContext 提供给复用对话框。
     const project = buildProjectNameFromFile(file);
 
-    // dirty api(替代 window._setDirty / window._dirty)。state 触发 toolbar 重渲染,
-    // ref 提供 isDirty() 实时读最新值。
-    const [, setDirtyState] = useState(false);
-    const dirtyRef = useRef(false);
-    const dirtyApi = useMemo<DirtyApi>(() => ({
-        setDirty: () => {
-            if (dirtyRef.current) return;
-            dirtyRef.current = true;
-            setDirtyState(true);
-        },
-        clearDirty: () => {
-            if (!dirtyRef.current) return;
-            dirtyRef.current = false;
-            setDirtyState(false);
-        },
-        isDirty: () => dirtyRef.current,
-    }), []);
-
-    // 文件路径变化时清零 dirty(新文件 = 未保存状态)。
-    useEffect(() => {
-        dirtyRef.current = false;
-        setDirtyState(false);
-    }, [file]);
+    // dirty api(替代 window._setDirty / window._dirty)。由 useDirtyApi hook 统一管理。
+    const {dirtyApi, isDirty} = useDirtyApi(file);
 
     useEffect(() => {
         if (!file || file.length < 1) {
@@ -131,8 +111,6 @@ export default function EditorRoute() {
             }
         });
     }
-
-    const isDirty = dirtyRef.current;
 
     return (
         <ProjectContext.Provider value={project}>
