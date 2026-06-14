@@ -164,6 +164,13 @@ interface NodeEditorModalProps {
 function NodeEditorModal({ path, node, onChange, onClose }: NodeEditorModalProps) {
   const open = path !== null && node !== undefined;
   const title = node ? nodeKindLabel(node.kind) + '节点' : '编辑';
+  // TODO(VariablePicker): LeftValueEditor / ValueEditor below accept an
+  // optional `libraries` prop (VariableCategoryGroup[]) that turns the
+  // free-text variable binding into the shared VariablePicker Cascader.
+  // Threading `state.variableLibraries` (raw .vl.xml paths on DecisionTree)
+  // down to here requires: DecisionTreeApp → useVariableLibraries(paths) →
+  // DecisionTreeFlow → DecisionTreeFlowInner → NodeEditorModal props.
+  // Left as a follow-up — the editor already works with free-text binding.
   return (
     <Modal title={title} open={open} onCancel={onClose} onOk={onClose} okText="关闭" cancelText="取消" width={560} destroyOnHidden>
       {node && node.kind === 'variable' && (
