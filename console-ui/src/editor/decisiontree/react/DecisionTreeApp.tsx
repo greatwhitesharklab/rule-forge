@@ -28,6 +28,7 @@ import type { DecisionTree } from '../model/types';
 import { parseDecisionTree } from '../model/parse';
 import { serializeDecisionTree } from '../model/serialize';
 import { formPost, save } from '@/api/client';
+import { useVariableLibraries } from '../../ruleforge/react';
 import { DecisionTreeFlow } from './DecisionTreeEditor';
 
 const { Text } = Typography;
@@ -92,6 +93,13 @@ export function DecisionTreeApp({ file, onLoad = loadFromServer, onSave = saveTo
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Load the project's imported variable libraries once (paths are stable per
+  // decision-tree — `<import-variable-library path="…"/>` is parsed into
+  // state.variableLibraries as a plain string[]). Passed down to the node-edit
+  // modal's LeftValueEditor / ValueEditor so the shared VariablePicker Cascader
+  // replaces free-text variable binding.
+  const { libraries: variableLibraries } = useVariableLibraries(state.variableLibraries);
 
   // ---- load on mount (and when file changes) ----
   useEffect(() => {
@@ -187,7 +195,12 @@ export function DecisionTreeApp({ file, onLoad = loadFromServer, onSave = saveTo
         />
       </div>
 
-      <DecisionTreeFlow value={state.root} onChange={updateRoot} height={560} />
+      <DecisionTreeFlow
+        value={state.root}
+        onChange={updateRoot}
+        height={560}
+        libraries={variableLibraries}
+      />
     </div>
   );
 }

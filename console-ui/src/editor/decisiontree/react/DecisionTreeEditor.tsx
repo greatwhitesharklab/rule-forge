@@ -41,6 +41,7 @@ import { OPERATOR_OPTIONS, opLabel, opHasNoInput } from '../../ruleforge/react/c
 import { LeftValueEditor } from '../../ruleforge/react/LeftValueEditor';
 import { ValueEditor } from '../../ruleforge/react/ValueEditor';
 import { ActionEditor } from '../../ruleforge/react/ActionEditor';
+import type { VariableCategoryGroup } from '../../ruleforge/react/VariablePicker';
 import {
   FlowNode,
   allowedChildKinds,
@@ -61,20 +62,27 @@ export interface DecisionTreeFlowProps {
   onChange: (next: TreeNode) => void;
   /** Canvas height in px (default 480). */
   height?: number;
+  /**
+   * The imported variable libraries (one VariableCategoryGroup per `.vl.xml`).
+   * When provided AND non-empty, the node-edit modal renders the shared
+   * VariablePicker Cascader inside LeftValueEditor / ValueEditor instead of
+   * free-text variable binding. Optional for back-compat (free-text fallback).
+   */
+  libraries?: VariableCategoryGroup[];
 }
 
 /** The react-flow nodeTypes map. Stable identity across renders. */
 const NODE_TYPES = { rfTree: TreeNodeBody };
 
-export function DecisionTreeFlow({ value, onChange, height = 480 }: DecisionTreeFlowProps) {
+export function DecisionTreeFlow({ value, onChange, height = 480, libraries }: DecisionTreeFlowProps) {
   return (
     <ReactFlowProvider>
-      <DecisionTreeFlowInner value={value} onChange={onChange} height={height} />
+      <DecisionTreeFlowInner value={value} onChange={onChange} height={height} libraries={libraries} />
     </ReactFlowProvider>
   );
 }
 
-function DecisionTreeFlowInner({ value, onChange, height }: DecisionTreeFlowProps) {
+function DecisionTreeFlowInner({ value, onChange, height, libraries }: DecisionTreeFlowProps) {
   // The path of the node currently being edited in the modal — null when closed.
   const [editingPath, setEditingPath] = useState<string | null>(null);
 
@@ -141,6 +149,7 @@ function DecisionTreeFlowInner({ value, onChange, height }: DecisionTreeFlowProp
       <NodeEditorModal
         path={editingPath}
         node={editingNode}
+        libraries={libraries}
         onChange={(next) => {
           if (editingPath) onChange(replaceNode(value, editingPath, next));
         }}
@@ -157,28 +166,28 @@ function DecisionTreeFlowInner({ value, onChange, height }: DecisionTreeFlowProp
 interface NodeEditorModalProps {
   path: string | null;
   node: TreeNode | undefined;
+  /** Imported variable libraries (turns free-text binding into VariablePicker). */
+  libraries?: VariableCategoryGroup[];
   onChange: (next: TreeNode) => void;
   onClose: () => void;
 }
 
-function NodeEditorModal({ path, node, onChange, onClose }: NodeEditorModalProps) {
+function NodeEditorModal({ path, node, libraries, onChange, onClose }: NodeEditorModalProps) {
   const open = path !== null && node !== undefined;
   const title = node ? nodeKindLabel(node.kind) + '节点' : '编辑';
-  // TODO(VariablePicker): LeftValueEditor / ValueEditor below accept an
-  // optional `libraries` prop (VariableCategoryGroup[]) that turns the
-  // free-text variable binding into the shared VariablePicker Cascader.
-  // Threading `state.variableLibraries` (raw .vl.xml paths on DecisionTree)
-  // down to here requires: DecisionTreeApp → useVariableLibraries(paths) →
-  // DecisionTreeFlow → DecisionTreeFlowInner → NodeEditorModal props.
-  // Left as a follow-up — the editor already works with free-text binding.
   return (
     <Modal title={title} open={open} onCancel={onClose} onOk={onClose} okText="关闭" cancelText="取消" width={560} destroyOnHidden>
       {node && node.kind === 'variable' && (
-        <LeftValueEditor value={node.left} onChange={(left) => onChange({ ...node, left })} />
+        <LeftValueEditor
+          value={node.left}
+          onChange={(left) => onChange({ ...node, left })}
+          libraries={libraries}
+        />
       )}
       {node && node.kind === 'condition' && (
         <ConditionFieldsEditor
           node={node}
+          libraries={libraries}
           onChange={(next) => onChange(next)}
         />
       )}
@@ -192,9 +201,12 @@ function NodeEditorModal({ path, node, onChange, onClose }: NodeEditorModalProps
 /** op Select + optional right-hand ValueEditor for a condition node. */
 function ConditionFieldsEditor({
   node,
+  libraries,
   onChange,
 }: {
   node: Extract<TreeNode, { kind: 'condition' }>;
+  /** Imported variable libraries forwarded to the right-hand ValueEditor. */
+  libraries?: VariableCategoryGroup[];
   onChange: (next: Extract<TreeNode, { kind: 'condition' }>) => void;
 }) {
   const noRight = opHasNoInput(node.op);
@@ -212,7 +224,11 @@ function ConditionFieldsEditor({
         <Select size="small" style={{ width: '100%' }} value={node.op} onChange={onOpChange} options={OPERATOR_OPTIONS} />
       </div>
       {!noRight && (
-        <ValueEditor value={node.right ?? { type: 'Input', content: '' }} onChange={(right) => onChange({ ...node, right })} />
+        <ValueEditor
+          value={node.right ?? { type: 'Input', content: '' }}
+          onChange={(right) => onChange({ ...node, right })}
+          libraries={libraries}
+        />
       )}
     </div>
   );
