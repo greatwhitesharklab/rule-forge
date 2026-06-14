@@ -1,13 +1,27 @@
 import {createRoot} from 'react-dom/client';
 import FrameApp from './index.tsx';
+import {LegacyAuthGate} from '@/router/LegacyAuthGate';
 
 /**
- * frame.html 独立入口(SPA 之前的访问方式 + 回退)。
+ * frame.html 独立入口(SPA 之前的访问方式 + 回退,V5.74.6 删除)。
  *
- * <p>frame.html 的 inline script 已设置 _welcomePage 并完成同步 XHR 鉴权
- * (未登录跳 login.html + 设 window.__currentUser)。
- * (V5.72: 已移除 window._server,apiBase 改纯 Vite env。)本文件只把 FrameApp 挂到 #container。
+ * <p>挂载流程:
+ * <ul>
+ *   <li>frame.html(已删同步 XHR,见 commit 035c59925 系列)— 单一 inline 脚本设
+ *       {@code window._server} / {@code window._welcomePage},再挂载本文件</li>
+ *   <li>{@link LegacyAuthGate} 异步鉴权({@code POST /frame/currentUser}):
+ *       <ul>
+ *         <li>未登录 — 整页跳 {@code login.html?redirect=...}</li>
+ *         <li>已登录 — {@link CurrentUserContext.Provider} 包裹 {@code FrameApp}</li>
+ *       </ul>
+ *   </li>
+ *   <li>{@code FrameApp} 内部不再读 {@code window.__currentUser},由 Provider 供值</li>
+ * </ul>
  *
  * <p>SPA 根入口是 /src/main.tsx,经 /app 路由 + RequireAuth 异步鉴权渲染同一个 FrameApp。
  */
-createRoot(document.getElementById('container')!).render(<FrameApp/>);
+createRoot(document.getElementById('container')!).render(
+    <LegacyAuthGate>
+        <FrameApp/>
+    </LegacyAuthGate>,
+);

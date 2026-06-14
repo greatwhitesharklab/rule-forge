@@ -217,7 +217,8 @@ interface Window {
     _currentGitTag: string | null;
 
     // Current user
-    __currentUser: UserInfo | undefined;
+    // V5.74.2:已移除 __currentUser 全局变量,改纯 React CurrentUserContext(由 RequireAuth /
+    // LegacyAuthGate 注入)。
 
     // Component event bus
     componentEvent: import('@/components/componentEvent.js').ComponentEventModule;

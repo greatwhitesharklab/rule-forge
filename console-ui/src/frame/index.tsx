@@ -4,7 +4,6 @@ import '../css/tailwind-base.css';
 import {useEffect, useMemo} from 'react';
 import {applyMiddleware, createStore} from 'redux';
 import {Provider} from 'react-redux';
-import {CurrentUserContext} from '@/router/RequireAuth';
 import * as ACTIONS from '@/frame/action.js';
 import reducer from '@/frame/reducer.js';
 import thunk from 'redux-thunk';
@@ -109,14 +108,15 @@ const AppBodyConnected = connect((state: { ui?: { activePanel?: string } }) => (
  * Frame 主框架组件(SPA 阶段 2:从 DOMContentLoaded 回调提取)。
  *
  * <p>store 创建 + 副作用(loadData / EXPAND_TREE_NODE 监听)随组件生命周期。
- * 被 SPA 路由 /app(经 RequireAuth 守卫) 和 frame.html 独立入口(src/frame/main.tsx) 共享。
+ * 被 SPA 路由 /app(经 RequireAuth 守卫) 和 frame.html 独立入口(src/frame/main.tsx 经
+ * LegacyAuthGate) 共享。
  *
- * <p>当前用户由 {@link CurrentUserContext} 提供:
+ * <p>当前用户由父级 {@link CurrentUserContext.Provider} 提供:
  * <ul>
- *   <li>/app 路径 — RequireAuth 的 Provider 已包裹 FrameApp(外层 Provider 生效)</li>
- *   <li>frame.html 路径 — FrameApp 自身再挂一层 Provider,读 frame.html inline-XHR 设的
- *       window.__currentUser(legacy bootstrap),让 TopBar/SidebarToolbar 走 Context 而非全局变量</li>
+ *   <li>/app 路径 — RequireAuth 的 Provider 包裹 FrameApp</li>
+ *   <li>frame.html 路径 — LegacyAuthGate 的 Provider 包裹 FrameApp</li>
  * </ul>
+ * FrameApp 自身不再挂 Provider(V5.74.2 改造)。
  */
 export default function FrameApp() {
     const store = useMemo(() => {
@@ -151,17 +151,15 @@ export default function FrameApp() {
     return (
         <div className="app-layout">
             <Loading show={true}/>
-            <CurrentUserContext.Provider value={(window.__currentUser as UserInfo | undefined) ?? null}>
-                <Provider store={store}>
-                    <TopBar/>
-                    <div className="app-body">
-                        <ActivityBar/>
-                        <AppBodyConnected store={store} eventObj={event}/>
-                    </div>
-                    {/* V5.8.0:全局 BatchTestDialog,任意 panel 触发 OPEN_BATCH_TEST_DIALOG 都能弹 */}
-                    <BatchTestDialog/>
-                </Provider>
-            </CurrentUserContext.Provider>
+            <Provider store={store}>
+                <TopBar/>
+                <div className="app-body">
+                    <ActivityBar/>
+                    <AppBodyConnected store={store} eventObj={event}/>
+                </div>
+                {/* V5.8.0:全局 BatchTestDialog,任意 panel 触发 OPEN_BATCH_TEST_DIALOG 都能弹 */}
+                <BatchTestDialog/>
+            </Provider>
         </div>
     );
 }

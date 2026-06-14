@@ -10,22 +10,8 @@
 <script type="text/javascript">
     window._server = "../api";
     window._welcomePage = "";
-    // Auth check
-    (function() {
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', '../api/frame/currentUser', false);
-        xhr.send();
-        try {
-            var result = JSON.parse(xhr.responseText);
-            if (!result.status) {
-                window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.pathname);
-            } else {
-                window.__currentUser = result.user;
-            }
-        } catch(e) {
-            window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.pathname);
-        }
-    })();
+    // V5.74.2:鉴权从同步 XHR 搬到 LegacyAuthGate(formPost 异步),不再阻塞渲染。
+    // 未登录由 LegacyAuthGate 内部整页跳 login.html?redirect=...。
 </script>
 <script type="module" src="../src/frame/main.tsx"></script>
 </body>
