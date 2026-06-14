@@ -1,6 +1,5 @@
 import { Component } from 'react';
 import QuickStart from '../../../frame/QuickStart.jsx';
-import IFrame from './IFrame.tsx';
 import * as event from '../../componentEvent.js';
 import * as action from '../../../frame/action.js';
 
@@ -62,14 +61,6 @@ export default class FrameTab extends Component<FrameTabProps, FrameTabState> {
         const idx = data.findIndex(item => this._processFullPath(item.fullPath) === fullPath);
         if (idx === -1) return;
 
-        const item = data[idx];
-        const iframeId = this._getIframeId(item);
-        const frame = document.getElementById(iframeId) as HTMLIFrameElement | null;
-        if (frame && frame.contentWindow && (frame.contentWindow as unknown as { _dirty: boolean })._dirty) {
-            const result = confirm('当前页面内容未保存，确实要关闭吗？');
-            if (!result) return;
-        }
-
         data.splice(idx, 1);
         let newActive = this.state.activeFullPath;
         if (this.state.activeFullPath === fullPath) {
@@ -121,10 +112,6 @@ export default class FrameTab extends Component<FrameTabProps, FrameTabState> {
             .replace(new RegExp(':', 'gm'), '');
     }
 
-    _getIframeId(item: TabData): string {
-        return 'iframe-' + this._processFullPath(item.fullPath);
-    }
-
     _buildTabLabel(item: TabData): string {
         const fileName = item.name;
         const pointPos = fileName.indexOf('.');
@@ -154,40 +141,10 @@ export default class FrameTab extends Component<FrameTabProps, FrameTabState> {
     }
 
     render() {
-        const { data, activeFullPath } = this.state;
-        const { welcomePage } = this.props;
-
-        if (data.length === 0) {
-            if (welcomePage && welcomePage.length > 0) {
-                if (welcomePage === 'none') {
-                    return (<div style={{ flex: 1 }} />);
-                }
-                return (
-                    <iframe frameBorder="0" style={{ border: 0, width: '100%', height: '100%' }}
-                        src={welcomePage} />
-                );
-            }
-            return <QuickStart />;
-        }
-
-        return (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                {data.map(item => {
-                    const fullPath = this._processFullPath(item.fullPath);
-                    const isActive = fullPath === activeFullPath;
-                    const iframeId = this._getIframeId(item);
-                    return (
-                        <div key={fullPath} style={{
-                            flex: 1,
-                            display: isActive ? 'flex' : 'none',
-                            flexDirection: 'column',
-                            overflow: 'hidden'
-                        }}>
-                            <IFrame id={iframeId} path={item.path} />
-                        </div>
-                    );
-                })}
-            </div>
-        );
+        // SPA 化后所有编辑器走 window.open('/app/editor/<type>') 新标签打开,
+        // FrameTab 不再托管 iframe 内容区。这里只负责:
+        //  - 维护 tab 数据结构(addTab / activateTab / closeTab)供 ContentTabBar 联动
+        //  - 内容区显示 QuickStart(无论 tab 列表是否为空,实际编辑器都在独立窗口)
+        return <QuickStart />;
     }
 }
