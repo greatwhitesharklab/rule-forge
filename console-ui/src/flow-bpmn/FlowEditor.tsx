@@ -10,9 +10,23 @@ import 'bpmn-js/dist/assets/bpmn-js.css';
 import './palette/ruleforge-palette.css';
 import './flow-theme.css';
 
+/**
+ * Dirty 通知接口(由 {@link EditorRoute} 传入)。FlowEditor 在 bpmn-js
+ * {@code commandStack.changed} 事件里调用 {@code setDirty} 标记编辑器有
+ * 未保存改动;{@code loadXML} / {@code createNewDiagram} 完成后调 {@code clearDirty}
+ * (新加载 = 未保存状态)。
+ *
+ * <p>可省略 — 省略时 FlowEditor 不通知 dirty(读侧静默 no-op,保持向后兼容)。
+ */
+interface DirtyApi {
+    setDirty: () => void;
+    clearDirty: () => void;
+}
+
 interface FlowEditorProps {
     xml?: string;
     onReady?: (editor: FlowEditor) => void;
+    dirtyApi?: DirtyApi;
 }
 
 interface FlowEditorState {
@@ -34,6 +48,16 @@ export default class FlowEditor extends Component<FlowEditorProps, FlowEditorSta
             }
         });
 
+        // Subscribe to bpmn-js commandStack — any user action (move element, edit property,
+        // add shape, etc.) fires this event. We forward to dirtyApi.setDirty() so the
+        // parent EditorRoute can show the *保存 indicator.
+        const eventBus = this.modeler.get('eventBus');
+        eventBus.on('commandStack.changed', () => {
+            if (this.props.dirtyApi) {
+                this.props.dirtyApi.setDirty();
+            }
+        });
+
         if (this.props.xml) {
             this.loadXML(this.props.xml);
         } else {
@@ -50,6 +74,10 @@ export default class FlowEditor extends Component<FlowEditorProps, FlowEditorSta
     async createNewDiagram() {
         try {
             await this.modeler.createDiagram();
+            // Fresh diagram = no unsaved changes. clearDirty() if we have an api.
+            if (this.props.dirtyApi) {
+                this.props.dirtyApi.clearDirty();
+            }
             this.setState({modelerReady: true});
             if (this.props.onReady) this.props.onReady(this);
         } catch (err) {
@@ -62,6 +90,10 @@ export default class FlowEditor extends Component<FlowEditorProps, FlowEditorSta
             await this.modeler.importXML(xml);
             const canvas = this.modeler.get('canvas');
             canvas.zoom('fit-viewport');
+            // Newly loaded file = no unsaved changes. clearDirty() if we have an api.
+            if (this.props.dirtyApi) {
+                this.props.dirtyApi.clearDirty();
+            }
             this.setState({modelerReady: true});
             if (this.props.onReady) this.props.onReady(this);
         } catch (err) {
