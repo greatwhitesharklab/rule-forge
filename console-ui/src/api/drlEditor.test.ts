@@ -33,16 +33,16 @@ describe('V5.44.4 — drlEditor loadDrlFile API', () => {
             }),
         });
         vi.stubGlobal('fetch', fetchMock);
-        // window._server is required by client.ts; '' is falsy so apiBase()
-        // falls back to '/api' (the hard default in src/api/client.ts).
-        (globalThis as any).window = {_server: ''};
+        // V5.72: 显式 stub VITE_API_BASE='' 让 apiBase() 走 '/api' hard default
+        // (vitest.setup.js 把 process.env.VITE_API_BASE 设为 'http://localhost',不覆写会拿到 http://localhost)
+        vi.stubEnv('VITE_API_BASE', '');
 
         const {loadDrlFile} = await import('./drlEditor');
         const result = await loadDrlFile('/proj/r.drl', '1.0');
 
         expect(fetchMock).toHaveBeenCalledOnce();
         const [url, init] = fetchMock.mock.calls[0];
-        // apiBase() returns '/api' when window._server is falsy → url is prefixed
+        // apiBase() returns '/api' when VITE_API_BASE is empty → url is prefixed
         expect(url).toBe('/api/common/loadDrl');
         expect(init.method).toBe('POST');
         // body is URLSearchParams.toString() output — a string
@@ -72,7 +72,10 @@ describe('V5.44.4 — drlEditor loadDrlFile API', () => {
             }),
         });
         vi.stubGlobal('fetch', fetchMock);
-        (globalThis as any).window = {_server: ''};
+        // V5.72: apiBase 走 import.meta.env / process.env → '/api' default。
+        // vitest.setup.js 把 process.env.VITE_API_BASE 设为 'http://localhost',所以这里
+        // 用 vi.stubEnv 清空让它走 '/api' hard default(等价于 V5.72 之前设 window._server = '' 的效果)
+        vi.stubEnv('VITE_API_BASE', '');
 
         const {loadDrlFile} = await import('./drlEditor');
         await loadDrlFile('/proj/r.drl');
@@ -89,7 +92,10 @@ describe('V5.44.4 — drlEditor loadDrlFile API', () => {
             text: async () => 'file not found: /proj/missing.drl',
         });
         vi.stubGlobal('fetch', fetchMock);
-        (globalThis as any).window = {_server: ''};
+        // V5.72: apiBase 走 import.meta.env / process.env → '/api' default。
+        // vitest.setup.js 把 process.env.VITE_API_BASE 设为 'http://localhost',所以这里
+        // 用 vi.stubEnv 清空让它走 '/api' hard default(等价于 V5.72 之前设 window._server = '' 的效果)
+        vi.stubEnv('VITE_API_BASE', '');
 
         const {loadDrlFile} = await import('./drlEditor');
         await expect(loadDrlFile('/proj/missing.drl')).rejects.toBeDefined();
@@ -108,7 +114,10 @@ describe('V5.44.4 — drlEditor loadDrlFile API', () => {
             }),
         });
         vi.stubGlobal('fetch', fetchMock);
-        (globalThis as any).window = {_server: ''};
+        // V5.72: apiBase 走 import.meta.env / process.env → '/api' default。
+        // vitest.setup.js 把 process.env.VITE_API_BASE 设为 'http://localhost',所以这里
+        // 用 vi.stubEnv 清空让它走 '/api' hard default(等价于 V5.72 之前设 window._server = '' 的效果)
+        vi.stubEnv('VITE_API_BASE', '');
 
         const {loadDrlFile} = await import('./drlEditor');
         const result = await loadDrlFile('/proj/broken.drl');

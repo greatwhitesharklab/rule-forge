@@ -150,12 +150,10 @@ Styles.frameStyle = {
     },
 };
 
-function _getStyle(styleName: string, defaultValue: string | Record<string, string>): string | Record<string, string> {
-    if (window._frameStyles) {
-        return window._frameStyles[styleName] as string | Record<string, string>;
-    } else {
-        return defaultValue;
-    }
+function _getStyle(_styleName: string, defaultValue: string | Record<string, string>): string | Record<string, string> {
+    // V5.72: 原 window._frameStyles 读出分支删除(全代码库无人 set 此值,永远走 default)。
+    // 保留 _styleName 参数(下划线前缀标记有意未用)以维持原 API 形状,callers 无需改。
+    return defaultValue;
 }
 
 export default Styles;
