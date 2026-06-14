@@ -126,9 +126,8 @@ a:hover { color: var(--rf-primary-hover); }
 .rf-btn-group-vertical { display: inline-flex; flex-direction: column; gap: 4px; }
 
 /* V5.9.0: btn-toolbar (editor toolbar) — 让 button group 之间有 8px gap,不再挤在一起
-   (决策表 13 按钮场景:每个 group 4 按钮,组与组之间要明显留白) */
-.rf-btn-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.rf-btn-toolbar > .rf-btn-group { margin-left: 0; }
+   (决策表 13 按钮场景:每个 group 4 按钮,组与组之间要明显留白) — V5.71 删除,
+   EditorToolbar dead code 已清理;CSS 一并删除避免 dead class 累积 */
 
 /* V5.9.0: navbar-btn (scriptdecisiontable 用) — Bootstrap 默认 transparent,这里统一背景
    让 7 个按钮不跟页面背景混在一起,跟其他 editor toolbar 视觉一致 */
