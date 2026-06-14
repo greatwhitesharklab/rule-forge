@@ -38,7 +38,7 @@ test.describe('100% Business Flow', () => {
 
     test('flow-01-create-and-select-project', async ({page}) => {
         // 创建新项目
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(800);
         const dropdown = page.locator('button:has-text("选择项目"), button:has-text("test_proj")').first();
@@ -67,7 +67,7 @@ test.describe('100% Business Flow', () => {
 
     test('flow-02-open-ruleset-editor', async ({page}) => {
         // 选 test_proj → 打开决策集
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         const dropdown = page.locator('button:has-text("选择项目"), button:has-text("test_proj")').first();
         if (await dropdown.isVisible({timeout: 2000}).catch(() => false)) {
@@ -95,7 +95,7 @@ test.describe('100% Business Flow', () => {
     });
 
     test('flow-03-create-datasource', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="数据源"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -110,7 +110,7 @@ test.describe('100% Business Flow', () => {
     });
 
     test('flow-04-version-release', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="版本发布"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -118,7 +118,7 @@ test.describe('100% Business Flow', () => {
     });
 
     test('flow-05-batch-test-datasource', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="数据源"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -133,7 +133,7 @@ test.describe('100% Business Flow', () => {
     });
 
     test('flow-06-agent-chat', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="智能分析"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -141,7 +141,7 @@ test.describe('100% Business Flow', () => {
     });
 
     test('flow-07-monitoring-dashboard', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="监控告警"]').click({force: true});
         await page.waitForTimeout(2500);
@@ -149,7 +149,7 @@ test.describe('100% Business Flow', () => {
     });
 
     test('flow-08-simulation-setup', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="规则仿真"]').click({force: true});
         await page.waitForTimeout(2500);
@@ -157,7 +157,7 @@ test.describe('100% Business Flow', () => {
     });
 
     test('flow-09-package-save', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         const dropdown = page.locator('button:has-text("选择项目"), button:has-text("test_proj")').first();
         if (await dropdown.isVisible({timeout: 2000}).catch(() => false)) {

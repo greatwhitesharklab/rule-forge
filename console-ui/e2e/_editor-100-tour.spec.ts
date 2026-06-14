@@ -68,7 +68,7 @@ test.describe('100% Editor tour', () => {
 
     test('e05-editor-package', async ({page}) => {
         // package editor 不是 file 路径模式,走 frame
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(800);
         // 点 "选择项目" 选 test_proj
@@ -176,7 +176,7 @@ test.describe('100% Panel tab tour', () => {
 
     // ========== 6 PANELS ==========
     test('p01-panel-release', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="版本发布"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -193,7 +193,7 @@ test.describe('100% Panel tab tour', () => {
     });
 
     test('p02-panel-monitoring', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="监控告警"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -201,7 +201,7 @@ test.describe('100% Panel tab tour', () => {
     });
 
     test('p03-panel-simulation', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="规则仿真"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -209,7 +209,7 @@ test.describe('100% Panel tab tour', () => {
     });
 
     test('p04-panel-agent', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="智能分析"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -217,7 +217,7 @@ test.describe('100% Panel tab tour', () => {
     });
 
     test('p05-panel-datasource', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="数据源"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -225,7 +225,7 @@ test.describe('100% Panel tab tour', () => {
     });
 
     test('p06-panel-project-files', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         // V5.8.4 后 activity bar 删了 "项目文件" 入口(规则编辑自带项目树 + 选择项目)
         await page.locator('.activity-bar-icon[title="规则编辑"]').click({force: true});
@@ -258,7 +258,7 @@ test.describe('100% State tour', () => {
 
     // Empty states for each panel
     test('s01-empty-release', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="版本发布"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -266,7 +266,7 @@ test.describe('100% State tour', () => {
     });
 
     test('s02-empty-monitoring', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="监控告警"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -274,7 +274,7 @@ test.describe('100% State tour', () => {
     });
 
     test('s03-empty-simulation', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="规则仿真"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -282,7 +282,7 @@ test.describe('100% State tour', () => {
     });
 
     test('s04-empty-agent', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="智能分析"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -290,7 +290,7 @@ test.describe('100% State tour', () => {
     });
 
     test('s05-empty-datasource', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="数据源"]').click({force: true});
         await page.waitForTimeout(2000);
@@ -303,7 +303,7 @@ test.describe('100% State tour', () => {
             await new Promise((r) => setTimeout(r, 2000));
             await route.continue();
         });
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForTimeout(800);
         await shot(page, 'state-loading-frame');
     });
@@ -335,7 +335,7 @@ test.describe('100% State tour', () => {
 
     test('s09-error-500-loadPackageConfig', async ({page}) => {
         // 这个之前会 500 返 JSON,现在返 200 + {} 空 config
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         // V5.8.4 后 activity bar 删了 "项目文件" 入口(规则编辑自带项目树 + 选择项目)
         await page.locator('.activity-bar-icon[title="规则编辑"]').click({force: true});
@@ -372,7 +372,7 @@ test.describe('100% Interaction state tour', () => {
 
     // 按钮 hover 态
     test('i01-button-hover', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(800);
         // hover 一个 activity bar
@@ -383,7 +383,7 @@ test.describe('100% Interaction state tour', () => {
     });
 
     test('i02-button-focus', async ({page}) => {
-        await page.goto('/html/login.html');
+        await page.goto('/login');
         await page.waitForSelector('.login-container', {timeout: 5000});
         const input = page.locator('input[type="text"]').first();
         await input.focus();
@@ -392,7 +392,7 @@ test.describe('100% Interaction state tour', () => {
     });
 
     test('i03-button-active', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(800);
         // click 监控告警 to show active state
@@ -402,7 +402,7 @@ test.describe('100% Interaction state tour', () => {
     });
 
     test('i04-dropdown-open', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(800);
         // 规则编辑 panel 顶部 project dropdown(显示 选择项目 / test_proj / __ix_proj_* 任一)
@@ -415,7 +415,7 @@ test.describe('100% Interaction state tour', () => {
     });
 
     test('i05-tab-switch', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="版本发布"]').click({force: true});
         await page.waitForTimeout(1500);

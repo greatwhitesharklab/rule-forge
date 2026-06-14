@@ -8,13 +8,6 @@ declare function refreshVariableLibraries(): void;
 declare function refreshParameterLibraries(): void;
 declare function refreshFunctionLibraries(): void;
 
-window.iframe_id_ = 1;
-
-export function nextIFrameId(): string {
-    window.iframe_id_++;
-    return '_iframe' + window.iframe_id_;
-}
-
 export function getParameter(name: string): string | null {
     var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
     var r = window.location.search.substr(1).match(reg);

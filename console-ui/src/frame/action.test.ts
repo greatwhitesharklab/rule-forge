@@ -390,6 +390,47 @@ describe('Frame Module - Thunks', () => {
 
         expect(dispatch).toHaveBeenCalled();
     });
+
+    it('GIVEN data with fullPath WHEN seeFileSource thunk is dispatched THEN it should fetch file source', async () => {
+        mockServer.mockResponse('/frame/fileSource', { content: 'source content' });
+
+        const data = { fullPath: '/test/file.xml', name: 'file.xml' };
+        // V5.74.3:seeFileSource 是 thunk,需 dispatch 触发(getState 读 currentGitTag)
+        const thunk = ACTIONS.seeFileSource(data as any);
+        thunk(dispatch, getState);
+
+        await flushAsync();
+
+        const { eventEmitter } = await import('./event.js');
+        expect(eventEmitter.emit).toHaveBeenCalledWith(
+            'open_source_dialog',
+            '/test/file.xml',
+            'source content'
+        );
+    });
+
+    it('GIVEN data with fullPath and currentGitTag in state WHEN seeFileSource thunk is dispatched THEN it should pass gitTag as request param', async () => {
+        mockServer.mockResponse('/frame/fileSource', { content: 'tagged content' });
+
+        const data = { fullPath: '/test/file.xml', name: 'file.xml' };
+        const getStateWithTag = () => ({
+            ui: {projectName: null, classify: true, types: null, searchFileName: null, currentGitTag: 'v1.2.3'},
+        });
+        const thunk = ACTIONS.seeFileSource(data as any);
+        thunk(dispatch, getStateWithTag);
+
+        await flushAsync();
+
+        const lastCall = (mockServer.fetchMock as any).mock.calls.find(
+            (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('/frame/fileSource'),
+        );
+        expect(lastCall).toBeTruthy();
+        // formPost 用 URLSearchParams 序列化,body 是字符串 "path=...&gitTag=v1.2.3"
+        const opts = lastCall[1] as RequestInit;
+        const body = String(opts.body || '');
+        expect(body).toContain('gitTag=v1.2.3');
+        expect(body).toContain('path=%2Ftest%2Ffile.xml');
+    });
 });
 
 describe('Frame Module - Helper Functions', () => {
@@ -453,22 +494,6 @@ describe('Frame Module - Helper Functions', () => {
         await flushAsync();
 
         expect(getLastAlertMessage()).toBe('保存成功!');
-    });
-
-    it('GIVEN data with fullPath WHEN seeFileSource is called THEN it should fetch file source', async () => {
-        mockServer.mockResponse('/frame/fileSource', { content: 'source content' });
-
-        const data = { fullPath: '/test/file.xml', name: 'file.xml' };
-        ACTIONS.seeFileSource(data as any);
-
-        await flushAsync();
-
-        const { eventEmitter } = await import('./event.js');
-        expect(eventEmitter.emit).toHaveBeenCalledWith(
-            'open_source_dialog',
-            '/test/file.xml',
-            'source content'
-        );
     });
 
     it('GIVEN data with fullPath and rpp WHEN seeFileVersions is called THEN it should fetch file versions', async () => {

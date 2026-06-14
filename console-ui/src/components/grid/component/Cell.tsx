@@ -16,6 +16,11 @@ interface CellState {
 }
 
 export default class Cell extends Component<CellProps, CellState> {
+    // V5.74.4:从 SimulatorCategoryContext(由 SimulatorPage 注入)读分类数据。
+    // 非仿真器场景下 context 为 null,等同旧的 `window.simulatorCategoryData || []`。
+    static contextType = SimulatorCategoryContext;
+    declare context: React.ContextType<typeof SimulatorCategoryContext>;
+
     private inputRef = createRef<HTMLInputElement | HTMLSelectElement>();
 
     constructor(props: CellProps) {
@@ -63,7 +68,9 @@ export default class Cell extends Component<CellProps, CellState> {
             rowData[colName] = data;
         };
         if (!targetType) {
-            const simulatorCategoryData = window.simulatorCategoryData || [];
+            // V5.74.4:从 SimulatorCategoryContext 读;Provider 不在树内时(null)回退空数组,
+            // 保持原 `window.simulatorCategoryData || []` 的"无数据"行为。
+            const simulatorCategoryData = this.context || [];
             let optionsHtml = '';
             for (const category of simulatorCategoryData) {
                 optionsHtml += `<option value="${category.clazz}">${category.name}</option>`;
@@ -95,7 +102,8 @@ export default class Cell extends Component<CellProps, CellState> {
                 }
             });
         } else {
-            const simulatorCategoryData = window.simulatorCategoryData || [];
+            // V5.74.4:同上,读 Context
+            const simulatorCategoryData = this.context || [];
             let categoryTarget: SimulatorCategoryItem | null = null;
             for (const category of simulatorCategoryData) {
                 if (targetType === category.clazz) {

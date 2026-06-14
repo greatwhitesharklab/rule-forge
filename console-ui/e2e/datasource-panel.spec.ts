@@ -58,8 +58,8 @@ async function createDatasourceViaUI(page, {name, type, configFields = {}}) {
 test.describe('Datasource Panel', () => {
     test.beforeEach(async ({page}) => {
         await login(page);
-        // /index.html 已被新的 vite 多页应用淘汰,统一走 /html/frame.html
-        await page.goto('/html/frame.html');
+        // /index.html 已被新的 vite 多页应用淘汰,统一走 /app
+        await page.goto('/app');
         await openDatasourcePanel(page);
     });
 

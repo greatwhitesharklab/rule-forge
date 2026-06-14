@@ -21,6 +21,7 @@ export const SET_PROJECT_NAME = 'set_project_name';
 export const SET_CLASSIFY = 'set_classify';
 export const SET_TYPES = 'set_types';
 export const SET_SEARCH_FILE_NAME = 'set_search_file_name';
+export const SET_CURRENT_GIT_TAG = 'set_current_git_tag';
 
 // ---- Action creators ----
 
@@ -48,6 +49,11 @@ export function setSearchFileName(searchFileName: string | null) {
     return {type: SET_SEARCH_FILE_NAME, searchFileName};
 }
 
+/** V5.74.3:设置当前选中的知识包版本 gitTag(原 window._currentGitTag 赋值)。传 null 清空。 */
+export function setCurrentGitTag(gitTag: string | null) {
+    return {type: SET_CURRENT_GIT_TAG, gitTag};
+}
+
 export function setMonitoringTab(tab: string) {
     return {type: SET_MONITORING_TAB, tab};
 }
@@ -63,8 +69,10 @@ export function setGitStatusTab(tab: string) {
 // ---- Thunk action creators ----
 
 /**
- * 从 thunk 的 getState() 提取当前 UI 过滤参数(projectName / classify / types / searchFileName)。
- * 替代历史 window._projectName / window._classify / window._types / window.searchFileName。
+ * 从 thunk 的 getState() 提取当前 UI 过滤参数(projectName / classify / types / searchFileName
+ * / currentGitTag)。
+ * 替代历史 window._projectName / window._classify / window._types / window.searchFileName /
+ * window._currentGitTag。
  * getState 类型用 Function 兼容 redux-thunk 默认签名,内部 cast 后读字段。
  */
 function readUiFilters(getState: Function): {
@@ -72,14 +80,24 @@ function readUiFilters(getState: Function): {
     classify: boolean;
     types: string | null;
     searchFileName: string | null;
+    currentGitTag: string | null;
 } {
-    const st = getState() as {ui?: {projectName?: string | null; classify?: boolean; types?: string | null; searchFileName?: string | null}};
+    const st = getState() as {
+        ui?: {
+            projectName?: string | null;
+            classify?: boolean;
+            types?: string | null;
+            searchFileName?: string | null;
+            currentGitTag?: string | null;
+        };
+    };
     const ui = (st && st.ui) || {};
     return {
         projectName: ui.projectName ?? null,
         classify: ui.classify ?? true,
         types: ui.types ?? null,
         searchFileName: ui.searchFileName ?? null,
+        currentGitTag: ui.currentGitTag ?? null,
     };
 }
 
@@ -567,8 +585,9 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                 {
                     name: '查看源码',
                     icon: 'rf rf-code',
-                    click: function (data: TreeNodeData) {
-                        seeFileSource(data);
+                    click: function (data: TreeNodeData, dispatch: Function) {
+                        // V5.74.3:seeFileSource 是 thunk,需 dispatch 触发(getState 读 currentGitTag)
+                        dispatch(seeFileSource(data));
                     }
                 },
                 {
@@ -1056,8 +1075,9 @@ function buildFileContextMenu(): ContextMenuItem[] {
         {
             name: '查看源码',
             icon: 'rf rf-code',
-            click: function (data: TreeNodeData) {
-                seeFileSource(data);
+            click: function (data: TreeNodeData, dispatch?: (action: unknown) => void) {
+                // V5.74.3:seeFileSource 是 thunk,需 dispatch 触发(getState 读 currentGitTag)
+                dispatch?.(seeFileSource(data));
             }
         },
         {
@@ -1154,16 +1174,23 @@ export function saveFileSource(file: string, content: string) {
     });
 }
 
+/**
+ * V5.74.3:thunk 化以通过 getState() 读 currentGitTag(原直接读 window._currentGitTag)。
+ * 知识包视图选版本 → setCurrentGitTag 写 store,这里读出来作为 fileSource 请求的 gitTag 参数,
+ * 实现"按版本看源码"。
+ */
 export function seeFileSource(data: TreeNodeData) {
-    const params: Record<string, string> = {path: data.fullPath};
-    // Include gitTag for version-aware reading
-    if (window._currentGitTag) {
-        params.gitTag = window._currentGitTag;
-    }
-    formPost("/frame/fileSource", params).then(function (result: { content: string }) {
-        event.eventEmitter.emit(event.OPEN_SOURCE_DIALOG, data.fullPath, result.content);
-    }).catch(function () {
-    });
+    return function (_dispatch: Function, getState: Function) {
+        const {currentGitTag} = readUiFilters(getState);
+        const params: Record<string, string> = {path: data.fullPath};
+        if (currentGitTag) {
+            params.gitTag = currentGitTag;
+        }
+        formPost("/frame/fileSource", params).then(function (result: { content: string }) {
+            event.eventEmitter.emit(event.OPEN_SOURCE_DIALOG, data.fullPath, result.content);
+        }).catch(function () {
+        });
+    };
 }
 
 export function seeFileVersions(data: TreeNodeData & { rpp?: string; page?: number }) {

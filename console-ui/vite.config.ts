@@ -16,12 +16,12 @@ export default defineConfig({
             '@': r('./src'),
         },
     },
-    // Multi-page app: each HTML template is an entry point
+    // V5.74.6:SPA 模式 — 单一入口 index.html(走 /src/main.tsx → BrowserRouter),
+    // 已删 frame.html/login.html MPA 入口(rollupOptions.input 只需根 index.html)。
     build: {
         rollupOptions: {
             input: {
-                frame: r('./html/frame.html'),
-                login: r('./html/login.html'),
+                index: r('./index.html'),
             },
             output: {
                 entryFileNames: 'bundle/[name].bundle.js',

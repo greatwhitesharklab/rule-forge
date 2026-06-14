@@ -43,7 +43,8 @@ export default class TopBar extends Component<TopBarProps, TopBarState> {
     _handleLogout(e: React.MouseEvent) {
         e.preventDefault();
         formPost('/frame/logout', {}).then(function () {
-            window.location.href = 'html/login.html';
+            // V5.74.6:SPA 模式 — 跳根路径,index.html 加载后 BrowserRouter 把 `/` 重定向到 `/login`
+            window.location.href = '/';
         });
     }
 

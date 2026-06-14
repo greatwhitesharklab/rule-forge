@@ -6,11 +6,9 @@ import {formPost} from '@/api/client';
  * 当前登录用户 Context。
  *
  * <p>SPA 阶段 2 起,frame 内部组件从 {@code window.__currentUser} 全局改读这个 Context。
- * 由 {@link RequireAuth} 守卫在鉴权通过后注入。
+ * 由 {@link RequireAuth} 守卫(SPA 路由)或 {@link LegacyAuthGate}(frame.html 独立入口)在鉴权通过后注入。
  *
- * <p>注意:FrameApp 内部又挂了一层 CurrentUserContext.Provider,从 window.__currentUser 读
- * (legacy bootstrap 兼容 frame.html 独立入口),所以 RequireAuth 仍需写 window.__currentUser
- * 给那一层 Provider 供值。TopBar/SidebarToolbar 不再直接读 window.__currentUser。
+ * <p>V5.74.2:完全脱离 {@code window.__currentUser} — 鉴权 → Provider 全在 React 树内。
  */
 export const CurrentUserContext = createContext<UserInfo | null>(null);
 
@@ -26,7 +24,8 @@ type AuthState = 'loading' | 'ok' | 'unauth';
  *   <li>已登录 — {@link CurrentUserContext.Provider} 包裹 {@code <Outlet/>}</li>
  * </ul>
  *
- * <p>替代 frame.html 的同步 XHR 鉴权(line 14-28,阻塞渲染),改为异步路由守卫。
+ * <p>替代 frame.html 的同步 XHR 鉴权(原 line 14-28,阻塞渲染),改为异步路由守卫。
+ * frame.html 独立入口的鉴权迁移到 {@link LegacyAuthGate}。
  */
 export function RequireAuth() {
     const [state, setState] = useState<AuthState>('loading');
@@ -36,9 +35,6 @@ export function RequireAuth() {
         formPost<{status: boolean; user?: UserInfo}>('/frame/currentUser', {}, {silent: true})
             .then((res) => {
                 if (res.status && res.user) {
-                    // 供 FrameApp 的 CurrentUserContext.Provider(读 window.__currentUser)
-                    // 及 frame.html legacy 入口兼容;TopBar/SidebarToolbar 走 Context。
-                    window.__currentUser = res.user;
                     setUser(res.user);
                     setState('ok');
                 } else {

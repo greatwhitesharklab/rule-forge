@@ -78,7 +78,7 @@ test.describe('100% Dialog tour', () => {
 
     // ========== FRAME DIALOGS (8) ==========
     test('01-frame-create-project', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(800);
         // 选项目后,右键 root "项目列表" 节点
@@ -99,7 +99,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('02-frame-update-project', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -119,7 +119,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('03-frame-create-folder', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -138,7 +138,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('04-frame-create-file', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -157,7 +157,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('05-frame-rename', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -176,7 +176,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('06-frame-source', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -195,7 +195,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('07-frame-import-project', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -214,7 +214,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('08-frame-version-list', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -357,7 +357,7 @@ test.describe('100% Dialog tour', () => {
     // ========== PACKAGE DIALOGS (9) ==========
     test('19-package-create-package', async ({page}) => {
         // 切到 package view (有 __res__package__file__ 时会进 PackageEditor)
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -383,7 +383,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('20-package-create-item', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -407,7 +407,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('21-package-versions', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -431,7 +431,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('22-package-simulator', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -455,7 +455,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('23-package-rete-diagram', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -479,7 +479,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('24-package-flow', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -503,7 +503,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('25-package-import-excel', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -527,7 +527,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('26-package-export-excel', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -551,7 +551,7 @@ test.describe('100% Dialog tour', () => {
     });
 
     test('27-package-batch-test', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await openProject(page);
         await page.waitForTimeout(1500);
@@ -576,7 +576,7 @@ test.describe('100% Dialog tour', () => {
 
     // ========== COMPONENT DIALOGS ==========
     test('30-component-version-select', async ({page}) => {
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="版本发布"]').click({force: true});
         await page.waitForTimeout(2000);

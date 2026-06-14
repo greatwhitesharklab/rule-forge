@@ -35,7 +35,9 @@ interface TreeNodeData {
 interface ContextMenuItem {
     name: string;
     icon?: string | Record<string, string>;
-    click?: (data: TreeNodeData) => void;
+    // V5.74.3:click 第二参接收 dispatch(thunk 化菜单项用,如 seeFileSource),
+    // 旧菜单项忽略即可,MenuItem.tsx 一直传 dispatch 进来。
+    click?: (data: TreeNodeData, dispatch?: (action: unknown) => void) => void;
 }
 
 interface UserInfo {
@@ -207,20 +209,25 @@ interface SimulatorVariable {
     label: string;
 }
 
-interface Window {
-    // Iframe counter
-    iframe_id_: number;
+// V5.74.4:知识包仿真器分类数据 — 替代 window.simulatorCategoryData 全局变量。
+// Provider 由 SimulatorPage 挂载(只有仿真器打开时才在 React 树内),
+// Cell 通过 contextType 读。null 表示无 Provider(非仿真器场景下 Cells 看到空数组)。
+// 实际 createContext 实例在 components/grid/SimulatorCategoryContext.ts。
+declare const SimulatorCategoryContext: typeof import('./components/grid/SimulatorCategoryContext').SimulatorCategoryContext;
 
+interface Window {
     // Server config (V5.72: _server 已移除,apiBase 改纯 Vite env)
     _projectName: string | null;
     _types: string | null;
     _classify: boolean;
     _project: string | null;
     _welcomePage: string;
-    _currentGitTag: string | null;
+    // V5.74.3:已移除 _currentGitTag 全局变量,改 Redux ui.currentGitTag(FileTreePanel
+    // setCurrentGitTag dispatch,seeFileSource thunk 通过 getState() 读)。
 
     // Current user
-    __currentUser: UserInfo | undefined;
+    // V5.74.2:已移除 __currentUser 全局变量,改纯 React CurrentUserContext(由 RequireAuth /
+    // LegacyAuthGate 注入)。
 
     // Component event bus
     componentEvent: import('@/components/componentEvent.js').ComponentEventModule;
@@ -254,9 +261,6 @@ interface Window {
 
     // Current selection state for complex scorecard
     _currentConditionCell: any;
-
-    // Simulator category data (used in Cell editor)
-    simulatorCategoryData: SimulatorCategoryItem[] | undefined;
 
     // File search term (used by SidebarToolbar, FileTreePanel)
     searchFileName: string;

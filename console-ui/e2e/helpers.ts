@@ -1,15 +1,16 @@
 /**
  * Test helpers for Playwright e2e tests.
  *
- * Vite serves HTML from html/ directory, main frame at /html/frame.html.
- * API proxy: /api → http://127.0.0.1:8180/ruleforgeV2
+ * V5.74.6:已删 frame.html / login.html MPA 入口,统一走 SPA 根路径:
+ *   /login → LoginPage,/app → RequireAuth → FrameApp。
+ * Vite 仍把 /api 代理到 8180 后端的 /ruleforge。
  */
 
 import type { Page } from '@playwright/test';
 
 export async function login(page: Page) {
-    // Navigate to login page first to establish browser context
-    await page.goto('/html/login.html');
+    // Navigate to /login 路由建立 browser context(JSESSIONID 写到这里)。
+    await page.goto('/login');
 
     // Authenticate by making a login API call from within the page's browser context.
     // This ensures the JSESSIONID cookie is set in the browser context that the page uses.
@@ -28,11 +29,12 @@ export async function login(page: Page) {
 }
 
 /**
- * Login and navigate to the main frame page.
+ * Login and navigate to the main frame page (SPA /app route)。
  */
 export async function loginAndGotoFrame(page: Page) {
     await login(page);
-    await page.goto('/html/frame.html');
-    // Wait for the frame to render (Redux dispatch + tree loading)
-    await page.waitForSelector('#container', { timeout: 10000 });
+    await page.goto('/app');
+    // SPA 模式 FrameApp 根 div className 是 'app-layout'(FrameApp render() 的第一行 div)。
+    // 老 MPA frame.html 的 #container 元素已不存在。
+    await page.waitForSelector('.app-layout', { timeout: 10000 });
 }

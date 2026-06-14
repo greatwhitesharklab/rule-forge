@@ -11,13 +11,13 @@ import { login } from './helpers';
 test.describe('Main Frame Navigation', () => {
     test.beforeEach(async ({ page }) => {
         await login(page);
-        // The new vite multi-page setup serves the main frame at /html/frame.html
+        // The new vite multi-page setup serves the main frame at /app
         // (login redirect default is `frame.html`, no /index.html exists anymore)
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
     });
 
     // ── BDD STUB: should load main frame with sidebar and welcome page ──
-    // Given: A logged-in user navigates to /html/frame.html
+    // Given: A logged-in user navigates to /app
     // When:  The main frame's React shell finishes its initial mount (Splitter + Welcome page)
     // Then:  The #container element should be visible
     // And:   A .tree div representing the sidebar should be visible

@@ -16,7 +16,7 @@ import {login} from './helpers';
  */
 test.describe('A11y scan', () => {
     test('login page a11y', async ({page}) => {
-        await page.goto('/html/login.html');
+        await page.goto('/login');
         await page.waitForSelector('.login-container', {timeout: 5000});
         const results = await new AxeBuilder({page})
             .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
@@ -26,7 +26,7 @@ test.describe('A11y scan', () => {
 
     test('frame a11y', async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(1500);
         const results = await new AxeBuilder({page})
@@ -48,7 +48,7 @@ test.describe('A11y scan', () => {
 
     test('datasource panel a11y', async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.locator('.activity-bar-icon[title="数据源"]').click({force: true});
         await page.waitForTimeout(2000);

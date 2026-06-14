@@ -10,7 +10,7 @@ const SHOT_DIR = '/home/fredgu/git_home/ruleforge/step5-screenshots';
 test.describe('Dialog tour', () => {
     test('frame-create-project-dialog', async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(800);
         // QuickStart 有 "新建项目" 入口(在选择项目下拉里)
@@ -33,7 +33,7 @@ test.describe('Dialog tour', () => {
     test('package-flow-dialog', async ({page}) => {
         await login(page);
         // 切到 package 视图
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(800);
         // 选第一个项目
@@ -58,7 +58,7 @@ test.describe('Dialog tour', () => {
 
     test('datasource-batchtest-modal', async ({page}) => {
         await login(page);
-        await page.goto('/html/frame.html');
+        await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(800);
         // 切到 datasource panel

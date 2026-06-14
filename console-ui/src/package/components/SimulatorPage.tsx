@@ -10,6 +10,7 @@ import {
     SimulatorCategory,
     SimulatorVariable,
 } from '../action.js';
+import {SimulatorCategoryContext} from '../../components/grid/SimulatorCategoryContext.ts';
 
 interface SimulatorPageProps {}
 
@@ -58,7 +59,8 @@ export default class SimulatorPage extends Component<SimulatorPageProps, Simulat
             action.loadSimulatorCategoryData(files, function (this: SimulatorPage, simulatorCategoryData: SimulatorCategory[]) {
                 const ce = window.parent.componentEvent;
                 ce.eventEmitter.emit(ce.HIDE_LOADING);
-                (window as any).simulatorCategoryData = simulatorCategoryData;
+                // V5.74.4:不再写 window.simulatorCategoryData — 改由下面的
+                // <SimulatorCategoryContext.Provider> 注入到树内 Cell。
                 this.setState({
                     simulatorCategoryData,
                     simulatorCategoryRow: (simulatorCategoryData.length > 0 ? simulatorCategoryData[0] : [])
@@ -100,84 +102,88 @@ export default class SimulatorPage extends Component<SimulatorPageProps, Simulat
                 {id: 'ts-label', name: 'label', filterable: true, label: '标题'},
                 {id: 'ts-type', name: 'type', label: '数据类型', width: '100px'}
             ];
+            // V5.74.4:Provider 包住整个 body(两个 Grid 在内),Cell 双击 list 编辑器时
+            // 从 contextType 读 simulatorCategoryData。非仿真器场景下 null,Cell 回退空数组。
             const body = (
-                <div style={{minHeight: '400px'}}>
-                    <div style={{
-                        padding: '8px',
-                        marginBottom: '5px',
-                        border: 'solid 1px rgb(219, 215, 215)',
-                        borderRadius: '5px'
-                    }}>
-                        <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                            <button className="rf-btn rf-btn-primary" type="button" onClick={() => {
-                                const ce = window.parent.componentEvent;
-                                ce.eventEmitter.emit(ce.SHOW_LOADING);
-                                action.doTest({
-                                    'project': this.state.project,
-                                    'packageId': this.state.packageId,
-                                    'files': this.state.files,
-                                    'data': [this.state.simulatorCategoryData]
-                                }, function (this: SimulatorPage, result: Record<string, unknown>) {
-                                    const info = '测试结果：' + result.info;
-                                    alert(info as string);
-                                    const data = result.data as SimulatorCategory[];
-                                    action.buildSimulatorVariableEditorType(data);
-                                    this.setState({
-                                        simulatorCategoryData: data,
-                                        simulatorCategoryRow: (data.length > 0 ? data[0] : {}),
-                                        testResultinfo: info
+                <SimulatorCategoryContext.Provider value={this.state.simulatorCategoryData as any}>
+                    <div style={{minHeight: '400px'}}>
+                        <div style={{
+                            padding: '8px',
+                            marginBottom: '5px',
+                            border: 'solid 1px rgb(219, 215, 215)',
+                            borderRadius: '5px'
+                        }}>
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-primary" type="button" onClick={() => {
+                                    const ce = window.parent.componentEvent;
+                                    ce.eventEmitter.emit(ce.SHOW_LOADING);
+                                    action.doTest({
+                                        'project': this.state.project,
+                                        'packageId': this.state.packageId,
+                                        'files': this.state.files,
+                                        'data': [this.state.simulatorCategoryData]
+                                    }, function (this: SimulatorPage, result: Record<string, unknown>) {
+                                        const info = '测试结果：' + result.info;
+                                        alert(info as string);
+                                        const data = result.data as SimulatorCategory[];
+                                        action.buildSimulatorVariableEditorType(data);
+                                        this.setState({
+                                            simulatorCategoryData: data,
+                                            simulatorCategoryRow: (data.length > 0 ? data[0] : {}),
+                                            testResultinfo: info
+                                        });
+                                        ce.eventEmitter.emit(ce.HIDE_LOADING);
+                                    }.bind(this));
+                                }}><ThunderboltOutlined /> 测试决策包
+                                </button>
+                            </div>
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-info" type="button" onClick={() => {
+                                    const ce = window.parent.componentEvent;
+                                    ce.eventEmitter.emit(ce.SHOW_LOADING);
+                                    event.eventEmitter.emit(event.OPEN_FLOW_DIALOG, {
+                                        project: this.state.project,
+                                        packageId: this.state.packageId,
+                                        files: this.state.files,
+                                        data: this.state.simulatorCategoryData
                                     });
-                                    ce.eventEmitter.emit(ce.HIDE_LOADING);
-                                }.bind(this));
-                            }}><ThunderboltOutlined /> 测试决策包
-                            </button>
+                                }}><RetweetOutlined /> 测试决策流
+                                </button>
+                            </div>
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-success" type="button" onClick={() => {
+                                    event.eventEmitter.emit(event.OPEN_RETE_DIAGRAM_DIALOG, this.state.files);
+                                }}><ClusterOutlined /> 查看Rete树
+                                </button>
+                            </div>
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-warning" type="button" onClick={() => {
+                                    action.exportExcelTemplate(this.state.files);
+                                }}><DownloadOutlined /> 下载Excel测试数据模版
+                                </button>
+                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
+                                    event.eventEmitter.emit(event.OPEN_IMPORT_EXCEL_DIALOG, this.state.files);
+                                }}><UploadOutlined /> 上传Excel测试数据
+                                </button>
+                            </div>
                         </div>
-                        <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                            <button className="rf-btn rf-btn-info" type="button" onClick={() => {
-                                const ce = window.parent.componentEvent;
-                                ce.eventEmitter.emit(ce.SHOW_LOADING);
-                                event.eventEmitter.emit(event.OPEN_FLOW_DIALOG, {
-                                    project: this.state.project,
-                                    packageId: this.state.packageId,
-                                    files: this.state.files,
-                                    data: this.state.simulatorCategoryData
-                                });
-                            }}><RetweetOutlined /> 测试决策流
-                            </button>
-                        </div>
-                        <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                            <button className="rf-btn rf-btn-success" type="button" onClick={() => {
-                                event.eventEmitter.emit(event.OPEN_RETE_DIAGRAM_DIALOG, this.state.files);
-                            }}><ClusterOutlined /> 查看Rete树
-                            </button>
-                        </div>
-                        <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                            <button className="rf-btn rf-btn-warning" type="button" onClick={() => {
-                                action.exportExcelTemplate(this.state.files);
-                            }}><DownloadOutlined /> 下载Excel测试数据模版
-                            </button>
-                            <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
-                                event.eventEmitter.emit(event.OPEN_IMPORT_EXCEL_DIALOG, this.state.files);
-                            }}><UploadOutlined /> 上传Excel测试数据
-                            </button>
-                        </div>
-                    </div>
-                    <div className="rf-row" style={{margin: 0}}>
-                        <div className="rf-col-xs-3 rf-col-md-3" style={{paddingLeft: 0, paddingRight: '5px'}}>
-                            <Grid selectFirst={true} headers={masterHeaders} rows={this.state.simulatorCategoryData}
-                                  rowClick={(rowData: SimulatorCategory, rowIndex: number) => {
-                                      const data = this.state.simulatorCategoryData;
-                                      setTimeout(function (this: SimulatorPage) {
-                                          this.setState({simulatorCategoryRow: data[rowIndex]});
-                                      }.bind(this), 10);
-                                  }}/>
-                        </div>
-                        <div className="rf-col-xs-9 rf-col-md-9" style={{padding: 0}}>
-                            <Grid headers={slaveHeaders} rows={(this.state.simulatorCategoryRow as SimulatorCategory).variables || []}
-                                  uniqueKey={true}/>
+                        <div className="rf-row" style={{margin: 0}}>
+                            <div className="rf-col-xs-3 rf-col-md-3" style={{paddingLeft: 0, paddingRight: '5px'}}>
+                                <Grid selectFirst={true} headers={masterHeaders} rows={this.state.simulatorCategoryData}
+                                      rowClick={(rowData: SimulatorCategory, rowIndex: number) => {
+                                          const data = this.state.simulatorCategoryData;
+                                          setTimeout(function (this: SimulatorPage) {
+                                              this.setState({simulatorCategoryRow: data[rowIndex]});
+                                          }.bind(this), 10);
+                                      }}/>
+                            </div>
+                            <div className="rf-col-xs-9 rf-col-md-9" style={{padding: 0}}>
+                                <Grid headers={slaveHeaders} rows={(this.state.simulatorCategoryRow as SimulatorCategory).variables || []}
+                                      uniqueKey={true}/>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </SimulatorCategoryContext.Provider>
             );
             return (<CommonDialog visible={this.state.visible} title={this.state.title} body={body} large={true} buttons={[]} onClose={() => this.setState({visible: false})}/>);
         } else {
