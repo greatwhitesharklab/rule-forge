@@ -60,11 +60,11 @@ export default class CreateFolderDialog extends Component<CreateFolderDialogProp
     render() {
         const {dispatch} = this.props;
         const body = (
-            <div className="form-group">
+            <div className="rf-form-group">
                 <label>新目录名称</label>
-                <input type="text" className="form-control" name="newFolderName" value={this.state.newFolderName}
+                <input type="text" className="rf-form-control" name="newFolderName" value={this.state.newFolderName}
                        onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({newFolderName: e.target.value, errors: {}}) }.bind(this)}></input>
-                {this.state.errors.newFolderName && <div className="text-danger" style={{fontSize: '12px'}}>{this.state.errors.newFolderName}</div>}
+                {this.state.errors.newFolderName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.newFolderName}</div>}
             </div>
         );
         const buttons = [];

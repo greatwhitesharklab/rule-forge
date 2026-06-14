@@ -135,18 +135,18 @@ describe('LoginPage Component', () => {
                     <div>
                         <h2>RuleForge</h2>
                         <form onSubmit={this.handleSubmit}>
-                            <div className="form-group">
-                                <input type="text" className="form-control" placeholder="用户名"
+                            <div className="rf-form-group">
+                                <input type="text" className="rf-form-control" placeholder="用户名"
                                     value={username}
                                     onChange={(e) => this.setState({ username: e.target.value })} />
                             </div>
-                            <div className="form-group">
-                                <input type="password" className="form-control" placeholder="密码"
+                            <div className="rf-form-group">
+                                <input type="password" className="rf-form-control" placeholder="密码"
                                     value={password}
                                     onChange={(e) => this.setState({ password: e.target.value })} />
                             </div>
-                            {error && <div className="alert alert-danger">{error}</div>}
-                            <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+                            {error && <div className="rf-alert rf-alert-danger">{error}</div>}
+                            <button type="submit" className="rf-btn rf-btn-primary rf-btn-block" disabled={loading}>
                                 {loading ? '登录中...' : '登 录'}
                             </button>
                         </form>

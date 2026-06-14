@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {RightOutlined} from '@ant-design/icons';
 
 interface PlaceholderInfo {
     title: string;
@@ -29,7 +30,7 @@ export default class PlaceholderPanel extends Component<PlaceholderPanelProps> {
                     <p className="placeholder-desc">{info.desc}</p>
                     <ul className="placeholder-items">
                         {info.items.map((item, i) => (
-                            <li key={i}><i className="glyphicon glyphicon-chevron-right" style={{fontSize: 10, marginRight: 6, color: '#bbb'}}/>{item}</li>
+                            <li key={i}><RightOutlined style={{fontSize: 10, marginRight: 6, color: '#bbb'}} />{item}</li>
                         ))}
                     </ul>
                 </div>

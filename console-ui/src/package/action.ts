@@ -1,5 +1,5 @@
 import {formatDate} from '../Utils.js';
-import {formPost, jsonPost, httpGet} from '../api/client.js';
+import {formPost, jsonPost, httpGet, apiBase} from '../api/client.js';
 
 import {alert, dialog, DialogOptions} from '@/utils/modal';
 export const LOAD_MASTER_COMPLETED = 'load_master_completed';
@@ -224,98 +224,98 @@ export function refreshKnowledgeCache(project: string, packageConfig: PackageCon
             title: '发布测试',
             message: `
                     <form class='bootbox-form'>
-                    <div class="row" style="margin-bottom: 10px;">
-                        <div class="form-group">
-                            <div class="col-xs-2" style="text-align: right; padding: 0">
+                    <div class="rf-row" style="margin-bottom: 10px;">
+                        <div class="rf-form-group">
+                            <div class="rf-col-xs-2" style="text-align: right; padding: 0">
                                 <label>标题</label>
                             </div>
-                            <div class="col-xs-10">
-                                <input id="test-title" class="form-control" name="remark"/>
+                            <div class="rf-col-xs-10">
+                                <input id="test-title" class="rf-form-control" name="remark"/>
                             </div>
                         </div>
                     </div>
-                    <div class="row" style="margin-bottom: 10px;">
-                        <div class="form-group">
-                            <div class="col-xs-2" style="text-align: right; padding: 0">
+                    <div class="rf-row" style="margin-bottom: 10px;">
+                        <div class="rf-form-group">
+                            <div class="rf-col-xs-2" style="text-align: right; padding: 0">
                                 <label>版本</label>
                             </div>
-                            <div class="col-xs-10">
-                                 <div class="row">
-                                    <div class="col-xs-6" style="display: flex;flex-flow: column;">
+                            <div class="rf-col-xs-10">
+                                 <div class="rf-row">
+                                    <div class="rf-col-xs-6" style="display: flex;flex-flow: column;">
                                         <div style="flex: 1;display: flex;align-items: center;">
                                              <label style="margin-right: 5px;width: 65px;">发布版本</label>
-                                             <select id="test-pass-version" class="form-control" required style="flex: 1;">
+                                             <select id="test-pass-version" class="rf-form-control" required style="flex: 1;">
                                                 ${pushVersionOption}
                                              </select>
                                         </div>
-                                        <span id="test-pass-version-error" class="text-danger" style="display: none;margin-left: 70px;">该字段为必填项</span>
+                                        <span id="test-pass-version-error" class="rf-text-danger" style="display: none;margin-left: 70px;">该字段为必填项</span>
                                     </div>
-                                     <div class="col-xs-6" style="display: flex;flex-flow: column;">
+                                     <div class="rf-col-xs-6" style="display: flex;flex-flow: column;">
                                         <div style="flex: 1;display: flex;align-items: center;">
                                              <label style="margin-right: 5px;width: 65px;">比对版本</label>
-                                             <select id="test-contrast-version" class="form-control" required style="flex: 1;">
+                                             <select id="test-contrast-version" class="rf-form-control" required style="flex: 1;">
                                                 ${contrastVersionOption}
                                              </select>
                                         </div>
-                                        <span id="test-contrast-version-error" class="text-danger" style="display: none;margin-left: 70px;">该字段为必填项</span>
+                                        <span id="test-contrast-version-error" class="rf-text-danger" style="display: none;margin-left: 70px;">该字段为必填项</span>
                                     </div>
                                  </div>
                             </div>
                         </div>
                     </div>
-                         <div class="row" style="margin-bottom: 10px;">
-                        <div class="form-group">
-                            <div class="col-xs-2" style="text-align: right; padding: 0">
+                         <div class="rf-row" style="margin-bottom: 10px;">
+                        <div class="rf-form-group">
+                            <div class="rf-col-xs-2" style="text-align: right; padding: 0">
                                 <label>测试时间</label>
                             </div>
-                            <div class="col-xs-10">
-                                 <div class="row">
-                                    <div class="col-xs-6" style="display: flex;flex-flow: column;">
+                            <div class="rf-col-xs-10">
+                                 <div class="rf-row">
+                                    <div class="rf-col-xs-6" style="display: flex;flex-flow: column;">
                                         <div style="flex: 1;display: flex;align-items: center;">
                                              <label style="margin-right: 5px;width: 65px;">开始时间</label>
-                                             <input type="datetime-local" id="startTime" class="form-control" name="startTime" style="flex: 1;"/>
+                                             <input type="datetime-local" id="startTime" class="rf-form-control" name="startTime" style="flex: 1;"/>
                                         </div>
-                                        <span id="start-time-error" class="text-danger" style="display: none;margin-left: 70px;">该字段为必填项</span>
+                                        <span id="start-time-error" class="rf-text-danger" style="display: none;margin-left: 70px;">该字段为必填项</span>
                                     </div>
-                                     <div class="col-xs-6" style="display: flex;flex-flow: column;">
+                                     <div class="rf-col-xs-6" style="display: flex;flex-flow: column;">
                                         <div style="flex: 1;display: flex;align-items: center;">
                                              <label style="margin-right: 5px;width: 65px;">结束时间</label>
-                                             <input type="datetime-local" id="endTime" class="form-control" name="endTime" style="flex: 1;"/>
+                                             <input type="datetime-local" id="endTime" class="rf-form-control" name="endTime" style="flex: 1;"/>
                                         </div>
-                                        <span id="end-time-error" class="text-danger" style="display: none;margin-left: 70px;">该字段为必填项</span>
+                                        <span id="end-time-error" class="rf-text-danger" style="display: none;margin-left: 70px;">该字段为必填项</span>
                                     </div>
                                  </div>
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="form-group">
-                            <div class="col-xs-2" style="text-align: right; padding: 0">
+                    <div class="rf-row">
+                        <div class="rf-form-group">
+                            <div class="rf-col-xs-2" style="text-align: right; padding: 0">
                                 <label>测试比例</label>
                             </div>
-                            <div class="col-xs-10">
-                                <input id="test-proportion" class="form-control" name="proportion"/>
-                                <span id="test-proportion-error" class="text-danger" style="display: none;">该字段为必填项</span>
-                                <span id="test-proportion-error1" class="text-danger" style="display: none;">测试比例范围【0,100】</span>
+                            <div class="rf-col-xs-10">
+                                <input id="test-proportion" class="rf-form-control" name="proportion"/>
+                                <span id="test-proportion-error" class="rf-text-danger" style="display: none;">该字段为必填项</span>
+                                <span id="test-proportion-error1" class="rf-text-danger" style="display: none;">测试比例范围【0,100】</span>
                             </div>
                         </div>
                     </div>
-                    <div class="row" style="margin-top: 10px;">
-                        <div class="form-group">
-                            <div class="col-xs-2" style="text-align: right; padding: 0">
+                    <div class="rf-row" style="margin-top: 10px;">
+                        <div class="rf-form-group">
+                            <div class="rf-col-xs-2" style="text-align: right; padding: 0">
                                 <label>备注</label>
                             </div>
-                            <div class="col-xs-10">
-                                <input id="test-remark" class="form-control" name="remark"/>
+                            <div class="rf-col-xs-10">
+                                <input id="test-remark" class="rf-form-control" name="remark"/>
                             </div>
                         </div>
                     </div>
-                    <div class="row" style="margin-top: 10px;">
-                        <div class="form-group">
-                            <div class="col-xs-2" style="text-align: right;padding: 0;">
+                    <div class="rf-row" style="margin-top: 10px;">
+                        <div class="rf-form-group">
+                            <div class="rf-col-xs-2" style="text-align: right;padding: 0;">
                                 <label>版本差异</label>
                             </div>
-                            <div class="col-xs-10" id="testDiffContent"></div>
+                            <div class="rf-col-xs-10" id="testDiffContent"></div>
                         </div>
                     </div>
                 `,
@@ -450,112 +450,112 @@ export function applyNewVersion(data: ResourcePackage[], project: string, packag
             title: '发起审批',
             message: `
                     <form class='bootbox-form'>
-                    <div class="row" style="margin-bottom: 10px;">
-                        <div class="form-group">
-                            <div class="col-xs-2" style="text-align: right; padding: 0">
+                    <div class="rf-row" style="margin-bottom: 10px;">
+                        <div class="rf-form-group">
+                            <div class="rf-col-xs-2" style="text-align: right; padding: 0">
                                 <label>标题</label>
                             </div>
-                            <div class="col-xs-10">
-                                <input id="version-title" class="form-control" name="remark"/>
+                            <div class="rf-col-xs-10">
+                                <input id="version-title" class="rf-form-control" name="remark"/>
                             </div>
                         </div>
                     </div>
-                     <div class="row" style="margin-bottom: 10px;">
-                        <div class="form-group">
-                            <div class="col-xs-2" style="text-align: right; padding: 0">
+                     <div class="rf-row" style="margin-bottom: 10px;">
+                        <div class="rf-form-group">
+                            <div class="rf-col-xs-2" style="text-align: right; padding: 0">
                                 <label>版本</label>
                             </div>
-                            <div class="col-xs-10">
-                                 <div class="row">
-                                    <div class="col-xs-6" style="display: flex;flex-flow: column;">
+                            <div class="rf-col-xs-10">
+                                 <div class="rf-row">
+                                    <div class="rf-col-xs-6" style="display: flex;flex-flow: column;">
                                         <div style="flex: 1;display: flex;align-items: center;">
                                              <label style="margin-right: 5px;width: 65px;">发布版本</label>
-                                             <select id="pass-version" class="form-control" required style="flex: 1;">
+                                             <select id="pass-version" class="rf-form-control" required style="flex: 1;">
                                                 ${pushVersionOption}
                                              </select>
                                         </div>
-                                        <span id="pass-version-error" class="text-danger" style="display: none;margin-left: 70px;">该字段为必填项</span>
+                                        <span id="pass-version-error" class="rf-text-danger" style="display: none;margin-left: 70px;">该字段为必填项</span>
                                     </div>
-                                     <div class="col-xs-6" style="display: flex;flex-flow: column;">
+                                     <div class="rf-col-xs-6" style="display: flex;flex-flow: column;">
                                         <div style="flex: 1;display: flex;align-items: center;">
                                              <label style="margin-right: 5px;width: 65px;">比对版本</label>
-                                             <select id="contrast-version" class="form-control" required style="flex: 1;">
+                                             <select id="contrast-version" class="rf-form-control" required style="flex: 1;">
                                                 ${contrastVersionOption}
                                              </select>
                                         </div>
-                                        <span id="contrast-version-error" class="text-danger" style="display: none;margin-left: 70px;">该字段为必填项</span>
+                                        <span id="contrast-version-error" class="rf-text-danger" style="display: none;margin-left: 70px;">该字段为必填项</span>
                                     </div>
                                  </div>
                             </div>
                         </div>
                     </div>
-                    <div class="row" style="margin-bottom: 10px;">
-                        <div class="form-group">
-                            <div class="col-xs-2" style="text-align: right; padding: 0">
+                    <div class="rf-row" style="margin-bottom: 10px;">
+                        <div class="rf-form-group">
+                            <div class="rf-col-xs-2" style="text-align: right; padding: 0">
                                 <label>备注</label>
                             </div>
-                            <div class="col-xs-10">
-                                <input id="version-remark" class="form-control" name="remark"/>
+                            <div class="rf-col-xs-10">
+                                <input id="version-remark" class="rf-form-control" name="remark"/>
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="form-group">
-                           <div class="col-xs-2" style="text-align: right; padding: 0">
+                    <div class="rf-row">
+                        <div class="rf-form-group">
+                           <div class="rf-col-xs-2" style="text-align: right; padding: 0">
                                 <label>影响范围</label>
                             </div>
-                            <div class="col-xs-10">
-                                <div class="row">
-                                    <div class="col-xs-6">
-                                        <div class="row">
-                                            <div class="col-xs-12" style="text-align: center;">通过率影响</div>
-                                            <div class="col-xs-12 " style="display: flex;margin-bottom: 5px;flex-flow: column;">
+                            <div class="rf-col-xs-10">
+                                <div class="rf-row">
+                                    <div class="rf-col-xs-6">
+                                        <div class="rf-row">
+                                            <div class="rf-col-xs-12" style="text-align: center;">通过率影响</div>
+                                            <div class="rf-col-xs-12" style="display: flex;margin-bottom: 5px;flex-flow: column;">
                                                 <div style="flex: 1;display: flex;align-items: center;">
                                                    <label style="margin-right: 5px;width: 65px;">效果:</label>
-                                                   <select id="pass-rate-effect" class="form-control" required style="flex:1;">
+                                                   <select id="pass-rate-effect" class="rf-form-control" required style="flex:1;">
                                                            <option value="">请选择</option>
                                                            <option value="提高">提高</option>
                                                            <option value="不变">不变</option>
                                                            <option value="降低">降低</option>
                                                    </select>
                                                 </div>
-                                                <div id="pass-rate-effect-error" class="text-danger" style="display: none;padding-left: 70px;">该字段为必填项</div>
+                                                <div id="pass-rate-effect-error" class="rf-text-danger" style="display: none;padding-left: 70px;">该字段为必填项</div>
                                              </div>
-                                            <div class="col-xs-12" style="display: flex;flex-flow: column;">
+                                            <div class="rf-col-xs-12" style="display: flex;flex-flow: column;">
                                                 <div style="flex: 1;display: flex;align-items: center;">
                                                    <label style="margin-right: 5px;width: 65px;">预计幅度:</label>
-                                                   <input id="pass-rate-range" class="form-control"
+                                                   <input id="pass-rate-range" class="rf-form-control"
                                                           name="passRateRange" type="number" step="0.01"
                                                           style="flex: 1;"
                                                           required />
                                                 </div>
-                                                <div id="pass-rate-range-error" class="text-danger" style="display: none;padding-left: 70px;">该字段为必填项</div>
+                                                <div id="pass-rate-range-error" class="rf-text-danger" style="display: none;padding-left: 70px;">该字段为必填项</div>
                                              </div>
                                         </div>
                                     </div>
-                                    <div class="col-xs-6">
-                                        <div class="row">
-                                            <div class="col-xs-12" style="text-align: center;">坏账率影响</div>
-                                            <div class="col-xs-12 " style="display: flex;margin-bottom: 5px;flex-flow: column;">
+                                    <div class="rf-col-xs-6">
+                                        <div class="rf-row">
+                                            <div class="rf-col-xs-12" style="text-align: center;">坏账率影响</div>
+                                            <div class="rf-col-xs-12" style="display: flex;margin-bottom: 5px;flex-flow: column;">
                                                 <div style="flex: 1;display: flex;align-items: center;">
                                                    <label style="margin-right: 5px;width: 65px;">效果:</label>
-                                                   <select id="bad-debt-rate-effect" class="form-control" required style="flex:1;">
+                                                   <select id="bad-debt-rate-effect" class="rf-form-control" required style="flex:1;">
                                                            <option value="">请选择</option>
                                                            <option value="提高">提高</option>
                                                            <option value="不变">不变</option>
                                                            <option value="降低">降低</option>
                                                    </select>
                                                 </div>
-                                                <div id="bad-debt-rate-effect-error" class="text-danger" style="display: none;padding-left: 70px;">该字段为必填项</div>
+                                                <div id="bad-debt-rate-effect-error" class="rf-text-danger" style="display: none;padding-left: 70px;">该字段为必填项</div>
                                              </div>
-                                            <div class="col-xs-12" style="display: flex;flex-flow: column;">
+                                            <div class="rf-col-xs-12" style="display: flex;flex-flow: column;">
                                                 <div style="flex: 1;display: flex;align-items: center;">
                                                    <label style="margin-right: 5px;width: 65px;">预计幅度:</label>
-                                                   <input id="bad-debt-rate-range" class="form-control"
+                                                   <input id="bad-debt-rate-range" class="rf-form-control"
                                                           style="flex: 1;"
                                                           name="badDebtRateRange" type="number" step="0.01" required />
                                                 </div>
-                                                <div id="bad-debt-rate-range-error" class="text-danger" style="display: none;padding-left: 70px;">该字段为必填项</div>
+                                                <div id="bad-debt-rate-range-error" class="rf-text-danger" style="display: none;padding-left: 70px;">该字段为必填项</div>
                                              </div>
                                         </div>
                                     </div>
@@ -564,22 +564,22 @@ export function applyNewVersion(data: ResourcePackage[], project: string, packag
                         </div>
                     </div>
                     <div>
-                    <div class="row" style="margin-top: 10px;">
-                        <div class="form-group">
-                            <div class="col-xs-2" style="text-align: right; padding: 0">
+                    <div class="rf-row" style="margin-top: 10px;">
+                        <div class="rf-form-group">
+                            <div class="rf-col-xs-2" style="text-align: right; padding: 0">
                                 <label>附件</label>
                             </div>
-                            <div class="col-xs-10">
+                            <div class="rf-col-xs-10">
                                 <input id="version-file" name="file" style="width: 100%" type="file"/>
                             </div>
                         </div>
                     </div>
-                    <div class="row" style="margin-top: 10px;">
-                        <div class="form-group">
-                            <div class="col-xs-2" style="text-align: right;padding: 0;">
+                    <div class="rf-row" style="margin-top: 10px;">
+                        <div class="rf-form-group">
+                            <div class="rf-col-xs-2" style="text-align: right;padding: 0;">
                                 <label>版本差异</label>
                             </div>
-                            <div class="col-xs-10" id="diffContent"></div>
+                            <div class="rf-col-xs-10" id="diffContent"></div>
                         </div>
                     </div>
                 </form>
@@ -756,7 +756,7 @@ export function loadPackageConfig(project: string) {
 export function startApprovalProcess(formData: FormData, callback: (result: { status: boolean; message?: string }) => void): void {
     const ce = window.parent.componentEvent;
 
-    fetch(window._server + "/common/startApprovalProcess", {
+    fetch(apiBase() + "/common/startApprovalProcess", {
         method: 'POST',
         body: formData
     }).then(function(response: Response) {
@@ -829,7 +829,7 @@ export function importExcelData(files: string, file: File, callback: (result: Im
     formData.append('file', file);
     formData.append('targetFiles', files);
 
-    fetch(window._server + '/packageeditor/importExcelTemplate', {
+    fetch(apiBase() + '/packageeditor/importExcelTemplate', {
         method: 'POST',
         body: formData
     }).then(function(response: Response) {
@@ -899,7 +899,7 @@ export function testFlow(data: Record<string, unknown>, callback: (result: Recor
 }
 
 export function exportExcelTemplate(files: string): void {
-    const url = window._server + "/packageeditor/exportExcelTemplate";
+    const url = apiBase() + "/packageeditor/exportExcelTemplate";
     window.open(url, '_self');
 }
 

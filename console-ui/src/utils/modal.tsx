@@ -113,7 +113,7 @@ export function dialog(options: DialogOptions): {close: () => void} {
                 footer={buttonEntries.length > 0 ? buttonEntries.map(([key, btn]) => (
                     <button
                         key={key}
-                        className={`btn ${btn.className || 'btn-default'}`}
+                        className={`rf-btn ${btn.className || 'rf-btn-default'}`}
                         onClick={() => {
                             if (btn.callback) btn.callback();
                             close();

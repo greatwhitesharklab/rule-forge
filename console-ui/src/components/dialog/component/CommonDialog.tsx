@@ -3,7 +3,7 @@ import { Component, ReactNode, RefObject } from 'react';
 interface DialogButton {
     name: string;
     className: string;
-    icon?: string;
+    icon?: ReactNode;
     click: (dispatch?: unknown) => void;
 }
 
@@ -34,29 +34,29 @@ export default class CommonDialog extends Component<CommonDialogProps> {
         const dialogStyleObj = dialogStyle || {};
         const buttonElements = (buttons || []).map((btn, index) => (
             <button type="button" key={index} className={btn.className} onClick={() => btn.click(dispatch)}>
-                <i className={btn.icon} /> {btn.name}
+                {btn.icon && (typeof btn.icon === 'string' ? <i className={btn.icon} /> : btn.icon)} {btn.name}
             </button>
         ));
         return (
             <div ref={this.props.forwardedRef}>
-                {visible && <div className="modal-backdrop fade in" onClick={() => this._close()}></div>}
+                {visible && <div className="rf-modal-backdrop rf-fade in" onClick={() => this._close()}></div>}
                 <div className={`modal fade ${visible ? 'in' : ''}`}
                      style={{ display: visible ? 'block' : 'none', overflow: 'auto' }}
                      tabIndex={-1} role="dialog" aria-hidden={!visible}>
                     <div className={`modal-dialog${largeClass}`} style={dialogStyleObj}>
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <button type="button" className="close" aria-hidden="true" onClick={() => this._close()}>&times;</button>
-                                <h3 className="modal-title" style={{ wordWrap: 'break-word', display: 'flex', alignItems: 'center', fontWeight: 'var(--rf-font-weight-semibold)' }}>
+                        <div className="rf-modal-content">
+                            <div className="rf-modal-header">
+                                <button type="button" className="rf-close" aria-hidden="true" onClick={() => this._close()}>&times;</button>
+                                <h3 className="rf-modal-title" style={{ wordWrap: 'break-word', display: 'flex', alignItems: 'center', fontWeight: 'var(--rf-font-weight-semibold)' }}>
                                     {title}
-                                    {info && <div className="text-danger" style={{ fontSize: '12pt', color: 'var(--rf-error)' }}>{info}</div>}
+                                    {info && <div className="rf-text-danger" style={{ fontSize: '12pt', color: 'var(--rf-error)' }}>{info}</div>}
                                     {htmlContent && <div style={{ display: 'inline-block', marginLeft: 'var(--rf-space-3)' }}>{htmlContent}</div>}
                                 </h3>
                             </div>
-                            <div className="modal-body" style={{ padding: 'var(--rf-space-6)' }}>
+                            <div className="rf-modal-body" style={{ padding: 'var(--rf-space-6)' }}>
                                 {body}
                             </div>
-                            <div className="modal-footer">
+                            <div className="rf-modal-footer">
                                 {buttonElements}
                             </div>
                         </div>

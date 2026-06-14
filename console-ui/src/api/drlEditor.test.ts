@@ -33,7 +33,8 @@ describe('V5.44.4 — drlEditor loadDrlFile API', () => {
             }),
         });
         vi.stubGlobal('fetch', fetchMock);
-        // window._server is required by client.ts
+        // window._server is required by client.ts; '' is falsy so apiBase()
+        // falls back to '/api' (the hard default in src/api/client.ts).
         (globalThis as any).window = {_server: ''};
 
         const {loadDrlFile} = await import('./drlEditor');
@@ -41,7 +42,8 @@ describe('V5.44.4 — drlEditor loadDrlFile API', () => {
 
         expect(fetchMock).toHaveBeenCalledOnce();
         const [url, init] = fetchMock.mock.calls[0];
-        expect(url).toBe('/common/loadDrl');
+        // apiBase() returns '/api' when window._server is falsy → url is prefixed
+        expect(url).toBe('/api/common/loadDrl');
         expect(init.method).toBe('POST');
         // body is URLSearchParams.toString() output — a string
         const body = init.body as string;

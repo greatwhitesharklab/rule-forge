@@ -56,7 +56,7 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
         const {list, data} = this.state;
         const body = (
             <div>
-                <table className="table table-bordered table-hover"
+                <table className="rf-table rf-table-bordered rf-table-hover"
                        style={{tableLayout: 'fixed', wordBreak: 'break-all'}}>
                     <thead>
                     <tr>
@@ -118,7 +118,7 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
                                 <td>{row.createUser}</td>
                                 <td>{formatDate(row.createDate, 'yyyy-MM-dd HH:mm:ss')}</td>
                                 <td>
-                                    <button type="button" className="btn btn-link" style={{padding: '0'}}
+                                    <button type="button" className="rf-btn rf-btn-link" style={{padding: '0'}}
                                             onClick={() => {
                                                 // SPA 化:历史版本也走 /app/editor/<type>?file=<path>:<version> 新标签打开。
                                                 // data.type(action.ts buildData switch case)→ SPA 路由段(typeToSpaSegment)。
@@ -160,7 +160,7 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
                                                 componentEvent.eventEmitter.emit(componentEvent.TREE_NODE_CLICK, config);
                                             }}>打开
                                     </button>
-                                    <button type="button" className="btn btn-link"
+                                    <button type="button" className="rf-btn rf-btn-link"
                                             style={{padding: '0', marginLeft: '8px'}}
                                             onClick={() => {
                                                 const fullPath = (data.fullPath as string) + ':' + row.name;
@@ -175,7 +175,7 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
                 </table>
 
                 <nav aria-label="分页">
-                    <ul className="pagination">
+                    <ul className="rf-pagination">
                         <li>
                             <a href="#" aria-label="上一页"
                                onClick={() => {

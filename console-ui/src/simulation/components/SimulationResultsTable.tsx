@@ -101,7 +101,7 @@ class SimulationResultsTable extends Component<SimulationResultsTableProps, Simu
         }
         return (
             <div>
-                <table className="table table-condensed table-bordered" style={{fontSize: 11}}>
+                <table className="rf-table rf-table-condensed rf-table-bordered" style={{fontSize: 11}}>
                     <thead>
                     <tr>
                         <th>日志ID</th>
@@ -119,13 +119,13 @@ class SimulationResultsTable extends Component<SimulationResultsTableProps, Simu
                     </tbody>
                 </table>
                 <div style={{textAlign: 'center', marginTop: 8}}>
-                    <button className="btn btn-xs btn-default"
+                    <button className="rf-btn rf-btn-xs rf-btn-default"
                             disabled={state.page <= 1}
                             onClick={this.loadResults.bind(this, state.page - 1)}>
                         上一页
                     </button>
                     <span style={{margin: '0 8px', fontSize: 11}}>第 {state.page} 页</span>
-                    <button className="btn btn-xs btn-default"
+                    <button className="rf-btn rf-btn-xs rf-btn-default"
                             disabled={state.results.length < state.size}
                             onClick={this.loadResults.bind(this, state.page + 1)}>
                         下一页

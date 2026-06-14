@@ -4,6 +4,7 @@ import Grid from '../../components/grid/component/Grid.tsx';
 import * as action from '../action.ts';
 
 import {confirm} from '@/utils/modal';
+import {DeleteOutlined, PlusCircleOutlined, SaveOutlined} from '@ant-design/icons';
 interface ClientConfigEditorProps {
     data: Array<{ name?: string; client?: string }>;
     dispatch: (a: unknown) => unknown;
@@ -22,7 +23,7 @@ class ClientConfigEditor extends Component<ClientConfigEditorProps> {
             operations: [
                 {
                     label: '删除',
-                    icon: 'glyphicon glyphicon-trash',
+                    icon: <DeleteOutlined />,
                     style: {fontSize: '16px', color: '#d9534f', padding: '0px 4px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
                         confirm('真的要删除当前记录？', function (result: boolean) {
@@ -36,16 +37,16 @@ class ClientConfigEditor extends Component<ClientConfigEditorProps> {
         return (
             <div>
                 <div style={{margin: '2px'}}>
-                    <div className="btn-group" style={{margin: '2px'}}>
-                        <button className="btn btn-primary" type="button" onClick={e => {
+                    <div className="rf-btn-group" style={{margin: '2px'}}>
+                        <button className="rf-btn rf-btn-primary" type="button" onClick={e => {
                             dispatch(action.add())
-                        }}><i className="glyphicon glyphicon-plus-sign"/> 添加
+                        }}><PlusCircleOutlined /> 添加
                         </button>
                     </div>
-                    <div className="btn-group" style={{margin: '2px'}}>
-                        <button className="btn btn-danger" type="button" onClick={() => {
+                    <div className="rf-btn-group" style={{margin: '2px'}}>
+                        <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
                             action.save(data, project);
-                        }}><i className="glyphicon glyphicon-floppy-saved"/> 保存
+                        }}><SaveOutlined /> 保存
                         </button>
                     </div>
                 </div>

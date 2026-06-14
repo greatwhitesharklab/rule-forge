@@ -11,6 +11,7 @@ import type {SpringBean, ActionMethod} from '../action.js';
 import type {ActionRootState} from '../reducer.js';
 
 import {alert, confirm} from '@/utils/modal';
+import {DeleteOutlined, LikeOutlined, PlusCircleOutlined, PlusOutlined} from '@ant-design/icons';
 interface ActionEditorProps {
     masterData: SpringBean[];
     masterRowData: SpringBean;
@@ -49,7 +50,7 @@ class ActionEditor extends Component<ActionEditorProps> {
             operations: [
                 {
                     label: '选择当前指定Bean中定义的方法',
-                    icon: 'glyphicon glyphicon-hand-up',
+                    icon: <LikeOutlined />,
                     style: {fontSize: '18px', color: '#337ab7', padding: '0px 4px', cursor: 'pointer'},
                     click: (_rowIndex: number, rowData: SpringBean) => {
                         let id = rowData.id;
@@ -62,7 +63,7 @@ class ActionEditor extends Component<ActionEditorProps> {
                 },
                 {
                     label: '删除',
-                    icon: 'glyphicon glyphicon-trash',
+                    icon: <DeleteOutlined />,
                     style: {fontSize: '18px', color: '#d9534f', padding: '0px 4px', cursor: 'pointer'},
                     click: (rowIndex: number) => {
                         confirm('真的要删除当前记录？', function (result) {
@@ -80,7 +81,7 @@ class ActionEditor extends Component<ActionEditorProps> {
             operations: [
                 {
                     label: '删除',
-                    icon: 'glyphicon glyphicon-trash',
+                    icon: <DeleteOutlined />,
                     style: {fontSize: '18px', color: '#d9534f', padding: '0px 10px', cursor: 'pointer'},
                     click: (rowIndex: number) => {
                         confirm('真的要删除当前记录？', function (result) {
@@ -97,7 +98,7 @@ class ActionEditor extends Component<ActionEditorProps> {
             operations: [
                 {
                     label: '删除',
-                    icon: 'glyphicon glyphicon-trash',
+                    icon: <DeleteOutlined />,
                     style: {fontSize: '18px', color: '#d9534f', padding: '0px 10px', cursor: 'pointer'},
                     click: (rowIndex: number) => {
                         confirm('真的要删除当前记录？', function (result) {
@@ -114,24 +115,24 @@ class ActionEditor extends Component<ActionEditorProps> {
                 <Splitter orientation='vertical' position='35%'>
                     <div>
                         <div style={{margin: '2px'}}>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-primary" type="button" onClick={(e) => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-primary" type="button" onClick={(e) => {
                                     dispatch(action.addMaster())
-                                }}><i className="glyphicon glyphicon-plus-sign"/> 添加Bean
+                                }}><PlusCircleOutlined /> 添加Bean
                                 </button>
                             </div>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-danger" type="button" onClick={() => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
                                     dispatch(action.save(false, file))
                                 }}><i className="rf rf-save"/> 保存
                                 </button>
-                                <button className="btn btn-danger" type="button" onClick={() => {
+                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
                                     dispatch(action.save(true, file))
                                 }} style={{display: 'none'}}><i className="rf rf-savenewversion"/> 保存为新版本
                                 </button>
                             </div>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-info" type="button" onClick={(e) => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-info" type="button" onClick={(e) => {
                                     if (!this.currentData) {
                                         alert('请先选择一条具体的动作方法');
                                         return;
@@ -158,13 +159,13 @@ class ActionEditor extends Component<ActionEditorProps> {
                         <SelectMethodDialog/>
                     </div>
                     <div>
-                        <div className="row" style={{margin: '0px'}}>
-                            <div className="col-md-6 col-xs-6" style={{padding: '0px 4px 0px 2px'}}>
+                        <div className="rf-row" style={{margin: '0px'}}>
+                            <div className="rf-col-md-6 rf-col-xs-6" style={{padding: '0px 4px 0px 2px'}}>
                                 <div>
-                                    <div className="btn-group btn-group-sm">
-                                        <button className="btn btn-primary" type="button" onClick={e => {
+                                    <div className="rf-btn-group rf-btn-group-sm">
+                                        <button className="rf-btn rf-btn-primary" type="button" onClick={e => {
                                             dispatch(action.addSlave())
-                                        }}><i className="glyphicon glyphicon-plus"/> 添加方法
+                                        }}><PlusOutlined /> 添加方法
                                         </button>
                                     </div>
                                 </div>
@@ -174,12 +175,12 @@ class ActionEditor extends Component<ActionEditorProps> {
                                     dispatch(action.loadMethodData(rowData));
                                 }}/>
                             </div>
-                            <div className="col-md-6 col-xs-6" style={{padding: '0px 2px 0px 1px'}}>
+                            <div className="rf-col-md-6 rf-col-xs-6" style={{padding: '0px 2px 0px 1px'}}>
                                 <div>
-                                    <div className="btn-group btn-group-sm">
-                                        <button className="btn btn-primary" type="button" onClick={e => {
+                                    <div className="rf-btn-group rf-btn-group-sm">
+                                        <button className="rf-btn rf-btn-primary" type="button" onClick={e => {
                                             dispatch(action.addParameter())
-                                        }}><i className="glyphicon glyphicon-plus-sign"/> 添加参数
+                                        }}><PlusCircleOutlined /> 添加参数
                                         </button>
                                     </div>
                                 </div>

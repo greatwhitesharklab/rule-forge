@@ -1,16 +1,17 @@
 import {Component, ReactNode} from 'react';
 import {connect} from 'react-redux';
 import {getGitStatusSummary, getGitStatusRecent, GitStatusSummary, GitStatusFailure} from '@/api/client.js';
+import {DashboardOutlined, ProfileOutlined} from '@ant-design/icons';
 
 interface TabDef {
     id: string;
     label: string;
-    icon: string;
+    icon: ReactNode;
 }
 
 const TABS: TabDef[] = [
-    {id: 'summary', label: '健康概览', icon: 'glyphicon glyphicon-dashboard'},
-    {id: 'recent', label: '最近失败', icon: 'glyphicon glyphicon-list-alt'},
+    {id: 'summary', label: '健康概览', icon: <DashboardOutlined />,},
+    {id: 'recent', label: '最近失败', icon: <ProfileOutlined />,},
 ];
 
 interface GitStatusPanelProps {
@@ -158,7 +159,7 @@ class GitStatusPanel extends Component<GitStatusPanelProps, GitStatusPanelState>
                         <div key={tab.id}
                              className={'side-panel-nav-item' + (gitStatusTab === tab.id ? ' active' : '')}
                              onClick={() => this.handleTabClick(tab.id)}>
-                            <i className={tab.icon} style={{marginRight: 8, fontSize: 12}}/>
+                            <span style={{marginRight: 8, fontSize: 12}}>{tab.icon}</span>
                             {tab.label}
                         </div>
                     ))}

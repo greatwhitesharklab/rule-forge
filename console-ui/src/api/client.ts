@@ -2,7 +2,7 @@ import {alert, confirm} from '@/utils/modal';
 /**
  * Centralized HTTP client for the RuleForge frontend.
  *
- * All functions auto-prepend `window._server` to relative paths.
+ * All functions auto-prepend the API base (Vite env / `window._server`) to relative paths.
  * Error handling is centralized — 401 shows permission alert, other
  * errors show the response text via alert.
  */
@@ -26,9 +26,28 @@ export interface RequestOptions {
 
 // ---- Internal helpers ----
 
+/**
+ * Resolve the API base URL for a relative path.
+ *
+ * <p>优先级:`import.meta.env.VITE_API_BASE`(Vite build/dev 时注入)→
+ * `window._server`(index.html inline `<script>window._server = "/api"</script>` 设的运行时值)→
+ * `'/api'`(硬默认)。三者等价于 V5.x 之前直接读 `window._server` 的语义,但允许通过 Vite env
+ * 在构建期固定 base,不再强制依赖运行时全局变量。
+ *
+ * <p>测试环境仍可通过设 `window._server`(或 `import.meta.env.VITE_API_BASE`)来 mock。
+ */
+export function apiBase(): string {
+    const envBase = (import.meta as any).env?.VITE_API_BASE as string | undefined;
+    if (envBase) return envBase;
+    if (typeof window !== 'undefined' && (window as any)._server) {
+        return (window as any)._server as string;
+    }
+    return '/api';
+}
+
 function baseUrl(path: string): string {
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    return window._server + path;
+    return apiBase() + path;
 }
 
 function handleError(response: Response, opts: RequestOptions = {}): Promise<never> {
@@ -320,8 +339,7 @@ export function startBatchTestWithFile(
     const fd = new FormData();
     fd.append('file', file);
     fd.append('config', JSON.stringify(req));
-    const base = (window as any)._server || '';
-    const url = base + '/batchtest/start-with-file';
+    const url = apiBase() + '/batchtest/start-with-file';
     return fetch(url, { method: 'POST', body: fd }).then(
         (resp) => {
             if (!resp.ok) {
@@ -495,8 +513,7 @@ export function updateUser(
     params: Record<string, string>,
     opts?: RequestOptions,
 ): Promise<{ status: boolean; username: string; error?: string }> {
-    const base = (window as any)._server || '';
-    const url = base + '/permission/users/' + id;
+    const url = apiBase() + '/permission/users/' + id;
     const body = new URLSearchParams(params).toString();
     return fetch(url, {
         method: 'PUT',
@@ -515,8 +532,7 @@ export function toggleUserEnabled(
     enabled: boolean,
     opts?: RequestOptions,
 ): Promise<{ status: boolean }> {
-    const base = (window as any)._server || '';
-    const url = base + '/permission/users/' + id + '/enabled?enabled=' + enabled;
+    const url = apiBase() + '/permission/users/' + id + '/enabled?enabled=' + enabled;
     return fetch(url, {
         method: 'PATCH',
         credentials: 'same-origin',

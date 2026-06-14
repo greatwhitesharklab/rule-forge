@@ -1,4 +1,4 @@
-import {save as apiSave, formPost} from '../api/client.js';
+import {save as apiSave, formPost, apiBase} from '../api/client.js';
 
 import {alert, prompt} from '@/utils/modal';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -78,7 +78,7 @@ export function saveData(data: ConstantCategory[], newVersion: boolean, file: st
     xml += '</constant-library>';
     xml = encodeURIComponent(xml);
     const postData: Record<string, string> = {content: xml, file, newVersion: String(newVersion)};
-    const url = window._server + '/common/saveFile';
+    const url = apiBase() + '/common/saveFile';
     if (newVersion) {
         prompt("请输入新版本描述.", function (versionComment) {
             if (!versionComment) {

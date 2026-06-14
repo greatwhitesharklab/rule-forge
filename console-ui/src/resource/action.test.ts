@@ -43,10 +43,12 @@ vi.mock('../components/componentEvent.js', () => ({
     HIDE_LOADING: 'HIDE_LOADING',
 }));
 
-// Mock api/client.js — production code imports save and formPost
+// Mock api/client.js — production code imports save, formPost, apiBase
+// (saveData constructs url = apiBase() + '/common/saveFile')
 vi.mock('../api/client.js', () => ({
     save: vi.fn(),
     formPost: vi.fn(),
+    apiBase: vi.fn(() => ''),
 }));
 
 // Helper to flush async chains

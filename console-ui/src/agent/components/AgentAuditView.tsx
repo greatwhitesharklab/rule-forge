@@ -1,6 +1,7 @@
 import {Component} from 'react';
 import {Tag, Select, Empty} from 'antd';
 import {jsonPost} from '@/api/client';
+import {ReloadOutlined} from '@ant-design/icons';
 
 // ====== 类型定义 ======
 
@@ -115,8 +116,8 @@ export default class AgentAuditView extends Component<AgentAuditViewProps, Agent
                 <span style={{marginLeft: 'auto', color: '#999', fontSize: 11}}>
                     {this.state.rows.length} 条记录
                 </span>
-                <button className="btn btn-xs btn-default" onClick={this.load} disabled={this.state.loading}>
-                    <i className="glyphicon glyphicon-refresh" />
+                <button className="rf-btn rf-btn-xs rf-btn-default" onClick={this.load} disabled={this.state.loading}>
+                    <ReloadOutlined />
                 </button>
             </div>
         );
@@ -178,7 +179,7 @@ export default class AgentAuditView extends Component<AgentAuditViewProps, Agent
                 <div style={{padding: 12, flex: 1}}>
                     {loading && rows.length === 0 ? (
                         <div style={{padding: 40, textAlign: 'center', color: '#999'}}>
-                            <i className="glyphicon glyphicon-refresh" /> 加载中...
+                            <ReloadOutlined /> 加载中...
                         </div>
                     ) : rows.length === 0 ? (
                         <Empty description="暂无调用记录" />

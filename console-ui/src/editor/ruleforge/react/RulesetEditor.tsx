@@ -29,7 +29,7 @@ import { PlusOutlined, SaveOutlined } from '@ant-design/icons';
 import type { Rule, Ruleset } from '../model/types';
 import { parseRuleset } from '../model/parse';
 import { serializeRuleset } from '../model/serialize';
-import { formPost, save } from '@/api/client';
+import { formPost, save, apiBase } from '@/api/client';
 import { RuleEditor } from './RuleEditor';
 
 const { Text } = Typography;
@@ -92,7 +92,7 @@ async function loadFromServer(file: string): Promise<string> {
  * and POSTs it to /common/saveFile with a `newVersion` flag.
  */
 async function saveToServer(file: string, xml: string): Promise<void> {
-  const url = (window._server ?? '') + '/common/saveFile';
+  const url = apiBase() + '/common/saveFile';
   await save(url, {
     content: encodeURIComponent(xml),
     file: file,

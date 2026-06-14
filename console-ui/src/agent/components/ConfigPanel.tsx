@@ -2,6 +2,7 @@ import {Component} from 'react';
 import {httpGet, formPost, jsonPut} from '../../api/client.js';
 
 import {alert} from '@/utils/modal';
+import {SaveOutlined} from '@ant-design/icons';
 interface ConfigPanelProps {
     dispatch: (action: unknown) => void;
 }
@@ -117,7 +118,7 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
                 {/* Vendor selector */}
                 <div style={{marginBottom: 8}}>
                     <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>LLM 厂商</label>
-                    <select className="form-control input-sm" value={vendor}
+                    <select className="rf-form-control rf-input-sm" value={vendor}
                             onChange={(e) => this.handleVendorChange(e.target.value)}>
                         <option value="">选择厂商...</option>
                         {vendors.map((v) => (
@@ -129,7 +130,7 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
                 {/* API Key */}
                 <div style={{marginBottom: 8}}>
                     <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>API Key</label>
-                    <input type="password" className="form-control input-sm" value={apiKey}
+                    <input type="password" className="rf-form-control rf-input-sm" value={apiKey}
                            onChange={(e) => this.setState({apiKey: e.target.value})}
                            placeholder="sk-xxx"/>
                 </div>
@@ -137,7 +138,7 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
                 {/* Base URL */}
                 <div style={{marginBottom: 8}}>
                     <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>Base URL</label>
-                    <input type="text" className="form-control input-sm" value={baseUrl}
+                    <input type="text" className="rf-form-control rf-input-sm" value={baseUrl}
                            onChange={(e) => this.setState({baseUrl: e.target.value})}/>
                 </div>
 
@@ -145,17 +146,17 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
                 <div style={{marginBottom: 8, display: 'flex', gap: 8}}>
                     <div style={{flex: 1}}>
                         <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>模型</label>
-                        <input type="text" className="form-control input-sm" value={model}
+                        <input type="text" className="rf-form-control rf-input-sm" value={model}
                                onChange={(e) => this.setState({model: e.target.value})}/>
                     </div>
                     <div style={{width: 70}}>
                         <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>Temperature</label>
-                        <input type="text" className="form-control input-sm" value={temperature}
+                        <input type="text" className="rf-form-control rf-input-sm" value={temperature}
                                onChange={(e) => this.setState({temperature: e.target.value})}/>
                     </div>
                     <div style={{width: 70}}>
                         <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>Max Tokens</label>
-                        <input type="text" className="form-control input-sm" value={maxTokens}
+                        <input type="text" className="rf-form-control rf-input-sm" value={maxTokens}
                                onChange={(e) => this.setState({maxTokens: e.target.value})}/>
                     </div>
                 </div>
@@ -163,16 +164,16 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
                 {/* System Prompt */}
                 <div style={{marginBottom: 8}}>
                     <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>系统提示词</label>
-                    <textarea className="form-control input-sm" rows={3} value={systemPrompt}
+                    <textarea className="rf-form-control rf-input-sm" rows={3} value={systemPrompt}
                               onChange={(e) => this.setState({systemPrompt: e.target.value})}/>
                 </div>
 
                 {/* Actions */}
                 <div style={{display: 'flex', gap: 8}}>
-                    <button className="btn btn-sm btn-primary" onClick={this.handleSave}>
-                        <i className="glyphicon glyphicon-save" style={{marginRight: 4}}/>保存
+                    <button className="rf-btn rf-btn-sm rf-btn-primary" onClick={this.handleSave}>
+                        <SaveOutlined style={{marginRight: 4}} />保存
                     </button>
-                    <button className="btn btn-sm btn-default" onClick={this.handleTest} disabled={testing}>
+                    <button className="rf-btn rf-btn-sm rf-btn-default" onClick={this.handleTest} disabled={testing}>
                         {testing ? '测试中...' : '测试连接'}
                     </button>
                     {testResult && (

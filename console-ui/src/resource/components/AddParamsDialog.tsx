@@ -117,33 +117,33 @@ export default class AddParamsDialog extends Component<AddParamsDialogProps, Add
         const {dispatch, file} = this.props;
         const body = (
             <div style={{maxHeight: '60vh', overflow: 'auto', padding: '0 15px'}}>
-                <div className="row">
-                    <div className="form-group col-xs-6">
+                <div className="rf-row">
+                    <div className="rf-form-group rf-col-xs-6">
                         <label>字段名称：</label>
-                        <input type="text" name="name" className="form-control"
+                        <input type="text" name="name" className="rf-form-control"
                             value={this.state.name}
                             onChange={(e) => this.setState({name: e.target.value, errors: {...this.state.errors, name: undefined}})}/>
-                        {this.state.errors.name && <div className="text-danger" style={{fontSize:'12px'}}>{this.state.errors.name}</div>}
+                        {this.state.errors.name && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.name}</div>}
                     </div>
-                    <div className="form-group col-xs-6">
+                    <div className="rf-form-group rf-col-xs-6">
                         <label>标题：</label>
-                        <input type="text" name="label" className="form-control"
+                        <input type="text" name="label" className="rf-form-control"
                             value={this.state.label}
                             onChange={(e) => this.setState({label: e.target.value, errors: {...this.state.errors, label: undefined}})}/>
-                        {this.state.errors.label && <div className="text-danger" style={{fontSize:'12px'}}>{this.state.errors.label}</div>}
+                        {this.state.errors.label && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.label}</div>}
                     </div>
                 </div>
-                <div className="row">
-                    <div className="form-group col-xs-6">
+                <div className="rf-row">
+                    <div className="rf-form-group rf-col-xs-6">
                         <label>默认值:</label>
-                        <input type="text" name="defaultValue" className="form-control"
+                        <input type="text" name="defaultValue" className="rf-form-control"
                             value={this.state.defaultValue}
                             onChange={(e) => this.setState({defaultValue: e.target.value, errors: {...this.state.errors, defaultValue: undefined}})}/>
-                        {this.state.errors.defaultValue && <div className="text-danger" style={{fontSize:'12px'}}>{this.state.errors.defaultValue}</div>}
+                        {this.state.errors.defaultValue && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.defaultValue}</div>}
                     </div>
-                    <div className="form-group col-xs-6">
+                    <div className="rf-form-group rf-col-xs-6">
                         <label>数据类型:</label>
-                        <select name="type" className="form-control"
+                        <select name="type" className="rf-form-control"
                             value={this.state.type}
                             onChange={(e) => this.setState({type: e.target.value, errors: {...this.state.errors, type: undefined}})}>
                             {['String', 'Integer', 'Char', 'Double', 'Long', 'Float', 'BigDecimal', 'Boolean', 'Date', 'List', 'Set', 'Map', 'Enum', 'Object']
@@ -151,19 +151,19 @@ export default class AddParamsDialog extends Component<AddParamsDialogProps, Add
                                     <option value={option} key={option}>{option}</option>
                                 )}
                         </select>
-                        {this.state.errors.type && <div className="text-danger" style={{fontSize:'12px'}}>{this.state.errors.type}</div>}
+                        {this.state.errors.type && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.type}</div>}
                     </div>
                 </div>
-                <div className="form-group">
+                <div className="rf-form-group">
                     <label>实现逻辑:</label>
-                    <textarea name="logicComment" className="form-control" rows={3} maxLength={300}
+                    <textarea name="logicComment" className="rf-form-control" rows={3} maxLength={300}
                         value={this.state.logicComment}
                         onChange={(e) => this.setState({logicComment: e.target.value})}/>
                 </div>
-                <div className="row">
-                    <div className="form-group col-xs-6">
+                <div className="rf-row">
+                    <div className="rf-form-group rf-col-xs-6">
                         <label>状态:</label>
-                        <select name="dsStatus" className="form-control"
+                        <select name="dsStatus" className="rf-form-control"
                             value={this.state.dsStatus}
                             onChange={(e) => this.setState({dsStatus: Number(e.target.value)})}>
                             <option value="0">待开发</option>

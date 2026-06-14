@@ -71,7 +71,7 @@ export default class Cell extends Component<CellProps, CellState> {
             optionsHtml += '<option value="" selected></option>';
             dialog({
                 title: '选择子对象类型',
-                message: `<select class="form-control" id="bootbox-category-select">${optionsHtml}</select>`,
+                message: `<select class="rf-form-control" id="bootbox-category-select">${optionsHtml}</select>`,
                 callback: () => {
                     const selectEl = document.getElementById('bootbox-category-select') as HTMLSelectElement | null;
                     targetType = selectEl ? selectEl.value : '';
@@ -122,7 +122,7 @@ export default class Cell extends Component<CellProps, CellState> {
             case 'select': {
                 const selectData = header.selectData || [];
                 return (
-                    <select ref={this.inputRef as React.RefObject<HTMLSelectElement>} className="form-control" style={inputStyle}
+                    <select ref={this.inputRef as React.RefObject<HTMLSelectElement>} className="rf-form-control" style={inputStyle}
                         value={editorValue} onChange={this._handleChange} onBlur={this._handleBlur}>
                         {selectData.map((option, index) => (
                             <option key={index}>{option}</option>
@@ -132,17 +132,17 @@ export default class Cell extends Component<CellProps, CellState> {
             }
             case 'number':
                 return (
-                    <input ref={this.inputRef as React.RefObject<HTMLInputElement>} type="number" className="form-control" style={inputStyle}
+                    <input ref={this.inputRef as React.RefObject<HTMLInputElement>} type="number" className="rf-form-control" style={inputStyle}
                         value={editorValue} onChange={this._handleChange} onBlur={this._handleBlur} />
                 );
             case 'date':
                 return (
-                    <input ref={this.inputRef as React.RefObject<HTMLInputElement>} type="date" className="form-control" style={inputStyle}
+                    <input ref={this.inputRef as React.RefObject<HTMLInputElement>} type="date" className="rf-form-control" style={inputStyle}
                         value={editorValue} onChange={this._handleChange} onBlur={this._handleBlur} />
                 );
             case 'boolean':
                 return (
-                    <select ref={this.inputRef as React.RefObject<HTMLSelectElement>} className="form-control" style={inputStyle}
+                    <select ref={this.inputRef as React.RefObject<HTMLSelectElement>} className="rf-form-control" style={inputStyle}
                         value={editorValue} onChange={this._handleChange} onBlur={this._handleBlur}>
                         <option value="true">true</option>
                         <option value="false">false</option>
@@ -150,14 +150,14 @@ export default class Cell extends Component<CellProps, CellState> {
                 );
             case 'list':
                 return (
-                    <input ref={this.inputRef as React.RefObject<HTMLInputElement>} type="text" className="form-control" style={inputStyle}
+                    <input ref={this.inputRef as React.RefObject<HTMLInputElement>} type="text" className="rf-form-control" style={inputStyle}
                         title='双击打开窗口编辑列表值'
                         value={editorValue} onChange={this._handleChange} onBlur={this._handleBlur}
                         onDoubleClick={this._handleDoubleClick} />
                 );
             default:
                 return (
-                    <input ref={this.inputRef as React.RefObject<HTMLInputElement>} type="text" className="form-control" style={inputStyle}
+                    <input ref={this.inputRef as React.RefObject<HTMLInputElement>} type="text" className="rf-form-control" style={inputStyle}
                         value={editorValue} onChange={this._handleChange} onBlur={this._handleBlur} />
                 );
         }

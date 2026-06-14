@@ -81,8 +81,8 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                 <Splitter orientation='vertical' position='20%'>
                     <div>
                         <div style={{margin: '2px'}}>
-                            <div className="btn-group" style={{margin: '2px'}}>
-                                <button className="btn btn-danger" type="button" onClick={() => {
+                            <div className="rf-btn-group" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
                                     action.save(masterData)
                                 }}><i className="rf rf-save"/> 保存
                                 </button>
@@ -94,21 +94,21 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                         }}/>
                     </div>
                     <div>
-                        <div className="row" style={{marginRight: '0'}}>
-                            <div className="col-sm-4" style={{marginTop: '45px'}}>
+                        <div className="rf-row" style={{marginRight: '0'}}>
+                            <div className="rf-col-sm-4" style={{marginTop: '45px'}}>
                                 <Grid headers={slaveHeaders} uniqueKey={true} dispatch={dispatch} rows={slaveData || []}
                                       rowClick={(rowData: ProjectConfig) => {
                                           this.currentProject = rowData;
                                           this.refreshDetail(rowData);
                                       }}/>
                             </div>
-                            <div className="col-sm-8 detailPart"
+                            <div className="rf-col-sm-8 detailPart"
                                  style={{marginTop: '40px', display: 'none', paddingLeft: 0}}>
-                                <div className="panel panel-default"
+                                <div className="rf-panel rf-panel-default"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
-                                    <div className="row">
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许查看当前项目</div>
-                                        <div className="col-sm-5">
+                                    <div className="rf-row">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许查看当前项目</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="readProject" value="true"
                                                        onClick={this.permissionDefaultTrue.bind(this)}
@@ -122,11 +122,11 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                         </div>
                                     </div>
                                 </div>
-                                <div className="panel panel-default filePermissionConfig"
+                                <div className="rf-panel rf-panel-default filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
-                                    <div className="row">
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许查看知识包</div>
-                                        <div className="col-sm-5">
+                                    <div className="rf-row">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许查看知识包</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="readPackage" value="true"
                                                        onClick={this.permissionChange.bind(this, 'readPackage', true)}
@@ -139,10 +139,10 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="row writePackageConfig well"
+                                    <div className="rf-row writePackageConfig rf-well"
                                          style={{padding: '0', marginBottom: '0'}}>
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许修改知识包</div>
-                                        <div className="col-sm-5">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许修改知识包</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="writePackage" value="true"
                                                        onClick={this.permissionChange.bind(this, 'writePackage', true)}
@@ -156,11 +156,11 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                         </div>
                                     </div>
                                 </div>
-                                <div className="panel panel-default filePermissionConfig"
+                                <div className="rf-panel rf-panel-default filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
-                                    <div className="row">
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许查看变量库文件</div>
-                                        <div className="col-sm-5">
+                                    <div className="rf-row">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许查看变量库文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="readVariableFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'readVariableFile', true)}
@@ -173,10 +173,10 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="row writeVariableFileConfig well"
+                                    <div className="rf-row writeVariableFileConfig rf-well"
                                          style={{padding: '0', marginBottom: '0'}}>
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许修改变量库文件</div>
-                                        <div className="col-sm-5">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许修改变量库文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="writeVariableFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'writeVariableFile', true)}
@@ -190,11 +190,11 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                         </div>
                                     </div>
                                 </div>
-                                <div className="panel panel-default filePermissionConfig"
+                                <div className="rf-panel rf-panel-default filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
-                                    <div className="row">
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许查看参数库文件</div>
-                                        <div className="col-sm-5">
+                                    <div className="rf-row">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许查看参数库文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="readParameterFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'readParameterFile', true)}
@@ -207,10 +207,10 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="row writeParameterFileConfig well"
+                                    <div className="rf-row writeParameterFileConfig rf-well"
                                          style={{padding: '0', marginBottom: '0'}}>
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许修改参数库文件</div>
-                                        <div className="col-sm-5">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许修改参数库文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="writeParameterFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'writeParameterFile', true)}
@@ -224,11 +224,11 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                         </div>
                                     </div>
                                 </div>
-                                <div className="panel panel-default filePermissionConfig"
+                                <div className="rf-panel rf-panel-default filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
-                                    <div className="row">
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许查看常量库文件</div>
-                                        <div className="col-sm-5">
+                                    <div className="rf-row">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许查看常量库文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="readConstantFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'readConstantFile', true)}
@@ -241,10 +241,10 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="row writeConstantFileConfig well"
+                                    <div className="rf-row writeConstantFileConfig rf-well"
                                          style={{padding: '0', marginBottom: '0'}}>
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许修改常量库文件</div>
-                                        <div className="col-sm-5">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许修改常量库文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="writeConstantFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'writeConstantFile', true)}
@@ -258,11 +258,11 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                         </div>
                                     </div>
                                 </div>
-                                <div className="panel panel-default filePermissionConfig"
+                                <div className="rf-panel rf-panel-default filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
-                                    <div className="row">
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许查看动作库文件</div>
-                                        <div className="col-sm-5">
+                                    <div className="rf-row">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许查看动作库文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="readActionFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'readActionFile', true)}
@@ -275,10 +275,10 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="row writeActionFileConfig well"
+                                    <div className="rf-row writeActionFileConfig rf-well"
                                          style={{padding: '0', marginBottom: '0'}}>
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许修改动作库文件</div>
-                                        <div className="col-sm-5">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许修改动作库文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="writeActionFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'writeActionFile', true)}
@@ -292,11 +292,11 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                         </div>
                                     </div>
                                 </div>
-                                <div className="panel panel-default filePermissionConfig"
+                                <div className="rf-panel rf-panel-default filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
-                                    <div className="row">
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许查看规则集文件</div>
-                                        <div className="col-sm-5">
+                                    <div className="rf-row">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许查看规则集文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="readRuleFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'readRuleFile', true)}
@@ -309,10 +309,10 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="row writeRuleFileConfig well"
+                                    <div className="rf-row writeRuleFileConfig rf-well"
                                          style={{padding: '0', marginBottom: '0'}}>
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许修改规则集文件</div>
-                                        <div className="col-sm-5">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许修改规则集文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="writeRuleFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'writeRuleFile', true)}
@@ -326,11 +326,11 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                         </div>
                                     </div>
                                 </div>
-                                <div className="panel panel-default filePermissionConfig"
+                                <div className="rf-panel rf-panel-default filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
-                                    <div className="row">
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许查看决策表文件</div>
-                                        <div className="col-sm-5">
+                                    <div className="rf-row">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许查看决策表文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="readDecisionTableFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'readDecisionTableFile', true)}
@@ -343,10 +343,10 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="row writeDecisionTableFileConfig well"
+                                    <div className="rf-row writeDecisionTableFileConfig rf-well"
                                          style={{padding: '0', marginBottom: '0'}}>
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许修改决策表文件</div>
-                                        <div className="col-sm-5">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许修改决策表文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="writeDecisionTableFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'writeDecisionTableFile', true)}
@@ -360,11 +360,11 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                         </div>
                                     </div>
                                 </div>
-                                <div className="panel panel-default filePermissionConfig"
+                                <div className="rf-panel rf-panel-default filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
-                                    <div className="row">
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许查看决策树文件</div>
-                                        <div className="col-sm-5">
+                                    <div className="rf-row">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许查看决策树文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="readDecisionTreeFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'readDecisionTreeFile', true)}
@@ -377,10 +377,10 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="row writeDecisionTreeFileConfig well"
+                                    <div className="rf-row writeDecisionTreeFileConfig rf-well"
                                          style={{padding: '0', marginBottom: '0'}}>
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许修改决策树文件</div>
-                                        <div className="col-sm-5">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许修改决策树文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="writeDecisionTreeFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'writeDecisionTreeFile', true)}
@@ -394,11 +394,11 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                         </div>
                                     </div>
                                 </div>
-                                <div className="panel panel-default filePermissionConfig"
+                                <div className="rf-panel rf-panel-default filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
-                                    <div className="row">
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许查看评分卡文件</div>
-                                        <div className="col-sm-5">
+                                    <div className="rf-row">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许查看评分卡文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="readScorecardFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'readScorecardFile', true)}
@@ -411,10 +411,10 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="row writeScorecardFileConfig well"
+                                    <div className="rf-row writeScorecardFileConfig rf-well"
                                          style={{padding: '0', marginBottom: '0'}}>
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许修改评分卡文件</div>
-                                        <div className="col-sm-5">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许修改评分卡文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="writeScorecardFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'writeScorecardFile', true)}
@@ -428,11 +428,11 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                         </div>
                                     </div>
                                 </div>
-                                <div className="panel panel-default filePermissionConfig"
+                                <div className="rf-panel rf-panel-default filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
-                                    <div className="row">
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许查看决策流文件</div>
-                                        <div className="col-sm-5">
+                                    <div className="rf-row">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许查看决策流文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="readFlowFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'readFlowFile', true)}
@@ -445,10 +445,10 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="row writeFlowFileConfig well"
+                                    <div className="rf-row writeFlowFileConfig rf-well"
                                          style={{padding: '0', marginBottom: '0'}}>
-                                        <div className="col-sm-7" style={{textAlign: 'right'}}>是否允许修改决策流文件</div>
-                                        <div className="col-sm-5">
+                                        <div className="rf-col-sm-7" style={{textAlign: 'right'}}>是否允许修改决策流文件</div>
+                                        <div className="rf-col-sm-5">
                                             <label className="checkbox-inline">
                                                 <input type="radio" name="writeFlowFile" value="true"
                                                        onClick={this.permissionChange.bind(this, 'writeFlowFile', true)}

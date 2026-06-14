@@ -1,17 +1,18 @@
-import {Component} from 'react';
+import {Component, ReactNode} from 'react';
 import {connect} from 'react-redux';
 import {setMonitoringTab} from '@/frame/action.js';
+import {BarChartOutlined, BellOutlined, DashboardOutlined} from '@ant-design/icons';
 
 interface TabDef {
     id: string;
     label: string;
-    icon: string;
+    icon: ReactNode;
 }
 
 const TABS: TabDef[] = [
-    {id: 'overview', label: '总览仪表盘', icon: 'glyphicon glyphicon-dashboard'},
-    {id: 'metrics', label: '指标浏览', icon: 'glyphicon glyphicon-stats'},
-    {id: 'alerts', label: '告警规则', icon: 'glyphicon glyphicon-bell'},
+    {id: 'overview', label: '总览仪表盘', icon: <DashboardOutlined />,},
+    {id: 'metrics', label: '指标浏览', icon: <BarChartOutlined />,},
+    {id: 'alerts', label: '告警规则', icon: <BellOutlined />,},
 ];
 
 interface MonitoringPanelProps {
@@ -38,7 +39,7 @@ class MonitoringPanel extends Component<MonitoringPanelProps> {
                         <div key={tab.id}
                              className={'side-panel-nav-item' + (monitoringTab === tab.id ? ' active' : '')}
                              onClick={() => this.handleTabClick(tab.id)}>
-                            <i className={tab.icon} style={{marginRight: 8, fontSize: 12}}/>
+                            <span style={{marginRight: 8, fontSize: 12}}>{tab.icon}</span>
                             {tab.label}
                         </div>
                     ))}

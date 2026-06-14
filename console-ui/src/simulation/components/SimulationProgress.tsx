@@ -106,7 +106,7 @@ class SimulationProgress extends Component<SimulationProgressProps, SimulationPr
         return (
             <div style={{marginTop: 12}}>
                 <div style={{fontSize: 12, color: '#333', fontWeight: 'bold', marginBottom: 4}}>偏差统计</div>
-                <table className="table table-condensed" style={{fontSize: 11, marginBottom: 0}}>
+                <table className="rf-table rf-table-condensed" style={{fontSize: 11, marginBottom: 0}}>
                     <tbody>
                     <tr>
                         <td>总偏差</td>

@@ -79,7 +79,7 @@ import type { MenuProps } from 'antd';
 import type { Cell, CellContent, Column, DecisionTableData } from '../model/types';
 import { parseDecisionTable } from '../model/parse';
 import { serializeDecisionTable } from '../model/serialize';
-import { formPost, save } from '@/api/client';
+import { formPost, save, apiBase } from '@/api/client';
 import { useConstantLibraries, useParameterLibraries } from '../../ruleforge/react';
 import CellEditor from './CellEditor';
 import ColumnEditor, { type ColumnDraft } from './ColumnEditor';
@@ -136,7 +136,7 @@ async function loadFromServer(file: string): Promise<string> {
 
 /** Default saver: URL-encode the XML and POST /common/saveFile. */
 async function saveToServer(file: string, xml: string): Promise<void> {
-  const url = (window._server ?? '') + '/common/saveFile';
+  const url = apiBase() + '/common/saveFile';
   await save(url, {
     content: encodeURIComponent(xml),
     file: file,

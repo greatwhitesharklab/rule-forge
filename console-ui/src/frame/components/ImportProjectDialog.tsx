@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {apiBase} from '@/api/client';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 
@@ -41,12 +42,12 @@ export default class ImportProjectDialog extends Component<ImportProjectDialogPr
         const body = (
             <div>
                 <form id={formId}>
-                    <div className="row">
-                        <div className="form-group">
-                            <div className="col-xs-4" style={{textAlign: 'right', padding: 0}}>
+                    <div className="rf-row">
+                        <div className="rf-form-group">
+                            <div className="rf-col-xs-4" style={{textAlign: 'right', padding: 0}}>
                                 <label>选择要导入的项目备份文件：</label>
                             </div>
-                            <div className="col-xs-8">
+                            <div className="rf-col-xs-8">
                                 <input name="file" style={{width: '100%'}} type="file"/>
                             </div>
                         </div>
@@ -75,7 +76,7 @@ export default class ImportProjectDialog extends Component<ImportProjectDialogPr
                     $vm.setState({isImporting: true});
                     const formData = new FormData();
                     formData.append('file', file);
-                    fetch(window._server + '/frame/importProject', {
+                    fetch(apiBase() + '/frame/importProject', {
                         method: 'POST',
                         body: formData,
                     })

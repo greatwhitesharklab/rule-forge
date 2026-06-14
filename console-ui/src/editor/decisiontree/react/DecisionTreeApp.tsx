@@ -27,7 +27,7 @@ import { ExperimentOutlined, SaveOutlined } from '@ant-design/icons';
 import type { DecisionTree } from '../model/types';
 import { parseDecisionTree } from '../model/parse';
 import { serializeDecisionTree } from '../model/serialize';
-import { formPost, save } from '@/api/client';
+import { formPost, save, apiBase } from '@/api/client';
 import { useVariableLibraries, useConstantLibraries, useParameterLibraries } from '../../ruleforge/react';
 import { DecisionTreeFlow } from './DecisionTreeEditor';
 // Reused jquery-era dialogs (event-driven class components). Mounted once in the
@@ -96,7 +96,7 @@ async function loadFromServer(file: string): Promise<string> {
  * and POSTs it to /common/saveFile with a `newVersion` flag.
  */
 async function saveToServer(file: string, xml: string): Promise<void> {
-  const url = (window._server ?? '') + '/common/saveFile';
+  const url = apiBase() + '/common/saveFile';
   await save(url, {
     content: encodeURIComponent(xml),
     file: file,

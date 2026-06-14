@@ -1,6 +1,7 @@
 import {Component} from 'react';
 import {Progress, Tag, Alert} from 'antd';
 import {jsonPost} from '@/api/client';
+import {ReloadOutlined} from '@ant-design/icons';
 
 // ====== 类型定义 ======
 
@@ -286,8 +287,8 @@ export default class RuleHealthView extends Component<RuleHealthViewProps, RuleH
                     {statusTag}
                     {this.state.data?.project || 'all'} · 更新于 {this.state.data?.generatedAt?.substring(0, 16).replace('T', ' ')}
                 </span>
-                <button className="btn btn-xs btn-default" onClick={this.load} disabled={this.state.loading}>
-                    <i className="glyphicon glyphicon-refresh" />
+                <button className="rf-btn rf-btn-xs rf-btn-default" onClick={this.load} disabled={this.state.loading}>
+                    <ReloadOutlined />
                 </button>
             </div>
         );
@@ -299,7 +300,7 @@ export default class RuleHealthView extends Component<RuleHealthViewProps, RuleH
         if (loading && !data) {
             return (
                 <div style={{padding: 40, textAlign: 'center', color: '#999', fontSize: 12}}>
-                    <i className="glyphicon glyphicon-refresh" /> 加载健康数据...
+                    <ReloadOutlined /> 加载健康数据...
                 </div>
             );
         }

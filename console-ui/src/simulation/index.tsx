@@ -6,18 +6,19 @@ import SimulationProgress from './components/SimulationProgress.jsx';
 import SimulationResultsTable from './components/SimulationResultsTable.jsx';
 import SimulationStatsPanel from './components/SimulationStatsPanel.jsx';
 import type {SimulationStartResult} from './action';
+import {BarChartOutlined, DatabaseOutlined, ProfileOutlined, SettingOutlined} from '@ant-design/icons';
 
 interface TabDef {
     id: string;
     label: string;
-    icon: string;
+    icon: ReactNode;
 }
 
 const TABS: TabDef[] = [
-    {id: 'configure', label: '仿真配置', icon: 'glyphicon glyphicon-cog'},
-    {id: 'progress', label: '执行进度', icon: 'glyphicon glyphicon-tasks'},
-    {id: 'results', label: '对比结果', icon: 'glyphicon glyphicon-list-alt'},
-    {id: 'stats', label: '统计分析', icon: 'glyphicon glyphicon-stats'},
+    {id: 'configure', label: '仿真配置', icon: <SettingOutlined />,},
+    {id: 'progress', label: '执行进度', icon: <DatabaseOutlined />,},
+    {id: 'results', label: '对比结果', icon: <ProfileOutlined />,},
+    {id: 'stats', label: '统计分析', icon: <BarChartOutlined />,},
 ];
 
 interface SimulationPanelState {
@@ -82,7 +83,7 @@ class SimulationPanel extends Component<SimulationPanelProps, SimulationPanelSta
                             <div key={tab.id}
                                  className={'side-panel-nav-item' + (simulationTab === tab.id ? ' active' : '')}
                                  onClick={this.handleTabClick.bind(this, tab.id)}>
-                                <i className={tab.icon} style={{marginRight: 8, fontSize: 12}}/>
+                                <span style={{marginRight: 8, fontSize: 12}}>{tab.icon}</span>
                                 {tab.label}
                             </div>
                         );

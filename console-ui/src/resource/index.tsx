@@ -1,4 +1,3 @@
-import '../../node_modules/bootstrapvalidator/dist/css/bootstrapValidator.css';
 import '../css/iconfont.css'
 import '../css/tailwind-base.css';
 

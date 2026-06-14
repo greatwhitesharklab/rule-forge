@@ -14,6 +14,13 @@ export class Remark {
     private remarkLabel!: HTMLElement;
     private remarkEditor!: HTMLTextAreaElement;
 
+    // Inline SVGs (AntD RightOutlined / DownOutlined paths) — replaced bootstrap
+    // glyphicon-circle-arrow-right/down icons after bootstrap removal.
+    private static readonly RIGHT_ARROW_SVG =
+        '<svg viewBox="64 64 896 896" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M765.7 486.8L314.9 134.7A7.97 7.97 0 00302 141v77.3c0 4.9 2.3 9.6 6.1 12.6l360 281.1-360 281.1c-3.9 3-6.1 7.7-6.1 12.6V883c0 6.7 7.7 10.4 12.9 6.3l450.8-352.1a31.96 31.96 0 000-50.4z"/></svg>';
+    private static readonly DOWN_ARROW_SVG =
+        '<svg viewBox="64 64 896 896" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3.1-12.7-6.4-12.7z"/></svg>';
+
     constructor(container: HTMLElement) {
         this.remark = '';
         this.defaultRemark = '请输入备注内容';
@@ -31,19 +38,18 @@ export class Remark {
         toolbar.textContent = '备注';
 
         this.icon = document.createElement('i');
-        this.icon.className = 'glyphicon glyphicon-circle-arrow-right';
+        this.icon.className = 'rf-remark-toggle-icon';
+        this.icon.innerHTML = Remark.RIGHT_ARROW_SVG;
         toolbar.appendChild(this.icon);
 
         toolbar.addEventListener('click', () => {
             this._collapsed = !this._collapsed;
             if (this._collapsed) {
                 this.contentContainer.style.display = 'none';
-                this.icon.classList.remove('glyphicon-circle-arrow-down');
-                this.icon.classList.add('glyphicon-circle-arrow-right');
+                this.icon.innerHTML = Remark.RIGHT_ARROW_SVG;
             } else {
                 this.contentContainer.style.display = '';
-                this.icon.classList.remove('glyphicon-circle-arrow-right');
-                this.icon.classList.add('glyphicon-circle-arrow-down');
+                this.icon.innerHTML = Remark.DOWN_ARROW_SVG;
             }
         });
         container.appendChild(toolbar);
@@ -64,7 +70,7 @@ export class Remark {
         this.contentContainer.appendChild(this.remarkLabel);
 
         this.remarkEditor = document.createElement('textarea');
-        this.remarkEditor.className = 'form-control';
+        this.remarkEditor.className = 'rf-form-control';
         this.remarkEditor.rows = 4;
         this.remarkEditor.value = this.defaultRemark;
         this.remarkEditor.style.display = 'none';

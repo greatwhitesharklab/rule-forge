@@ -4,6 +4,7 @@ import * as event from '../event.js';
 import * as action from '../action.js';
 
 import {alert} from '@/utils/modal';
+import {CheckOutlined, CloudUploadOutlined} from '@ant-design/icons';
 interface ImportExcelDataDialogProps {}
 
 interface ImportExcelDataDialogState {
@@ -63,7 +64,7 @@ export default class ImportExcelDataDialog extends Component<ImportExcelDataDial
                 <input id="input-file" name="file" type="file" accept=".xlsx,.xls" style={{width: '100%'}}/>
                 {this.state.sessionId && (
                     <div style={{marginTop: '8px', color: '#5cb85c'}}>
-                        <i className="glyphicon glyphicon-ok"/> 已导入，Session ID: {this.state.sessionId}
+                        <CheckOutlined /> 已导入，Session ID: {this.state.sessionId}
                     </div>
                 )}
             </div>
@@ -72,7 +73,7 @@ export default class ImportExcelDataDialog extends Component<ImportExcelDataDial
             {
                 name: '上传',
                 className: 'btn btn-primary',
-                icon: 'glyphicon glyphicon-cloud-upload',
+                icon: <CloudUploadOutlined />,
                 click: () => this.handleUpload()
             }
         ];

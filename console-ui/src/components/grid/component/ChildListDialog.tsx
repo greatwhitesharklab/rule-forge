@@ -3,6 +3,7 @@ import { Component } from 'react';
 import Grid from './Grid.tsx';
 import CommonDialog from '../../dialog/component/CommonDialog.jsx';
 import * as event from '../componentEvent.ts';
+import {DeleteOutlined} from '@ant-design/icons';
 
 interface ChildListVariable {
     name: string;
@@ -49,7 +50,7 @@ export default class ChildListDialog extends Component<Record<string, never>, Ch
             operations: [
                 {
                     label: '删除',
-                    icon: 'glyphicon glyphicon-trash',
+                    icon: <DeleteOutlined />,
                     style: { fontSize: '20px', color: '#d9534f', padding: '0px 4px', cursor: 'pointer' },
                     click: function (_rowIndex: number, rowData: Record<string, unknown>) {
                         const pos = rows.indexOf(rowData);

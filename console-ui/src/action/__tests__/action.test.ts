@@ -38,9 +38,11 @@ vi.mock('@/utils/modal', () => mocks);
 
 import * as ACTIONS from '../action.js';
 // Mock api/client.js to intercept the module import
+// (saveData constructs url = apiBase() + '/common/saveFile')
 vi.mock('../../api/client.js', () => ({
     save: vi.fn(),
     formPost: vi.fn(),
+    apiBase: vi.fn(() => ''),
 }));
 
 // Helper to flush microtask queue for async thunks that don't return promises

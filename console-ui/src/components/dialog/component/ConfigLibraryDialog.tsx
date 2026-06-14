@@ -137,16 +137,16 @@ export default class ConfigLibraryDialog extends Component<{}, ConfigLibraryDial
 
         return (
             <div>
-                <div className="modal-backdrop fade in"></div>
-                <div className="modal fade in" style={{ display: 'block' }} tabIndex={-1} role="dialog">
-                    <div className="modal-dialog">
-                        <div className="modal-content">
-                            <div className="modal-header" style={{ borderBottom: '1px solid var(--rf-border-split)' }}>
-                                <button type="button" className="close" onClick={this.handleClose}>&times;</button>
-                                <h4 className="modal-title" style={{ fontWeight: 'var(--rf-font-weight-semibold)', color: 'var(--rf-text-primary)' }}>{config.title}</h4>
+                <div className="rf-modal-backdrop rf-fade in"></div>
+                <div className="rf-modal rf-fade in" style={{ display: 'block' }} tabIndex={-1} role="dialog">
+                    <div className="rf-modal-dialog">
+                        <div className="rf-modal-content">
+                            <div className="rf-modal-header" style={{ borderBottom: '1px solid var(--rf-border-split)' }}>
+                                <button type="button" className="rf-close" onClick={this.handleClose}>&times;</button>
+                                <h4 className="rf-modal-title" style={{ fontWeight: 'var(--rf-font-weight-semibold)', color: 'var(--rf-text-primary)' }}>{config.title}</h4>
                             </div>
-                            <div className="modal-body" style={{ padding: 'var(--rf-space-6)' }}>
-                                <table className="table table-bordered">
+                            <div className="rf-modal-body" style={{ padding: 'var(--rf-space-6)' }}>
+                                <table className="rf-table rf-table-bordered">
                                     <thead>
                                         <tr>
                                             <td>{config.title.replace('配置', '文件')}</td>
@@ -158,7 +158,7 @@ export default class ConfigLibraryDialog extends Component<{}, ConfigLibraryDial
                                             <tr key={index}>
                                                 <td>{lib}</td>
                                                 <td>
-                                                    <button type="button" className="btn btn-link"
+                                                    <button type="button" className="rf-btn rf-btn-link"
                                                         onClick={() => this.handleDelete(lib)}>删除
                                                     </button>
                                                 </td>
@@ -167,10 +167,10 @@ export default class ConfigLibraryDialog extends Component<{}, ConfigLibraryDial
                                     </tbody>
                                 </table>
                             </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-primary" onClick={this.handleAdd}>添加
+                            <div className="rf-modal-footer">
+                                <button type="button" className="rf-btn rf-btn-primary" onClick={this.handleAdd}>添加
                                 </button>
-                                <button type="button" className="btn btn-default" onClick={this.handleClose}>关闭
+                                <button type="button" className="rf-btn rf-btn-default" onClick={this.handleClose}>关闭
                                 </button>
                             </div>
                         </div>

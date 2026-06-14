@@ -78,7 +78,7 @@ import type { MenuProps } from 'antd';
 import type { Column, ScriptCell, ScriptCellContent, ScriptDecisionTableData } from '../model/types';
 import { parseScriptDecisionTable } from '../model/parse';
 import { serializeScriptDecisionTable } from '../model/serialize';
-import { formPost, save } from '@/api/client';
+import { formPost, save, apiBase } from '@/api/client';
 import ScriptCellEditor from './ScriptCellEditor';
 import ColumnEditor, { type ColumnDraft } from '../../decisiontable/react/ColumnEditor';
 
@@ -133,7 +133,7 @@ async function loadFromServer(file: string): Promise<string> {
 
 /** Default saver: URL-encode the XML and POST /common/saveFile. */
 async function saveToServer(file: string, xml: string): Promise<void> {
-  const url = (window._server ?? '') + '/common/saveFile';
+  const url = apiBase() + '/common/saveFile';
   await save(url, {
     content: encodeURIComponent(xml),
     file: file,

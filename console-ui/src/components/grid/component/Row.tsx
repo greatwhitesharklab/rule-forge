@@ -6,7 +6,7 @@ import type { GridColumnHeader } from './CellEditor.tsx';
 
 interface OperationDef {
     label: string;
-    icon?: string;
+    icon?: React.ReactNode;
     style?: React.CSSProperties;
     click: (rowIndex: number, rowData: Record<string, unknown>) => void;
 }
@@ -56,13 +56,19 @@ export default class Row extends Component<RowProps> {
                     {
                         operations.map((op, index) => {
                             if (op.icon) {
+                                if (typeof op.icon === 'string') {
+                                    return (
+                                        <i key={uniqueID()} className={op.icon} title={op.label} style={op.style}
+                                            onClick={op.click.bind(this, rowIndex, rowData)} />
+                                    );
+                                }
                                 return (
-                                    <i key={uniqueID()} className={op.icon} title={op.label} style={op.style}
-                                        onClick={op.click.bind(this, rowIndex, rowData)} />
+                                    <span key={uniqueID()} title={op.label} style={op.style}
+                                        onClick={op.click.bind(this, rowIndex, rowData)}>{op.icon}</span>
                                 );
                             } else {
                                 return (
-                                    <button key={uniqueID()} type="button" className="btn btn-link"
+                                    <button key={uniqueID()} type="button" className="rf-btn rf-btn-link"
                                         style={{ padding: '0px 1px' }}
                                         onClick={op.click.bind(this, rowIndex, rowData)}>{op.label}
                                     </button>

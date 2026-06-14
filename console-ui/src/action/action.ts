@@ -1,4 +1,4 @@
-import {save as apiSave, formPost} from '../api/client.js';
+import {save as apiSave, formPost, apiBase} from '../api/client.js';
 
 import {alert, prompt} from '@/utils/modal';
 export const LOAD_MASTER_COMPLETED = 'load_master_completed';
@@ -99,7 +99,7 @@ export function saveData(data: SpringBean[], newVersion: boolean, file: string) 
     xml += '</action-library>';
     xml = encodeURIComponent(xml);
     let postData: Record<string, string> = {content: xml, file, newVersion: String(newVersion)};
-    const url = window._server + '/common/saveFile';
+    const url = apiBase() + '/common/saveFile';
     if (newVersion) {
         prompt("请输入新版本描述.", function (versionComment) {
             if (!versionComment) {

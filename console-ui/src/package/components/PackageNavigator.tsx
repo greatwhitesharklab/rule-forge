@@ -144,7 +144,7 @@ export default function PackageNavigator({project, onFileSelect, onVersionChange
                 <label style={{fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '4px'}}>
                     知识包
                 </label>
-                <select className="form-control" value={selectedPackage?.id || ''} onChange={handlePackageSelect}>
+                <select className="rf-form-control" value={selectedPackage?.id || ''} onChange={handlePackageSelect}>
                     <option value="">选择知识包...</option>
                     {packages.map(pkg => (
                         <option key={pkg.id} value={pkg.id}>{pkg.name || pkg.id}</option>
@@ -158,7 +158,7 @@ export default function PackageNavigator({project, onFileSelect, onVersionChange
                     <label style={{fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '4px'}}>
                         版本
                     </label>
-                    <select className="form-control" value={currentVersion || ''} onChange={handleVersionSelect}>
+                    <select className="rf-form-control" value={currentVersion || ''} onChange={handleVersionSelect}>
                         {versions.map(v => (
                             <option key={v.version} value={v.version}>
                                 {v.version} ({v.auditStatus === 90 ? '已审批' : v.auditStatus === 20 ? '审批中' : '待审批'})

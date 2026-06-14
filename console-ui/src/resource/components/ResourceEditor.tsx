@@ -12,6 +12,7 @@ import type {ResourceCategory, VariableItem} from '../action.js';
 import type {ResourceRootState} from '../reducer.js';
 
 import {alert, confirm} from '@/utils/modal';
+import {DeleteOutlined, PlusCircleOutlined, ReloadOutlined} from '@ant-design/icons';
 interface ResourceEditorProps {
     masterData: ResourceCategory[];
     masterRowData: ResourceCategory;
@@ -67,7 +68,7 @@ class ResourceEditor extends Component<ResourceEditorProps> {
             operations: [
                 {
                     label: '删除',
-                    icon: 'glyphicon glyphicon-trash',
+                    icon: <DeleteOutlined />,
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 10px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
                         confirm('真的要删除当前记录？', function (result) {
@@ -88,15 +89,15 @@ class ResourceEditor extends Component<ResourceEditorProps> {
                 <Splitter orientation='vertical' position='450px'>
                     <div style={{padding: '0px'}}>
                         <div style={{margin: '2px'}}>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-primary" type="button" onClick={(e) => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-primary" type="button" onClick={(e) => {
                                     componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
                                     dispatch(action.reFresh(file))
-                                }}><i className="glyphicon glyphicon glyphicon-refresh"/> 刷新
+                                }}><ReloadOutlined /> 刷新
                                 </button>
                             </div>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-info" type="button" onClick={(e) => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-info" type="button" onClick={(e) => {
                                     if (!this.currentData) {
                                         alert('请先选择一条具体的变量');
                                         return;
@@ -124,8 +125,8 @@ class ResourceEditor extends Component<ResourceEditorProps> {
                     </div>
                     <div style={{padding: '0px'}}>
                         <div style={{margin: '2px'}}>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-primary" type="button" onClick={(e) => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-primary" type="button" onClick={(e) => {
                                     console.log(masterRowData)
                                     if (masterRowData.name) {
                                         event.eventEmitter.emit(event.OPEN_CREATE_PARAMS_DIALOG, {
@@ -141,7 +142,7 @@ class ResourceEditor extends Component<ResourceEditorProps> {
                                     } else {
                                         alert('请先选择一条数据源！');
                                     }
-                                }}><i className="glyphicon glyphicon-plus-sign"/> 添加字段
+                                }}><PlusCircleOutlined /> 添加字段
                                 </button>
                             </div>
                         </div>

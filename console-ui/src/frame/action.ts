@@ -1,5 +1,5 @@
 import Styles from '../Styles.js';
-import {formPost} from '../api/client.js';
+import {formPost, apiBase} from '../api/client.js';
 import * as event from './event.js';
 import * as componentEvent from '../components/componentEvent.js';
 
@@ -471,7 +471,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                                 if (!result) {
                                     return;
                                 }
-                                const url = window._server + '/frame/exportProjectBackupFile?path=' + encodeURI(encodeURI(data.fullPath));
+                                const url = apiBase() + '/frame/exportProjectBackupFile?path=' + encodeURI(encodeURI(data.fullPath));
                                 window.open(url, '_blank');
                             });
                         }

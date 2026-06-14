@@ -1,6 +1,8 @@
 import {Component} from 'react';
 import {formPost} from '@/api/client.js';
 import AlertBell from '@/frame/AlertBell';
+import {LogoutOutlined} from '@ant-design/icons';
+import {CurrentUserContext} from '@/router/RequireAuth';
 
 interface TopBarProps {
     dispatch?: (action: unknown) => void;
@@ -11,6 +13,9 @@ interface TopBarState {
 }
 
 export default class TopBar extends Component<TopBarProps, TopBarState> {
+    static contextType = CurrentUserContext;
+    declare context: React.ContextType<typeof CurrentUserContext>;
+
     constructor(props: TopBarProps) {
         super(props);
         this.state = {
@@ -44,7 +49,8 @@ export default class TopBar extends Component<TopBarProps, TopBarState> {
 
     render() {
         const {userDropdownOpen} = this.state;
-        const username = (window.__currentUser && window.__currentUser.username) || 'admin';
+        const currentUser = this.context as UserInfo | null;
+        const username = (currentUser && currentUser.username) || 'admin';
 
         return (
             <div className="topbar">
@@ -81,7 +87,7 @@ export default class TopBar extends Component<TopBarProps, TopBarState> {
                                     权限配置
                                 </div>
                                 <div className="topbar-dropdown-item" onClick={this._handleLogout.bind(this)}>
-                                    <i className="glyphicon glyphicon-log-out" style={{width: 16, fontSize: 12}}/>
+                                    <LogoutOutlined style={{width: 16, fontSize: 12}} />
                                     退出登录
                                 </div>
                             </div>

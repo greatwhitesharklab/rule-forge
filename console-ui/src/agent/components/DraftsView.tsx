@@ -1,5 +1,6 @@
 import {Component} from 'react';
 import {jsonPost} from '@/api/client';
+import {ArrowLeftOutlined, CheckOutlined, ClockCircleOutlined, CloseOutlined, DatabaseOutlined, DeleteOutlined, FileOutlined, InboxOutlined, PlayCircleOutlined, PlusOutlined, ReloadOutlined, SaveOutlined, SendOutlined, ThunderboltOutlined} from '@ant-design/icons';
 
 // ====== 类型定义 ======
 
@@ -368,12 +369,12 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                     ))}
                 </select>
                 <button
-                    className="btn btn-xs btn-default"
+                    className="rf-btn rf-btn-xs rf-btn-default"
                     onClick={this.loadDrafts}
                     disabled={this.state.loading}
                     style={{marginLeft: 'auto'}}
                 >
-                    <i className="glyphicon glyphicon-refresh" /> 刷新
+                    <ReloadOutlined /> 刷新
                 </button>
             </div>
         );
@@ -392,7 +393,7 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                         borderBottom: detailTab === 'content' ? '2px solid #1677ff' : '2px solid transparent',
                     }}
                 >
-                    <i className="glyphicon glyphicon-file" style={{marginRight: 4}}/>规则内容
+                    <FileOutlined style={{marginRight: 4}} />规则内容
                 </div>
                 <div
                     onClick={() => {
@@ -408,7 +409,7 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                         borderBottom: detailTab === 'tests' ? '2px solid #1677ff' : '2px solid transparent',
                     }}
                 >
-                    <i className="glyphicon glyphicon-tasks" style={{marginRight: 4}}/>测试用例
+                    <DatabaseOutlined style={{marginRight: 4}} />测试用例
                     {testCases.length > 0 && (
                         <span style={{marginLeft: 6, fontSize: 10, color: '#999'}}>({testCases.length})</span>
                     )}
@@ -427,7 +428,7 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                         borderBottom: detailTab === 'history' ? '2px solid #1677ff' : '2px solid transparent',
                     }}
                 >
-                    <i className="glyphicon glyphicon-time" style={{marginRight: 4}}/>状态历史
+                    <ClockCircleOutlined style={{marginRight: 4}} />状态历史
                     {history.length > 0 && (
                         <span style={{marginLeft: 6, fontSize: 10, color: '#999'}}>({history.length})</span>
                     )}
@@ -441,12 +442,12 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
         const {history, historyLoading} = this.state;
         if (historyLoading) {
             return <div style={{padding: 20, textAlign: 'center', color: '#999', fontSize: 12}}>
-                <i className="glyphicon glyphicon-refresh" /> 加载中...
+                <ReloadOutlined /> 加载中...
             </div>;
         }
         if (history.length === 0) {
             return <div style={{padding: 40, textAlign: 'center', color: '#999', fontSize: 12}}>
-                <i className="glyphicon glyphicon-time" style={{fontSize: 32, display: 'block', marginBottom: 8}}/>
+                <ClockCircleOutlined style={{fontSize: 32, display: 'block', marginBottom: 8}} />
                 暂无状态历史
             </div>;
         }
@@ -508,30 +509,30 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
         return (
             <div style={{flex: 1, overflow: 'auto', padding: 12, background: '#fafafa'}}>
                 <div style={{marginBottom: 12, display: 'flex', gap: 6, flexWrap: 'wrap'}}>
-                    <button className="btn btn-xs btn-primary" disabled={actionLoading}
+                    <button className="rf-btn rf-btn-xs rf-btn-primary" disabled={actionLoading}
                             onClick={() => this.handleAddTestCase(detail)}>
-                        <i className="glyphicon glyphicon-plus" /> 加测试用例
+                        <PlusOutlined /> 加测试用例
                     </button>
-                    <button className="btn btn-xs btn-default" disabled={actionLoading}
+                    <button className="rf-btn rf-btn-xs rf-btn-default" disabled={actionLoading}
                             onClick={() => this.handleGenerateAndSave(detail)}
                             title="根据 cellMap 反推测试用例并落库">
-                        <i className="glyphicon glyphicon-magic" /> LLM 自动生成 + 落库
+                        <ThunderboltOutlined /> LLM 自动生成 + 落库
                     </button>
-                    <button className="btn btn-xs btn-success" disabled={testRunLoading || testCases.length === 0}
+                    <button className="rf-btn rf-btn-xs rf-btn-success" disabled={testRunLoading || testCases.length === 0}
                             onClick={() => this.handleRunSavedTests(detail)}>
-                        <i className="glyphicon glyphicon-play" /> 跑全部 saved tests
+                        <PlayCircleOutlined /> 跑全部 saved tests
                     </button>
                 </div>
 
                 {testsLoading && (
                     <div style={{padding: 20, textAlign: 'center', color: '#999', fontSize: 12}}>
-                        <i className="glyphicon glyphicon-refresh" /> 加载中...
+                        <ReloadOutlined /> 加载中...
                     </div>
                 )}
 
                 {!testsLoading && testCases.length === 0 && (
                     <div style={{padding: 40, textAlign: 'center', color: '#999', fontSize: 12}}>
-                        <i className="glyphicon glyphicon-inbox" style={{fontSize: 32, display: 'block', marginBottom: 8}}/>
+                        <InboxOutlined style={{fontSize: 32, display: 'block', marginBottom: 8}} />
                         该草稿下还没有测试用例
                         <div style={{marginTop: 12, fontSize: 11}}>
                             点 "LLM 自动生成" 让 AI 推断一些,或 "加测试用例" 自己写
@@ -556,10 +557,10 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                                     </span>
                                 )}
                             </div>
-                            <button className="btn btn-xs btn-link" disabled={actionLoading}
+                            <button className="rf-btn rf-btn-xs rf-btn-link" disabled={actionLoading}
                                     onClick={() => this.handleDeleteTestCase(detail, tc.testCaseId)}
                                     style={{color: '#cf1322', padding: '0 4px'}}>
-                                <i className="glyphicon glyphicon-trash" />
+                                <DeleteOutlined />
                             </button>
                         </div>
                         {tc.description && (
@@ -609,8 +610,8 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                             {detail.createdAt?.substring(0, 16).replace('T', ' ')}
                         </div>
                     </div>
-                    <button className="btn btn-xs btn-default" onClick={() => this.setState({detail: null, detailTab: 'content', testCases: [], testRunResult: null, history: []})}>
-                        <i className="glyphicon glyphicon-arrow-left" /> 返回列表
+                    <button className="rf-btn rf-btn-xs rf-btn-default" onClick={() => this.setState({detail: null, detailTab: 'content', testCases: [], testRunResult: null, history: []})}>
+                        <ArrowLeftOutlined /> 返回列表
                     </button>
                 </div>
 
@@ -641,31 +642,31 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                 {/* 操作按钮 */}
                 <div style={{padding: '0 12px 12px', display: 'flex', gap: 6, flexWrap: 'wrap'}}>
                     {detail.status === 'DRAFT' && (
-                        <button className="btn btn-xs btn-primary" disabled={this.state.actionLoading}
+                        <button className="rf-btn rf-btn-xs rf-btn-primary" disabled={this.state.actionLoading}
                                 onClick={() => this.handleAction('submit', detail.draftId)}>
-                            <i className="glyphicon glyphicon-send" /> 提交审批
+                            <SendOutlined /> 提交审批
                         </button>
                     )}
                     {detail.status === 'PENDING_REVIEW' && (<>
-                        <button className="btn btn-xs btn-success" disabled={this.state.actionLoading}
+                        <button className="rf-btn rf-btn-xs rf-btn-success" disabled={this.state.actionLoading}
                                 onClick={() => this.handleApproveClick(detail)}>
-                            <i className="glyphicon glyphicon-ok" /> 审批通过
+                            <CheckOutlined /> 审批通过
                         </button>
-                        <button className="btn btn-xs btn-danger" disabled={this.state.actionLoading}
+                        <button className="rf-btn rf-btn-xs rf-btn-danger" disabled={this.state.actionLoading}
                                 onClick={() => this.handleRejectClick(detail)}>
-                            <i className="glyphicon glyphicon-remove" /> 拒绝
+                            <CloseOutlined /> 拒绝
                         </button>
                     </>)}
                     {detail.status === 'APPROVED' && (
-                        <button className="btn btn-xs btn-primary" disabled={this.state.actionLoading}
+                        <button className="rf-btn rf-btn-xs rf-btn-primary" disabled={this.state.actionLoading}
                                 onClick={() => this.handleApplyClick(detail)}>
-                            <i className="glyphicon glyphicon-save" /> 应用到包
+                            <SaveOutlined /> 应用到包
                         </button>
                     )}
-                    <button className="btn btn-xs btn-default" disabled={this.state.actionLoading}
+                    <button className="rf-btn rf-btn-xs rf-btn-default" disabled={this.state.actionLoading}
                             onClick={() => this.handleTestRun(detail)}
                             title="生成模板 + 跑一次(不落库)">
-                        <i className="glyphicon glyphicon-play" /> 生成 + 跑测试
+                        <PlayCircleOutlined /> 生成 + 跑测试
                     </button>
                 </div>
 
@@ -717,12 +718,12 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                 <div style={{flex: 1, overflow: 'auto'}}>
                     {loading && (
                         <div style={{padding: 20, textAlign: 'center', color: '#999', fontSize: 12}}>
-                            <i className="glyphicon glyphicon-refresh" /> 加载中...
+                            <ReloadOutlined /> 加载中...
                         </div>
                     )}
                     {!loading && drafts.length === 0 && (
                         <div style={{padding: 40, textAlign: 'center', color: '#999', fontSize: 12}}>
-                            <i className="glyphicon glyphicon-inbox" style={{fontSize: 32, display: 'block', marginBottom: 8}}/>
+                            <InboxOutlined style={{fontSize: 32, display: 'block', marginBottom: 8}} />
                             {filterStatus ? `没有 ${STATUS_COLORS[filterStatus]?.label || filterStatus} 状态的草稿` : '该项目暂无草稿'}
                             <div style={{marginTop: 12, fontSize: 11}}>
                                 在 AI 助手对话里说 "写一个 18 岁以下拒贷的规则",LLM 会自动创建草稿
@@ -766,7 +767,7 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
 
                 {detailLoading && (
                     <div style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                        <i className="glyphicon glyphicon-refresh" />
+                        <ReloadOutlined />
                     </div>
                 )}
             </div>

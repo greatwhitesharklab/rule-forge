@@ -8,6 +8,7 @@ import * as refEvent from '../../reference/event.js';
 import ReferenceDialog from '../../reference/ReferenceDialog.tsx';
 
 import {alert, confirm} from '@/utils/modal';
+import {DeleteOutlined, PlusCircleOutlined, PlusOutlined} from '@ant-design/icons';
 interface ConstantEditorProps {
     dispatch: (a: unknown) => unknown;
     masterData: ConstantCategory[];
@@ -28,7 +29,7 @@ interface GridHeader {
 
 interface GridOperation {
     label: string;
-    icon: string;
+    icon: React.ReactNode;
     style: React.CSSProperties;
     click: (rowIndex: number) => void;
 }
@@ -62,7 +63,7 @@ class ConstantEditor extends React.Component<ConstantEditorProps> {
             operations: [
                 {
                     label: '删除',
-                    icon: 'glyphicon glyphicon-trash',
+                    icon: <DeleteOutlined />,
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 4px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
                         confirm('真的要删除当前记录？', function (result) {
@@ -79,7 +80,7 @@ class ConstantEditor extends React.Component<ConstantEditorProps> {
             operations: [
                 {
                     label: '删除',
-                    icon: 'glyphicon glyphicon-trash',
+                    icon: <DeleteOutlined />,
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 10px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
                         confirm('真的要删除当前记录？', function (result) {
@@ -91,30 +92,30 @@ class ConstantEditor extends React.Component<ConstantEditorProps> {
             ]
         };
         return (
-            <div className="row" style={{margin: '0px'}}>
+            <div className="rf-row" style={{margin: '0px'}}>
                 <ReferenceDialog/>
                 <Splitter orientation='vertical' position='40%'>
                     <div>
                         <div style={{margin: '2px'}}>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-primary" type="button"
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-primary" type="button"
                                         onClick={() => {dispatch(action.addMaster());}}>
-                                    <i className="glyphicon glyphicon-plus-sign"></i> 添加分类
+                                    <PlusCircleOutlined /> 添加分类
                                 </button>
                             </div>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-danger" type="button"
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-danger" type="button"
                                         onClick={() => {dispatch(action.save(false, file));}}>
                                     <i className="rf rf-save"></i> 保存
                                 </button>
-                                <button className="btn btn-danger" type="button"
+                                <button className="rf-btn rf-btn-danger" type="button"
                                         onClick={() => {dispatch(action.save(true, file));}}
                                         style={{display: 'none'}}>
                                     <i className="rf rf-savenewversion"></i> 保存为新版本
                                 </button>
                             </div>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-info" type="button" onClick={() => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-info" type="button" onClick={() => {
                                     if (!this.currentData) {
                                         alert('请先选择一条具体的常量');
                                         return;
@@ -140,10 +141,10 @@ class ConstantEditor extends React.Component<ConstantEditorProps> {
                     </div>
                     <div>
                         <div style={{margin: '2px'}}>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-primary" type="button"
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-primary" type="button"
                                         onClick={() => {dispatch(action.addSlave());}}>
-                                    <i className="glyphicon glyphicon-plus"></i> 添加常量
+                                    <PlusOutlined /> 添加常量
                                 </button>
                             </div>
                         </div>

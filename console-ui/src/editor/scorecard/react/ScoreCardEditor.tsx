@@ -97,7 +97,7 @@ import type {
 } from '../model/types';
 import { parseScoreCard } from '../model/parse';
 import { serializeScoreCard } from '../model/serialize';
-import { formPost, save } from '@/api/client';
+import { formPost, save, apiBase } from '@/api/client';
 // Reused jquery-era dialogs (event-driven class components). Mounted once in the
 // JSX tree below; opened by emitting OPEN_* events. ConfigLibraryDialog reads
 // the project-global `variableLibraries` / `constantLibraries` / etc. arrays and
@@ -157,7 +157,7 @@ async function loadFromServer(file: string): Promise<string> {
 
 /** Default saver: URL-encode the XML and POST /common/saveFile. */
 async function saveToServer(file: string, xml: string): Promise<void> {
-  const url = (window._server ?? '') + '/common/saveFile';
+  const url = apiBase() + '/common/saveFile';
   await save(url, {
     content: encodeURIComponent(xml),
     file: file,
