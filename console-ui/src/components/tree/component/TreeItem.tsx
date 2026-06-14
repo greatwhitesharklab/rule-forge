@@ -162,6 +162,15 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                                 return;
                             }
 
+                            // 决策表 (decisionTable / .dt.xml) → /app/editor/decisiontable
+                            // React 重写,替代原 iframe editor.html?type=decisionTable。
+                            const isDecisionTable = data.type === 'decisionTable'
+                                || (typeof data.fullPath === 'string' && data.fullPath.endsWith('.dt.xml'));
+                            if (isDecisionTable) {
+                                window.open('/app/editor/decisiontable?file=' + encodeURIComponent(data.fullPath), '_blank');
+                                return;
+                            }
+
                             // 变量库 / 常量库 / 参数库 / 动作库:按 data.type + 完整文件后缀双判定
                             // (注意是 .vl.xml / .cl.xml / .pl.xml / .al.xml 这种双扩展名)
                             const libTypeByData: string | null =
@@ -187,6 +196,16 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                             // 现 SPA 化为 /app/editor/resource
                             if (this.props.treeType === 'public') {
                                 window.open('/app/editor/resource?file=' + encodeURIComponent(data.fullPath), '_blank');
+                                return;
+                            }
+
+                            // 知识包(resourcePackage, .rp):原走 iframe
+                            // editor.html?type=package,现 SPA 化为 /app/editor/package。
+                            // file 参数沿用原 buildEditorUrl 的格式 <packageName>.rp(无路径前缀),
+                            // EditorRoute 内部 .replace('.rp','') 得到 project 名。
+                            if (data.type === 'resourcePackage') {
+                                const packageName = data.fullPath.split('/')[1];
+                                window.open('/app/editor/package?file=' + encodeURIComponent(packageName + '.rp'), '_blank');
                                 return;
                             }
 

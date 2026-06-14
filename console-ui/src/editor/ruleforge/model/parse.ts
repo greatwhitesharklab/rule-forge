@@ -271,7 +271,7 @@ function parseSimpleArith(el: Element): SimpleArith {
 // Value expression
 // ---------------------------------------------------------------------------
 
-function parseValue(el: Element): ValueExpr {
+export function parseValue(el: Element): ValueExpr {
   const type = (el.getAttribute('type') ?? 'Input') as ValueExpr['type'];
   const v: ValueExpr = { type };
   switch (type) {
@@ -412,7 +412,7 @@ function parseFunctionParam(el: Element): FunctionParam {
 // Actions
 // ---------------------------------------------------------------------------
 
-function parseAction(el: Element): Action {
+export function parseAction(el: Element): Action {
   switch (el.tagName) {
     case 'console-print': {
       const valueEl = firstElementChild(el, 'value');

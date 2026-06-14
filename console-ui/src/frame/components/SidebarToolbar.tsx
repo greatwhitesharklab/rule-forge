@@ -140,12 +140,8 @@ export default class SidebarToolbar extends Component<SidebarToolbarProps, Sideb
 
     handleAuthorityConfig = (e: React.MouseEvent) => {
         e.preventDefault();
-        componentEvent.eventEmitter.emit(componentEvent.TREE_NODE_CLICK, {
-            id: 'security_config_',
-            name: '资源权限配置',
-            fullPath: 'security_config_',
-            path: './html/editor.html?type=permission'
-        });
+        // 原 iframe editor.html?type=permission → SPA 化为新标签 /app/editor/permission
+        window.open('/app/editor/permission', '_blank');
     };
 
     handleLogout = (e: React.MouseEvent) => {

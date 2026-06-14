@@ -377,7 +377,7 @@ function serializeFunctionParam(p: FunctionParam): string {
 // Actions
 // ---------------------------------------------------------------------------
 
-function serializeAction(action: Action): string {
+export function serializeAction(action: Action): string {
   switch (action.kind) {
     case 'console-print':
       return '<console-print>' + serializeValue(action.value) + '</console-print>';
