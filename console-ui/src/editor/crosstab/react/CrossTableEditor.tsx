@@ -60,8 +60,12 @@ import { ValueEditor } from '../../ruleforge/react/ValueEditor';
 import {
   VariablePicker,
   useVariableLibraries,
+  useConstantLibraries,
+  useParameterLibraries,
   type VariableCategoryGroup,
 } from '../../ruleforge/react';
+import type { ConstantCategoryGroup } from '../../ruleforge/react/ConstantPicker';
+import type { ParameterLibrary } from '../../ruleforge/react/ParameterPicker';
 import { OPERATOR_OPTIONS, opHasNoInput } from '../../ruleforge/react/constants';
 import type {
   AssignTarget,
@@ -169,6 +173,21 @@ export function CrossTableEditor({
     .filter((lib) => lib.type === 'Variable' && lib.path)
     .map((lib) => lib.path);
   const { libraries: variableLibraries } = useVariableLibraries(variableLibraryPaths);
+
+  // Imported constant / parameter library paths — parallel to the variable
+  // derivation above. These feed the shared useConstantLibraries /
+  // useParameterLibraries hooks so the right-hand ValueEditor inside a value
+  // cell or condition cell can render a ConstantPicker / ParameterPicker
+  // Cascader instead of free text. The bundle/target modals are NOT fed these
+  // (they bind a whole variable axis via VariablePicker, not a `<value>`).
+  const constantLibraryPaths = state.libraries
+    .filter((lib) => lib.type === 'Constant' && lib.path)
+    .map((lib) => lib.path);
+  const parameterLibraryPaths = state.libraries
+    .filter((lib) => lib.type === 'Parameter' && lib.path)
+    .map((lib) => lib.path);
+  const { libraries: constantLibraries } = useConstantLibraries(constantLibraryPaths);
+  const { libraries: parameterLibraries } = useParameterLibraries(parameterLibraryPaths);
 
   // ---- load on mount ----
   useEffect(() => {
@@ -480,6 +499,8 @@ export function CrossTableEditor({
             return (
               <ConditionCellEditor
                 value={cond?.content ?? { empty: true }}
+                constantLibraries={constantLibraries}
+                parameterLibraries={parameterLibraries}
                 onChange={(next) => setConditionCell(wireRow, wireCol, next)}
               />
             );
@@ -488,6 +509,8 @@ export function CrossTableEditor({
           return (
             <ValueCellEditor
               value={valueCell?.value}
+              constantLibraries={constantLibraries}
+              parameterLibraries={parameterLibraries}
               onChange={(v) => setValueCell(wireRow, wireCol, v)}
             />
           );
@@ -540,6 +563,7 @@ export function CrossTableEditor({
     setConditionCell, setValueCell, removeColumn, removeRow,
     configureTopRowBundle, configureLeftColumnBundle,
     copyRow, pasteRow, clipboardRow,
+    constantLibraries, parameterLibraries,
   ]);
 
   // Wire rows — 1..n (one table row per model row).
@@ -663,9 +687,15 @@ export function CrossTableEditor({
  */
 function ValueCellEditor({
   value,
+  constantLibraries,
+  parameterLibraries,
   onChange,
 }: {
   value: ValueExpr | undefined;
+  /** Imported constant libraries forwarded to the ValueEditor. */
+  constantLibraries?: ConstantCategoryGroup[];
+  /** Imported parameter libraries forwarded to the ValueEditor. */
+  parameterLibraries?: ParameterLibrary[];
   onChange: (next: ValueExpr | undefined) => void;
 }) {
   if (!value) {
@@ -679,7 +709,15 @@ function ValueCellEditor({
       </div>
     );
   }
-  return <ValueEditor value={value} compact onChange={(v) => onChange(v)} />;
+  return (
+    <ValueEditor
+      value={value}
+      compact
+      constantLibraries={constantLibraries}
+      parameterLibraries={parameterLibraries}
+      onChange={(v) => onChange(v)}
+    />
+  );
 }
 
 /**
@@ -691,9 +729,15 @@ function ValueCellEditor({
  */
 function ConditionCellEditor({
   value,
+  constantLibraries,
+  parameterLibraries,
   onChange,
 }: {
   value: ConditionCellContent;
+  /** Imported constant libraries forwarded to the right-hand ValueEditor. */
+  constantLibraries?: ConstantCategoryGroup[];
+  /** Imported parameter libraries forwarded to the right-hand ValueEditor. */
+  parameterLibraries?: ParameterLibrary[];
   onChange: (next: ConditionCellContent) => void;
 }) {
   if ('empty' in value) {
@@ -742,7 +786,15 @@ function ConditionCellEditor({
           options={OPERATOR_OPTIONS}
         />
       </div>
-      {!noRight && <ValueEditor value={right} compact onChange={(v) => patch({ right: v })} />}
+      {!noRight && (
+        <ValueEditor
+          value={right}
+          compact
+          constantLibraries={constantLibraries}
+          parameterLibraries={parameterLibraries}
+          onChange={(v) => patch({ right: v })}
+        />
+      )}
     </div>
   );
 }

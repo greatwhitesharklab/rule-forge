@@ -27,6 +27,8 @@ import { OPERATOR_OPTIONS, opHasNoInput } from '../../ruleforge/react/constants'
 import { ValueEditor } from '../../ruleforge/react/ValueEditor';
 import { ActionEditor } from '../../ruleforge/react/ActionEditor';
 import type { Action } from '../../ruleforge/model/types';
+import type { ConstantCategoryGroup } from '../../ruleforge/react/ConstantPicker';
+import type { ParameterLibrary } from '../../ruleforge/react/ParameterPicker';
 import type { CellContent, CellJoint, ColumnType } from '../model/types';
 
 export interface CellEditorProps {
@@ -36,6 +38,10 @@ export interface CellEditorProps {
   value: CellContent;
   /** Called with the new CellContent on every edit. */
   onChange: (next: CellContent) => void;
+  /** Imported constant libraries (ConstantPicker). Optional — back-compat. */
+  constantLibraries?: ConstantCategoryGroup[];
+  /** Imported parameter libraries (ParameterPicker). Optional — back-compat. */
+  parameterLibraries?: ParameterLibrary[];
 }
 
 /** Seed a default content matching the column type when the user starts editing an empty cell. */
@@ -64,7 +70,7 @@ function firstCondition(joint: CellJoint | undefined) {
   return joint?.conditions[0];
 }
 
-export function CellEditor({ columnType, value, onChange }: CellEditorProps) {
+export function CellEditor({ columnType, value, onChange, constantLibraries, parameterLibraries }: CellEditorProps) {
   // Empty cell: show a clickable placeholder that seeds content on first edit.
   if ('empty' in value) {
     return (
@@ -111,7 +117,13 @@ export function CellEditor({ columnType, value, onChange }: CellEditorProps) {
           />
         </div>
         {!opHasNoInput(op) && (
-          <ValueEditor value={right} compact onChange={(v) => patch({ right: v })} />
+          <ValueEditor
+            value={right}
+            compact
+            onChange={(v) => patch({ right: v })}
+            constantLibraries={constantLibraries}
+            parameterLibraries={parameterLibraries}
+          />
         )}
       </div>
     );

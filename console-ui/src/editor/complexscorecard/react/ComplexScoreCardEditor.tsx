@@ -65,9 +65,13 @@ import { OPERATOR_OPTIONS, opHasNoInput } from '../../ruleforge/react/constants'
 import { ValueEditor } from '../../ruleforge/react/ValueEditor';
 import {
   VariablePicker,
+  useConstantLibraries,
+  useParameterLibraries,
   useVariableLibraries,
   type VariableCategoryGroup,
 } from '../../ruleforge/react';
+import type { ConstantCategoryGroup } from '../../ruleforge/react/ConstantPicker';
+import type { ParameterLibrary } from '../../ruleforge/react/ParameterPicker';
 import type {
   AssignTarget,
   AssignTargetType,
@@ -177,6 +181,18 @@ export function ComplexScoreCardEditor({
     .filter((lib) => lib.type === 'Variable' && lib.path)
     .map((lib) => lib.path);
   const { libraries: variableLibraries } = useVariableLibraries(variableLibraryPaths);
+
+  // Parallel constant/parameter library paths — same derivation as variable.
+  // The cell ValueEditors render ConstantPicker/ParameterPicker when these are
+  // non-empty (otherwise free-text fallback).
+  const constantLibraryPaths = state.libraries
+    .filter((lib) => lib.type === 'Constant' && lib.path)
+    .map((lib) => lib.path);
+  const parameterLibraryPaths = state.libraries
+    .filter((lib) => lib.type === 'Parameter' && lib.path)
+    .map((lib) => lib.path);
+  const { libraries: constantLibraries } = useConstantLibraries(constantLibraryPaths);
+  const { libraries: parameterLibraries } = useParameterLibraries(parameterLibraryPaths);
 
   // ---- load on mount ----
   useEffect(() => {
@@ -397,6 +413,8 @@ export function ComplexScoreCardEditor({
                 <CriteriaCellEditor
                   value={cell}
                   libraries={variableLibraries}
+                  constantLibraries={constantLibraries}
+                  parameterLibraries={parameterLibraries}
                   onChange={(next) => setCell(dr.rowNumber, col.num, next)}
                 />
               );
@@ -405,6 +423,8 @@ export function ComplexScoreCardEditor({
               <ValueCellEditor
                 value={cell}
                 libraries={variableLibraries}
+                constantLibraries={constantLibraries}
+                parameterLibraries={parameterLibraries}
                 onChange={(next) => setCell(dr.rowNumber, col.num, next)}
               />
             );
@@ -451,7 +471,7 @@ export function ComplexScoreCardEditor({
     });
 
     return cols;
-  }, [state.cols, findCell, setCell, removeCol, removeRow, copyRow, pasteRow, clipboardRow]);
+  }, [state.cols, findCell, setCell, removeCol, removeRow, copyRow, pasteRow, clipboardRow, variableLibraries, constantLibraries, parameterLibraries]);
 
   if (loading) {
     return (
@@ -492,7 +512,14 @@ export function ComplexScoreCardEditor({
         />
       )}
 
-      <ConfigArea state={state} setState={setState} patchCol={patchCol} libraries={variableLibraries} />
+      <ConfigArea
+        state={state}
+        setState={setState}
+        patchCol={patchCol}
+        libraries={variableLibraries}
+        constantLibraries={constantLibraries}
+        parameterLibraries={parameterLibraries}
+      />
 
       <div style={{ marginBottom: 12 }}>
         <Input.TextArea
@@ -534,11 +561,18 @@ function ConfigArea({
   setState,
   patchCol,
   libraries = [],
+  constantLibraries = [],
+  parameterLibraries = [],
 }: {
   state: ComplexScoreCardData;
   setState: React.Dispatch<React.SetStateAction<ComplexScoreCardData>>;
   patchCol: (colNumber: number, patch: Partial<ComplexCol>) => void;
+  /** Imported variable libraries forwarded to the assign-target ValueEditor. */
   libraries?: VariableCategoryGroup[];
+  /** Imported constant libraries forwarded to the assign-target ValueEditor. */
+  constantLibraries?: ConstantCategoryGroup[];
+  /** Imported parameter libraries forwarded to the assign-target ValueEditor. */
+  parameterLibraries?: ParameterLibrary[];
 }) {
   const patchScoringType = (scoringType: ScoringType) =>
     setState((prev) => ({ ...prev, scoringType }));
@@ -608,6 +642,8 @@ function ConfigArea({
             <ValueEditor
               value={state.assignTarget.value}
               libraries={libraries}
+              constantLibraries={constantLibraries}
+              parameterLibraries={parameterLibraries}
               onChange={(value) => patchAssignTarget({ ...state.assignTarget, value })}
             />
           </div>
@@ -651,10 +687,17 @@ function ConfigArea({
 function CriteriaCellEditor({
   value,
   libraries = [],
+  constantLibraries = [],
+  parameterLibraries = [],
   onChange,
 }: {
   value: ComplexCell | undefined;
+  /** Imported variable libraries (drives VariablePicker for the cell binding). */
   libraries?: VariableCategoryGroup[];
+  /** Imported constant libraries forwarded to the right-hand ValueEditor. */
+  constantLibraries?: ConstantCategoryGroup[];
+  /** Imported parameter libraries forwarded to the right-hand ValueEditor. */
+  parameterLibraries?: ParameterLibrary[];
   onChange: (next: ComplexCell) => void;
 }) {
   const cell: ComplexCell = value ?? { row: 0, col: 0, rowspan: 1 };
@@ -731,7 +774,14 @@ function CriteriaCellEditor({
           options={OPERATOR_OPTIONS}
         />
         {!noRight && (
-          <ValueEditor value={right} libraries={libraries} compact onChange={(v) => patchCondition({ right: v })} />
+          <ValueEditor
+            value={right}
+            libraries={libraries}
+            constantLibraries={constantLibraries}
+            parameterLibraries={parameterLibraries}
+            compact
+            onChange={(v) => patchCondition({ right: v })}
+          />
         )}
       </Space>
     </div>
@@ -742,16 +792,30 @@ function CriteriaCellEditor({
 function ValueCellEditor({
   value,
   libraries = [],
+  constantLibraries = [],
+  parameterLibraries = [],
   onChange,
 }: {
   value: ComplexCell | undefined;
+  /** Imported variable libraries forwarded to the cell ValueEditor. */
   libraries?: VariableCategoryGroup[];
+  /** Imported constant libraries forwarded to the cell ValueEditor. */
+  constantLibraries?: ConstantCategoryGroup[];
+  /** Imported parameter libraries forwarded to the cell ValueEditor. */
+  parameterLibraries?: ParameterLibrary[];
   onChange: (next: ComplexCell) => void;
 }) {
   const cell: ComplexCell = value ?? { row: 0, col: 0, rowspan: 1 };
   const v: ValueExpr = cell.value ?? { type: 'Input', content: '' };
   return (
-    <ValueEditor value={v} libraries={libraries} compact onChange={(value) => onChange({ ...cell, value })} />
+    <ValueEditor
+      value={v}
+      libraries={libraries}
+      constantLibraries={constantLibraries}
+      parameterLibraries={parameterLibraries}
+      compact
+      onChange={(value) => onChange({ ...cell, value })}
+    />
   );
 }
 
