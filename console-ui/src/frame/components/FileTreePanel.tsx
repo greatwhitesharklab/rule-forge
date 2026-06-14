@@ -32,13 +32,15 @@ export default class FileTreePanel extends Component<FileTreePanelProps, FileTre
     handlePackageFileSelect = (fileInfo: { path: string; name: string; version?: string; gitTag?: string }) => {
         const {store} = this.props;
         if (store && store.dispatch) {
-            window._currentGitTag = fileInfo.gitTag || null;
+            // V5.74.3:写 Redux,见 seeFileSource thunk 通过 getState() 读 currentGitTag
+            store.dispatch(ACTIONS.setCurrentGitTag(fileInfo.gitTag || null));
             event.eventEmitter.emit((event as any).OPEN_FILE, fileInfo);
         }
     }
 
     handleVersionChange = (_version: string | null, gitTag?: string) => {
-        window._currentGitTag = gitTag || null;
+        // V5.74.3:同上,改 Redux
+        this.props.store.dispatch(ACTIONS.setCurrentGitTag(gitTag || null));
     }
 
     render() {

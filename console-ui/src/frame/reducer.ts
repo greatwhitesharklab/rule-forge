@@ -25,6 +25,12 @@ interface UIState {
     types: string | null;
     /** 文件搜索关键字(原 window.searchFileName)。 */
     searchFileName: string | null;
+    /**
+     * 当前选中的知识包版本 gitTag(原 window._currentGitTag)。
+     * FileTreePanel handlePackageFileSelect / handleVersionChange 写,
+     * seeFileSource thunk 通过 getState() 读作 fileSource 请求的 gitTag 参数。
+     */
+    currentGitTag: string | null;
 }
 
 interface FrameState {
@@ -36,7 +42,7 @@ interface FrameState {
     [key: string]: unknown;
 }
 
-function ui(state: UIState = {activePanel: 'rules', monitoringTab: 'overview', simulationTab: 'configure', gitStatusTab: 'summary', projectName: null, classify: true, types: null, searchFileName: null}, action: { type: string; [key: string]: any }): UIState {
+function ui(state: UIState = {activePanel: 'rules', monitoringTab: 'overview', simulationTab: 'configure', gitStatusTab: 'summary', projectName: null, classify: true, types: null, searchFileName: null, currentGitTag: null}, action: { type: string; [key: string]: any }): UIState {
     switch (action.type) {
         case ACTIONS.SET_ACTIVE_PANEL:
             return {...state, activePanel: action.panel};
@@ -54,6 +60,8 @@ function ui(state: UIState = {activePanel: 'rules', monitoringTab: 'overview', s
             return {...state, types: action.types ?? null};
         case ACTIONS.SET_SEARCH_FILE_NAME:
             return {...state, searchFileName: action.searchFileName ?? null};
+        case ACTIONS.SET_CURRENT_GIT_TAG:
+            return {...state, currentGitTag: action.gitTag ?? null};
         default:
             return state;
     }
@@ -77,6 +85,11 @@ export function selectTypes(state: FrameState): string | null {
 /** Select current file search term. */
 export function selectSearchFileName(state: FrameState): string | null {
     return (state.ui && state.ui.searchFileName) ?? null;
+}
+
+/** V5.74.3:select current gitTag for version-aware file source reading. */
+export function selectCurrentGitTag(state: FrameState): string | null {
+    return (state.ui && state.ui.currentGitTag) ?? null;
 }
 
 function tree(state: FrameState = {}, action: { type: string; [key: string]: any }): FrameState {

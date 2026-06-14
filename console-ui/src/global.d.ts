@@ -35,7 +35,9 @@ interface TreeNodeData {
 interface ContextMenuItem {
     name: string;
     icon?: string | Record<string, string>;
-    click?: (data: TreeNodeData) => void;
+    // V5.74.3:click 第二参接收 dispatch(thunk 化菜单项用,如 seeFileSource),
+    // 旧菜单项忽略即可,MenuItem.tsx 一直传 dispatch 进来。
+    click?: (data: TreeNodeData, dispatch?: (action: unknown) => void) => void;
 }
 
 interface UserInfo {
@@ -214,7 +216,8 @@ interface Window {
     _classify: boolean;
     _project: string | null;
     _welcomePage: string;
-    _currentGitTag: string | null;
+    // V5.74.3:已移除 _currentGitTag 全局变量,改 Redux ui.currentGitTag(FileTreePanel
+    // setCurrentGitTag dispatch,seeFileSource thunk 通过 getState() 读)。
 
     // Current user
     // V5.74.2:已移除 __currentUser 全局变量,改纯 React CurrentUserContext(由 RequireAuth /
