@@ -40,7 +40,7 @@ import { OPEN_CONFIG_LIBRARY_DIALOG } from '@/components/dialog/component/Config
 import ConfigLibraryDialog from '@/components/dialog/component/ConfigLibraryDialog';
 import QuickTestDialog from '@/components/dialog/component/QuickTestDialog';
 import KnowledgeTreeDialog from '@/components/dialog/component/KnowledgeTreeDialog';
-import { buildProjectNameFromFile } from '@/Utils';
+import {useDirty, useProject} from '@/editor/EditorContexts';
 
 // Lib-type discriminator used by the shared ConfigLibraryDialog (one of the
 // four kinds of `<import-*-library>` it manages). Matches the dialog's
@@ -125,6 +125,7 @@ async function saveToServer(file: string, xml: string): Promise<void> {
 function installLibrariesBridge(
   state: DecisionTree,
   setState: React.Dispatch<React.SetStateAction<DecisionTree>>,
+  dirty: { setDirty: () => void },
 ): void {
   const w = window as unknown as Record<string, unknown>;
   // Seed the array globals from React state on every call (sync-out is cheap
@@ -141,7 +142,7 @@ function installLibrariesBridge(
       return () => {
         const arr = (w[key] as string[] | undefined) ?? [];
         setState((prev) => ({ ...prev, [key]: arr.slice() }));
-        window._setDirty?.();
+        dirty.setDirty();
       };
     };
     w.refreshVariableLibraries = pushBack('variableLibraries');
@@ -170,13 +171,9 @@ export function DecisionTreeApp({ file, onLoad = loadFromServer, onSave = saveTo
   const { libraries: constantLibraries } = useConstantLibraries(state.constantLibraries);
   const { libraries: parameterLibraries } = useParameterLibraries(state.parameterLibraries);
 
-  // ---- window._project (consumed by the reused dialogs' add/test flows) ----
-  // The shared ConfigLibraryDialog / QuickTestDialog / KnowledgeTreeDialog read
-  // `window._project` (set to the project derived from the file path), so set
-  // it once on mount and when the file changes. Mirrors flow-bpmn's EditorRoute.
-  useEffect(() => {
-    window._project = buildProjectNameFromFile(file);
-  }, [file]);
+  // ---- project + dirty api(由 EditorRoute 通过 Context 注入,替代 window._project / window._setDirty) ----
+  const project = useProject();
+  const dirty = useDirty();
 
   // ---- bridge React state ↔ jquery library globals ----
   // Keep the four `*Libraries` array globals + the four `refresh*Libraries`
@@ -185,8 +182,8 @@ export function DecisionTreeApp({ file, onLoad = loadFromServer, onSave = saveTo
   // state change to keep the dialog's view fresh; the refresh* install is
   // idempotent (guarded on first install).
   useEffect(() => {
-    installLibrariesBridge(state, setState);
-  }, [state, setState]);
+    installLibrariesBridge(state, setState, dirty);
+  }, [state, setState, dirty]);
 
   // ---- open reused dialogs ----
   const openLibraryDialog = useCallback((type: LibType) => {
@@ -195,11 +192,11 @@ export function DecisionTreeApp({ file, onLoad = loadFromServer, onSave = saveTo
 
   const openQuickTest = useCallback(() => {
     componentEvent.eventEmitter.emit(componentEvent.OPEN_QUICK_TEST_DIALOG, {
-      project: window._project,
+      project: project,
       file: decodeURIComponent(file),
       type: 'decisiontree',
     });
-  }, [file]);
+  }, [file, project]);
 
   // ---- load on mount (and when file changes) ----
   useEffect(() => {

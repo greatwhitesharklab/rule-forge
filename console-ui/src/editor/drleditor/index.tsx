@@ -31,13 +31,13 @@ import { Button, Space, Tag, message } from 'antd';
 import { loadDrlFile, type DrlFilePayload } from '../../api/drlEditor';
 import { DEFAULT_DIALECT } from '../../api/drlDialect';
 import { save, saveNewVersion } from '../../api/client';
-import { buildProjectNameFromFile, getParameter } from '../../Utils';
+import { getParameter } from '../../Utils';
 import { DrlCodeMirror } from './DrlCodeMirror';
-
-// window._setDirty 全局类型在 src/global.d.ts 已经声明(无参数版),
-// V5.45.3 编辑器不重新 declare,直接用。
+import {useDirty} from '../../editor/EditorContexts';
 
 const DrlEditor: React.FC<{ file: string }> = ({ file }) => {
+    const dirty = useDirty();
+    // 子组件需要项目名时 useProject() 获取(替代 window._project)。
     const editorParentRef = useRef<HTMLDivElement>(null);
     const cmRef = useRef<DrlCodeMirror | null>(null);
     const [payload, setPayload] = useState<DrlFilePayload | null>(null);
@@ -68,7 +68,7 @@ const DrlEditor: React.FC<{ file: string }> = ({ file }) => {
         const cm = new DrlCodeMirror(editorParentRef.current, '');
         cmRef.current = cm;
         cm.onChange(() => {
-            window._setDirty?.();
+            dirty.setDirty();
         });
         return () => {
             cmRef.current = null;
@@ -84,7 +84,7 @@ const DrlEditor: React.FC<{ file: string }> = ({ file }) => {
                 file,
                 newVersion: 'false',
             });
-            window._setDirty?.();
+            dirty.clearDirty();
             message.success('保存成功');
         } catch (e) {
             message.error('保存失败: ' + String(e));
@@ -99,7 +99,7 @@ const DrlEditor: React.FC<{ file: string }> = ({ file }) => {
                 content: encodeURIComponent(content),
                 file,
             });
-            window._setDirty?.();
+            dirty.clearDirty();
             message.success('已保存新版本');
         } catch (e) {
             message.error('保存新版本失败: ' + String(e));
@@ -156,9 +156,9 @@ const DrlEditor: React.FC<{ file: string }> = ({ file }) => {
     );
 };
 
-// 入口挂载
+// 入口挂载(legacy 模式保留 — 仅当页面存在 #container 时才挂载;SPA 路由走 EditorRoute 走 default export)
 const file = getParameter('file');
-window._project = buildProjectNameFromFile(file);
+// 注:window._project 不再设置,改由 EditorRoute 通过 ProjectContext 提供。
 
 const root = document.getElementById('container');
 if (root) {
