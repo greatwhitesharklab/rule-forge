@@ -671,14 +671,6 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                 }
             ];
             break;
-        case "ul":
-            data._icon = Styles.frameStyle.getUlIcon();
-            data._style = Styles.frameStyle.getUlIconStyle();
-            let menus: ContextMenuItem[] = buildFileContextMenu();
-            menus.splice(0, 1);
-            data.contextMenu = menus;
-            data.editorPath = "/html/editor.html?type=ul";
-            break;
         case "decisionTable":
             data._icon = Styles.frameStyle.getDecisionTableIcon();
             data._style = Styles.frameStyle.getDecisionTableIconStyle();

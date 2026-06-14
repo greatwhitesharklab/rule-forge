@@ -14,14 +14,14 @@ test.describe('Decision Table Editor', () => {
     });
 
     // ── BDD STUB: should load decision table editor page ──
-    // Given: A logged-in user navigates to /html/editor.html?type=decisiontable&file=/project/dt.xml
+    // Given: A logged-in user navigates to /app/editor/decisiontable?file=/project/dt.xml
     // When:  The page finishes loading and the network is idle
     // Then:  The browser title should contain "决策表编辑器"
     // And:   The #container element should be visible
-    //  (the new vite multi-page app uses editor.html?type=... as a unified entry;
+    //  (the SPA route /app/editor/<type> is the unified entry;
     //   dismiss any bootbox error dialogs from backend 500s)
     test('should load decision table editor page', async ({ page }) => {
-        await page.goto('/html/editor.html?type=decisiontable&file=/project/dt.xml');
+        await page.goto('/app/editor/decisiontable?file=/project/dt.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Page title should be "决策表编辑器"
@@ -39,12 +39,12 @@ test.describe('Decision Table Editor', () => {
     });
 
     // ── BDD STUB: should render container with content ──
-    // Given: A logged-in user is on the decision table editor page at /html/editor.html?type=decisiontable&file=/project/dt.xml
+    // Given: A logged-in user is on the decision table editor page at /app/editor/decisiontable?file=/project/dt.xml
     // When:  The DecisionTable component has finished its initial render
     // Then:  The #container element should be visible
     // And:   The #container should contain at least one child element (rendered table UI)
     test('should render container with content', async ({ page }) => {
-        await page.goto('/html/editor.html?type=decisiontable&file=/project/dt.xml');
+        await page.goto('/app/editor/decisiontable?file=/project/dt.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached
@@ -63,7 +63,7 @@ test.describe('Decision Table Editor', () => {
     // When:  The DecisionTable JS module initializes
     // Then:  The #container element should be attached
     test('should initialize table editor', async ({ page }) => {
-        await page.goto('/html/editor.html?type=decisiontable&file=/project/dt.xml');
+        await page.goto('/app/editor/decisiontable?file=/project/dt.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached
@@ -82,7 +82,7 @@ test.describe('Decision Table Editor', () => {
     // When:  The user right-clicks on the #container
     // Then:  No uncaught error should be thrown
     test('should handle right-click on container', async ({ page }) => {
-        await page.goto('/html/editor.html?type=decisiontable&file=/project/dt.xml');
+        await page.goto('/app/editor/decisiontable?file=/project/dt.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached
@@ -104,7 +104,7 @@ test.describe('Decision Table Editor', () => {
     //  (editor.html's dom block for decisiontable does NOT include #dialogContainer;
     //   use #container as the React-mount target instead)
     test('should render dialog components', async ({ page }) => {
-        await page.goto('/html/editor.html?type=decisiontable&file=/project/dt.xml');
+        await page.goto('/app/editor/decisiontable?file=/project/dt.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be visible (it acts as the dialog host for decisiontable)

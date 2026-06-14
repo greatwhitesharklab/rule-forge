@@ -14,14 +14,14 @@ test.describe('Variable Library Editor', () => {
     });
 
     // ── BDD STUB: should load variable editor page ──
-    // Given: A logged-in user navigates to /html/editor.html?type=variable&file=/project/variables.xml
+    // Given: A logged-in user navigates to /app/editor/variable?file=/project/variables.xml
     // When:  The page finishes loading and the network is idle
     // Then:  The browser title should contain "变量编辑器"
     // And:   The page shell should render — at minimum the #container is attached;
     //        it may be 0-height if the backend 500s on the test file path
     //        (the React app silently fails to render content into it)
     test('should load variable editor page', async ({ page }) => {
-        await page.goto('/html/editor.html?type=variable&file=/project/variables.xml');
+        await page.goto('/app/editor/variable?file=/project/variables.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Page title should be "变量编辑器"
@@ -41,7 +41,7 @@ test.describe('Variable Library Editor', () => {
     //   avoid accidentally matching the dialog host's #dialogContainer.)
     //  (if the backend 500s, dismiss the error dialog and continue)
     test('should display toolbar buttons', async ({ page }) => {
-        await page.goto('/html/editor.html?type=variable&file=/project/variables.xml');
+        await page.goto('/app/editor/variable?file=/project/variables.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be rendered
@@ -62,7 +62,7 @@ test.describe('Variable Library Editor', () => {
     // And:   Column header labels "名称" and "类路径" should be visible
     //  (if the backend 500s, dismiss the error dialog and continue)
     test('should display grid tables with headers', async ({ page }) => {
-        await page.goto('/html/editor.html?type=variable&file=/project/variables.xml');
+        await page.goto('/app/editor/variable?file=/project/variables.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached
@@ -82,7 +82,7 @@ test.describe('Variable Library Editor', () => {
     // Then:  A bootbox prompt (a visible .modal / .bootbox .modal-dialog) should appear asking for a variable name
     //  (if the backend 500s, dismiss the error dialog and continue)
     test('should show prompt when clicking add button', async ({ page }) => {
-        await page.goto('/html/editor.html?type=variable&file=/project/variables.xml');
+        await page.goto('/app/editor/variable?file=/project/variables.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached
@@ -103,7 +103,7 @@ test.describe('Variable Library Editor', () => {
     // And:   No uncaught error should be thrown
     //  (if the backend 500s, dismiss the error dialog and continue)
     test('should trigger save when clicking save button', async ({ page }) => {
-        await page.goto('/html/editor.html?type=variable&file=/project/variables.xml');
+        await page.goto('/app/editor/variable?file=/project/variables.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached
@@ -122,7 +122,7 @@ test.describe('Variable Library Editor', () => {
     // Then: Slave grid should update with fields
     //  (if the backend 500s, dismiss the error dialog and continue)
     test('should load slave grid when clicking master row', async ({ page }) => {
-        await page.goto('/html/editor.html?type=variable&file=/project/variables.xml');
+        await page.goto('/app/editor/variable?file=/project/variables.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached

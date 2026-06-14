@@ -14,14 +14,14 @@ test.describe('Knowledge Package Management', () => {
     });
 
     // ── BDD STUB: should load package editor page ──
-    // Given: A logged-in user navigates to /html/editor.html?type=package&file=/project/test.rp
+    // Given: A logged-in user navigates to /app/editor/package?file=/project/test.rp
     // When:  The page finishes loading and the network is idle
     // Then:  The browser title should contain "知识包编辑器"
     // And:   The page shell should render — at minimum the #container is attached;
     //        it may be 0-height if the backend 500s on the test file path
     //        (the React app silently fails to render content into it)
     test('should load package editor page', async ({ page }) => {
-        await page.goto('/html/editor.html?type=package&file=/project/test.rp');
+        await page.goto('/app/editor/package?file=/project/test.rp');
         await page.waitForLoadState('networkidle');
 
         // Then: Page title should be "知识包编辑器"
@@ -41,7 +41,7 @@ test.describe('Knowledge Package Management', () => {
     //   may return 500 for the test file path so we just verify the container
     //   is attached and dismiss any error dialogs)
     test('should display toolbar buttons', async ({ page }) => {
-        await page.goto('/html/editor.html?type=package&file=/project/test.rp');
+        await page.goto('/app/editor/package?file=/project/test.rp');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached
@@ -62,7 +62,7 @@ test.describe('Knowledge Package Management', () => {
     //  (the package editor may show error dialogs if the backend 500s on the
     //   test file path — we just verify the page shell mounted)
     test('should display grid tables with headers', async ({ page }) => {
-        await page.goto('/html/editor.html?type=package&file=/project/test.rp');
+        await page.goto('/app/editor/package?file=/project/test.rp');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached
@@ -83,7 +83,7 @@ test.describe('Knowledge Package Management', () => {
     //  (the package editor may show error dialogs; we just verify the page
     //   loaded and dismiss any error before testing the add-package flow)
     test('should show dialog when clicking add package button', async ({ page }) => {
-        await page.goto('/html/editor.html?type=package&file=/project/test.rp');
+        await page.goto('/app/editor/package?file=/project/test.rp');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached
@@ -101,7 +101,7 @@ test.describe('Knowledge Package Management', () => {
     // When: User clicks on a package row
     // Then: Row should become selected and slave grid should update
     test('should select package and load slave data', async ({ page }) => {
-        await page.goto('/html/editor.html?type=package&file=/project/test.rp');
+        await page.goto('/app/editor/package?file=/project/test.rp');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached
@@ -121,7 +121,7 @@ test.describe('Knowledge Package Management', () => {
     // Then:  The save handler should fire (a save request to the backend may be issued)
     // And:   No uncaught error should be thrown
     test('should trigger save when clicking save button', async ({ page }) => {
-        await page.goto('/html/editor.html?type=package&file=/project/test.rp');
+        await page.goto('/app/editor/package?file=/project/test.rp');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached

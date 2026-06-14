@@ -34,8 +34,19 @@ async function dismissAnyModal(page, maxTries = 3) {
     await page.waitForTimeout(200);
 }
 
+// legacy editor.html?type=<type> → SPA segment /app/editor/<segment>
+// flowbpmn 是唯一真重命名;ruleflow/ul/rulesetlib 共享 ruleset editor;
+// monitoring/analysis 无 SPA 路由,回退到 type 原值。
+const EDITOR_SEGMENT: Record<string, string> = {
+    flowbpmn: 'flow',
+    ruleflow: 'flow',
+    ul: 'ruleset',
+    rulesetlib: 'ruleset',
+};
+
 async function openEditor(page, type, file = '/test_proj/test_vl.xml') {
-    await page.goto(`/html/editor.html?type=${type}&file=${encodeURIComponent(file)}&project=test_proj`);
+    const segment = EDITOR_SEGMENT[type] || type;
+    await page.goto(`/app/editor/${segment}?file=${encodeURIComponent(file)}&project=test_proj`);
     await page.waitForLoadState('networkidle', {timeout: 15000}).catch(() => {});
     await page.waitForTimeout(2000);
     await dismissAnyModal(page);

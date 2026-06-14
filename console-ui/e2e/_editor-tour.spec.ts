@@ -3,9 +3,18 @@ import {login} from './helpers';
 
 /**
  * V5.9.0 Editor tour — 截图 8 种 editor 类型
- *  路径:/html/editor.html?type=<type>&file=/project/<file>
+ *  路径:/app/editor/<segment>?file=/project/<file>
  */
 const SHOT_DIR = '/home/fredgu/git_home/ruleforge/step5-screenshots';
+// legacy editor.html?type=<type> → SPA segment /app/editor/<segment>
+// flowbpmn 是唯一真重命名;ruleflow/ul/rulesetlib 共享 ruleset editor;
+// monitoring/analysis 无 SPA 路由,回退到 type 原值。
+const EDITOR_SEGMENT: Record<string, string> = {
+    flowbpmn: 'flow',
+    ruleflow: 'flow',
+    ul: 'ruleset',
+    rulesetlib: 'ruleset',
+};
 const EDITORS = [
     {type: 'ruleset', file: 'rules.xml', name: 'editor-ruleset'},
     {type: 'decisiontable', file: 'dt.xml', name: 'editor-decisiontable'},
@@ -24,7 +33,7 @@ test.describe('Editor tour', () => {
 
     for (const ed of EDITORS) {
         test(`editor-${ed.type}`, async ({page}) => {
-            await page.goto(`/html/editor.html?type=${ed.type}&file=/project/${ed.file}`);
+            await page.goto(`/app/editor/${EDITOR_SEGMENT[ed.type] || ed.type}?file=/project/${ed.file}`);
             await page.waitForLoadState('networkidle', {timeout: 15000}).catch(() => {});
             await page.waitForTimeout(2000);
             // dismiss any bootbox error
@@ -38,7 +47,7 @@ test.describe('Editor tour', () => {
 
     // 独立入口:permission(从 SidebarToolbar 打开)
     test('editor-permission', async ({page}) => {
-        await page.goto('/html/editor.html?type=permission');
+        await page.goto('/app/editor/permission');
         await page.waitForLoadState('networkidle', {timeout: 15000}).catch(() => {});
         await page.waitForTimeout(2000);
         const okBtn = page.locator('.bootbox .btn-primary, .modal .btn-primary').first();

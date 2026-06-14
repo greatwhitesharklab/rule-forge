@@ -61,7 +61,7 @@ test.describe('Error/Loading/Empty state tour', () => {
     test('editor-error-404', async ({page}) => {
         // /common/loadXml 现在 返 404,前端的 bootbox 应该弹 'file not found'
         await login(page);
-        await page.goto('/html/editor.html?type=scorecard&file=/project/nonexistent.xml');
+        await page.goto('/app/editor/scorecard?file=/project/nonexistent.xml');
         await page.waitForLoadState('networkidle', {timeout: 15000}).catch(() => {});
         // 等 bootbox (bootbox 会创建 .modal-dialog 在 body 末尾)
         await page.waitForSelector('.modal-dialog, .bootbox', {timeout: 8000}).catch(() => {});

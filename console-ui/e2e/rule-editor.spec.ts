@@ -14,15 +14,15 @@ test.describe('Wizard Rule Editor', () => {
     });
 
     // ── BDD STUB: should load ruleset editor page ──
-    // Given: A logged-in user navigates to /html/editor.html?type=ruleset&file=/project/rules.xml
+    // Given: A logged-in user navigates to /app/editor/ruleset?file=/project/rules.xml
     // When:  The page finishes loading and the network is idle
     // Then:  The browser title should contain "决策集编辑器"
     // And:   The #container element should be visible
-    //  (the new vite multi-page app uses editor.html?type=ruleset as a unified entry;
-    //   the old /html/ruleset-editor.html no longer exists; dismiss any
+    //  (the SPA route /app/editor/ruleset is the unified entry;
+    //   the old /html/editor.html?type=ruleset & /html/ruleset-editor.html no longer exist; dismiss any
     //   bootbox error dialogs from backend 500s)
     test('should load ruleset editor page', async ({ page }) => {
-        await page.goto('/html/editor.html?type=ruleset&file=/project/rules.xml');
+        await page.goto('/app/editor/ruleset?file=/project/rules.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Page title should be "决策集编辑器"
@@ -45,7 +45,7 @@ test.describe('Wizard Rule Editor', () => {
     // Then:  The #toolbarContainer should be visible
     // And:   Buttons labeled "保存", "添加规则", "添加循环规则", and "快速测试" should all be visible inside the toolbar
     test('should display toolbar with rule buttons', async ({ page }) => {
-        await page.goto('/html/editor.html?type=ruleset&file=/project/rules.xml');
+        await page.goto('/app/editor/ruleset?file=/project/rules.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Toolbar container should be attached
@@ -65,7 +65,7 @@ test.describe('Wizard Rule Editor', () => {
     // Then:  The #container should be visible
     // And:   The #container should have at least one child element (rendered rule rows)
     test('should display rule content in container', async ({ page }) => {
-        await page.goto('/html/editor.html?type=ruleset&file=/project/rules.xml');
+        await page.goto('/app/editor/ruleset?file=/project/rules.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached
@@ -84,7 +84,7 @@ test.describe('Wizard Rule Editor', () => {
     // When:  The user clicks the "添加规则" toolbar button
     // Then:  A bootbox prompt (a visible .modal / .bootbox .modal-dialog) should appear asking for a rule key
     test('should show prompt when clicking add rule button', async ({ page }) => {
-        await page.goto('/html/editor.html?type=ruleset&file=/project/rules.xml');
+        await page.goto('/app/editor/ruleset?file=/project/rules.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Toolbar container should be attached
@@ -103,7 +103,7 @@ test.describe('Wizard Rule Editor', () => {
     // When:  The React shell mounts the dialog provider
     // Then:  The #dialogContainer element should be attached to the DOM
     test('should render dialog container', async ({ page }) => {
-        await page.goto('/html/editor.html?type=ruleset&file=/project/rules.xml');
+        await page.goto('/app/editor/ruleset?file=/project/rules.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Dialog container should be attached

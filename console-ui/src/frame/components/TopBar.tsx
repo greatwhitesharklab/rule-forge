@@ -1,5 +1,4 @@
 import {Component} from 'react';
-import * as componentEvent from '@/components/componentEvent.js';
 import {formPost} from '@/api/client.js';
 import AlertBell from '@/frame/AlertBell';
 
@@ -75,12 +74,8 @@ export default class TopBar extends Component<TopBarProps, TopBarState> {
                                 <div className="topbar-dropdown-divider"/>
                                 <div className="topbar-dropdown-item" onClick={() => {
                                     this.setState({userDropdownOpen: false});
-                                    componentEvent.eventEmitter.emit(componentEvent.TREE_NODE_CLICK, {
-                                        id: 'security_config_',
-                                        name: '资源权限配置',
-                                        fullPath: 'security_config_',
-                                        path: './html/editor.html?type=permission'
-                                    });
+                                    // 原 iframe editor.html?type=permission → SPA 化为新标签 /app/editor/permission
+                                    window.open('/app/editor/permission', '_blank');
                                 }}>
                                     <i className="rf rf-authority" style={{width: 16, fontSize: 12}}/>
                                     权限配置

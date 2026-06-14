@@ -47,7 +47,7 @@ test.describe('Responsive tour', () => {
     test('tablet-editor', async ({page}) => {
         await page.setViewportSize({width: 768, height: 1024});
         await login(page);
-        await page.goto('/html/editor.html?type=ruleset&file=/project/rules.xml');
+        await page.goto('/app/editor/ruleset?file=/project/rules.xml');
         await page.waitForLoadState('networkidle', {timeout: 15000}).catch(() => {});
         await page.waitForTimeout(2000);
         // dismiss 任何 error

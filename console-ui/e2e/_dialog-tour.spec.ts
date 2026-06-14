@@ -70,7 +70,7 @@ test.describe('Dialog tour', () => {
     test('quicktest-dialog', async ({page}) => {
         await login(page);
         // 打开 ruleset editor
-        await page.goto('/html/editor.html?type=ruleset&file=/project/rules.xml');
+        await page.goto('/app/editor/ruleset?file=/project/rules.xml');
         await page.waitForLoadState('networkidle', {timeout: 15000}).catch(() => {});
         await page.waitForTimeout(2000);
         // 找 "测试" 或 quick test 按钮
@@ -85,7 +85,7 @@ test.describe('Dialog tour', () => {
     test('condition-list-dialog', async ({page}) => {
         await login(page);
         // 打开 decision table editor
-        await page.goto('/html/editor.html?type=decisiontable&file=/project/dt.xml');
+        await page.goto('/app/editor/decisiontable?file=/project/dt.xml');
         await page.waitForLoadState('networkidle', {timeout: 15000}).catch(() => {});
         await page.waitForTimeout(2000);
         // dismiss error modal

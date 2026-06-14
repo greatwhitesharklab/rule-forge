@@ -144,16 +144,42 @@ public class CommonController extends BaseController {
                                     org.springframework.http.HttpStatus.NOT_FOUND,
                                     "file not found: " + path);
                         }
-                        Element element = parseXml(inputStream);
-                        for (Deserializer<?> des : this.deserializers) {
-                            if (des.support(element)) {
-                                result.add(des.deserialize(element, true));
-                                // V5.44.3 — 4 library deserializer 已删,isaction 不再由
-                                // ActionLibraryDeserializer 触发;保留 isaction 字段但不再赋值。
-                                break;
+                        // 先把原文读出来 — 两个用途:(1) parseXml 需要 InputStream,
+                        // (2) ruleset(.rs.xml)没有注册 deserializer,要透传原文给前端
+                        // React RulesetEditor(它自己 parseRuleset,后端不做反序列化)。
+                        String rawXml = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+                        inputStream.close();
+                        Element element = parseXml(new ByteArrayInputStream(
+                                rawXml.getBytes(StandardCharsets.UTF_8)));
+                        // V5.54 — React 编辑器透传扩展名:这些 type 的前端编辑器已 React 重写,
+                        // 走前端自己的 parser(读 editorData.xml),要原文而非反序列化 JSON。
+                        // 即便后端注册了 deserializer(返 JSON 会丢格式/字段),对这些扩展名也
+                        // 强制透传原文。扩展名跟 FileTypeUtils.EXTENSION_MAP 对齐:
+                        //   .rs.xml (Ruleset)           .dt.xml (DecisionTable)
+                        //   .dts.xml / .sct.xml (ScriptDecisionTable)
+                        //   .sc (Scorecard)             .scc / .csc.xml (ComplexScorecard)
+                        //   .ct.xml (Crosstab)          .dtree.xml (DecisionTree)
+                        boolean reactPassthrough = isReactPassthroughExtension(path);
+                        boolean matched = false;
+                        if (!reactPassthrough) {
+                            for (Deserializer<?> des : this.deserializers) {
+                                if (des.support(element)) {
+                                    result.add(des.deserialize(element, true));
+                                    // V5.44.3 — 4 library deserializer 已删,isaction 不再由
+                                    // ActionLibraryDeserializer 触发;保留 isaction 字段但不再赋值。
+                                    matched = true;
+                                    break;
+                                }
                             }
                         }
-                        inputStream.close();
+                        // React 透传扩展名 OR ruleset(.rs.xml,无 deserializer)— 透传原文,
+                        // 前端 React 编辑器走自己 parser(editorData.xml 字段)。
+                        // 不复用 core 的 deserialize→serialize 链(会丢格式)。
+                        if (reactPassthrough || (!matched && path.toLowerCase().endsWith(".rs.xml"))) {
+                            Map<String, Object> passthrough = new LinkedHashMap<>();
+                            passthrough.put("xml", rawXml);
+                            result.add(passthrough);
+                        }
                     } catch (org.springframework.web.server.ResponseStatusException ex) {
                         throw ex;
                     } catch (Exception ex) {
@@ -176,6 +202,41 @@ public class CommonController extends BaseController {
         }
 
         return writeObjectToJson(result);
+    }
+
+    /**
+     * V5.54 — 判断文件扩展名是否属于"React 编辑器透传"集合。
+     *
+     * <p>这些 type 的前端编辑器已 React 重写(跟 RulesetEditor 一样),自己 parse XML,
+     * 要后端 /loadXml 透传原文(result 元素 = {@code {xml: rawXml}}),不要反序列化器
+     * 返的 JSON(会丢格式 / 字段)。
+     *
+     * <p>扩展名跟 {@code FileTypeUtils.EXTENSION_MAP} 对齐(不是 FileType.name()):
+     * <ul>
+     *   <li>{@code .rs.xml} — Ruleset(老分支,本方法也覆盖,保持向后兼容)</li>
+     *   <li>{@code .dt.xml} — DecisionTable</li>
+     *   <li>{@code .dts.xml} / {@code .sct.xml} — ScriptDecisionTable</li>
+     *   <li>{@code .sc} — Scorecard</li>
+     *   <li>{@code .scc} / {@code .csc.xml} — ComplexScorecard</li>
+     *   <li>{@code .ct.xml} — Crosstab</li>
+     *   <li>{@code .dtree.xml} — DecisionTree</li>
+     * </ul>
+     *
+     * <p>case-insensitive(走 {@code toLowerCase})。
+     */
+    private boolean isReactPassthroughExtension(String path) {
+        if (path == null || path.isEmpty()) {
+            return false;
+        }
+        String lower = path.toLowerCase();
+        return lower.endsWith(".dt.xml")
+                || lower.endsWith(".dts.xml")
+                || lower.endsWith(".sct.xml")
+                || lower.endsWith(".sc")
+                || lower.endsWith(".scc")
+                || lower.endsWith(".csc.xml")
+                || lower.endsWith(".ct.xml")
+                || lower.endsWith(".dtree.xml");
     }
 
     @GetMapping("/loadFunctions")

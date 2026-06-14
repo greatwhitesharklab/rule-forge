@@ -22,7 +22,6 @@ export default defineConfig({
             input: {
                 frame: r('./html/frame.html'),
                 login: r('./html/login.html'),
-                editor: r('./html/editor.html'),
             },
             output: {
                 entryFileNames: 'bundle/[name].bundle.js',

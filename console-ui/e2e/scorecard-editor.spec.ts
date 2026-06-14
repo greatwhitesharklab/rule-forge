@@ -14,15 +14,15 @@ test.describe('Scorecard Editor', () => {
     });
 
     // ── BDD STUB: should load scorecard editor page ──
-    // Given: A logged-in user navigates to /html/editor.html?type=scorecard&file=/project/scorecard.xml
+    // Given: A logged-in user navigates to /app/editor/scorecard?file=/project/scorecard.xml
     // When:  The page finishes loading and the network is idle
     // Then:  The browser title should contain "评分卡编辑器"
     // And:   The #tableContainer element should be visible
-    //  (the new vite multi-page app uses editor.html?type=scorecard as a unified entry;
-    //   the old /html/score-card-editor.html no longer exists; dismiss any
+    //  (the SPA route /app/editor/scorecard is the unified entry;
+    //   the old /html/editor.html?type=scorecard & /html/score-card-editor.html no longer exist; dismiss any
     //   bootbox error dialogs from backend 500s)
     test('should load scorecard editor page', async ({ page }) => {
-        await page.goto('/html/editor.html?type=scorecard&file=/project/scorecard.xml');
+        await page.goto('/app/editor/scorecard?file=/project/scorecard.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Page title should be "评分卡编辑器"
@@ -45,7 +45,7 @@ test.describe('Scorecard Editor', () => {
     // Then:  The #toolbarContainer should be visible
     // And:   Buttons labeled "保存", "添加属性行", "添加自定义列", and "快速测试" should all be visible inside the toolbar
     test('should display toolbar with buttons', async ({ page }) => {
-        await page.goto('/html/editor.html?type=scorecard&file=/project/scorecard.xml');
+        await page.goto('/app/editor/scorecard?file=/project/scorecard.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Toolbar container should be attached
@@ -65,7 +65,7 @@ test.describe('Scorecard Editor', () => {
     // Then:  The #tableContainer should be visible
     // And:   The #tableContainer should have at least one child element (the scorecard grid)
     test('should render scorecard table', async ({ page }) => {
-        await page.goto('/html/editor.html?type=scorecard&file=/project/scorecard.xml');
+        await page.goto('/app/editor/scorecard?file=/project/scorecard.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Table container should be attached
@@ -84,7 +84,7 @@ test.describe('Scorecard Editor', () => {
     // When:  The user clicks the "添加属性行" toolbar button
     // Then:  A new attribute row should be added to the scorecard table inside #tableContainer
     test('should add attribute row when clicking button', async ({ page }) => {
-        await page.goto('/html/editor.html?type=scorecard&file=/project/scorecard.xml');
+        await page.goto('/app/editor/scorecard?file=/project/scorecard.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Toolbar container should be attached
@@ -103,7 +103,7 @@ test.describe('Scorecard Editor', () => {
     // When:  The React shell mounts the dialog provider
     // Then:  The #dialogContainer element should be attached to the DOM
     test('should render dialog container', async ({ page }) => {
-        await page.goto('/html/editor.html?type=scorecard&file=/project/scorecard.xml');
+        await page.goto('/app/editor/scorecard?file=/project/scorecard.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Dialog container should be attached

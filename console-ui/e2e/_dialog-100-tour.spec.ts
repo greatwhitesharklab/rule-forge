@@ -48,8 +48,19 @@ async function openProject(page, name = 'test_proj') {
     }
 }
 
+// legacy editor.html?type=<type> → SPA segment /app/editor/<segment>
+// flowbpmn 是唯一真重命名;ruleflow/ul/rulesetlib 共享 ruleset editor;
+// monitoring/analysis 无 SPA 路由(仪表盘类,main.tsx 未注册),回退到 type 原值。
+const EDITOR_SEGMENT: Record<string, string> = {
+    flowbpmn: 'flow',
+    ruleflow: 'flow',
+    ul: 'ruleset',
+    rulesetlib: 'ruleset',
+};
+
 async function openEditor(page, type, file) {
-    await page.goto(`/html/editor.html?type=${type}&file=${encodeURIComponent(file)}&project=test_proj`);
+    const segment = EDITOR_SEGMENT[type] || type;
+    await page.goto(`/app/editor/${segment}?file=${encodeURIComponent(file)}&project=test_proj`);
     await page.waitForLoadState('networkidle', {timeout: 15000}).catch(() => {});
     await page.waitForTimeout(2000);
     // dismiss bootbox error modal

@@ -14,14 +14,14 @@ test.describe('Decision Tree Editor', () => {
     });
 
     // ── BDD STUB: should load decision tree editor page ──
-    // Given: A logged-in user navigates to /html/editor.html?type=decisiontree&file=/project/decision-tree.xml
+    // Given: A logged-in user navigates to /app/editor/decisiontree?file=/project/decision-tree.xml
     // When:  The page finishes loading and the network is idle
     // Then:  The browser title should contain "决策树编辑器"
     // And:   The #container element should be attached
-    //  (the new vite multi-page app uses editor.html?type=... as a unified entry;
+    //  (the SPA route /app/editor/<type> is the unified entry;
     //   dismiss any bootbox error dialogs from backend 500s)
     test('should load decision tree editor page', async ({ page }) => {
-        await page.goto('/html/editor.html?type=decisiontree&file=/project/decision-tree.xml');
+        await page.goto('/app/editor/decisiontree?file=/project/decision-tree.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Page title should be "决策树编辑器"
@@ -48,7 +48,7 @@ test.describe('Decision Tree Editor', () => {
     //  (editor.html's dom for decisiontree includes #toolbarContainer;
     //   use the shared EditorToolbar button labels to verify)
     test('should display toolbar with buttons', async ({ page }) => {
-        await page.goto('/html/editor.html?type=decisiontree&file=/project/decision-tree.xml');
+        await page.goto('/app/editor/decisiontree?file=/project/decision-tree.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Toolbar container should be visible
@@ -73,7 +73,7 @@ test.describe('Decision Tree Editor', () => {
     // When:  The DecisionTree JS module has initialized
     // Then:  The #container should be attached
     test('should render decision tree canvas', async ({ page }) => {
-        await page.goto('/html/editor.html?type=decisiontree&file=/project/decision-tree.xml');
+        await page.goto('/app/editor/decisiontree?file=/project/decision-tree.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached
@@ -92,7 +92,7 @@ test.describe('Decision Tree Editor', () => {
     // When:  The user clicks the "快速测试" button
     // Then:  A QuickTestDialog (modal/bootbox) should appear inside #dialogContainer
     test('should show quick test dialog', async ({ page }) => {
-        await page.goto('/html/editor.html?type=decisiontree&file=/project/decision-tree.xml');
+        await page.goto('/app/editor/decisiontree?file=/project/decision-tree.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Container should be attached
@@ -111,7 +111,7 @@ test.describe('Decision Tree Editor', () => {
     // When:  The React shell mounts the dialog provider
     // Then:  The #dialogContainer element should be attached to the DOM
     test('should render dialog container', async ({ page }) => {
-        await page.goto('/html/editor.html?type=decisiontree&file=/project/decision-tree.xml');
+        await page.goto('/app/editor/decisiontree?file=/project/decision-tree.xml');
         await page.waitForLoadState('networkidle');
 
         // Then: Dialog container should be attached

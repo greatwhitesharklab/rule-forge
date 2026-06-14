@@ -3,7 +3,7 @@ import CommonDialog from '../components/dialog/component/CommonDialog.jsx';
 import * as event from './event.js';
 import * as frameEvent from '../frame/event.js';
 import {formPost} from '../api/client.js';
-import {buildEditorUrl} from '../Utils.ts';
+import {buildEditorUrl, filePathToSpaSegment} from '../Utils.ts';
 
 interface ReferenceFile {
     path: string;
@@ -308,9 +308,19 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
                                     <td>{file.path}</td>
                                     <td>{file.type}</td>
                                     <td><button type="button" className="btn btn-link" style={{padding:'5px 5px'}} onClick={function() {
+                                        // SPA 化:按 file.path 扩展名映射到 /app/editor/<type> 新标签打开。
+                                        // 后端 file.editor 是旧版单页 HTML(/ruleset-editor.html 等),不含 type=,
+                                        // 不能复用 editorPathToSpaSegment,改用 filePathToSpaSegment 按扩展名映射。
+                                        // 无 SPA 路由的文件(如 .ul.xml 脚本决策集)回退到原 iframe + TREE_NODE_CLICK。
+                                        const spaSegment = filePathToSpaSegment(file.path);
+                                        if (spaSegment) {
+                                            window.open('/app/editor/' + spaSegment + '?file=' + encodeURIComponent(file.path), '_blank');
+                                            return;
+                                        }
+
+                                        // fallback:无 SPA 路由的 type,保留原 iframe 逻辑
                                         const editorPath = '/html' + file.editor;
                                         const url = buildEditorUrl(editorPath, file.path);
-                                        console.log('url:', url);
                                         const config = {
                                             id: file.path,
                                             name: file.name,

@@ -4,7 +4,7 @@ import * as event from '../event.js';
 import * as action from '../action.js';
 import {seeFileVersions} from '../action.js';
 import * as componentEvent from '../../components/componentEvent.js';
-import {formatDate, buildEditorUrl} from '../../Utils.ts';
+import {formatDate, buildEditorUrl, editorPathToSpaSegment} from '../../Utils.ts';
 
 interface VersionRow {
     name: string;
@@ -120,6 +120,23 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
                                 <td>
                                     <button type="button" className="btn btn-link" style={{padding: '0'}}
                                             onClick={() => {
+                                                // SPA 化:历史版本也走 /app/editor/<type>?file=<path>:<version> 新标签打开。
+                                                // editorPath 形如 /html/editor.html?type=flowbpmn → 映射到 flow。
+                                                // 无 SPA 路由的 type(如 ul)回退到原 iframe + TREE_NODE_CLICK。
+                                                const spaSegment = editorPathToSpaSegment(data.editorPath as string);
+                                                if (spaSegment) {
+                                                    let spaFile: string;
+                                                    if (data.type === 'resourcePackage') {
+                                                        const packageName = (data.fullPath as string).split("/")[1];
+                                                        spaFile = packageName + '.rp:' + row.name;
+                                                    } else {
+                                                        spaFile = (data.fullPath as string) + ':' + row.name;
+                                                    }
+                                                    window.open('/app/editor/' + spaSegment + '?file=' + encodeURIComponent(spaFile), '_blank');
+                                                    return;
+                                                }
+
+                                                // fallback:无 SPA 路由的 type,保留原 iframe 逻辑
                                                 let url = buildEditorUrl((data.editorPath as string), (data.fullPath as string) + ':' + row.name);
                                                 let fullPath = (data.fullPath as string) + ':' + row.name;
                                                 let name = (data.name as string) + ':' + row.name;

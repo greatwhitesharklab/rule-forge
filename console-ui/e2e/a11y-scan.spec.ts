@@ -8,7 +8,7 @@ import {login} from './helpers';
  * 跑 axe-core on 关键页,按 WCAG 2.1 AA 标准扫描:
  * - login.html (auth entry)
  * - frame.html (主框架)
- * - editor.html (编辑器)
+ * - editor (ruleset) SPA route /app/editor/ruleset
  * - datasource panel (settings)
  *
  * 报告按严重度分组: critical / serious / moderate / minor
@@ -37,7 +37,7 @@ test.describe('A11y scan', () => {
 
     test('editor (ruleset) a11y', async ({page}) => {
         await login(page);
-        await page.goto('/html/editor.html?type=ruleset&file=/test_proj/test_rules.xml&project=test_proj');
+        await page.goto('/app/editor/ruleset?file=/test_proj/test_rules.xml&project=test_proj');
         await page.waitForLoadState('networkidle', {timeout: 15000}).catch(() => {});
         await page.waitForTimeout(1500);
         const results = await new AxeBuilder({page})
