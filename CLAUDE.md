@@ -101,7 +101,7 @@ Deployable executor with RestTemplate config for console communication.
 - **一个特性一个分支连续做完再一次 PR**,不中途拆(拆 = 合并→切 main→开分支,中断推进)
 - **不定义中断情形**:agent 不预留"中断问用户"的口子 —— 遇到破坏性风险就谨慎操作(不删数据/不覆盖未读文件/commit 保进度),缺关键信息就用最合理的默认推进并标注假设。只有用户主动发话才停
 - **方案选型前置**:涉及多种合理路径的选型(交互模型、技术栈、架构方案)在**需求开始时**就和用户确认,不作为中途中断的理由。读到代码发现新复杂度时,先用现有信息继续推进,不回头问选型
-- **长时间运行管 context**:接近上限主动 `/compact`,或每个 sub-task 完成立即 commit(即使 context 丢失,也能从 commit 继续,不丢进度)
+- **长时间运行保进度**:每个 sub-task 完成立即 commit(即使 context 被压缩,也能从 commit 继续,不丢进度)。auto-compact 由 TUI 自动处理,无需 agent 介入
 
 ### BDD/TDD
 
