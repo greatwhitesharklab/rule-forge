@@ -6,8 +6,12 @@
  * execute-function), matching serializeAction() in model/serialize.ts.
  *
  * execute-method / execute-function parameters reuse ValueEditor for each
- * parameter value; the parameter name/type inputs are plain text fields for
- * the first pass (a real bean-picker can replace them later).
+ * parameter value; the parameter name/type inputs are plain text fields.
+ *
+ * When the caller passes imported action libraries (`methodLibraries`), the
+ * execute-method bean/method fields are replaced by a {@link MethodPicker}
+ * (bean→method Cascader + read-only parameter signature). When omitted or
+ * empty, the original four free-text inputs are shown (back-compat).
  *
  * Data flow is single-direction; the parent owns the Action object and
  * replaces it via onChange on every field edit.
@@ -18,6 +22,7 @@ import type { Action, MethodParam, ValueExpr } from '../model/types';
 import { ACTION_KIND_OPTIONS, VAR_ASSIGN_TYPE_OPTIONS } from './constants';
 import { ValueEditor } from './ValueEditor';
 import { FieldLabel } from './FieldLabel';
+import { MethodPicker, type ActionLibrary } from './MethodPicker';
 
 export interface ActionEditorProps {
   /** The current action (controlled). */
@@ -26,6 +31,15 @@ export interface ActionEditorProps {
   onChange: (next: Action) => void;
   /** Called when the user clicks the delete affordance. */
   onDelete?: () => void;
+  /**
+   * Optional imported action libraries (one ActionLibrary per `.al.xml`). When
+   * provided AND non-empty, the execute-method kind renders a shared
+   * {@link MethodPicker} (bean→method Cascader) instead of the four free-text
+   * bean/method inputs. When omitted or empty, the original free-text inputs
+   * are shown (back-compat for editors that have not wired the libraries prop
+   * yet).
+   */
+  methodLibraries?: ActionLibrary[];
 }
 
 /** Build a fresh Action when the user picks a new kind. */
@@ -51,10 +65,14 @@ function freshActionForKind(kind: Action['kind']): Action {
   }
 }
 
-export function ActionEditor({ value, onChange, onDelete }: ActionEditorProps) {
+export function ActionEditor({ value, onChange, onDelete, methodLibraries = [] }: ActionEditorProps) {
   const onKindChange = (next: string) => {
     onChange(freshActionForKind(next as Action['kind']));
   };
+
+  // When the project imports action libraries, replace the four free-text
+  // bean/method inputs with the shared MethodPicker for the execute-method kind.
+  const useMethodPicker = methodLibraries.some((lib) => (lib || []).length > 0);
 
   return (
     <div style={{ border: '1px solid #f0f0f0', padding: 8, borderRadius: 4, marginBottom: 8 }}>
@@ -119,33 +137,58 @@ export function ActionEditor({ value, onChange, onDelete }: ActionEditorProps) {
 
       {value.kind === 'execute-method' && (
         <div>
-          <div style={{ marginBottom: 8 }}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>bean</FieldLabel>}
-              placeholder="bean-name"
-              value={value.bean}
-              onChange={(e) => onChange({ ...value, bean: e.target.value })}
-            />
-          </div>
-          <div style={{ marginBottom: 8 }}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>方法</FieldLabel>}
-              placeholder="method-name"
-              value={value.methodName}
-              onChange={(e) => onChange({ ...value, methodName: e.target.value })}
-            />
-          </div>
-          <div style={{ marginBottom: 8 }}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>标签</FieldLabel>}
-              placeholder="method-label"
-              value={value.methodLabel}
-              onChange={(e) => onChange({ ...value, methodLabel: e.target.value })}
-            />
-          </div>
+          {useMethodPicker ? (
+            <div style={{ marginBottom: 8 }}>
+              <MethodPicker
+                value={{
+                  bean: value.bean,
+                  beanLabel: value.beanLabel,
+                  methodName: value.methodName,
+                  methodLabel: value.methodLabel,
+                }}
+                onChange={(b) =>
+                  onChange({
+                    ...value,
+                    bean: b.bean ?? '',
+                    beanLabel: b.beanLabel ?? '',
+                    methodName: b.methodName ?? '',
+                    methodLabel: b.methodLabel ?? '',
+                  })
+                }
+                libraries={methodLibraries}
+              />
+            </div>
+          ) : (
+            <>
+              <div style={{ marginBottom: 8 }}>
+                <Input
+                  size="small"
+                  prefix={<FieldLabel>bean</FieldLabel>}
+                  placeholder="bean-name"
+                  value={value.bean}
+                  onChange={(e) => onChange({ ...value, bean: e.target.value })}
+                />
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <Input
+                  size="small"
+                  prefix={<FieldLabel>方法</FieldLabel>}
+                  placeholder="method-name"
+                  value={value.methodName}
+                  onChange={(e) => onChange({ ...value, methodName: e.target.value })}
+                />
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <Input
+                  size="small"
+                  prefix={<FieldLabel>标签</FieldLabel>}
+                  placeholder="method-label"
+                  value={value.methodLabel}
+                  onChange={(e) => onChange({ ...value, methodLabel: e.target.value })}
+                />
+              </div>
+            </>
+          )}
           <ParametersEditor
             parameters={value.parameters}
             onChange={(parameters) => onChange({ ...value, parameters })}

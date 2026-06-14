@@ -14,6 +14,7 @@ import type { Action, Rule } from '../model/types';
 import { ActionEditor } from './ActionEditor';
 import { ConditionFlow } from './ConditionFlow';
 import { RulePropertyEditor } from './RulePropertyEditor';
+import { useActionLibraries } from './useActionLibraries';
 
 const { Text } = Typography;
 
@@ -26,9 +27,19 @@ export interface RuleEditorProps {
   onDelete?: () => void;
   /** Optional rule index in the ruleset (for the header label). */
   index?: number;
+  /**
+   * Optional imported action-library file paths (`.al.xml`). When provided,
+   * the execute-method action editor renders a MethodPicker (bean→method
+   * Cascader) instead of the free-text bean/method inputs. Loaded once per
+   * rule via useActionLibraries (silent on failure → falls back to free-text).
+   */
+  actionLibraries?: string[];
 }
 
-export function RuleEditor({ value, onChange, onDelete, index }: RuleEditorProps) {
+export function RuleEditor({ value, onChange, onDelete, index, actionLibraries = [] }: RuleEditorProps) {
+  // Load the action libraries once for the whole rule (shared by both then /
+  // else branches). Silent: on failure degrades to the free-text inputs.
+  const { libraries: methodLibraries } = useActionLibraries(actionLibraries);
   const patch = (p: Partial<Rule>) => onChange({ ...value, ...p });
 
   // ----- actions list helpers -----
@@ -98,6 +109,7 @@ export function RuleEditor({ value, onChange, onDelete, index }: RuleEditorProps
       <ActionList
         title="满足时执行 (then)"
         actions={value.then}
+        methodLibraries={methodLibraries}
         onAdd={() => addAction('then')}
         onUpdate={(i, next) => updateAction('then', i, next)}
         onRemove={(i) => removeAction('then', i)}
@@ -106,6 +118,7 @@ export function RuleEditor({ value, onChange, onDelete, index }: RuleEditorProps
       <ActionList
         title="否则执行 (else)"
         actions={value.else}
+        methodLibraries={methodLibraries}
         onAdd={() => addAction('else')}
         onUpdate={(i, next) => updateAction('else', i, next)}
         onRemove={(i) => removeAction('else', i)}
@@ -118,12 +131,14 @@ export function RuleEditor({ value, onChange, onDelete, index }: RuleEditorProps
 function ActionList({
   title,
   actions,
+  methodLibraries,
   onAdd,
   onUpdate,
   onRemove,
 }: {
   title: string;
   actions: Action[];
+  methodLibraries: ReturnType<typeof useActionLibraries>['libraries'];
   onAdd: () => void;
   onUpdate: (i: number, next: Action) => void;
   onRemove: (i: number) => void;
@@ -140,6 +155,7 @@ function ActionList({
             value={a}
             onChange={(next) => onUpdate(i, next)}
             onDelete={() => onRemove(i)}
+            methodLibraries={methodLibraries}
           />
         ))}
         <Button size="small" type="dashed" icon={<PlusOutlined />} onClick={onAdd}>

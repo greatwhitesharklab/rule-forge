@@ -51,13 +51,25 @@
  * a component-local clipboard (`clipboardGroup`); `null` disables the paste
  * button. Condition-row-only copy/paste is a TODO (row-level here means
  * attribute-group level).
+ *
+ * ── Cell copy/paste ──────────────────────────────────────────────────────
+ * Cell-level granularity on top of the group-level clipboard. A SEPARATE
+ * `clipboardCell` holds a deep-cloned CardCell (the whole cell — type + row +
+ * col + content fields). Paste deep-clones the stored cell again and merges it
+ * onto the TARGET cell's (row, col, type), keeping the target's locator and
+ * only copying the CONTENT fields (joint / value / variable binding / weight).
+ * This way a copied condition cell's joint can be pasted onto another condition
+ * cell, a score value onto another score cell, etc. — the type discriminator is
+ * preserved by the column the target lives in (col 1→attribute, 2→condition,
+ * 3→score, 4+→custom), so even if the clipboard type differs the target's type
+ * wins (setCell re-stamps type). This is independent of the group clipboard.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert, Button, Dropdown, Input, InputNumber, Radio, Select, Space, Spin, Table, Typography, message,
 } from 'antd';
 import {
-  CopyOutlined, DeleteOutlined, MoreOutlined, PlusOutlined, SaveOutlined, SnippetsOutlined,
+  CopyOutlined, DeleteOutlined, MoreOutlined, PlusOutlined, SaveOutlined, SnippetsOutlined, BlockOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps } from 'antd';
@@ -186,6 +198,11 @@ export function ScoreCardEditor({
   // Attribute-group copy/paste clipboard. `null` = nothing copied yet (disables
   // the paste buttons).
   const [clipboardGroup, setClipboardGroup] = useState<ClipboardGroup | null>(null);
+  // Cell copy/paste clipboard. Holds a deep-cloned CardCell (content fields
+  // only — the locator type/row/col are re-stamped onto the target on paste).
+  // Separate from `clipboardGroup` so cell copy/paste never collides with
+  // group copy/paste. `null` = nothing copied yet (disables the cell-paste).
+  const [clipboardCell, setClipboardCell] = useState<CardCell | null>(null);
 
   // Load the project's imported variable libraries once (paths are stable per
   // scorecard). Passed down to ConfigArea + AttributeCellEditor so the
@@ -410,6 +427,67 @@ export function ScoreCardEditor({
     message.success('已粘贴属性组');
   }, [clipboardGroup]);
 
+  // ---- cell copy / paste ----
+  //
+  // Cell-level copy/paste. Copy deep-clones the source CardCell at (row, col)
+  // into `clipboardCell`. Paste deep-clones the stored cell again and merges
+  // ONLY the content fields onto the target cell (keeping the target's
+  // type/row/col). Content fields are type-specific:
+  //   - attribute → category / variableName / variableLabel / datatype / weight
+  //   - condition → joint
+  //   - score / custom → value
+  // We cherry-pick whichever of those the source has, so a copied condition
+  // joint pastes cleanly onto another condition cell, a score value onto
+  // another score cell, etc. Paste onto a DIFFERENT type cell copies whatever
+  // overlapping fields exist (e.g. a condition joint pasted onto an attribute
+  // cell would attach the joint — harmless, the attribute column renders the
+  // binding fields and ignores joint). Independent of the group clipboard.
+  const copyCell = useCallback(
+    (row: number, col: number) => {
+      const cell = findCell(row, col);
+      if (!cell) {
+        message.warning('该单元格为空,无内容可复制');
+        return;
+      }
+      setClipboardCell(deepClone(cell));
+      message.success('已复制单元格内容');
+    },
+    [findCell],
+  );
+
+  const pasteCell = useCallback(
+    (row: number, col: number, type: CardCellType) => {
+      if (!clipboardCell) {
+        message.warning('单元格剪贴板为空,请先复制一个单元格');
+        return;
+      }
+      // Deep-clone the stored cell again so repeated pastes stay independent.
+      const src = deepClone(clipboardCell);
+      // Cherry-pick the content fields the source has; the target keeps its
+      // type/row/col.
+      const patch: Partial<CardCell> = {};
+      if (src.category !== undefined) patch.category = src.category;
+      if (src.variableName !== undefined) patch.variableName = src.variableName;
+      if (src.variableLabel !== undefined) patch.variableLabel = src.variableLabel;
+      if (src.datatype !== undefined) patch.datatype = src.datatype;
+      if (src.weight !== undefined) patch.weight = src.weight;
+      if (src.joint !== undefined) patch.joint = src.joint;
+      if (src.value !== undefined) patch.value = src.value;
+      setState((prev) => {
+        const cells = prev.cells.slice();
+        const idx = cells.findIndex((c) => c.row === row && c.col === col);
+        if (idx >= 0) {
+          cells[idx] = { ...cells[idx], ...patch };
+        } else {
+          cells.push({ type, row, col, ...patch });
+        }
+        return { ...prev, cells };
+      });
+      message.success('已粘贴单元格内容');
+    },
+    [clipboardCell],
+  );
+
   // ---- custom col management ----
   const addCustomCol = useCallback(() => {
     setState((prev) => {
@@ -465,6 +543,39 @@ export function ScoreCardEditor({
   const antColumns: ColumnsType<DisplayRow> = useMemo(() => {
     const cols: ColumnsType<DisplayRow> = [];
 
+    /**
+     * Wrap a cell editor in a right-click Dropdown that exposes cell-level
+     * copy / paste (independent of the attribute-group clipboard). The menu's
+     * paste item is disabled when the cell clipboard is empty.
+     */
+    const wrapCellContextMenu = (
+      editor: React.ReactNode,
+      row: number,
+      col: number,
+      type: CardCellType,
+    ): React.ReactNode => {
+      const items: MenuProps['items'] = [
+        {
+          key: 'copy-cell',
+          label: '复制单元格',
+          icon: <BlockOutlined />,
+          onClick: () => copyCell(row, col),
+        },
+        {
+          key: 'paste-cell',
+          label: '粘贴单元格',
+          icon: <SnippetsOutlined />,
+          disabled: !clipboardCell,
+          onClick: () => pasteCell(row, col, type),
+        },
+      ];
+      return (
+        <Dropdown menu={{ items }} trigger={['contextMenu']}>
+          <div style={{ cursor: 'context-menu' }}>{editor}</div>
+        </Dropdown>
+      );
+    };
+
     // Attribute column (col=1) — only rendered on attribute rows.
     cols.push({
       title: state.attributeCol.name,
@@ -475,7 +586,7 @@ export function ScoreCardEditor({
           return null; // condition rows don't have an attribute cell (rowspan)
         }
         const cell = findCell(dr.rowNumber, 1);
-        return (
+        const editor = (
           <AttributeCellEditor
             value={cell}
             weightSupport={state.weightSupport}
@@ -485,6 +596,7 @@ export function ScoreCardEditor({
             onRemove={() => removeRow(dr.rowNumber, false)}
           />
         );
+        return wrapCellContextMenu(editor, dr.rowNumber, 1, 'attribute');
       },
     });
 
@@ -495,7 +607,7 @@ export function ScoreCardEditor({
       width: state.conditionCol.width,
       render: (_v, dr) => {
         const cell = findCell(dr.rowNumber, 2);
-        return (
+        const editor = (
           <ConditionCellEditor
             value={cell}
             libraries={variableLibraries}
@@ -509,6 +621,7 @@ export function ScoreCardEditor({
             }
           />
         );
+        return wrapCellContextMenu(editor, dr.rowNumber, 2, 'condition');
       },
     });
 
@@ -519,7 +632,7 @@ export function ScoreCardEditor({
       width: state.scoreCol.width,
       render: (_v, dr) => {
         const cell = findCell(dr.rowNumber, 3);
-        return (
+        const editor = (
           <ScoreCellEditor
             value={cell}
             libraries={variableLibraries}
@@ -528,6 +641,7 @@ export function ScoreCardEditor({
             onChange={(next) => setCell(dr.rowNumber, 3, 'score', next)}
           />
         );
+        return wrapCellContextMenu(editor, dr.rowNumber, 3, 'score');
       },
     });
 
@@ -539,7 +653,7 @@ export function ScoreCardEditor({
         width: cc.width,
         render: (_v, dr) => {
           const cell = findCell(dr.rowNumber, cc.colNumber);
-          return (
+          const editor = (
             <CustomCellEditor
               value={cell}
               libraries={variableLibraries}
@@ -548,6 +662,7 @@ export function ScoreCardEditor({
               onChange={(next) => setCell(dr.rowNumber, cc.colNumber, 'custom', next)}
             />
           );
+          return wrapCellContextMenu(editor, dr.rowNumber, cc.colNumber, 'custom');
         },
       });
     }
@@ -616,6 +731,9 @@ export function ScoreCardEditor({
     copyAttributeRow,
     pasteAttributeRow,
     clipboardGroup,
+    copyCell,
+    pasteCell,
+    clipboardCell,
     variableLibraries,
     constantLibraries,
     parameterLibraries,

@@ -45,13 +45,23 @@
  * with its source. We store the source row + its cells in a component-local
  * clipboard (`clipboardRow`); `null` disables the paste buttons. Column
  * copy/paste is a TODO.
+ *
+ * ── Cell copy/paste ──────────────────────────────────────────────────────
+ * Cell-level granularity on top of the row-level clipboard. A SEPARATE
+ * `clipboardCell` holds a deep-cloned cell content tagged with its kind
+ * ('condition' or 'value'), since the crosstab has two cell-content shapes
+ * (ConditionCellContent vs ValueExpr). Paste deep-clones the stored content
+ * again and writes it onto the target cell of the SAME kind (a condition
+ * clipboard only pastes onto condition cells, a value clipboard onto value
+ * cells) — this keeps the paste type-safe. Paste onto the other kind is a
+ * no-op with a hint. This is independent of the row clipboard.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert, Button, Dropdown, Input, Modal, Select, Space, Spin, Table, Typography, message,
 } from 'antd';
 import {
-  CopyOutlined, DeleteOutlined, MoreOutlined, PlusOutlined, SaveOutlined, SettingOutlined, SnippetsOutlined,
+  CopyOutlined, DeleteOutlined, MoreOutlined, PlusOutlined, SaveOutlined, SettingOutlined, SnippetsOutlined, BlockOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps } from 'antd';
@@ -134,6 +144,17 @@ interface ClipboardRow {
   valueCells: ValueCrossCell[];
 }
 
+/**
+ * Component-local clipboard payload for cell copy/paste. Tagged with its kind
+ * because the crosstab has two cell-content shapes — a condition-cell holds a
+ * {@link ConditionCellContent} (empty | joint), a value-cell holds a
+ * {@link ValueExpr}. Paste only writes onto a target of the SAME kind so the
+ * paste stays type-safe (a condition clipboard never lands on a value cell).
+ */
+type ClipboardCell =
+  | { kind: 'condition'; content: ConditionCellContent }
+  | { kind: 'value'; content: ValueExpr | undefined };
+
 /** Default loader: GET /common/loadXml, read raw XML under editorData.xml/content. */
 async function loadFromServer(file: string): Promise<string> {
   type EditorDataLike = { xml?: string; content?: string };
@@ -166,6 +187,9 @@ export function CrossTableEditor({
   // Row copy/paste clipboard. `null` = nothing copied yet (disables the paste
   // buttons).
   const [clipboardRow, setClipboardRow] = useState<ClipboardRow | null>(null);
+  // Cell copy/paste clipboard. Tagged 'condition' | 'value'. `null` = nothing
+  // copied yet (disables the cell-paste menu item). Independent of clipboardRow.
+  const [clipboardCell, setClipboardCell] = useState<ClipboardCell | null>(null);
 
   // Load the project's imported variable libraries once; passed down to the
   // bundle/target modals so they can render the shared VariablePicker.
@@ -355,6 +379,53 @@ export function CrossTableEditor({
     message.success('已粘贴行');
   }, [clipboardRow]);
 
+  // ---- cell copy / paste ----
+  //
+  // Cell-level copy/paste. Copy deep-clones the cell content at (wireRow,
+  // wireCol) — a condition-cell's ConditionCellContent or a value-cell's
+  // ValueExpr — tagged with its kind into `clipboardCell`. Paste deep-clones
+  // the stored content again and writes it onto a target of the SAME kind: a
+  // 'condition' clipboard only pastes onto condition cells, a 'value' clipboard
+  // only onto value cells. Paste onto the other kind is a no-op with a hint
+  // (so the user learns why nothing happened). This is independent of the row
+  // clipboard.
+  const copyCell = useCallback(
+    (wireRow: number, wireCol: number, kind: 'condition' | 'value') => {
+      if (kind === 'condition') {
+        const cell = findConditionCell(wireRow, wireCol);
+        const content: ConditionCellContent = cell?.content ?? { empty: true };
+        setClipboardCell({ kind: 'condition', content: deepClone(content) });
+      } else {
+        const cell = findValueCell(wireRow, wireCol);
+        setClipboardCell({ kind: 'value', content: deepClone(cell?.value) });
+      }
+      message.success('已复制单元格内容');
+    },
+    [findConditionCell, findValueCell],
+  );
+
+  const pasteCell = useCallback(
+    (wireRow: number, wireCol: number, kind: 'condition' | 'value') => {
+      if (!clipboardCell) {
+        message.warning('单元格剪贴板为空,请先复制一个单元格');
+        return;
+      }
+      if (clipboardCell.kind !== kind) {
+        message.warning('剪贴板单元格类型不匹配(条件 ↔ 值)');
+        return;
+      }
+      // Branch on clipboardCell.kind (not `kind`) so TypeScript narrows the
+      // discriminated-union content to the matching shape.
+      if (clipboardCell.kind === 'condition') {
+        setConditionCell(wireRow, wireCol, deepClone(clipboardCell.content));
+      } else {
+        setValueCell(wireRow, wireCol, deepClone(clipboardCell.content));
+      }
+      message.success('已粘贴单元格内容');
+    },
+    [clipboardCell, setConditionCell, setValueCell],
+  );
+
   // ---- column management ----
   const addTopColumn = useCallback(() => {
     setState((prev) => {
@@ -494,25 +565,55 @@ export function CrossTableEditor({
           //   top row × any col   → condition-cell
           //   any row × left col  → condition-cell
           //   left row × top col  → value-cell
-          if (row.type === 'top' || col.type === 'left') {
-            const cond = findConditionCell(wireRow, wireCol);
-            return (
-              <ConditionCellEditor
-                value={cond?.content ?? { empty: true }}
-                constantLibraries={constantLibraries}
-                parameterLibraries={parameterLibraries}
-                onChange={(next) => setConditionCell(wireRow, wireCol, next)}
-              />
-            );
-          }
-          const valueCell = findValueCell(wireRow, wireCol);
+          const isCondition = row.type === 'top' || col.type === 'left';
+          // Right-click Dropdown exposing cell-level copy/paste. The cell's kind
+          // is fixed by its position (condition band vs value intersection);
+          // copyCell/pasteCell carry that kind so paste only lands on the same
+          // kind elsewhere in the grid.
+          const cellMenuItems: MenuProps['items'] = [
+            {
+              key: 'copy-cell',
+              label: '复制单元格',
+              icon: <BlockOutlined />,
+              onClick: () => copyCell(wireRow, wireCol, isCondition ? 'condition' : 'value'),
+            },
+            {
+              key: 'paste-cell',
+              label: '粘贴单元格',
+              icon: <SnippetsOutlined />,
+              disabled: !clipboardCell,
+              onClick: () => pasteCell(wireRow, wireCol, isCondition ? 'condition' : 'value'),
+            },
+          ];
+          const editor = isCondition ? (
+            (() => {
+              const cond = findConditionCell(wireRow, wireCol);
+              return (
+                <ConditionCellEditor
+                  value={cond?.content ?? { empty: true }}
+                  constantLibraries={constantLibraries}
+                  parameterLibraries={parameterLibraries}
+                  onChange={(next) => setConditionCell(wireRow, wireCol, next)}
+                />
+              );
+            })()
+          ) : (
+            (() => {
+              const valueCell = findValueCell(wireRow, wireCol);
+              return (
+                <ValueCellEditor
+                  value={valueCell?.value}
+                  constantLibraries={constantLibraries}
+                  parameterLibraries={parameterLibraries}
+                  onChange={(v) => setValueCell(wireRow, wireCol, v)}
+                />
+              );
+            })()
+          );
           return (
-            <ValueCellEditor
-              value={valueCell?.value}
-              constantLibraries={constantLibraries}
-              parameterLibraries={parameterLibraries}
-              onChange={(v) => setValueCell(wireRow, wireCol, v)}
-            />
+            <Dropdown menu={{ items: cellMenuItems }} trigger={['contextMenu']}>
+              <div style={{ cursor: 'context-menu' }}>{editor}</div>
+            </Dropdown>
           );
         },
       });
@@ -563,6 +664,7 @@ export function CrossTableEditor({
     setConditionCell, setValueCell, removeColumn, removeRow,
     configureTopRowBundle, configureLeftColumnBundle,
     copyRow, pasteRow, clipboardRow,
+    copyCell, pasteCell, clipboardCell,
     constantLibraries, parameterLibraries,
   ]);
 

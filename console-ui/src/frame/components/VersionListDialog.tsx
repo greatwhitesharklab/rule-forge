@@ -4,7 +4,7 @@ import * as event from '../event.js';
 import * as action from '../action.js';
 import {seeFileVersions} from '../action.js';
 import * as componentEvent from '../../components/componentEvent.js';
-import {formatDate, buildEditorUrl, editorPathToSpaSegment} from '../../Utils.ts';
+import {formatDate, buildEditorUrl, typeToSpaSegment} from '../../Utils.ts';
 
 interface VersionRow {
     name: string;
@@ -121,9 +121,9 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
                                     <button type="button" className="btn btn-link" style={{padding: '0'}}
                                             onClick={() => {
                                                 // SPA 化:历史版本也走 /app/editor/<type>?file=<path>:<version> 新标签打开。
-                                                // editorPath 形如 /html/editor.html?type=flowbpmn → 映射到 flow。
+                                                // data.type(action.ts buildData switch case)→ SPA 路由段(typeToSpaSegment)。
                                                 // 无 SPA 路由的 type(如 ul)回退到原 iframe + TREE_NODE_CLICK。
-                                                const spaSegment = editorPathToSpaSegment(data.editorPath as string);
+                                                const spaSegment = typeToSpaSegment(data.type as string);
                                                 if (spaSegment) {
                                                     let spaFile: string;
                                                     if (data.type === 'resourcePackage') {
@@ -136,13 +136,16 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
                                                     return;
                                                 }
 
-                                                // fallback:无 SPA 路由的 type,保留原 iframe 逻辑
-                                                let url = buildEditorUrl((data.editorPath as string), (data.fullPath as string) + ':' + row.name);
+                                                // fallback:无 SPA 路由的 type(如 ul),保留原 iframe 逻辑。
+                                                // action.ts 已不再设置 data.editorPath,fallback 按 data.type 重建一个
+                                                // /html/editor.html?type=<type> 形态供 buildEditorUrl 用(无映射时返回空串,与旧行为一致)。
+                                                const fallbackEditorPath = '/html/editor.html?type=' + (data.type as string);
+                                                let url = buildEditorUrl(fallbackEditorPath, (data.fullPath as string) + ':' + row.name);
                                                 let fullPath = (data.fullPath as string) + ':' + row.name;
                                                 let name = (data.name as string) + ':' + row.name;
                                                 if (data.type === 'resourcePackage') {
                                                     const packageName = (data.fullPath as string).split("/")[1];
-                                                    url = buildEditorUrl((data.editorPath as string), packageName + '.rp:' + row.name);
+                                                    url = buildEditorUrl(fallbackEditorPath, packageName + '.rp:' + row.name);
                                                     fullPath = '/' + packageName + ':' + row.name;
                                                     name = data.name as string;
                                                 }

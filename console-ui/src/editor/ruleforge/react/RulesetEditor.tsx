@@ -235,6 +235,7 @@ export function RulesetEditor({ file, onLoad = loadFromServer, onSave = saveToSe
           value={rule}
           onChange={(next) => updateRule(i, next)}
           onDelete={() => removeRule(i)}
+          actionLibraries={state.actionLibraries}
         />
       ))}
     </div>
