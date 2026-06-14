@@ -7,9 +7,7 @@ import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import com.ruleforge.plugin.EnginePluginRegistry;
 
 import java.util.Collection;
 
@@ -18,9 +16,9 @@ import java.util.Collection;
  * 2015年2月16日
  */
 @SuppressWarnings("rawtypes")
-public abstract class AbstractBuilder implements ApplicationContextAware {
+public abstract class AbstractBuilder {
     protected Collection<ResourceProvider> providers;
-    protected ApplicationContext applicationContext;
+    protected EnginePluginRegistry pluginRegistry;
     protected Collection<ResourceBuilder> resourceBuilders;
 
     public ResourceBase newResourceBase() {
@@ -36,12 +34,10 @@ public abstract class AbstractBuilder implements ApplicationContextAware {
         }
     }
 
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        resourceBuilders = applicationContext.getBeansOfType(ResourceBuilder.class).values();
-        providers = applicationContext.getBeansOfType(ResourceProvider.class).values();
-        this.applicationContext = applicationContext;
-        // V5.48: 删除 L43 dead code `applicationContext.getBeansWithAnnotation(SuppressWarnings.class);`
-        // — 该调用返 Map<String, Object> 未赋值,纯 side-effect-free,全 unused。
-        // plan 风险 R10(P0 Task 2 已验,Task 3 正式删)
+    public void setPluginRegistry(EnginePluginRegistry pluginRegistry) {
+        this.resourceBuilders = pluginRegistry.getResourceBuilders();
+        this.providers = pluginRegistry.getResourceProviders();
+        this.pluginRegistry = pluginRegistry;
+        // V5.48: 删除原 dead code applicationContext.getBeansWithAnnotation(SuppressWarnings.class)
     }
 }

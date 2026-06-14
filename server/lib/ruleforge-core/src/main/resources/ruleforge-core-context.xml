@@ -57,6 +57,7 @@
         <property name="decisionTableRulesBuilder" ref="ruleforge.decisionTableRulesBuilder"/>
         <property name="decisionTreeRulesBuilder" ref="ruleforge.decisionTreeRulesBuilder"/>
         <property name="crosstabRulesBuilder" ref="ruleforge.crosstabRulesBuilder"/>
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
     </bean>
 
     <bean id="ruleforge.builtInActionLibraryBuilder" class="com.ruleforge.runtime.BuiltInActionLibraryBuilder"/>
@@ -137,6 +138,7 @@
 
     <bean id="ruleforge.resourceLibraryBuilder" class="com.ruleforge.builder.ResourceLibraryBuilder">
         <property name="builtInActionLibraryBuilder" ref="ruleforge.builtInActionLibraryBuilder"/>
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
     </bean>
 
     <bean id="ruleforge.knowledgeService" class="com.ruleforge.runtime.service.KnowledgeServiceImpl" autowire="constructor"/>
@@ -240,7 +242,9 @@
     <bean id="ruleforge.containAssertor" class="com.ruleforge.runtime.assertor.ContainAssertor"/>
     <bean id="ruleforge.notContainAssertor" class="com.ruleforge.runtime.assertor.NotContainAssertor"/>
 
-    <bean id="ruleforge.reteBuilder" class="com.ruleforge.model.rete.builder.ReteBuilder"/>
+    <bean id="ruleforge.reteBuilder" class="com.ruleforge.model.rete.builder.ReteBuilder">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
 
     <bean id="ruleforge.criteriaBuilder" class="com.ruleforge.model.rete.builder.CriteriaBuilder"/>
     <bean id="ruleforge.andBuilder" class="com.ruleforge.model.rete.builder.AndBuilder"/>
