@@ -36,7 +36,6 @@
     "diff2html": "^3.4.56",
     "echarts": "^5.6.0",
     "events": "^1.1.0",
-    "font-awesome": "^4.6.1",
     "object-assign": "^4.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
