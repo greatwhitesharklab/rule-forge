@@ -30,6 +30,11 @@ import { DeleteOutlined } from '@ant-design/icons';
 import type { FunctionParam, MethodParam, ValueExpr } from '../model/types';
 import { VALUE_TYPE_OPTIONS } from './constants';
 import { FieldLabel } from './FieldLabel';
+import {
+  VariablePicker,
+  type VariableBinding,
+  type VariableCategoryGroup,
+} from './VariablePicker';
 
 export interface ValueEditorProps {
   /** The current value expression (controlled). */
@@ -38,6 +43,14 @@ export interface ValueEditorProps {
   onChange: (next: ValueExpr) => void;
   /** Optional compact mode (no margin under fields). */
   compact?: boolean;
+  /**
+   * Optional imported variable libraries. When provided AND non-empty, the
+   * `Variable` / `Parameter` value type renders a shared {@link VariablePicker}
+   * (category→variable Cascader) instead of the four free-text binding inputs.
+   * When omitted or empty, the original free-text inputs are shown (back-compat
+   * for editors that have not wired the libraries prop yet).
+   */
+  libraries?: VariableCategoryGroup[];
 }
 
 /**
@@ -77,13 +90,25 @@ function freshValueForType(type: ValueExpr['type']): ValueExpr {
   }
 }
 
-export function ValueEditor({ value, onChange, compact }: ValueEditorProps) {
+export function ValueEditor({ value, onChange, compact, libraries = [] }: ValueEditorProps) {
   const onTypeChange = (next: string) => {
     onChange(freshValueForType(next as ValueExpr['type']));
   };
 
   const gap = compact ? 4 : 8;
   const rowStyle: React.CSSProperties = { marginBottom: gap };
+
+  // When the project imports variable libraries, replace the four free-text
+  // binding inputs with the shared VariablePicker.
+  const usePicker = libraries.some((lib) => (lib || []).length > 0);
+  const onPick = (b: VariableBinding): void => {
+    onChange(patch(value, {
+      varCategory: b.varCategory,
+      var: b.var,
+      varLabel: b.varLabel,
+      datatype: b.datatype,
+    }));
+  };
 
   return (
     <div>
@@ -109,44 +134,59 @@ export function ValueEditor({ value, onChange, compact }: ValueEditorProps) {
       )}
 
       {value.type === 'Variable' && (
-        <>
-          <div style={rowStyle}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>变量分类</FieldLabel>}
-              placeholder="如 客户.客户"
-              value={value.varCategory ?? ''}
-              onChange={(e) => onChange(patch(value, { varCategory: e.target.value }))}
-            />
-          </div>
-          <div style={rowStyle}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>变量名</FieldLabel>}
-              placeholder="如 age"
-              value={value.var ?? ''}
-              onChange={(e) => onChange(patch(value, { var: e.target.value }))}
-            />
-          </div>
-          <div style={rowStyle}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>标签</FieldLabel>}
-              placeholder="如 年龄"
-              value={value.varLabel ?? ''}
-              onChange={(e) => onChange(patch(value, { varLabel: e.target.value }))}
-            />
-          </div>
-          <div style={rowStyle}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>类型</FieldLabel>}
-              placeholder="如 Integer"
-              value={value.datatype ?? ''}
-              onChange={(e) => onChange(patch(value, { datatype: e.target.value }))}
-            />
-          </div>
-        </>
+        usePicker ? (
+          <VariablePicker
+            value={{
+              varCategory: value.varCategory,
+              var: value.var,
+              varLabel: value.varLabel,
+              datatype: value.datatype,
+            }}
+            onChange={onPick}
+            libraries={libraries}
+            compact={compact}
+            allowDatatypeEdit
+          />
+        ) : (
+          <>
+            <div style={rowStyle}>
+              <Input
+                size="small"
+                prefix={<FieldLabel>变量分类</FieldLabel>}
+                placeholder="如 客户.客户"
+                value={value.varCategory ?? ''}
+                onChange={(e) => onChange(patch(value, { varCategory: e.target.value }))}
+              />
+            </div>
+            <div style={rowStyle}>
+              <Input
+                size="small"
+                prefix={<FieldLabel>变量名</FieldLabel>}
+                placeholder="如 age"
+                value={value.var ?? ''}
+                onChange={(e) => onChange(patch(value, { var: e.target.value }))}
+              />
+            </div>
+            <div style={rowStyle}>
+              <Input
+                size="small"
+                prefix={<FieldLabel>标签</FieldLabel>}
+                placeholder="如 年龄"
+                value={value.varLabel ?? ''}
+                onChange={(e) => onChange(patch(value, { varLabel: e.target.value }))}
+              />
+            </div>
+            <div style={rowStyle}>
+              <Input
+                size="small"
+                prefix={<FieldLabel>类型</FieldLabel>}
+                placeholder="如 Integer"
+                value={value.datatype ?? ''}
+                onChange={(e) => onChange(patch(value, { datatype: e.target.value }))}
+              />
+            </div>
+          </>
+        )
       )}
 
       {value.type === 'VariableCategory' && (

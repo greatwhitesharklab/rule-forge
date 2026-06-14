@@ -21,6 +21,11 @@ import type { FunctionParam, LeftValue, MethodParam } from '../model/types';
 import { LEFT_TYPE_OPTIONS, ARITH_OP_OPTIONS } from './constants';
 import { FieldLabel } from './FieldLabel';
 import { ValueEditor } from './ValueEditor';
+import {
+  VariablePicker,
+  type VariableBinding,
+  type VariableCategoryGroup,
+} from './VariablePicker';
 
 export interface LeftValueEditorProps {
   /** The current left value (controlled). */
@@ -29,6 +34,14 @@ export interface LeftValueEditorProps {
   onChange: (next: LeftValue) => void;
   /** Optional compact mode. */
   compact?: boolean;
+  /**
+   * Optional imported variable libraries. When provided AND non-empty, the
+   * `variable` / `parameter` left type renders a shared {@link VariablePicker}
+   * (category→variable Cascader) instead of the four free-text binding
+   * inputs. When omitted or empty, the original free-text inputs are shown
+   * (back-compat for editors that have not wired the libraries prop yet).
+   */
+  libraries?: VariableCategoryGroup[];
 }
 
 function patch(v: LeftValue, p: Partial<LeftValue>): LeftValue {
@@ -60,11 +73,30 @@ function freshLeftForType(type: LeftValue['type']): LeftValue {
   }
 }
 
-export function LeftValueEditor({ value, onChange, compact }: LeftValueEditorProps) {
+export function LeftValueEditor({ value, onChange, compact, libraries = [] }: LeftValueEditorProps) {
   const gap = compact ? 4 : 8;
   const rowStyle: React.CSSProperties = { marginBottom: gap };
   const onTypeChange = (next: string) => {
     onChange(freshLeftForType(next as LeftValue['type']));
+  };
+
+  // When the project imports variable libraries, replace the four free-text
+  // binding inputs with the shared VariablePicker. The picker emits a single
+  // VariableBinding; we map it back onto the LeftValue's four fields.
+  const usePicker = libraries.some((lib) => (lib || []).length > 0);
+  const pickBinding: VariableBinding = {
+    varCategory: value.varCategory,
+    var: value.var,
+    varLabel: value.varLabel,
+    datatype: value.datatype,
+  };
+  const onPick = (b: VariableBinding): void => {
+    onChange(patch(value, {
+      varCategory: b.varCategory,
+      var: b.var,
+      varLabel: b.varLabel,
+      datatype: b.datatype,
+    }));
   };
 
   return (
@@ -81,44 +113,56 @@ export function LeftValueEditor({ value, onChange, compact }: LeftValueEditorPro
 
       {(value.type === 'variable' || value.type === 'parameter') && (
         <>
-          {value.type === 'variable' && (
-            <div style={rowStyle}>
-              <Input
-                size="small"
-                prefix={<FieldLabel>变量分类</FieldLabel>}
-                placeholder="如 客户.客户"
-                value={value.varCategory ?? ''}
-                onChange={(e) => onChange(patch(value, { varCategory: e.target.value }))}
-              />
-            </div>
+          {usePicker ? (
+            <VariablePicker
+              value={pickBinding}
+              onChange={onPick}
+              libraries={libraries}
+              compact={compact}
+              allowDatatypeEdit
+            />
+          ) : (
+            <>
+              {value.type === 'variable' && (
+                <div style={rowStyle}>
+                  <Input
+                    size="small"
+                    prefix={<FieldLabel>变量分类</FieldLabel>}
+                    placeholder="如 客户.客户"
+                    value={value.varCategory ?? ''}
+                    onChange={(e) => onChange(patch(value, { varCategory: e.target.value }))}
+                  />
+                </div>
+              )}
+              <div style={rowStyle}>
+                <Input
+                  size="small"
+                  prefix={<FieldLabel>变量名</FieldLabel>}
+                  placeholder="如 age"
+                  value={value.var ?? ''}
+                  onChange={(e) => onChange(patch(value, { var: e.target.value }))}
+                />
+              </div>
+              <div style={rowStyle}>
+                <Input
+                  size="small"
+                  prefix={<FieldLabel>标签</FieldLabel>}
+                  placeholder="如 年龄"
+                  value={value.varLabel ?? ''}
+                  onChange={(e) => onChange(patch(value, { varLabel: e.target.value }))}
+                />
+              </div>
+              <div style={rowStyle}>
+                <Input
+                  size="small"
+                  prefix={<FieldLabel>类型</FieldLabel>}
+                  placeholder="如 Integer"
+                  value={value.datatype ?? ''}
+                  onChange={(e) => onChange(patch(value, { datatype: e.target.value }))}
+                />
+              </div>
+            </>
           )}
-          <div style={rowStyle}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>变量名</FieldLabel>}
-              placeholder="如 age"
-              value={value.var ?? ''}
-              onChange={(e) => onChange(patch(value, { var: e.target.value }))}
-            />
-          </div>
-          <div style={rowStyle}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>标签</FieldLabel>}
-              placeholder="如 年龄"
-              value={value.varLabel ?? ''}
-              onChange={(e) => onChange(patch(value, { varLabel: e.target.value }))}
-            />
-          </div>
-          <div style={rowStyle}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>类型</FieldLabel>}
-              placeholder="如 Integer"
-              value={value.datatype ?? ''}
-              onChange={(e) => onChange(patch(value, { datatype: e.target.value }))}
-            />
-          </div>
         </>
       )}
 

@@ -42,6 +42,11 @@ import type { ColumnsType } from 'antd/es/table';
 import type { ValueExpr } from '../../ruleforge/model/types';
 import { OPERATOR_OPTIONS, opHasNoInput } from '../../ruleforge/react/constants';
 import { ValueEditor } from '../../ruleforge/react/ValueEditor';
+import {
+  VariablePicker,
+  useVariableLibraries,
+  type VariableCategoryGroup,
+} from '../../ruleforge/react';
 import type {
   AssignTarget,
   AssignTargetType,
@@ -117,6 +122,13 @@ export function ComplexScoreCardEditor({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Load the project's imported variable libraries once; passed down to the
+  // cell editors so they can render the shared VariablePicker.
+  const variableLibraryPaths = state.libraries
+    .filter((lib) => lib.type === 'Variable' && lib.path)
+    .map((lib) => lib.path);
+  const { libraries: variableLibraries } = useVariableLibraries(variableLibraryPaths);
 
   // ---- load on mount ----
   useEffect(() => {
@@ -292,6 +304,7 @@ export function ComplexScoreCardEditor({
               return (
                 <CriteriaCellEditor
                   value={cell}
+                  libraries={variableLibraries}
                   onChange={(next) => setCell(dr.rowNumber, col.num, next)}
                 />
               );
@@ -299,6 +312,7 @@ export function ComplexScoreCardEditor({
             return (
               <ValueCellEditor
                 value={cell}
+                libraries={variableLibraries}
                 onChange={(next) => setCell(dr.rowNumber, col.num, next)}
               />
             );
@@ -357,7 +371,7 @@ export function ComplexScoreCardEditor({
         />
       )}
 
-      <ConfigArea state={state} setState={setState} patchCol={patchCol} />
+      <ConfigArea state={state} setState={setState} patchCol={patchCol} libraries={variableLibraries} />
 
       <div style={{ marginBottom: 12 }}>
         <Input.TextArea
@@ -398,10 +412,12 @@ function ConfigArea({
   state,
   setState,
   patchCol,
+  libraries = [],
 }: {
   state: ComplexScoreCardData;
   setState: React.Dispatch<React.SetStateAction<ComplexScoreCardData>>;
   patchCol: (colNumber: number, patch: Partial<ComplexCol>) => void;
+  libraries?: VariableCategoryGroup[];
 }) {
   const patchScoringType = (scoringType: ScoringType) =>
     setState((prev) => ({ ...prev, scoringType }));
@@ -470,6 +486,7 @@ function ConfigArea({
           <div style={{ marginTop: 4 }}>
             <ValueEditor
               value={state.assignTarget.value}
+              libraries={libraries}
               onChange={(value) => patchAssignTarget({ ...state.assignTarget, value })}
             />
           </div>
@@ -512,9 +529,11 @@ function ConfigArea({
  */
 function CriteriaCellEditor({
   value,
+  libraries = [],
   onChange,
 }: {
   value: ComplexCell | undefined;
+  libraries?: VariableCategoryGroup[];
   onChange: (next: ComplexCell) => void;
 }) {
   const cell: ComplexCell = value ?? { row: 0, col: 0, rowspan: 1 };
@@ -534,27 +553,55 @@ function CriteriaCellEditor({
     onChange({ ...cell, joint: { type: joint.type, conditions: [newCond] } });
   };
 
+  const usePicker = libraries.some((lib) => (lib || []).length > 0);
+
   return (
     <div>
       <Space direction="vertical" size={4} style={{ width: '100%' }}>
-        <Input
-          size="small"
-          placeholder="变量名 (var)"
-          value={cell.variableName ?? ''}
-          onChange={(e) => patchBinding({ variableName: e.target.value })}
-        />
-        <Input
-          size="small"
-          placeholder="变量标签 (var-label)"
-          value={cell.variableLabel ?? ''}
-          onChange={(e) => patchBinding({ variableLabel: e.target.value })}
-        />
-        <Input
-          size="small"
-          placeholder="数据类型 (datatype)"
-          value={cell.datatype ?? ''}
-          onChange={(e) => patchBinding({ datatype: e.target.value })}
-        />
+        {usePicker ? (
+          <VariablePicker
+            compact
+            libraries={libraries}
+            allowDatatypeEdit
+            value={{
+              // ComplexCell has no varCategory field (the category lives on
+              // the Criteria column), so we leave it blank; the picker still
+              // writes variableName/variableLabel/datatype to the cell.
+              varCategory: '',
+              var: cell.variableName,
+              varLabel: cell.variableLabel,
+              datatype: cell.datatype,
+            }}
+            onChange={(b) =>
+              patchBinding({
+                variableName: b.var,
+                variableLabel: b.varLabel,
+                datatype: b.datatype,
+              })
+            }
+          />
+        ) : (
+          <>
+            <Input
+              size="small"
+              placeholder="变量名 (var)"
+              value={cell.variableName ?? ''}
+              onChange={(e) => patchBinding({ variableName: e.target.value })}
+            />
+            <Input
+              size="small"
+              placeholder="变量标签 (var-label)"
+              value={cell.variableLabel ?? ''}
+              onChange={(e) => patchBinding({ variableLabel: e.target.value })}
+            />
+            <Input
+              size="small"
+              placeholder="数据类型 (datatype)"
+              value={cell.datatype ?? ''}
+              onChange={(e) => patchBinding({ datatype: e.target.value })}
+            />
+          </>
+        )}
         <Select
           size="small"
           style={{ width: '100%' }}
@@ -562,7 +609,9 @@ function CriteriaCellEditor({
           onChange={(nextOp) => patchCondition({ op: nextOp })}
           options={OPERATOR_OPTIONS}
         />
-        {!noRight && <ValueEditor value={right} compact onChange={(v) => patchCondition({ right: v })} />}
+        {!noRight && (
+          <ValueEditor value={right} libraries={libraries} compact onChange={(v) => patchCondition({ right: v })} />
+        )}
       </Space>
     </div>
   );
@@ -571,14 +620,18 @@ function CriteriaCellEditor({
 /** Score / Custom cell: a single value expression. */
 function ValueCellEditor({
   value,
+  libraries = [],
   onChange,
 }: {
   value: ComplexCell | undefined;
+  libraries?: VariableCategoryGroup[];
   onChange: (next: ComplexCell) => void;
 }) {
   const cell: ComplexCell = value ?? { row: 0, col: 0, rowspan: 1 };
   const v: ValueExpr = cell.value ?? { type: 'Input', content: '' };
-  return <ValueEditor value={v} compact onChange={(value) => onChange({ ...cell, value })} />;
+  return (
+    <ValueEditor value={v} libraries={libraries} compact onChange={(value) => onChange({ ...cell, value })} />
+  );
 }
 
 export default ComplexScoreCardEditor;
