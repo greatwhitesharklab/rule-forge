@@ -42,6 +42,18 @@
  * The new Row gets a fresh dense `num` via the same renumber pass addRow/
  * removeRow use (there is no uuid field on Row — num IS the identity).
  *
+ * ── Cell copy/paste ──────────────────────────────────────────────────────
+ * Cell-level granularity on top of the row-level clipboard. A SEPARATE
+ * `clipboardCell` holds a deep-cloned CellContent (just the content — no
+ * row/col), so copy and paste can target one cell without touching its
+ * neighbors. Paste writes the cloned content into the target cell's owner
+ * (the top of a merge, looked up via findOwningCell), keeping the target's
+ * (row, col) intact and only replacing the content. This is independent of
+ * the row clipboard: a row copy then a cell paste (or vice versa) does not
+ * cross-contaminate the two clipboards. The cell right-click Dropdown exposes
+ * "复制单元格" / "粘贴单元格" alongside the merge items on Criteria columns
+ * and alone on action columns.
+ *
  * ── Merged cells (rowspan) ───────────────────────────────────────────────
  * Criteria cells can span N rows: a "向下合并" gesture on a Criteria cell
  * bumps its rowspan and removes the cell on the next row (so the next row is
@@ -60,6 +72,7 @@ import {
   PlusOutlined,
   SaveOutlined,
   SnippetsOutlined,
+  BlockOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps } from 'antd';
@@ -143,6 +156,10 @@ export function DecisionTableEditor({
   const [colModal, setColModal] = useState<{ open: boolean; editIndex?: number }>({ open: false });
   // Row-copy clipboard. `null` = nothing copied yet (disables the paste button).
   const [clipboardRow, setClipboardRow] = useState<ClipboardRow | null>(null);
+  // Cell-copy clipboard. Holds a deep-cloned CellContent (no row/col). Separate
+  // from `clipboardRow` so cell copy/paste never collides with row copy/paste.
+  // `null` = nothing copied yet (disables the cell-paste menu item).
+  const [clipboardCell, setClipboardCell] = useState<CellContent | null>(null);
 
   // Imported constant / parameter library paths. state.libraries is the parsed
   // `<import-constant-library>` / `<import-parameter-library>` list (a path per
@@ -412,6 +429,61 @@ export function DecisionTableEditor({
     [clipboardRow],
   );
 
+  // ---- cell copy / paste ----
+  //
+  // Cell-level copy/paste. Copy deep-clones the OWNER cell's content at
+  // (wireRow, wireCol) — the top of a merge when the cell is covered — into
+  // `clipboardCell`. Paste deep-clones the stored content again and writes it
+  // onto the target cell's owner (keeping the target's row/col/rowspan). This
+  // is independent of the row clipboard. We read the live `state` on copy
+  // (copy has no state transition); paste goes through setState so it sees the
+  // freshest prev.
+  const copyCell = useCallback(
+    (wireRow: number, wireCol: number) => {
+      const owner = findOwningCell(wireRow, wireCol);
+      const content: CellContent = owner?.content ?? { empty: true };
+      setClipboardCell(deepClone(content));
+      message.success('已复制单元格内容');
+    },
+    [findOwningCell],
+  );
+
+  const pasteCell = useCallback(
+    (wireRow: number, wireCol: number) => {
+      if (!clipboardCell) {
+        message.warning('单元格剪贴板为空,请先复制一个单元格');
+        return;
+      }
+      // Resolve the target OWNER (top of a merge when the cell is covered) so a
+      // paste onto a covered cell writes onto the merge owner, not into a
+      // phantom covered slot. We do this lookup inside setState against prev so
+      // the row/col we write to is consistent with the freshest cell list.
+      setState((prev) => {
+        let ownerRow = wireRow;
+        for (let r = wireRow; r >= 1; r--) {
+          const c = prev.cells.find((cc) => cc.row === r && cc.col === wireCol);
+          if (c) {
+            if (c.row + (c.rowspan || 1) - 1 >= wireRow) ownerRow = c.row;
+            break;
+          }
+        }
+        const cells = prev.cells.slice();
+        const idx = cells.findIndex((c) => c.row === ownerRow && c.col === wireCol);
+        // Deep-clone again so a paste never shares references with the clipboard
+        // (repeated pastes stay independent of each other and of the source).
+        const content = deepClone(clipboardCell);
+        if (idx >= 0) {
+          cells[idx] = { ...cells[idx], content };
+        } else {
+          cells.push({ row: ownerRow, col: wireCol, rowspan: 1, content });
+        }
+        return { ...prev, cells };
+      });
+      message.success('已粘贴单元格内容');
+    },
+    [clipboardCell],
+  );
+
   // ---- save ----
   const handleSave = useCallback(() => {
     setSaving(true);
@@ -468,22 +540,41 @@ export function DecisionTableEditor({
           const mergeable = col.type === 'Criteria';
           // Next row exists? (wireRow is 1-based; max wireRow == rows.length)
           const hasNextRow = wireRow < state.rows.length;
-          const menuItems: MenuProps['items'] = mergeable
-            ? [
-                {
-                  key: 'merge-down',
-                  label: '向下合并',
-                  disabled: !hasNextRow,
-                  onClick: () => mergeCellDown(ownerRow, wireCol),
-                },
-                {
-                  key: 'unmerge',
-                  label: '拆分合并',
-                  disabled: rowspan <= 1,
-                  onClick: () => unmergeCell(ownerRow, wireCol),
-                },
-              ]
-            : [];
+          // Every cell — Criteria or action — gets a copy/paste-cell item; the
+          // merge items are only on Criteria columns. A divider separates the
+          // structural (merge) ops from the content (copy/paste) ops.
+          const menuItems: MenuProps['items'] = [
+            ...(mergeable
+              ? [
+                  {
+                    key: 'merge-down',
+                    label: '向下合并',
+                    disabled: !hasNextRow,
+                    onClick: () => mergeCellDown(ownerRow, wireCol),
+                  },
+                  {
+                    key: 'unmerge',
+                    label: '拆分合并',
+                    disabled: rowspan <= 1,
+                    onClick: () => unmergeCell(ownerRow, wireCol),
+                  },
+                  { type: 'divider' as const },
+                ]
+              : []),
+            {
+              key: 'copy-cell',
+              label: '复制单元格',
+              icon: <BlockOutlined />,
+              onClick: () => copyCell(wireRow, wireCol),
+            },
+            {
+              key: 'paste-cell',
+              label: '粘贴单元格',
+              icon: <SnippetsOutlined />,
+              disabled: !clipboardCell,
+              onClick: () => pasteCell(wireRow, wireCol),
+            },
+          ];
           const editor = (
             <CellEditor
               columnType={col.type}
@@ -493,12 +584,8 @@ export function DecisionTableEditor({
               parameterLibraries={parameterLibraries}
             />
           );
-          if (!mergeable) return editor;
           return (
-            <Dropdown
-              menu={{ items: menuItems }}
-              trigger={['contextMenu']}
-            >
+            <Dropdown menu={{ items: menuItems }} trigger={['contextMenu']}>
               <div style={{ cursor: 'context-menu' }}>{editor}</div>
             </Dropdown>
           );
@@ -556,6 +643,9 @@ export function DecisionTableEditor({
     copyRow,
     pasteRow,
     clipboardRow,
+    copyCell,
+    pasteCell,
+    clipboardCell,
     constantLibraries,
     parameterLibraries,
   ]);

@@ -410,11 +410,9 @@ function buildData(data: TreeNodeData, level: number): void;
 function buildData(data: TreeNodeData, level: number, user: { import: boolean; export: boolean }): void;
 function buildData(data: TreeNodeData, level: number, user?: { import: boolean; export: boolean }): void {
     data._level = level++;
-    // NOTE: 下方各分支设置的 data.editorPath("/html/editor.html?type=<type>")在 SPA 化后
-    // 已不再被 TreeItem 使用(所有文件类型改走 window.open('/app/editor/<type>'))。
-    // 当前唯一活引用是 VersionListDialog,它用 editorPathToSpaSegment(data.editorPath)
-    // 把版本历史打开到 /app/editor/<segment>?file=...:<version>。等 VersionListDialog 改用
-    // data.type 直接映射后,这些 editorPath 赋值即可整批删除。保留以避免破坏版本打开功能。
+    // NOTE: 历史上各文件类型分支会设置 data.editorPath("/html/editor.html?type=<type>"),
+    // 但 SPA 化后 TreeItem 改走 window.open('/app/editor/<type>'),VersionListDialog 改用
+    // data.type 直接映射(typeToSpaSegment),editorPath 赋值已全部删除(死代码)。
     switch (data.type) {
         case "root":
             data._icon = Styles.frameStyle.getRootIcon();
@@ -446,7 +444,6 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._icon = Styles.frameStyle.getRuleIcon();
             data._style = Styles.frameStyle.getRuleIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/editor.html?type=ruleset";
             break;
         case "project":
             data._icon = Styles.frameStyle.getProjectIcon();
@@ -517,7 +514,6 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                     }
                 }
             ];
-            data.editorPath = "/html/editor.html?type=package";
             break;
         case "lib":
             data._icon = Styles.frameStyle.getLibIcon();
@@ -528,25 +524,21 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._icon = Styles.frameStyle.getActionIcon();
             data._style = Styles.frameStyle.getActionIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/editor.html?type=action";
             break;
         case "parameter":
             data._icon = Styles.frameStyle.getParameterIcon();
             data._style = Styles.frameStyle.getParameterIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/editor.html?type=parameter";
             break;
         case "constant":
             data._icon = Styles.frameStyle.getConstantIcon();
             data._style = Styles.frameStyle.getConstantIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/editor.html?type=constant";
             break;
         case "variable":
             data._icon = Styles.frameStyle.getVariableIcon();
             data._style = Styles.frameStyle.getVariableIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/editor.html?type=variable";
             break;
         case "ruleLib":
             data._icon = Styles.frameStyle.getRuleLibIcon();
@@ -680,43 +672,36 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._icon = Styles.frameStyle.getDecisionTableIcon();
             data._style = Styles.frameStyle.getDecisionTableIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/editor.html?type=decisiontable";
             break;
         case "scriptDecisionTable":
             data._icon = Styles.frameStyle.getScriptDecisionTableIcon();
             data._style = Styles.frameStyle.getScriptDecisionTableIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/editor.html?type=scriptdecisiontable";
             break;
         case "decisionTree":
             data._icon = Styles.frameStyle.getDecisionTreeIcon();
             data._style = Styles.frameStyle.getDecisionTreeIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/editor.html?type=decisiontree";
             break;
         case "flow":
             data._icon = Styles.frameStyle.getFlowIcon();
             data._style = Styles.frameStyle.getFlowIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/editor.html?type=flowbpmn";
             break;
         case "scorecard":
             data._icon = Styles.frameStyle.getScorecardIcon();
             data._style = Styles.frameStyle.getScorecardIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/editor.html?type=scorecard";
             break;
         case "complexscorecard":
             data._icon = Styles.frameStyle.getComplexScorecardIcon();
             data._style = Styles.frameStyle.getComplexScorecardIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/editor.html?type=complexscorecard";
             break;
         case "crosstab":
             data._icon = Styles.frameStyle.getCrossDecisionTableIcon();
             data._style = Styles.frameStyle.getCrossDecisionTableIconStyle();
             data.contextMenu = buildFileContextMenu();
-            data.editorPath = "/html/editor.html?type=crosstab";
             break;
     }
     // Ensure container types have a children array so they render as folders

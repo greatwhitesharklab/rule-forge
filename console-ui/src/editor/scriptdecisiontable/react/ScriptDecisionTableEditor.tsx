@@ -48,6 +48,19 @@
  * down by one, then drops in the clipboard cells re-stamped to the new wire-row.
  * The new Row gets a fresh dense `num` via the same renumber pass addRow/
  * removeRow use (num IS the identity, kept dense 0..n-1 by removeRow).
+ *
+ * ── Cell copy/paste ──────────────────────────────────────────────────────
+ * Cell-level granularity on top of the row-level clipboard. A SEPARATE
+ * `clipboardCell` holds a deep-cloned ScriptCellContent (just the {script}
+ * string — no row/col), so copy and paste can target one cell without touching
+ * its neighbors. Paste writes the cloned content into the target cell, keeping
+ * the target's (row, col) intact and only replacing the script string. The
+ * cell right-click Dropdown exposes "复制单元格" / "粘贴单元格"; this is
+ * independent of the row clipboard (copying a cell does not clobber a copied
+ * row, and vice versa). The cell content here is a plain script string, so the
+ * clone is effectively a string copy — but we keep deepClone for shape parity
+ * with the decision-table cell clipboard and forward-safety if ScriptCellContent
+ * ever gains structured fields.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Dropdown, Space, Spin, Table, Typography, message } from 'antd';
@@ -58,6 +71,7 @@ import {
   PlusOutlined,
   SaveOutlined,
   SnippetsOutlined,
+  BlockOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps } from 'antd';
@@ -139,6 +153,10 @@ export function ScriptDecisionTableEditor({
   const [colModal, setColModal] = useState<{ open: boolean; editIndex?: number }>({ open: false });
   // Row-copy clipboard. `null` = nothing copied yet (disables the paste button).
   const [clipboardRow, setClipboardRow] = useState<ClipboardRow | null>(null);
+  // Cell-copy clipboard. Holds a deep-cloned ScriptCellContent (no row/col).
+  // Separate from `clipboardRow` so cell copy/paste never collides with row
+  // copy/paste. `null` = nothing copied yet (disables the cell-paste item).
+  const [clipboardCell, setClipboardCell] = useState<ScriptCellContent | null>(null);
 
   // ---- load on mount ----
   useEffect(() => {
@@ -301,6 +319,36 @@ export function ScriptDecisionTableEditor({
     [clipboardRow],
   );
 
+  // ---- cell copy / paste ----
+  //
+  // Cell-level copy/paste. Copy deep-clones the cell's ScriptCellContent at
+  // (wireRow, wireCol) into `clipboardCell`. Paste deep-clones the stored
+  // content again and writes it onto the target cell (keeping the target's
+  // row/col). This is independent of the row clipboard. We read the live
+  // `state` on copy; paste goes through setState.
+  const copyCell = useCallback(
+    (wireRow: number, wireCol: number) => {
+      const content = getCellContent(wireRow, wireCol);
+      setClipboardCell(deepClone(content));
+      message.success('已复制单元格内容');
+    },
+    [getCellContent],
+  );
+
+  const pasteCell = useCallback(
+    (wireRow: number, wireCol: number) => {
+      if (!clipboardCell) {
+        message.warning('单元格剪贴板为空,请先复制一个单元格');
+        return;
+      }
+      // Deep-clone again so repeated pastes stay independent of each other and
+      // of the source.
+      setCellContent(wireRow, wireCol, deepClone(clipboardCell));
+      message.success('已粘贴单元格内容');
+    },
+    [clipboardCell, setCellContent],
+  );
+
   // ---- save ----
   const handleSave = useCallback(() => {
     setSaving(true);
@@ -332,12 +380,31 @@ export function ScriptDecisionTableEditor({
       render: (_value, wireRow, _displayRow) => {
         const wireCol = displayCol + 1;
         const content = getCellContent(wireRow, wireCol);
+        const cellMenuItems: MenuProps['items'] = [
+          {
+            key: 'copy-cell',
+            label: '复制单元格',
+            icon: <BlockOutlined />,
+            onClick: () => copyCell(wireRow, wireCol),
+          },
+          {
+            key: 'paste-cell',
+            label: '粘贴单元格',
+            icon: <SnippetsOutlined />,
+            disabled: !clipboardCell,
+            onClick: () => pasteCell(wireRow, wireCol),
+          },
+        ];
         return (
-          <ScriptCellEditor
-            columnType={col.type}
-            value={content}
-            onChange={(next) => setCellContent(wireRow, wireCol, next)}
-          />
+          <Dropdown menu={{ items: cellMenuItems }} trigger={['contextMenu']}>
+            <div style={{ cursor: 'context-menu' }}>
+              <ScriptCellEditor
+                columnType={col.type}
+                value={content}
+                onChange={(next) => setCellContent(wireRow, wireCol, next)}
+              />
+            </div>
+          </Dropdown>
         );
       },
     }));
@@ -379,7 +446,7 @@ export function ScriptDecisionTableEditor({
       },
     });
     return cols;
-  }, [state.columns, getCellContent, setCellContent, removeRow, copyRow, pasteRow, clipboardRow]);
+  }, [state.columns, getCellContent, setCellContent, removeRow, copyRow, pasteRow, clipboardRow, copyCell, pasteCell, clipboardCell]);
 
   // Wire rows (1..n) — one table row per model row.
   const dataRows = useMemo(() => state.rows.map((r) => r.num + 1), [state.rows]);

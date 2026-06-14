@@ -66,6 +66,19 @@ export type {
 export { useParameterLibraries } from './useParameterLibraries';
 export type { UseParameterLibrariesResult } from './useParameterLibraries';
 
+// Shared action-library browser (used by ActionEditor's execute-method kind).
+export { MethodPicker } from './MethodPicker';
+export type {
+  MethodPickerProps,
+  MethodBinding,
+  PickerSpringBean,
+  PickerActionMethod,
+  PickerActionParameter,
+  ActionLibrary,
+} from './MethodPicker';
+export { useActionLibraries } from './useActionLibraries';
+export type { UseActionLibrariesResult } from './useActionLibraries';
+
 export { default as RulePropertyEditor } from './RulePropertyEditor';
 export type { RulePropertyEditorProps } from './RulePropertyEditor';
 

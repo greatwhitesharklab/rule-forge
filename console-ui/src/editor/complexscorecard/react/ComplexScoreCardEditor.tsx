@@ -47,6 +47,17 @@
  * would need an offset cascade — appending avoids that and the wire format
  * accepts non-contiguous row numbers (the backend walks rows by num). The whole
  * cell set is deep-cloned again on paste so repeated pastes are independent.
+ *
+ * ── Cell copy/paste ──────────────────────────────────────────────────────
+ * Cell-level granularity on top of the row-level clipboard. A SEPARATE
+ * `clipboardCell` holds a deep-cloned ComplexCell (the whole cell — row + col +
+ * rowspan + content fields). Paste deep-clones the stored cell again and merges
+ * ONLY the content fields onto the TARGET cell (keeping the target's
+ * row/col/rowspan), matching the scorecard cell-clipboard approach. Content
+ * fields are column-type-specific (Criteria → variable binding + joint;
+ * Score/Custom → value), so we cherry-pick whichever the source has — a copied
+ * Criteria joint pastes onto another Criteria cell, a copied score value onto
+ * another score cell. This is independent of the row clipboard.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Dropdown, Input, InputNumber, Select, Space, Spin, Table, Typography, message } from 'antd';
@@ -57,6 +68,7 @@ import {
   PlusOutlined,
   SaveOutlined,
   SnippetsOutlined,
+  BlockOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps } from 'antd';
@@ -174,6 +186,11 @@ export function ComplexScoreCardEditor({
   const [saving, setSaving] = useState(false);
   // Row-copy clipboard. `null` = nothing copied yet (disables the paste button).
   const [clipboardRow, setClipboardRow] = useState<ClipboardRow | null>(null);
+  // Cell-copy clipboard. Holds a deep-cloned ComplexCell (content fields only —
+  // row/col/rowspan are kept on the target). Separate from `clipboardRow` so
+  // cell copy/paste never collides with row copy/paste. `null` = nothing
+  // copied yet (disables the cell-paste menu item).
+  const [clipboardCell, setClipboardCell] = useState<ComplexCell | null>(null);
 
   // Load the project's imported variable libraries once; passed down to the
   // cell editors so they can render the shared VariablePicker.
@@ -314,6 +331,60 @@ export function ComplexScoreCardEditor({
     message.success('已粘贴行');
   }, [clipboardRow]);
 
+  // ---- cell copy / paste ----
+  //
+  // Cell-level copy/paste. Copy deep-clones the source ComplexCell at
+  // (row, col) into `clipboardCell`. Paste deep-clones the stored cell again
+  // and merges ONLY the content fields onto the target cell (keeping the
+  // target's row/col/rowspan). Content fields are column-type-specific
+  // (Criteria → variable binding + joint; Score/Custom → value); we
+  // cherry-pick whichever the source has so a copied joint pastes onto another
+  // Criteria cell, a copied value onto another score cell, etc. Independent of
+  // the row clipboard.
+  const copyCell = useCallback(
+    (row: number, col: number) => {
+      const cell = findCell(row, col);
+      if (!cell) {
+        message.warning('该单元格为空,无内容可复制');
+        return;
+      }
+      setClipboardCell(deepClone(cell));
+      message.success('已复制单元格内容');
+    },
+    [findCell],
+  );
+
+  const pasteCell = useCallback(
+    (row: number, col: number) => {
+      if (!clipboardCell) {
+        message.warning('单元格剪贴板为空,请先复制一个单元格');
+        return;
+      }
+      // Deep-clone the stored cell again so repeated pastes stay independent.
+      const src = deepClone(clipboardCell);
+      // Cherry-pick the content fields the source has; the target keeps its
+      // row/col/rowspan.
+      const patch: Partial<ComplexCell> = {};
+      if (src.variableName !== undefined) patch.variableName = src.variableName;
+      if (src.variableLabel !== undefined) patch.variableLabel = src.variableLabel;
+      if (src.datatype !== undefined) patch.datatype = src.datatype;
+      if (src.joint !== undefined) patch.joint = src.joint;
+      if (src.value !== undefined) patch.value = src.value;
+      setState((prev) => {
+        const cells = prev.cells.slice();
+        const idx = cells.findIndex((c) => c.row === row && c.col === col);
+        if (idx >= 0) {
+          cells[idx] = { ...cells[idx], ...patch };
+        } else {
+          cells.push({ row, col, rowspan: 1, ...patch });
+        }
+        return { ...prev, cells };
+      });
+      message.success('已粘贴单元格内容');
+    },
+    [clipboardCell],
+  );
+
   // ---- col management ----
   const addCol = useCallback((type: ComplexColType, variableCategory?: string) => {
     setState((prev) => {
@@ -378,6 +449,38 @@ export function ComplexScoreCardEditor({
 
   // ---- AntD table columns (one per <col>) ----
   const antColumns: ColumnsType<DisplayRow> = useMemo(() => {
+    /**
+     * Wrap a cell editor in a right-click Dropdown that exposes cell-level
+     * copy / paste (independent of the row clipboard). The menu's paste item
+     * is disabled when the cell clipboard is empty.
+     */
+    const wrapCellContextMenu = (
+      editor: React.ReactNode,
+      row: number,
+      col: number,
+    ): React.ReactNode => {
+      const items: MenuProps['items'] = [
+        {
+          key: 'copy-cell',
+          label: '复制单元格',
+          icon: <BlockOutlined />,
+          onClick: () => copyCell(row, col),
+        },
+        {
+          key: 'paste-cell',
+          label: '粘贴单元格',
+          icon: <SnippetsOutlined />,
+          disabled: !clipboardCell,
+          onClick: () => pasteCell(row, col),
+        },
+      ];
+      return (
+        <Dropdown menu={{ items }} trigger={['contextMenu']}>
+          <div style={{ cursor: 'context-menu' }}>{editor}</div>
+        </Dropdown>
+      );
+    };
+
     const cols: ColumnsType<DisplayRow> = state.cols
       .slice()
       .sort((a, b) => a.num - b.num)
@@ -408,8 +511,8 @@ export function ComplexScoreCardEditor({
           width: col.width,
           render: (_v, dr) => {
             const cell = findCell(dr.rowNumber, col.num);
-            if (col.type === 'Criteria') {
-              return (
+            const editor =
+              col.type === 'Criteria' ? (
                 <CriteriaCellEditor
                   value={cell}
                   libraries={variableLibraries}
@@ -417,17 +520,16 @@ export function ComplexScoreCardEditor({
                   parameterLibraries={parameterLibraries}
                   onChange={(next) => setCell(dr.rowNumber, col.num, next)}
                 />
+              ) : (
+                <ValueCellEditor
+                  value={cell}
+                  libraries={variableLibraries}
+                  constantLibraries={constantLibraries}
+                  parameterLibraries={parameterLibraries}
+                  onChange={(next) => setCell(dr.rowNumber, col.num, next)}
+                />
               );
-            }
-            return (
-              <ValueCellEditor
-                value={cell}
-                libraries={variableLibraries}
-                constantLibraries={constantLibraries}
-                parameterLibraries={parameterLibraries}
-                onChange={(next) => setCell(dr.rowNumber, col.num, next)}
-              />
-            );
+            return wrapCellContextMenu(editor, dr.rowNumber, col.num);
           },
         };
       });
@@ -471,7 +573,7 @@ export function ComplexScoreCardEditor({
     });
 
     return cols;
-  }, [state.cols, findCell, setCell, removeCol, removeRow, copyRow, pasteRow, clipboardRow, variableLibraries, constantLibraries, parameterLibraries]);
+  }, [state.cols, findCell, setCell, removeCol, removeRow, copyRow, pasteRow, clipboardRow, copyCell, pasteCell, clipboardCell, variableLibraries, constantLibraries, parameterLibraries]);
 
   if (loading) {
     return (

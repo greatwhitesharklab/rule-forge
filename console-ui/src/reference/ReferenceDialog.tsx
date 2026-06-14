@@ -310,7 +310,7 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
                                     <td><button type="button" className="btn btn-link" style={{padding:'5px 5px'}} onClick={function() {
                                         // SPA 化:按 file.path 扩展名映射到 /app/editor/<type> 新标签打开。
                                         // 后端 file.editor 是旧版单页 HTML(/ruleset-editor.html 等),不含 type=,
-                                        // 不能复用 editorPathToSpaSegment,改用 filePathToSpaSegment 按扩展名映射。
+                                        // 用 filePathToSpaSegment 按扩展名映射。
                                         // 无 SPA 路由的文件(如 .ul.xml 脚本决策集)回退到原 iframe + TREE_NODE_CLICK。
                                         const spaSegment = filePathToSpaSegment(file.path);
                                         if (spaSegment) {
