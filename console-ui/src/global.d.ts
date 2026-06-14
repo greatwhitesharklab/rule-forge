@@ -208,9 +208,6 @@ interface SimulatorVariable {
 }
 
 interface Window {
-    // Iframe counter
-    iframe_id_: number;
-
     // Server config (V5.72: _server 已移除,apiBase 改纯 Vite env)
     _projectName: string | null;
     _types: string | null;

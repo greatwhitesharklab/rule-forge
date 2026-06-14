@@ -40,7 +40,6 @@ import {
     getParameter,
     buildProjectNameFromFile,
     handleResponseError,
-    nextIFrameId,
     buildEditorUrl,
 } from './Utils.js';
 
@@ -230,24 +229,5 @@ describe('Utils - handleResponseError', () => {
         expect(mocks.alert).toHaveBeenCalledWith(
             "<span style='color: red'>服务端错误：detail</span>"
         );
-    });
-});
-
-describe('Utils - nextIFrameId', () => {
-    it('GIVEN initial iframe_id_ WHEN nextIFrameId is called THEN it should increment and return next ID', () => {
-        (window as any).iframe_id_ = 10;
-        const result = nextIFrameId();
-        expect(result).toBe('_iframe11');
-        expect((window as any).iframe_id_).toBe(11);
-    });
-
-    it('GIVEN consecutive calls WHEN nextIFrameId is called multiple times THEN each call should return a unique ID', () => {
-        (window as any).iframe_id_ = 0;
-        const id1 = nextIFrameId();
-        const id2 = nextIFrameId();
-        const id3 = nextIFrameId();
-        expect(id1).toBe('_iframe1');
-        expect(id2).toBe('_iframe2');
-        expect(id3).toBe('_iframe3');
     });
 });
