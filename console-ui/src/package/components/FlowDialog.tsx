@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {apiBase} from '@/api/client';
 import * as event from '../event.js';
 import * as action from '../action.js';
 import {alert} from '@/utils/modal';
@@ -8,6 +9,7 @@ import {
 } from '../action.js';
 import Grid from '../../components/grid/component/Grid.tsx';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
+import {SendOutlined, ThunderboltOutlined} from '@ant-design/icons';
 
 interface FlowDialogProps {}
 
@@ -67,7 +69,7 @@ export default class FlowDialog extends Component<FlowDialogProps, FlowDialogSta
             operations: [
                 {
                     label: '测试',
-                    icon: 'glyphicon glyphicon-flash',
+                    icon: <ThunderboltOutlined />,
                     style: {fontSize: '20px', color: '#d9534f', padding: '0px 4px', cursor: 'pointer'},
                     click: function (rowIndex: number, rowData: FlowInfo) {
                         const ce = window.parent.componentEvent;
@@ -88,7 +90,7 @@ export default class FlowDialog extends Component<FlowDialogProps, FlowDialogSta
                 },
                 {
                     label: '批量测试',
-                    icon: 'glyphicon glyphicon-send',
+                    icon: <SendOutlined />,
                     style: {fontSize: '20px', color: '#d9534f', padding: '0px 4px', cursor: 'pointer'},
                     click: function (rowIndex: number, rowData: FlowInfo) {
                         const flowId = rowData.id;
@@ -144,7 +146,7 @@ export default class FlowDialog extends Component<FlowDialogProps, FlowDialogSta
                 <div>
                     <Grid headers={headers} operationConfig={gridOperationCol} rows={this.state.flows}/>
                     <form id={formId} method="post"
-                          action={window._server + '/packageeditor/exportBatchTestExcel'}>
+                          action={apiBase() + '/packageeditor/exportBatchTestExcel'}>
                         <input id="input-prefix" name="prefix" type="hidden"/>
                     </form>
                 </div>

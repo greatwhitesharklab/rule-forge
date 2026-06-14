@@ -67,33 +67,33 @@ export default class ItemDialog extends Component<ItemDialogProps, ItemDialogSta
         const {dispatch} = this.props;
         const body = (
             <div>
-                <div className="form-group">
+                <div className="rf-form-group">
                     <label>名称:</label>
-                    <input type="text" className="form-control" name="itemName"
+                    <input type="text" className="rf-form-control" name="itemName"
                         value={this.state.itemName}
                         onChange={(e) => this.setState({itemName: e.target.value, errors: {...this.state.errors, itemName: undefined}})}/>
-                    {this.state.errors.itemName && <div className="text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemName}</div>}
+                    {this.state.errors.itemName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemName}</div>}
                 </div>
-                <div className="form-group">
+                <div className="rf-form-group">
                     <label>资源文件路径:</label>
-                    <div className="input-group">
-                        <input type="text" className="form-control" name="itemPath" disabled
+                    <div className="rf-input-group">
+                        <input type="text" className="rf-form-control" name="itemPath" disabled
                             value={this.state.itemPath}/>
-                        <span className="input-group-btn">
-                            <button type="button" className="btn btn-default" onClick={() => {
+                        <span className="rf-input-group-btn">
+                            <button type="button" className="rf-btn rf-btn-default" onClick={() => {
                                 componentEvent.eventEmitter.emit(componentEvent.OPEN_KNOWLEDGE_TREE_DIALOG, {project: this.props.project, callback: function (this: ItemDialog, file: string, version: string) {
                                      this.setState({itemPath: 'jcr:' + file, itemVersion: version});
                                 }.bind(this)});
                             }}>选择文件</button>
                         </span>
                     </div>
-                    {this.state.errors.itemPath && <div className="text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemPath}</div>}
+                    {this.state.errors.itemPath && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemPath}</div>}
                 </div>
-                <div className="form-group">
+                <div className="rf-form-group">
                     <label>版本号:</label>
-                    <input type="text" className="form-control" name="itemVersion" disabled
+                    <input type="text" className="rf-form-control" name="itemVersion" disabled
                         value={this.state.itemVersion}/>
-                    {this.state.errors.itemVersion && <div className="text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemVersion}</div>}
+                    {this.state.errors.itemVersion && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemVersion}</div>}
                 </div>
             </div>
         );

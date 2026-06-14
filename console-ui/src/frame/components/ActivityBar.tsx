@@ -1,10 +1,11 @@
-import {Component} from 'react';
+import {Component, ReactNode} from 'react';
 import {connect} from 'react-redux';
 import {setActivePanel} from '@/frame/action.js';
+import {ApiOutlined, CloudOutlined, FolderOpenOutlined, HeartOutlined, PlayCircleOutlined, ProfileOutlined, ReadOutlined, SettingOutlined, TagOutlined, UserOutlined} from '@ant-design/icons';
 
 interface PanelItem {
     id: string;
-    icon: string;
+    icon: ReactNode;
     title: string;
 }
 
@@ -14,20 +15,20 @@ interface ActivityBarProps {
 }
 
 const PANELS: PanelItem[] = [
-    {id: 'rules', icon: 'glyphicon glyphicon-folder-open', title: '规则编辑'},
-    {id: 'monitoring', icon: 'glyphicon glyphicon-signal', title: '监控告警'},
-    {id: 'datasource', icon: 'glyphicon glyphicon-cloud', title: '数据源'},
-    {id: 'release', icon: 'glyphicon glyphicon-tag', title: '版本发布'},
-    {id: 'simulation', icon: 'glyphicon glyphicon-play-circle', title: '规则仿真'},
-    {id: 'ai', icon: 'glyphicon glyphicon-education', title: '智能分析'},
-    {id: 'gitStatus', icon: 'glyphicon glyphicon-heartbeat', title: 'Git 健康'},
-    {id: 'userMgmt', icon: 'glyphicon glyphicon-user', title: '用户管理'},
+    {id: 'rules', icon: <FolderOpenOutlined />, title: '规则编辑'},
+    {id: 'monitoring', icon: <ApiOutlined />, title: '监控告警'},
+    {id: 'datasource', icon: <CloudOutlined />, title: '数据源'},
+    {id: 'release', icon: <TagOutlined />, title: '版本发布'},
+    {id: 'simulation', icon: <PlayCircleOutlined />, title: '规则仿真'},
+    {id: 'ai', icon: <ReadOutlined />, title: '智能分析'},
+    {id: 'gitStatus', icon: <HeartOutlined />, title: 'Git 健康'},
+    {id: 'userMgmt', icon: <UserOutlined />, title: '用户管理'},
     // V5.17: 用户/权限审计日志(admin 门控由后端控制,前端不重复)
-    {id: 'auditLog', icon: 'glyphicon glyphicon-list-alt', title: '审计日志'},
+    {id: 'auditLog', icon: <ProfileOutlined />, title: '审计日志'},
 ];
 
 const BOTTOM_PANELS: PanelItem[] = [
-    {id: 'settings', icon: 'glyphicon glyphicon-cog', title: '系统设置'},
+    {id: 'settings', icon: <SettingOutlined />, title: '系统设置'},
 ];
 
 class ActivityBar extends Component<ActivityBarProps> {
@@ -42,7 +43,7 @@ class ActivityBar extends Component<ActivityBarProps> {
                  className={'activity-bar-icon' + (active ? ' active' : '')}
                  title={item.title}
                  onClick={() => this.handleClick(item.id)}>
-                <i className={item.icon}/>
+                {item.icon}
             </div>
         );
     }

@@ -296,7 +296,7 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
                         </div>
                     </div>
                 )}
-                <table className="table table-bordered">
+                <table className="rf-table rf-table-bordered">
                     <thead>
                         <tr><td>文件路径</td><td style={{width:'100px'}}>类型</td><td style={{width:'80px'}}>操作</td></tr>
                     </thead>
@@ -307,7 +307,7 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
                                 <tr key={index}>
                                     <td>{file.path}</td>
                                     <td>{file.type}</td>
-                                    <td><button type="button" className="btn btn-link" style={{padding:'5px 5px'}} onClick={function() {
+                                    <td><button type="button" className="rf-btn rf-btn-link" style={{padding:'5px 5px'}} onClick={function() {
                                         // SPA 化:按 file.path 扩展名映射到 /app/editor/<type> 新标签打开。
                                         // 后端 file.editor 是旧版单页 HTML(/ruleset-editor.html 等),不含 type=,
                                         // 用 filePathToSpaSegment 按扩展名映射。

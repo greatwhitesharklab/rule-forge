@@ -4,7 +4,7 @@ import * as event from '../../../frame/event.js';
 interface DialogButton {
     name: string;
     className: string;
-    icon: string;
+    icon: ReactNode;
     click: (dispatch?: unknown) => void;
 }
 
@@ -97,23 +97,23 @@ export default class Dialog extends Component<DialogProps, DialogState> {
         const { visible, title, body, buttons } = this.state;
         const buttonElements = (buttons || []).map((btn, index) => (
             <button type="button" key={index} className={btn.className} onClick={() => btn.click(this.props.dispatch)}>
-                <i className={btn.icon} /> {btn.name}
+                {typeof btn.icon === 'string' ? <i className={btn.icon} /> : btn.icon} {btn.name}
             </button>
         ));
         return (
             <div>
-                {visible && <div className="modal-backdrop fade in" onClick={() => this._close()}></div>}
+                {visible && <div className="rf-modal-backdrop rf-fade in" onClick={() => this._close()}></div>}
                 <div className={`modal fade ${visible ? 'in' : ''}`}
                      style={{ display: visible ? 'block' : 'none' }}
                      tabIndex={-1} role="dialog" aria-hidden={!visible}>
-                    <div className="modal-dialog">
-                        <div className="modal-content">
-                            <div className="modal-header" style={{ borderBottom: '1px solid var(--rf-border-split)' }}>
-                                <button type="button" className="close" aria-hidden="true" onClick={() => this._close()}>&times;</button>
-                                <h4 className="modal-title" style={{ fontWeight: 'var(--rf-font-weight-semibold)', color: 'var(--rf-text-primary)' }}>{title}</h4>
+                    <div className="rf-modal-dialog">
+                        <div className="rf-modal-content">
+                            <div className="rf-modal-header" style={{ borderBottom: '1px solid var(--rf-border-split)' }}>
+                                <button type="button" className="rf-close" aria-hidden="true" onClick={() => this._close()}>&times;</button>
+                                <h4 className="rf-modal-title" style={{ fontWeight: 'var(--rf-font-weight-semibold)', color: 'var(--rf-text-primary)' }}>{title}</h4>
                             </div>
-                            <div className="modal-body" style={{ padding: 'var(--rf-space-6)', color: 'var(--rf-text-primary)' }}>{body}</div>
-                            <div className="modal-footer">{buttonElements}</div>
+                            <div className="rf-modal-body" style={{ padding: 'var(--rf-space-6)', color: 'var(--rf-text-primary)' }}>{body}</div>
+                            <div className="rf-modal-footer">{buttonElements}</div>
                         </div>
                     </div>
                 </div>

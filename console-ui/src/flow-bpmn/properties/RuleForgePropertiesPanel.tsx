@@ -3,6 +3,7 @@ import ScriptEditorPopup from './ScriptEditorPopup.jsx';
 import * as componentEvent from '../../components/componentEvent.js';
 import {formPost} from '../../api/client.js';
 import './ruleforge-properties.css';
+import {ArrowDownOutlined, ArrowUpOutlined, CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined} from '@ant-design/icons';
 
 interface FlowItem {
     flowElement: any;
@@ -242,13 +243,13 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                 <label>{label}</label>
                 <div className="rf-prop-file-row">
                     <input type="text" value={value || ''} onChange={onValueChange} placeholder={placeholder || ''}/>
-                    <button className="btn btn-sm btn-default" title="选择文件"
+                    <button className="rf-btn rf-btn-sm rf-btn-default" title="选择文件"
                             onClick={() => this.openKnowledgeTree((file, version) => {
                                 let path = 'jcr:' + file;
                                 if (version !== 'LATEST') path += ':' + version;
                                 onValueChange({target: {value: path}});
                             })}>
-                        <i className="glyphicon glyphicon-search"/>
+                        <SearchOutlined />
                     </button>
                 </div>
             </div>
@@ -307,7 +308,7 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                         }
                     )}>{preview}</pre>
                 ) : null}
-                <button className="btn btn-sm btn-primary rf-script-edit-btn" onClick={() => this.openScriptEditor(
+                <button className="rf-btn rf-btn-sm rf-btn-primary rf-script-edit-btn" onClick={() => this.openScriptEditor(
                     script, '编辑脚本', 'Script',
                     (val) => {
                         const {modeling} = this.props;
@@ -316,7 +317,7 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                         }
                     }
                 )}>
-                    <i className="glyphicon glyphicon-edit"/> {preview ? '编辑脚本' : '编写脚本'}
+                    <EditOutlined /> {preview ? '编辑脚本' : '编写脚本'}
                 </button>
             </div>
         );
@@ -355,13 +356,13 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                                                     <span className="rf-branch-condition-text">
                                                         {(this.getFlowExtensionAttr(flow.flowBo, 'conditionScript') || '').substring(0, 30)}
                                                     </span>
-                                                    <button className="btn btn-xs btn-default" onClick={() => {
+                                                    <button className="rf-btn rf-btn-xs rf-btn-default" onClick={() => {
                                                         const current = this.getFlowExtensionAttr(flow.flowBo, 'conditionScript') || '';
                                                         this.openScriptEditor(current, '编辑条件脚本', 'Script', (val) => {
                                                             this.setFlowExtensionAttr(flow.flowElement, 'conditionScript', val);
                                                         });
                                                     }}>
-                                                        <i className="glyphicon glyphicon-edit"/>
+                                                        <EditOutlined />
                                                     </button>
                                                 </div>
                                             </td>
@@ -432,34 +433,34 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                                     <td className="rf-text-center">{idx + 1}</td>
                                     <td>{rule.name || '(未命名)'}</td>
                                     <td>
-                                        <button className="btn btn-xs btn-default" title="编辑"
+                                        <button className="rf-btn rf-btn-xs rf-btn-default" title="编辑"
                                                 onClick={() => this.openRuleEditDialog(rulesList, idx, updateRules)}>
-                                            <i className="glyphicon glyphicon-edit"/>
+                                            <EditOutlined />
                                         </button>
-                                        <button className="btn btn-xs btn-default" title="删除"
+                                        <button className="rf-btn rf-btn-xs rf-btn-default" title="删除"
                                                 onClick={() => {
                                                     const newList = rulesList.filter((_, i) => i !== idx);
                                                     updateRules(newList);
                                                 }}>
-                                            <i className="glyphicon glyphicon-trash"/>
+                                            <DeleteOutlined />
                                         </button>
-                                        <button className="btn btn-xs btn-default" title="上移" disabled={idx === 0}
+                                        <button className="rf-btn rf-btn-xs rf-btn-default" title="上移" disabled={idx === 0}
                                                 onClick={() => {
                                                     if (idx === 0) return;
                                                     const newList = [...rulesList];
                                                     [newList[idx - 1], newList[idx]] = [newList[idx], newList[idx - 1]];
                                                     updateRules(newList);
                                                 }}>
-                                            <i className="glyphicon glyphicon-arrow-up"/>
+                                            <ArrowUpOutlined />
                                         </button>
-                                        <button className="btn btn-xs btn-default" title="下移" disabled={idx === rulesList.length - 1}
+                                        <button className="rf-btn rf-btn-xs rf-btn-default" title="下移" disabled={idx === rulesList.length - 1}
                                                 onClick={() => {
                                                     if (idx === rulesList.length - 1) return;
                                                     const newList = [...rulesList];
                                                     [newList[idx], newList[idx + 1]] = [newList[idx + 1], newList[idx]];
                                                     updateRules(newList);
                                                 }}>
-                                            <i className="glyphicon glyphicon-arrow-down"/>
+                                            <ArrowDownOutlined />
                                         </button>
                                     </td>
                                 </tr>
@@ -469,12 +470,12 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                 ) : (
                     <div className="rf-prop-hint">暂无规则，点击下方按钮添加</div>
                 )}
-                <button className="btn btn-sm btn-primary" style={{marginTop: 8, width: '100%'}}
+                <button className="rf-btn rf-btn-sm rf-btn-primary" style={{marginTop: 8, width: '100%'}}
                         onClick={() => {
                             const newList = [...rulesList, {name: '', file: '', version: '', eventBean: ''}];
                             this.openRuleEditDialog(newList, newList.length - 1, updateRules);
                         }}>
-                    <i className="glyphicon glyphicon-plus"/> 添加规则
+                    <PlusOutlined /> 添加规则
                 </button>
             </div>
         );
@@ -501,8 +502,8 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                         <label>目标规则文件</label>
                         <div class="rf-prop-file-row">
                             <input type="text" class="rf-rule-file" value="${tempRule.file || ''}" placeholder="选择或输入文件路径"/>
-                            <button class="btn btn-sm btn-default rf-rule-browse" title="选择文件">
-                                <i class="glyphicon glyphicon-search"/>
+                            <button class="rf-btn rf-btn-sm rf-btn-default rf-rule-browse" title="选择文件">
+                                <svg viewBox="64 64 896 896" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M909.6 854.5L649.9 594.8C690.2 542.7 712 479 712 412c0-80.2-31.3-155.4-87.9-212.1-56.6-56.7-132-87.9-212.1-87.9s-155.5 31.3-212.1 87.9C143.2 256.5 112 331.8 112 412c0 80.1 31.3 155.5 87.9 212.1C256.5 680.8 331.8 712 412 712c67 0 130.6-21.8 182.7-62l259.7 259.6a8.2 8.2 0 0011.6 0l43.6-43.5a8.2 8.2 0 000-11.6zM570.4 668.3c-44.8 44.9-106 69.7-171.4 69.7s-126.6-24.8-171.4-69.7c-44.9-44.8-69.7-106-69.7-171.4s24.8-126.6 69.7-171.4c44.8-44.9 106-69.7 171.4-69.7s126.6 24.8 171.4 69.7c44.9 44.8 69.7 106 69.7 171.4s-24.8 126.6-69.7 171.4z"/></svg>
                             </button>
                         </div>
                     </div>
@@ -516,8 +517,8 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                     </div>
                 </div>
                 <div class="rf-rule-edit-footer">
-                    <button class="btn btn-sm btn-default rf-rule-cancel">取消</button>
-                    <button class="btn btn-sm btn-primary rf-rule-save" style="margin-left:8px">保存</button>
+                    <button class="rf-btn rf-btn-sm rf-btn-default rf-rule-cancel">取消</button>
+                    <button class="rf-btn rf-btn-sm rf-btn-primary rf-rule-save" style="margin-left:8px">保存</button>
                 </div>
             </div>
         `;
@@ -616,9 +617,9 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                                             {imp.path}
                                         </td>
                                         <td>
-                                            <button className="btn btn-xs btn-default" title="移除"
+                                            <button className="rf-btn rf-btn-xs rf-btn-default" title="移除"
                                                     onClick={() => this.removeImport(imports, idx)}>
-                                                <i className="glyphicon glyphicon-remove"/>
+                                                <CloseOutlined />
                                             </button>
                                         </td>
                                     </tr>

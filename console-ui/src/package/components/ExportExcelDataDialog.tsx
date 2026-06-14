@@ -1,6 +1,8 @@
 import {Component} from 'react';
+import {apiBase} from '@/api/client';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
+import {CloudDownloadOutlined} from '@ant-design/icons';
 
 interface ExportExcelDataDialogProps {}
 
@@ -33,24 +35,24 @@ export default class ExportExcelDataDialog extends Component<ExportExcelDataDial
         const formId = 'export_excel_form';
         const body = (
             <div>
-                <form id={formId} method="post" action={window._server + '/packageeditor/exportExcelData'}>
+                <form id={formId} method="post" action={apiBase() + '/packageeditor/exportExcelData'}>
                     <div>
-                        <div className="form-group">
+                        <div className="rf-form-group">
                             <label>开始时间:</label>
-                            <input type="date" className="form-control" name="startTime" autoComplete="off"/>
+                            <input type="date" className="rf-form-control" name="startTime" autoComplete="off"/>
                         </div>
-                        <div className="form-group">
+                        <div className="rf-form-group">
                             <label>结束时间:</label>
-                            <input type="date" className="form-control" name="endTime" autoComplete="off"/>
+                            <input type="date" className="rf-form-control" name="endTime" autoComplete="off"/>
                         </div>
-                        <div className="form-group">
+                        <div className="rf-form-group">
                             <label>项目名:</label>
-                            <input type="text" className="form-control" name="projectName"
+                            <input type="text" className="rf-form-control" name="projectName"
                                    autoComplete="off"/>
                         </div>
-                        <div className="form-group">
+                        <div className="rf-form-group">
                             <label>包名:</label>
-                            <input type="text" className="form-control" name="packageName"
+                            <input type="text" className="rf-form-control" name="packageName"
                                    autoComplete="off"/>
                         </div>
                     </div>
@@ -61,7 +63,7 @@ export default class ExportExcelDataDialog extends Component<ExportExcelDataDial
             {
                 name: '导出',
                 className: 'btn btn-primary',
-                icon: 'glyphicon glyphicon-cloud-download',
+                icon: <CloudDownloadOutlined />,
                 click: function () {
                     (document.getElementById(formId) as HTMLFormElement).submit();
                 }

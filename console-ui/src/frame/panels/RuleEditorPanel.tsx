@@ -3,6 +3,7 @@ import FileTreePanel from '@/frame/components/FileTreePanel.jsx';
 import * as ACTIONS from '@/frame/action.js';
 import * as event from '@/frame/event.js';
 import {Store} from 'redux';
+import {DownOutlined} from '@ant-design/icons';
 
 interface RuleEditorPanelProps {
     store: Store;
@@ -83,7 +84,7 @@ export default class RuleEditorPanel extends Component<RuleEditorPanelProps, Rul
                     }}>
                         <i className="rf rf-project" style={{marginRight: 6, fontSize: 14}}/>
                         <span>{selectedProject || '选择项目'}</span>
-                        <i className="glyphicon glyphicon-chevron-down" style={{marginLeft: 6, fontSize: 10, opacity: 0.5}}/>
+                        <DownOutlined style={{marginLeft: 6, fontSize: 10, opacity: 0.5}} />
                     </button>
                     {dropdownOpen && (
                         <div className="panel-project-dropdown">

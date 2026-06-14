@@ -3,6 +3,7 @@ import * as ACTIONS from '@/frame/action.js';
 import * as event from '@/frame/event.js';
 import Tree from '@/components/tree/component/Tree.jsx';
 import PackageNavigator from '@/package/components/PackageNavigator.tsx';
+import {SearchOutlined} from '@ant-design/icons';
 
 interface FileTreePanelProps {
     store: {
@@ -44,8 +45,8 @@ export default class FileTreePanel extends Component<FileTreePanelProps, FileTre
             <div className="file-tree-panel">
                 <div className="file-tree-search">
                     <div className="file-tree-search-wrapper">
-                        <i className="glyphicon glyphicon-search file-tree-search-icon"/>
-                        <input type="text" className="form-control fileSearchText file-tree-search-input"
+                        <SearchOutlined />
+                        <input type="text" className="rf-form-control fileSearchText file-tree-search-input"
                                placeholder="搜索文件..."
                                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                                    if (e.key === 'Enter') {
@@ -56,7 +57,7 @@ export default class FileTreePanel extends Component<FileTreePanelProps, FileTre
                                    }
                                }}/>
                     </div>
-                    <button className="btn btn-default btn-xs"
+                    <button className="rf-btn rf-btn-default rf-btn-xs"
                             style={{marginLeft: '4px', padding: '2px 8px'}}
                             onClick={this.toggleViewMode}
                             title={viewMode === 'tree' ? '切换到知识包视图' : '切换到文件树视图'}>

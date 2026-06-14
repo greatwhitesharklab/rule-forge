@@ -15,6 +15,7 @@ import type {
     AnomalyRecord
 } from './action.js';
 import {getStartTime, getGranularity} from './helpers.js';
+import {BarChartOutlined, CheckCircleOutlined, DatabaseOutlined, WarningOutlined} from '@ant-design/icons';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const echarts: any = (window as any).echarts;
@@ -29,9 +30,9 @@ const TIME_RANGES = [
 ] as const;
 
 const TABS = [
-    {id: 'trend', label: '决策趋势', icon: 'glyphicon glyphicon-stats'},
-    {id: 'coverage', label: '规则覆盖', icon: 'glyphicon glyphicon-tasks'},
-    {id: 'anomaly', label: '偏差检测', icon: 'glyphicon glyphicon-warning-sign'}
+    {id: 'trend', label: '决策趋势', icon: <BarChartOutlined />,},
+    {id: 'coverage', label: '规则覆盖', icon: <DatabaseOutlined />,},
+    {id: 'anomaly', label: '偏差检测', icon: <WarningOutlined />,}
 ] as const;
 
 // ========== Chart Components ==========
@@ -265,7 +266,7 @@ class AnalysisDashboard extends Component<AnalysisDashboardProps> {
                                     borderBottom: activeTab === tab.id ? '2px solid #1890ff' : '2px solid transparent',
                                     fontWeight: activeTab === tab.id ? 'bold' : 'normal', fontSize: 13
                                 }}>
-                            <span className={tab.icon} style={{marginRight: 6}}/> {tab.label}
+                            <span style={{marginRight: 6}}>{tab.icon}</span> {tab.label}
                         </button>
                     ))}
                 </div>
@@ -390,7 +391,7 @@ class AnalysisDashboard extends Component<AnalysisDashboardProps> {
 
                 {!anomaliesLoading && anomalies.length === 0 && (
                     <div style={{textAlign: 'center', padding: 40, color: '#52c41a', fontSize: 16}}>
-                        <span className="glyphicon glyphicon-ok-circle" style={{fontSize: 40, display: 'block', marginBottom: 8}}/>
+                        <CheckCircleOutlined style={{fontSize: 40, display: 'block', marginBottom: 8}} />
                         当前未检测到异常偏差
                     </div>
                 )}

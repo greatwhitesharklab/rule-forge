@@ -11,6 +11,7 @@ import type {VariableCategory, VariableItem} from '../action.js';
 import type {VariableRootState} from '../reducer.js';
 
 import {alert, confirm, prompt} from '@/utils/modal';
+import {CloudUploadOutlined, DeleteOutlined, PlusCircleOutlined, ThunderboltOutlined} from '@ant-design/icons';
 interface VariableEditorProps {
     masterData: VariableCategory[];
     masterRowData: VariableCategory;
@@ -51,7 +52,7 @@ class VariableEditor extends Component<VariableEditorProps> {
             operations: [
                 {
                     label: '通过指定类生成该类所有属性',
-                    icon: 'glyphicon glyphicon-flash',
+                    icon: <ThunderboltOutlined />,
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-primary)', padding: '0px 4px', cursor: 'pointer'},
                     click: (rowIndex: number, rowData: VariableCategory) => {
                         let clazz = rowData.clazz;
@@ -67,7 +68,7 @@ class VariableEditor extends Component<VariableEditorProps> {
                 },
                 {
                     label: '导入通过ClassUtils类生成的包含类属性的XML文件',
-                    icon: 'glyphicon glyphicon-cloud-upload',
+                    icon: <CloudUploadOutlined />,
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-primary)', padding: '0px 4px', cursor: 'pointer'},
                     click: (rowIndex: number, _rowData: VariableCategory) => {
                         event.eventEmitter.emit(event.OPEN_IMPORT_XML_DIALOG, rowIndex)
@@ -75,7 +76,7 @@ class VariableEditor extends Component<VariableEditorProps> {
                 },
                 {
                     label: '删除',
-                    icon: 'glyphicon glyphicon-trash',
+                    icon: <DeleteOutlined />,
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 4px', cursor: 'pointer'},
                     click: (rowIndex: number) => {
                         confirm('真的要删除当前记录？', function (result) {
@@ -93,7 +94,7 @@ class VariableEditor extends Component<VariableEditorProps> {
             operations: [
                 {
                     label: '删除',
-                    icon: 'glyphicon glyphicon-trash',
+                    icon: <DeleteOutlined />,
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 10px', cursor: 'pointer'},
                     click: (rowIndex: number) => {
                         confirm('真的要删除当前记录？', function (result) {
@@ -111,29 +112,29 @@ class VariableEditor extends Component<VariableEditorProps> {
                 <Splitter orientation='vertical' position='50%'>
                     <div style={{padding: '0px'}}>
                         <div style={{margin: '2px'}}>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-primary" type="button" onClick={(e) => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-primary" type="button" onClick={(e) => {
                                     prompt("请输入类名称", function (masterName) {
                                         if (!masterName) {
                                             return;
                                         }
                                         dispatch(action.addMaster(masterName))
                                     });
-                                }}><i className="glyphicon glyphicon-plus-sign"/> 添加
+                                }}><PlusCircleOutlined /> 添加
                                 </button>
                             </div>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-danger" type="button" onClick={() => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
                                     dispatch(action.save(false, file))
                                 }}><i className="rf rf-save"/> 保存
                                 </button>
-                                <button className="btn btn-danger" type="button" onClick={() => {
+                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
                                     dispatch(action.save(true, file))
                                 }} style={{display: 'none'}}><i className="rf rf-savenewversion"/> 保存为新版本
                                 </button>
                             </div>
-                            {/* <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-info" type="button" onClick={(e) => {
+                            {/* <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-info" type="button" onClick={(e) => {
                                     if (!this.currentData) {
                                         alert('请先选择一条具体的变量');
                                         return;
@@ -164,10 +165,10 @@ class VariableEditor extends Component<VariableEditorProps> {
                     </div>
                     <div style={{padding: '0px'}}>
                         <div style={{margin: '2px'}}>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-primary" type="button" onClick={(e) => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-primary" type="button" onClick={(e) => {
                                     dispatch(action.addSlave())
-                                }}><i className="glyphicon glyphicon-plus-sign"/> 添加字段
+                                }}><PlusCircleOutlined /> 添加字段
                                 </button>
                             </div>
                         </div>

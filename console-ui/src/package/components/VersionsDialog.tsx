@@ -84,25 +84,25 @@ export default class VersionsDialog extends Component<VersionsDialogProps, Versi
 
         const body = (
             <div>
-                <div className="form-group row">
-                    <div className="col-xs-6">
+                <div className="rf-form-group rf-row">
+                    <div className="rf-col-xs-6">
                         <label style={{textAlign: 'right', width: '100px'}}>知识包编码：</label>
                         <span>{this.state.rowData && this.state.rowData.id || ''}</span>
 
                     </div>
-                    <div className="col-xs-6">
+                    <div className="rf-col-xs-6">
                         <label style={{textAlign: 'right', width: '100px'}}>知识包名称：</label>
                         <span>{this.state.rowData && this.state.rowData.name || ''}</span>
                     </div>
                 </div>
-                <div className="form-group" style={{display: 'flex'}}>
+                <div className="rf-form-group" style={{display: 'flex'}}>
                     <label style={{textAlign: 'right', width: '100px'}}>版本说明：</label>
-                    <input style={{flex: 1}} type="text" className="form-control" name="packageName"
+                    <input style={{flex: 1}} type="text" className="rf-form-control" name="packageName"
                         value={this.state.versionComment}
                         onChange={e => this.setState({ versionComment: e.target.value })}/>
 
                 </div>
-                <div className="form-group" style={{display: 'flex'}}>
+                <div className="rf-form-group" style={{display: 'flex'}}>
                     <label style={{textAlign: 'right', width: '100px'}}>知识包文件：</label>
                     <div style={{flex: 1}}>
                         <Grid headers={resourceGridHeaders} dispatch={dispatch} rows={resourceData} rowClick={(rowData: ResourceItem) => {
@@ -117,7 +117,7 @@ export default class VersionsDialog extends Component<VersionsDialogProps, Versi
                         }}/>
                     </div>
                 </div>
-                <div className="form-group" style={{display: 'flex'}}>
+                <div className="rf-form-group" style={{display: 'flex'}}>
                     <label style={{textAlign: 'right', width: '100px'}}>引用规则：</label>
                 </div>
                 <div style={{paddingLeft: '10px', maxHeight: '300px', overflow: 'auto'}}>

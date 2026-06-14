@@ -1,10 +1,11 @@
-import {Component, ChangeEvent} from 'react';
+import {Component, ChangeEvent, ReactNode} from 'react';
 import {connect} from 'react-redux';
 import * as action from './action';
 import type {EnvironmentInfo, ApprovalTask, DeploymentRecord, ExecutorNode, GrayStrategy, ShadowConfig, ShadowComparison, ShadowStats} from './action';
 import type {ReleaseState} from './reducer';
 
 import {alert, confirm, prompt} from '@/utils/modal';
+import {CheckOutlined, ClockCircleOutlined, CopyOutlined, GlobalOutlined, HddOutlined, InfoCircleOutlined, PlusOutlined, RetweetOutlined, UploadOutlined} from '@ant-design/icons';
 interface ReleasePanelState {
     projectName: string;
 }
@@ -34,7 +35,7 @@ interface ReleasePanelProps {
 interface TabDef {
     id: string;
     label: string;
-    icon: string;
+    icon: ReactNode;
 }
 
 class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
@@ -95,12 +96,12 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
         const {projectName} = this.state;
 
         const tabs: TabDef[] = [
-            {id: 'environments', label: '环境管理', icon: 'glyphicon glyphicon-globe'},
-            {id: 'approvals', label: '审批流程', icon: 'glyphicon glyphicon-check'},
-            {id: 'history', label: '部署历史', icon: 'glyphicon glyphicon-time'},
-            {id: 'nodes', label: '节点管理', icon: 'glyphicon glyphicon-hdd'},
-            {id: 'gray', label: '灰度策略', icon: 'glyphicon glyphicon-random'},
-            {id: 'shadow', label: '陪跑配置', icon: 'glyphicon glyphicon-duplicate'},
+            {id: 'environments', label: '环境管理', icon: <GlobalOutlined />,},
+            {id: 'approvals', label: '审批流程', icon: <CheckOutlined />,},
+            {id: 'history', label: '部署历史', icon: <ClockCircleOutlined />,},
+            {id: 'nodes', label: '节点管理', icon: <HddOutlined />,},
+            {id: 'gray', label: '灰度策略', icon: <RetweetOutlined />,},
+            {id: 'shadow', label: '陪跑配置', icon: <CopyOutlined />,},
         ];
 
         return (
@@ -125,7 +126,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                     color: activeTab === tab.id ? '#1677ff' : 'rgba(0,0,0,0.65)',
                                     transition: 'all 0.2s'
                                 }}>
-                            <span className={tab.icon} style={{marginRight: 6, fontSize: 12}}/>
+                            <span style={{marginRight: 6, fontSize: 12}}>{tab.icon}</span>
                             {tab.label}
                         </button>
                     ))}
@@ -135,7 +136,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                 <div style={{flex: 1, overflow: 'auto', padding: 15}}>
                     {!projectName ? (
                         <div style={{textAlign: 'center', padding: 40, color: '#999'}}>
-                            <span className="glyphicon glyphicon-info-sign" style={{fontSize: 24, display: 'block', marginBottom: 10}}/>
+                            <InfoCircleOutlined style={{fontSize: 24, display: 'block', marginBottom: 10}} />
                             请先选择一个项目
                         </div>
                     ) : activeTab === 'environments' ? (
@@ -185,7 +186,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                 </span>
                             </div>
                             {env.execEnv === 'prod' && env.projectVersion && (
-                                <button className="btn btn-default btn-xs"
+                                <button className="rf-btn rf-btn-default rf-btn-xs"
                                         onClick={() => {
                                             confirm('确认回滚到上一版本？', (ok) => {
                                                 if (ok) {
@@ -237,13 +238,13 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             </div>
                             {task.status === 'pending' && (
                                 <div>
-                                    <button className="btn btn-success btn-xs" style={{marginRight: 4}}
+                                    <button className="rf-btn rf-btn-success rf-btn-xs" style={{marginRight: 4}}
                                             onClick={() => {
                                                 confirm('确认通过该审批？', (ok) => {
                                                     if (ok) this.props.dispatch(action.approveTask(task.id, ''));
                                                 });
                                             }}>通过</button>
-                                    <button className="btn btn-danger btn-xs"
+                                    <button className="rf-btn rf-btn-danger rf-btn-xs"
                                             onClick={() => {
                                                 prompt('驳回原因', (remark: string | null) => {
                                                     if (remark !== null) this.props.dispatch(action.rejectTask(task.id, remark));
@@ -270,7 +271,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
         const statusColors: Record<string, string> = {deployed: '#2e7d32', failed: '#c62828', rolled_back: '#f57c00', superseded: '#999'};
 
         return (
-            <table className="table table-condensed" style={{fontSize: 13}}>
+            <table className="rf-table rf-table-condensed" style={{fontSize: 13}}>
                 <thead>
                     <tr>
                         <th>版本</th>
@@ -293,7 +294,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             <td style={{fontSize: 11}}>{dep.deployTime || '-'}</td>
                             <td>
                                 {dep.deployStatus === 'deployed' && dep.execEnv === 'prod' && idx > 0 && (
-                                    <button className="btn btn-warning btn-xs"
+                                    <button className="rf-btn rf-btn-warning rf-btn-xs"
                                             onClick={() => {
                                                 confirm('确认回滚到版本 ' + dep.projectVersion + '？', (ok) => {
                                                     if (ok) {
@@ -327,7 +328,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
         return (
             <div>
                 {/* Node list */}
-                <table className="table table-condensed" style={{fontSize: 13}}>
+                <table className="rf-table rf-table-condensed" style={{fontSize: 13}}>
                     <thead>
                         <tr>
                             <th>节点名称</th>
@@ -385,7 +386,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             <option value="vip">VIP节点</option>
                             <option value="default">默认节点</option>
                         </select>
-                        <button className="btn btn-warning btn-sm" onClick={() => {
+                        <button className="rf-btn rf-btn-warning rf-btn-sm" onClick={() => {
                             const packageId = (document.getElementById('canary-package') as HTMLInputElement).value;
                             const version = (document.getElementById('canary-version') as HTMLInputElement).value;
                             const execEnv = (document.getElementById('canary-env') as HTMLSelectElement).value;
@@ -401,7 +402,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                 }
                             });
                         }}>
-                            <span className="glyphicon glyphicon-upload" style={{marginRight: 4}}/>
+                            <UploadOutlined style={{marginRight: 4}} />
                             灰度部署
                         </button>
                     </div>
@@ -424,7 +425,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                         <p style={{fontSize: 12}}>点击下方按钮创建灰度策略</p>
                     </div>
                 ) : (
-                    <table className="table table-condensed" style={{fontSize: 13}}>
+                    <table className="rf-table rf-table-condensed" style={{fontSize: 13}}>
                         <thead>
                             <tr>
                                 <th>策略名称</th>
@@ -461,12 +462,12 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                         </span>
                                     </td>
                                     <td>
-                                        <button className="btn btn-xs" style={{marginRight: 4, fontSize: 11}}
+                                        <button className="rf-btn rf-btn-xs" style={{marginRight: 4, fontSize: 11}}
                                                 onClick={() => this.props.dispatch(action.toggleGrayStrategy(
                                                     s.id, !s.enabled, s.projectId, s.packageId))}>
                                             {s.enabled ? '停用' : '启用'}
                                         </button>
-                                        <button className="btn btn-danger btn-xs" style={{fontSize: 11}}
+                                        <button className="rf-btn rf-btn-danger rf-btn-xs" style={{fontSize: 11}}
                                                 onClick={() => this.props.dispatch(action.deleteGrayStrategy(
                                                     s.id, s.projectId, s.packageId))}>
                                             删除
@@ -502,7 +503,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             <input id="gray-target" placeholder="目标版本 git tag" style={{flex: 1, padding: '4px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 3}}/>
                             <input id="gray-baseline" placeholder="基准版本 git tag" style={{flex: 1, padding: '4px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 3}}/>
                         </div>
-                        <button className="btn btn-primary btn-sm" onClick={() => {
+                        <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={() => {
                             const name = (document.getElementById('gray-name') as HTMLInputElement).value;
                             const type = (document.getElementById('gray-type') as HTMLSelectElement).value;
                             const packageId = (document.getElementById('gray-package') as HTMLInputElement).value;
@@ -526,7 +527,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                 enabled: true
                             }));
                         }}>
-                            <span className="glyphicon glyphicon-plus" style={{marginRight: 4}}/>
+                            <PlusOutlined style={{marginRight: 4}} />
                             创建策略
                         </button>
                     </div>
@@ -555,7 +556,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                 {(!configs || configs.length === 0) ? (
                     <div style={{textAlign: 'center', padding: 20, color: '#999'}}>暂无陪跑配置</div>
                 ) : (
-                    <table className="table table-bordered table-hover" style={{fontSize: 12}}>
+                    <table className="rf-table rf-table-bordered rf-table-hover" style={{fontSize: 12}}>
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -582,7 +583,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                         </span>
                                     </td>
                                     <td>
-                                        <button className="btn btn-danger btn-xs" onClick={() => this.props.dispatch(action.deleteShadowConfig(config.id))}>删除</button>
+                                        <button className="rf-btn rf-btn-danger rf-btn-xs" onClick={() => this.props.dispatch(action.deleteShadowConfig(config.id))}>删除</button>
                                     </td>
                                 </tr>
                             ))}
@@ -599,7 +600,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                         <input id="shadow-flow-id" placeholder="陪跑流程ID(可选)" style={{width: 120, padding: '4px 8px', fontSize: 12, border: '1px solid #ddd', borderRadius: 3}}/>
                         <input id="shadow-sample-rate" placeholder="采样率(%)" type="number" min="0" max="100" style={{width: 80, padding: '4px 8px', fontSize: 12, border: '1px solid #ddd', borderRadius: 3}}/>
                     </div>
-                    <button className="btn btn-primary btn-sm" onClick={() => {
+                    <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={() => {
                         const mainPath = (document.getElementById('shadow-main-path') as HTMLInputElement).value;
                         const shadowPath = (document.getElementById('shadow-shadow-path') as HTMLInputElement).value;
                         const flowId = (document.getElementById('shadow-flow-id') as HTMLInputElement).value;
@@ -615,7 +616,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             sampleRate: sampleRate ? parseInt(sampleRate) : 100
                         }));
                     }}>
-                        <span className="glyphicon glyphicon-plus" style={{marginRight: 4}}/>
+                        <PlusOutlined style={{marginRight: 4}} />
                         创建配置
                     </button>
                 </div>
@@ -644,7 +645,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                 ) : (!comparisons || comparisons.length === 0) ? (
                     <div style={{textAlign: 'center', padding: 20, color: '#999'}}>暂无对比数据</div>
                 ) : (
-                    <table className="table table-bordered table-hover" style={{fontSize: 12}}>
+                    <table className="rf-table rf-table-bordered rf-table-hover" style={{fontSize: 12}}>
                         <thead>
                             <tr>
                                 <th>用户ID</th>

@@ -4,6 +4,7 @@ import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
 import {alert} from '@/utils/modal';
+import {ClusterOutlined, DownloadOutlined, RetweetOutlined, ThunderboltOutlined, UploadOutlined} from '@ant-design/icons';
 import {
     ResourcePackage,
     SimulatorCategory,
@@ -107,8 +108,8 @@ export default class SimulatorPage extends Component<SimulatorPageProps, Simulat
                         border: 'solid 1px rgb(219, 215, 215)',
                         borderRadius: '5px'
                     }}>
-                        <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                            <button className="btn btn-primary" type="button" onClick={() => {
+                        <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                            <button className="rf-btn rf-btn-primary" type="button" onClick={() => {
                                 const ce = window.parent.componentEvent;
                                 ce.eventEmitter.emit(ce.SHOW_LOADING);
                                 action.doTest({
@@ -128,11 +129,11 @@ export default class SimulatorPage extends Component<SimulatorPageProps, Simulat
                                     });
                                     ce.eventEmitter.emit(ce.HIDE_LOADING);
                                 }.bind(this));
-                            }}><i className="glyphicon glyphicon-flash"/> 测试决策包
+                            }}><ThunderboltOutlined /> 测试决策包
                             </button>
                         </div>
-                        <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                            <button className="btn btn-info" type="button" onClick={() => {
+                        <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                            <button className="rf-btn rf-btn-info" type="button" onClick={() => {
                                 const ce = window.parent.componentEvent;
                                 ce.eventEmitter.emit(ce.SHOW_LOADING);
                                 event.eventEmitter.emit(event.OPEN_FLOW_DIALOG, {
@@ -141,28 +142,28 @@ export default class SimulatorPage extends Component<SimulatorPageProps, Simulat
                                     files: this.state.files,
                                     data: this.state.simulatorCategoryData
                                 });
-                            }}><i className="glyphicon glyphicon-random"/> 测试决策流
+                            }}><RetweetOutlined /> 测试决策流
                             </button>
                         </div>
-                        <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                            <button className="btn btn-success" type="button" onClick={() => {
+                        <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                            <button className="rf-btn rf-btn-success" type="button" onClick={() => {
                                 event.eventEmitter.emit(event.OPEN_RETE_DIAGRAM_DIALOG, this.state.files);
-                            }}><i className="glyphicon glyphicon-tree-conifer"/> 查看Rete树
+                            }}><ClusterOutlined /> 查看Rete树
                             </button>
                         </div>
-                        <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                            <button className="btn btn-warning" type="button" onClick={() => {
+                        <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                            <button className="rf-btn rf-btn-warning" type="button" onClick={() => {
                                 action.exportExcelTemplate(this.state.files);
-                            }}><i className="glyphicon glyphicon-download"/> 下载Excel测试数据模版
+                            }}><DownloadOutlined /> 下载Excel测试数据模版
                             </button>
-                            <button className="btn btn-danger" type="button" onClick={() => {
+                            <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
                                 event.eventEmitter.emit(event.OPEN_IMPORT_EXCEL_DIALOG, this.state.files);
-                            }}><i className="glyphicon glyphicon-upload"/> 上传Excel测试数据
+                            }}><UploadOutlined /> 上传Excel测试数据
                             </button>
                         </div>
                     </div>
-                    <div className="row" style={{margin: 0}}>
-                        <div className="col-xs-3 col-md-3" style={{paddingLeft: 0, paddingRight: '5px'}}>
+                    <div className="rf-row" style={{margin: 0}}>
+                        <div className="rf-col-xs-3 rf-col-md-3" style={{paddingLeft: 0, paddingRight: '5px'}}>
                             <Grid selectFirst={true} headers={masterHeaders} rows={this.state.simulatorCategoryData}
                                   rowClick={(rowData: SimulatorCategory, rowIndex: number) => {
                                       const data = this.state.simulatorCategoryData;
@@ -171,7 +172,7 @@ export default class SimulatorPage extends Component<SimulatorPageProps, Simulat
                                       }.bind(this), 10);
                                   }}/>
                         </div>
-                        <div className="col-xs-9 col-md-9" style={{padding: 0}}>
+                        <div className="rf-col-xs-9 rf-col-md-9" style={{padding: 0}}>
                             <Grid headers={slaveHeaders} rows={(this.state.simulatorCategoryRow as SimulatorCategory).variables || []}
                                   uniqueKey={true}/>
                         </div>

@@ -30,7 +30,7 @@ export default class Menu extends Component<MenuProps> {
         };
         return (
             <div id={menuId} style={{ position: 'absolute', display: visible ? 'block' : 'none' }}>
-                <ul className="dropdown-menu" style={menuStyle}>{result}</ul>
+                <ul className="rf-dropdown-menu" style={menuStyle}>{result}</ul>
             </div>
         );
     }

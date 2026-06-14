@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {apiBase} from '@/api/client';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import {ImportErrorItem} from '../action.js';
@@ -39,7 +40,7 @@ export default class ImportExcelErrorDialog extends Component<ImportExcelErrorDi
                 })}
                 {this.state.data.length > 10 && <div style={{color: 'red'}}>......共{this.state.data.length}条，仅显示前10条，其他请下载详情查看</div>}
                 <form id="formId" method="post"
-                    action={window._server + '/packageeditor/exportBatchTestExcel'}>
+                    action={apiBase() + '/packageeditor/exportBatchTestExcel'}>
                     <input id="input-prefix" name="prefix" type="hidden"/>
                 </form>
             </div>

@@ -80,7 +80,7 @@ export default class CellEditor extends Component<CellEditorProps, CellEditorSta
                     ? (this.state.rowData as Record<string, string[]>)[selectParam]
                     : (selectData || []);
                 return (<select ref={this.inputRef as React.RefObject<HTMLSelectElement>} style={styleObj} onBlur={this.blur.bind(this)}
-                    className="form-control" defaultValue={currentValue}>
+                    className="rf-form-control" defaultValue={currentValue}>
                     {selectOptions.map((option, index) => {
                         return (<option key={index}>{option}</option>);
                     })}
@@ -88,7 +88,7 @@ export default class CellEditor extends Component<CellEditorProps, CellEditorSta
             }
             case "boolean":
                 return (
-                    <select ref={this.inputRef as React.RefObject<HTMLSelectElement>} onBlur={this.blur.bind(this)} className="form-control"
+                    <select ref={this.inputRef as React.RefObject<HTMLSelectElement>} onBlur={this.blur.bind(this)} className="rf-form-control"
                         defaultValue={currentValue}>
                         <option value="true">true</option>
                         <option value="false">false</option>
@@ -96,13 +96,13 @@ export default class CellEditor extends Component<CellEditorProps, CellEditorSta
                 );
             case "date":
                 return (<input ref={this.inputRef as React.RefObject<HTMLInputElement>} style={styleObj} onBlur={this.blur.bind(this)} type="date"
-                    className="form-control" defaultValue={currentValue} />);
+                    className="rf-form-control" defaultValue={currentValue} />);
             case "number":
                 return (<input ref={this.inputRef as React.RefObject<HTMLInputElement>} style={styleObj} onBlur={this.blur.bind(this)} type="number"
-                    className="form-control" defaultValue={currentValue} />);
+                    className="rf-form-control" defaultValue={currentValue} />);
             default:
                 return (<input ref={this.inputRef as React.RefObject<HTMLInputElement>} style={styleObj} onBlur={this.blur.bind(this)} type="text"
-                    className="form-control" defaultValue={currentValue} />);
+                    className="rf-form-control" defaultValue={currentValue} />);
         }
     }
 }

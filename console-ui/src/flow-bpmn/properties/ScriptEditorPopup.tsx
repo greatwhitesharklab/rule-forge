@@ -143,8 +143,8 @@ export default class ScriptEditorPopup extends Component<ScriptEditorPopupProps,
                     </div>
                     <div className="rf-script-popup-body" ref={this.containerRef}></div>
                     <div className="rf-script-popup-footer">
-                        <button className="btn btn-sm btn-default" onClick={this.handleCancel}>取消</button>
-                        <button className="btn btn-sm btn-primary" onClick={this.handleOk} style={{marginLeft: 8}}>确定</button>
+                        <button className="rf-btn rf-btn-sm rf-btn-default" onClick={this.handleCancel}>取消</button>
+                        <button className="rf-btn rf-btn-sm rf-btn-primary" onClick={this.handleOk} style={{marginLeft: 8}}>确定</button>
                     </div>
                 </div>
             </div>

@@ -1,18 +1,20 @@
-import {Component} from 'react';
+import {Component, ReactNode} from 'react';
 import * as ACTIONS from '../action.js';
 import * as componentEvent from '../../components/componentEvent.js';
 import Tree from '../../components/tree/component/Tree.jsx';
 import {formPost} from '../../api/client.js';
+import {AppstoreOutlined, LogoutOutlined, SearchOutlined} from '@ant-design/icons';
+import {CurrentUserContext} from '@/router/RequireAuth';
 
 interface FileTypeFilter {
     type: string;
-    icon: string;
+    icon: ReactNode;
     label: string;
     className?: string;
 }
 
 const FILE_TYPE_FILTERS: FileTypeFilter[] = [
-    {type: 'all', icon: 'glyphicon glyphicon-th', label: '显示所有文件', className: 'rf rf-check'},
+    {type: 'all', icon: <AppstoreOutlined />, label: '显示所有文件', className: 'rf rf-check'},
     {type: 'lib', icon: 'rf rf-library', label: '库文件'},
     {type: 'rule', icon: 'rf rf-rule', label: '决策集'},
     {type: 'table', icon: 'rf rf-table', label: '决策表'},
@@ -46,6 +48,9 @@ interface SidebarToolbarState {
 }
 
 export default class SidebarToolbar extends Component<SidebarToolbarProps, SidebarToolbarState> {
+    static contextType = CurrentUserContext;
+    declare context: React.ContextType<typeof CurrentUserContext>;
+
     constructor(props: SidebarToolbarProps) {
         super(props);
         this.state = {
@@ -153,27 +158,28 @@ export default class SidebarToolbar extends Component<SidebarToolbarProps, Sideb
 
     render() {
         const {classifyText, noClassifyText, activeFilter, projects, selectedProject} = this.state;
+        const currentUser = this.context as UserInfo | null;
 
         return (
             <div className="sidebar-container">
                 {/* Sidebar top toolbar */}
                 <div className="sidebar-toolbar">
                     <div className="sidebar-toolbar-actions">
-                        <span className="dropdown">
-                            <a href="#" className="sidebar-tool-btn dropdown-toggle" data-toggle="dropdown" title="知识库内容展示方式">
-                                <i className="rf rf-display"/> <b className="caret"/>
+                        <span className="rf-dropdown">
+                            <a href="#" className="sidebar-tool-btn rf-dropdown-toggle" data-toggle="dropdown" title="知识库内容展示方式">
+                                <i className="rf rf-display"/> <b className="rf-caret"/>
                             </a>
-                            <ul className="dropdown-menu">
+                            <ul className="rf-dropdown-menu">
                                 <li><a href="#" onClick={(e) => { e.preventDefault(); this.handleClassifyToggle(true); }}>{classifyText}</a></li>
                                 <li><a href="#" onClick={(e) => { e.preventDefault(); this.handleClassifyToggle(false); }}>{noClassifyText}</a></li>
                             </ul>
                         </span>
 
-                        <span className="dropdown">
-                            <a href="#" className="sidebar-tool-btn dropdown-toggle" data-toggle="dropdown" title="项目过滤">
-                                <i className="rf rf-list"/> <b className="caret"/>
+                        <span className="rf-dropdown">
+                            <a href="#" className="sidebar-tool-btn rf-dropdown-toggle" data-toggle="dropdown" title="项目过滤">
+                                <i className="rf rf-list"/> <b className="rf-caret"/>
                             </a>
-                            <ul className="dropdown-menu">
+                            <ul className="rf-dropdown-menu">
                                 <li>
                                     <a href="#" onClick={this.handleShowAllProjects} style={{marginLeft: selectedProject ? '22px' : '0px'}}>
                                         <i className={!selectedProject ? 'rf rf-check' : ''}/> 显示所有项目
@@ -190,27 +196,27 @@ export default class SidebarToolbar extends Component<SidebarToolbarProps, Sideb
                             </ul>
                         </span>
 
-                        <span className="dropdown">
-                            <a href="#" className="sidebar-tool-btn dropdown-toggle" data-toggle="dropdown" title="文件类型过滤">
-                                <i className="rf rf-type"/> <b className="caret"/>
+                        <span className="rf-dropdown">
+                            <a href="#" className="sidebar-tool-btn rf-dropdown-toggle" data-toggle="dropdown" title="文件类型过滤">
+                                <i className="rf rf-type"/> <b className="rf-caret"/>
                             </a>
-                            <ul className="dropdown-menu">
+                            <ul className="rf-dropdown-menu">
                                 {FILE_TYPE_FILTERS.map(ft => (
                                     <li key={ft.type}>
                                         <a href="#" onClick={(e) => this.handleTypeFilter(ft.type, e)}>
                                             <i className={activeFilter === ft.type ? 'rf rf-check' : ''}/>
-                                            {' '}<i className={ft.icon}/> {ft.label}
+                                            {' '}{typeof ft.icon === 'string' ? <i className={ft.icon}/> : ft.icon} {ft.label}
                                         </a>
                                     </li>
                                 ))}
                             </ul>
                         </span>
 
-                        <span className="dropdown">
-                            <a href="#" className="sidebar-tool-btn dropdown-toggle" data-toggle="dropdown" title="权限配置">
+                        <span className="rf-dropdown">
+                            <a href="#" className="sidebar-tool-btn rf-dropdown-toggle" data-toggle="dropdown" title="权限配置">
                                 <i className="rf rf-authority"/>
                             </a>
-                            <ul className="dropdown-menu">
+                            <ul className="rf-dropdown-menu">
                                 <li><a href="#" onClick={this.handleAuthorityConfig}>资源权限配置</a></li>
                             </ul>
                         </span>
@@ -220,8 +226,8 @@ export default class SidebarToolbar extends Component<SidebarToolbarProps, Sideb
                 {/* Search */}
                 <div className="sidebar-search">
                     <div className="sidebar-search-wrapper">
-                        <i className="glyphicon glyphicon-search sidebar-search-icon"/>
-                        <input type="text" className="form-control fileSearchText sidebar-search-input"
+                        <SearchOutlined />
+                        <input type="text" className="rf-form-control fileSearchText sidebar-search-input"
                                placeholder="搜索文件..."
                                onKeyDown={(e) => { if (e.key === 'Enter') this.handleSearch(); }}/>
                     </div>
@@ -236,14 +242,14 @@ export default class SidebarToolbar extends Component<SidebarToolbarProps, Sideb
                 {/* User area */}
                 <div className="sidebar-user">
                     <div className="sidebar-user-avatar">
-                        {(window.__currentUser && window.__currentUser.username)
-                            ? window.__currentUser.username.charAt(0).toUpperCase() : 'U'}
+                        {(currentUser && currentUser.username)
+                            ? currentUser.username.charAt(0).toUpperCase() : 'U'}
                     </div>
                     <span className="sidebar-user-name">
-                        {window.__currentUser ? window.__currentUser.username : ''}
+                        {currentUser ? currentUser.username : ''}
                     </span>
                     <a href="#" className="sidebar-user-logout" title="退出登录" onClick={this.handleLogout}>
-                        <i className="glyphicon glyphicon-log-out"/>
+                        <LogoutOutlined />
                     </a>
                 </div>
             </div>

@@ -36,10 +36,12 @@ const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirm
 vi.mock('@/utils/modal', () => mocks);
 
 import * as ACTIONS from './action.js';
-// Mock api/client.js — production code imports save and formPost
+// Mock api/client.js — production code imports save, formPost, apiBase
+// (saveData constructs url = apiBase() + '/common/saveFile')
 vi.mock('../api/client.js', () => ({
     save: vi.fn(),
     formPost: vi.fn(),
+    apiBase: vi.fn(() => ''),
 }));
 
 // Helper to flush async chains

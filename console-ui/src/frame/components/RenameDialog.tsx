@@ -80,13 +80,13 @@ export default class RenameDialog extends Component<RenameDialogProps, RenameDia
             }.bind(this)
         }];
         const body = (
-            <div className="form-group">
+            <div className="rf-form-group">
                 <label>名称</label>
-                <input type="text" className="form-control" name="newFileNameForRename" value={this.state.fileName}
+                <input type="text" className="rf-form-control" name="newFileNameForRename" value={this.state.fileName}
                        onChange={function (e: React.ChangeEvent<HTMLInputElement>) {
                            this.setState({fileName: e.target.value, errors: {}});
                        }.bind(this)}></input>
-                {this.state.errors.fileName && <div className="text-danger" style={{fontSize: '12px'}}>{this.state.errors.fileName}</div>}
+                {this.state.errors.fileName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.fileName}</div>}
             </div>
         );
         return (<CommonDialog visible={this.state.visible} body={body} buttons={buttons} title='重命名'

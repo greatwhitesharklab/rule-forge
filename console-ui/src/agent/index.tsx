@@ -11,6 +11,7 @@ import RuleHealthView from './components/RuleHealthView.tsx';
 import AgentAuditView from './components/AgentAuditView.tsx';  // V5.22.3
 import type {AgentSession, AgentMessage} from './action';
 import type {AgentState} from './reducer';
+import {BarChartOutlined, MessageOutlined, PlusOutlined, ProfileOutlined, ReadOutlined, SettingOutlined} from '@ant-design/icons';
 
 interface AgentPanelProps {
     sessions: AgentSession[];
@@ -71,7 +72,7 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                         borderBottom: this.state.activeTab === 'chat' ? '2px solid #1677ff' : '2px solid transparent',
                     }}
                 >
-                    <i className="glyphicon glyphicon-comment" style={{marginRight: 4}}/>对话
+                    <MessageOutlined style={{marginRight: 4}} />对话
                 </div>
                 <div
                     onClick={() => this.setState({activeTab: 'drafts'})}
@@ -84,7 +85,7 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                         borderBottom: this.state.activeTab === 'drafts' ? '2px solid #1677ff' : '2px solid transparent',
                     }}
                 >
-                    <i className="glyphicon glyphicon-list-alt" style={{marginRight: 4}}/>草稿
+                    <ProfileOutlined style={{marginRight: 4}} />草稿
                 </div>
                 <div
                     onClick={() => this.setState({activeTab: 'health'})}
@@ -97,7 +98,7 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                         borderBottom: this.state.activeTab === 'health' ? '2px solid #1677ff' : '2px solid transparent',
                     }}
                 >
-                    <i className="glyphicon glyphicon-stats" style={{marginRight: 4}}/>健康
+                    <BarChartOutlined style={{marginRight: 4}} />健康
                 </div>
                 <div
                     onClick={() => this.setState({activeTab: 'audit'})}
@@ -110,7 +111,7 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                         borderBottom: this.state.activeTab === 'audit' ? '2px solid #1677ff' : '2px solid transparent',
                     }}
                 >
-                    <i className="glyphicon glyphicon-list-alt" style={{marginRight: 4}}/>审计
+                    <ProfileOutlined style={{marginRight: 4}} />审计
                 </div>
             </div>
         );
@@ -129,18 +130,18 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                     padding: '8px 12px', borderBottom: '1px solid #e8e8e8'
                 }}>
                     <span style={{fontWeight: 600, fontSize: 14}}>
-                        <i className="glyphicon glyphicon-education" style={{marginRight: 6}}/>
+                        <ReadOutlined style={{marginRight: 6}} />
                         AI 助手
                     </span>
                     <div>
-                        <button className="btn btn-xs btn-default" onClick={this.handleNewChat}
+                        <button className="rf-btn rf-btn-xs rf-btn-default" onClick={this.handleNewChat}
                                 title="新对话" style={{marginRight: 4}}>
-                            <i className="glyphicon glyphicon-plus"/>
+                            <PlusOutlined />
                         </button>
-                        <button className="btn btn-xs btn-default"
+                        <button className="rf-btn rf-btn-xs rf-btn-default"
                                 onClick={() => this.setState({showConfig: !showConfig})}
                                 title="配置" style={{marginRight: 4}}>
-                            <i className="glyphicon glyphicon-cog"/>
+                            <SettingOutlined />
                         </button>
                     </div>
                 </div>
@@ -188,8 +189,7 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                             <div style={{padding: 8}}>
                                 {safeSessions.length === 0 && (
                                     <div style={{textAlign: 'center', padding: '40px 20px', color: '#999'}}>
-                                        <i className="glyphicon glyphicon-education"
-                                           style={{fontSize: 32, display: 'block', marginBottom: 8}}/>
+                                        <ReadOutlined style={{fontSize: 32, display: 'block', marginBottom: 8}} />
                                         点击 + 开始与 AI 对话
                                     </div>
                                 )}

@@ -1,5 +1,6 @@
 import {Component, createRef} from 'react';
 import type {AgentMessage} from '../action';
+import {ReloadOutlined} from '@ant-design/icons';
 
 interface ChatPanelProps {
     messages: AgentMessage[];
@@ -75,7 +76,7 @@ class ChatPanel extends Component<ChatPanelProps> {
                     {messages.map((msg, i) => this.renderMessage(msg, i))}
                     {loading && messages[messages.length - 1]?.role !== 'streaming' && (
                         <div style={{textAlign: 'center', padding: 8, color: '#999', fontSize: 12}}>
-                            <i className="glyphicon glyphicon-refresh" style={{marginRight: 4}}/>
+                            <ReloadOutlined style={{marginRight: 4}} />
                             AI 正在思考...
                         </div>
                     )}

@@ -7,6 +7,7 @@ import * as event from '../../componentEvent.js';
 import VersionSelectDialog from './VersionSelectDialog.tsx';
 
 import {alert} from '@/utils/modal';
+import {LikeOutlined, SaveOutlined, SearchOutlined} from '@ant-design/icons';
 interface KnowledgeTreeDialogConfig {
     project: string | null;
     forLib?: boolean;
@@ -83,10 +84,9 @@ export default class KnowledgeTreeDialog extends Component<KnowledgeTreeDialogPr
         const body = (
             <div className='tree' style={{ marginLeft: 'var(--rf-space-3)' }}>
                 <div>
-                    <input type="text" className="form-control resSearchText" placeholder="请输入要查询的文件名..."
+                    <input type="text" className="rf-form-control resSearchText" placeholder="请输入要查询的文件名..."
                            style={{ display: 'inline-block', width: '220px' }} />
-                    <a href="#" onClick={this.search.bind(this)} style={{ margin: 'var(--rf-space-2)', fontSize: '16px', color: 'var(--rf-primary)' }}><i
-                        className="glyphicon glyphicon-search" /></a>
+                    <a href="#" onClick={this.search.bind(this)} style={{ margin: 'var(--rf-space-2)', fontSize: '16px', color: 'var(--rf-primary)' }}><SearchOutlined /></a>
                 </div>
                 <CommonTree data={this.state.data!} selectDir={this.props.selectDir as ((data: TreeNodeData) => void) | undefined} />
             </div>
@@ -96,7 +96,7 @@ export default class KnowledgeTreeDialog extends Component<KnowledgeTreeDialogPr
             {
                 name: '最新版本',
                 className: 'btn btn-danger',
-                icon: 'glyphicon glyphicon-floppy-saved',
+                icon: <SaveOutlined />,
                 click: function (): void {
                     if (this.currentNodeData) {
                         this.callback!(this.currentNodeData.fullPath, 'LATEST');
@@ -110,7 +110,7 @@ export default class KnowledgeTreeDialog extends Component<KnowledgeTreeDialogPr
         buttons.push({
             name: '历史版本',
             className: 'btn btn-primary',
-            icon: 'glyphicon glyphicon-hand-up',
+            icon: <LikeOutlined />,
             click: function (): void {
                 if (this.currentNodeData) {
                     event.eventEmitter.emit(event.OPEN_VERSION_SELECT_DIALOG, {

@@ -1,9 +1,11 @@
 import React, {Component} from 'react';
+import {apiBase} from '@/api/client';
 import Dialog from '../../components/dialog/component/Dialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
 
 import {alert} from '@/utils/modal';
+import {CloudUploadOutlined} from '@ant-design/icons';
 interface ImportXmlDialogProps {
     dispatch: Function;
 }
@@ -43,7 +45,7 @@ export default class ImportXmlDialog extends Component<ImportXmlDialogProps, Imp
             {
                 name: '上传',
                 className: 'btn btn-danger',
-                icon: 'glyphicon glyphicon-cloud-upload',
+                icon: <CloudUploadOutlined />,
                 click: function () {
                     const fileInput = document.querySelector('#' + formId + ' [name=file]') as HTMLInputElement;
                     const file = fileInput && fileInput.files && fileInput.files[0];
@@ -53,7 +55,7 @@ export default class ImportXmlDialog extends Component<ImportXmlDialogProps, Imp
                     }
                     const formData = new FormData();
                     formData.append('file', file);
-                    fetch(window._server + '/variableeditor/importXml', {
+                    fetch(apiBase() + '/variableeditor/importXml', {
                         method: 'POST',
                         body: formData,
                     })

@@ -7,6 +7,7 @@ import * as refEvent from '../../reference/event.js';
 import ReferenceDialog from '../../reference/ReferenceDialog.tsx';
 
 import {alert, confirm} from '@/utils/modal';
+import {DeleteOutlined, PlusCircleOutlined} from '@ant-design/icons';
 interface ParameterEditorProps {
     dispatch: (a: unknown) => unknown;
     data: ParameterItem[];
@@ -26,7 +27,7 @@ interface GridHeader {
 
 interface GridOperation {
     label: string;
-    icon: string;
+    icon: React.ReactNode;
     style: React.CSSProperties;
     click: (rowIndex: number) => void;
 }
@@ -55,7 +56,7 @@ class ParameterEditor extends Component<ParameterEditorProps> {
             operations: [
                 {
                     label: '删除',
-                    icon: 'glyphicon glyphicon-trash',
+                    icon: <DeleteOutlined />,
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 4px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
                         confirm('真的要删除当前记录？', function (result) {
@@ -70,25 +71,25 @@ class ParameterEditor extends Component<ParameterEditorProps> {
             <div>
                 <ReferenceDialog/>
                 <div style={{margin: '2px'}}>
-                    <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                        <button className="btn btn-primary" type="button"
+                    <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                        <button className="rf-btn rf-btn-primary" type="button"
                                 onClick={() => {dispatch(action.add());}}>
-                            <i className="glyphicon glyphicon-plus-sign"></i> 添加
+                            <PlusCircleOutlined /> 添加
                         </button>
                     </div>
-                    <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                        <button className="btn btn-danger" type="button"
+                    <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                        <button className="rf-btn rf-btn-danger" type="button"
                                 onClick={() => {dispatch(action.save(false, file));}}>
                             <i className="rf rf-save"></i> 保存
                         </button>
-                        <button className="btn btn-danger" type="button"
+                        <button className="rf-btn rf-btn-danger" type="button"
                                 onClick={() => {dispatch(action.save(true, file));}}
                                 style={{display: 'none'}}>
                             <i className="rf rf-savenewversion"></i> 保存为新版本
                         </button>
                     </div>
-                    <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                        <button className="btn btn-info" type="button" onClick={() => {
+                    <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                        <button className="rf-btn rf-btn-info" type="button" onClick={() => {
                             if (!this.currentData) {
                                 alert('请先选择一条具体的参数');
                                 return;

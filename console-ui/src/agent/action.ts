@@ -2,7 +2,7 @@
  * Agent action types and creators
  */
 
-import {httpGet, jsonPost, httpDelete} from '../api/client.js';
+import {httpGet, jsonPost, httpDelete, apiBase} from '../api/client.js';
 
 // Action types
 export const SET_SESSIONS = 'agent_set_sessions';
@@ -98,7 +98,7 @@ export function sendMessage(sessionId: string, message: string): (dispatch: Func
         dispatch({type: SET_LOADING, payload: true});
 
         try {
-            const resp = await fetch(window._server + '/agent/chat', {
+            const resp = await fetch(apiBase() + '/agent/chat', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({sessionId, message})

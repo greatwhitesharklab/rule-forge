@@ -82,7 +82,7 @@ export default class SimpleValueWidget extends Component<SimpleValueWidgetProps,
                     <input
                         ref={this.inputRef}
                         type="text"
-                        className="form-control rule-text-editor"
+                        className="rf-form-control rule-text-editor"
                         style={{height: 22, width: inputWidth}}
                         value={text}
                         onChange={e => this.setState({text: e.target.value})}

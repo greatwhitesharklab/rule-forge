@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {apiBase} from '@/api/client';
 import * as event from '../event.js';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import IFrame from '../../components/frametab/component/IFrame.tsx';
@@ -19,7 +20,7 @@ export default class ReteDiagramDialog extends Component<ReteDiagramDialogProps,
     componentDidMount() {
         event.eventEmitter.on(event.OPEN_RETE_DIAGRAM_DIALOG, (files: string) => {
             this.setState({visible: true});
-            const path = window._server + "/retediagram?_r=" + Math.random() + "&files=" + files;
+            const path = apiBase() + "/retediagram?_r=" + Math.random() + "&files=" + files;
             this.setState({path});
         });
         event.eventEmitter.on(event.HIDE_RETE_DIAGRAM_DIALOG, () => {

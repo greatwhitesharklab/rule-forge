@@ -8,6 +8,7 @@ import type {ActionMethod} from '../action.js';
 import type {ActionRootState} from '../reducer.js';
 
 import {alert} from '@/utils/modal';
+import {CloseOutlined, LikeOutlined} from '@ant-design/icons';
 interface SelectMethodDialogProps {
     data: ActionMethod[];
     dispatch: Function;
@@ -46,7 +47,7 @@ class SelectMethodDialog extends Component<SelectMethodDialogProps, SelectMethod
             operations: [
                 {
                     label: '选择此方法',
-                    icon: 'glyphicon glyphicon-hand-up',
+                    icon: <LikeOutlined />,
                     style: {fontSize: '18px', color: '#337ab7', padding: '0px 4px', cursor: 'pointer'},
                     click: (_rowIndex: number, rowData: ActionMethod) => {
                         dispatch(action.addSlave(rowData));
@@ -62,7 +63,7 @@ class SelectMethodDialog extends Component<SelectMethodDialogProps, SelectMethod
             {
                 name: '关闭',
                 className: 'btn btn-primary',
-                icon: 'glyphicon glyphicon-remove',
+                icon: <CloseOutlined />,
                 click: function () {
                     event.eventEmitter.emit(event.CLOSE_SELECT_METHOD_DIALOG);
                 }

@@ -7,6 +7,10 @@ import {formPost} from '@/api/client';
  *
  * <p>SPA 阶段 2 起,frame 内部组件从 {@code window.__currentUser} 全局改读这个 Context。
  * 由 {@link RequireAuth} 守卫在鉴权通过后注入。
+ *
+ * <p>注意:FrameApp 内部又挂了一层 CurrentUserContext.Provider,从 window.__currentUser 读
+ * (legacy bootstrap 兼容 frame.html 独立入口),所以 RequireAuth 仍需写 window.__currentUser
+ * 给那一层 Provider 供值。TopBar/SidebarToolbar 不再直接读 window.__currentUser。
  */
 export const CurrentUserContext = createContext<UserInfo | null>(null);
 
@@ -32,7 +36,8 @@ export function RequireAuth() {
         formPost<{status: boolean; user?: UserInfo}>('/frame/currentUser', {}, {silent: true})
             .then((res) => {
                 if (res.status && res.user) {
-                    // 兼容 frame 内部组件(TopBar/SidebarToolbar)读 window.__currentUser
+                    // 供 FrameApp 的 CurrentUserContext.Provider(读 window.__currentUser)
+                    // 及 frame.html legacy 入口兼容;TopBar/SidebarToolbar 走 Context。
                     window.__currentUser = res.user;
                     setUser(res.user);
                     setState('ok');

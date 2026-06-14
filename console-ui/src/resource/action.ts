@@ -1,4 +1,4 @@
-import {save as apiSave, formPost} from '../api/client.js';
+import {save as apiSave, formPost, apiBase} from '../api/client.js';
 import * as componentEvent from '../components/componentEvent.js';
 
 import {alert, prompt} from '@/utils/modal';
@@ -118,7 +118,7 @@ export function saveData(data: ResourceCategory[], newVersion: boolean, file: st
     xml += '</variable-library>';
     xml = encodeURIComponent(xml);
     let postData: Record<string, string> = {content: xml, file, newVersion: String(newVersion)};
-    const url = window._server + '/common/saveFile';
+    const url = apiBase() + '/common/saveFile';
     if (newVersion) {
         prompt("请输入新版本描述.", function (versionComment) {
             if (!versionComment) {

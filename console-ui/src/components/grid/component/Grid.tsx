@@ -7,7 +7,7 @@ import type { GridColumnHeader } from './CellEditor.tsx';
 
 interface OperationDef {
     label: string;
-    icon?: string;
+    icon?: React.ReactNode;
     style?: React.CSSProperties;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     click: (rowIndex: number, rowData: any) => void;
@@ -116,7 +116,7 @@ class Grid extends Component<GridProps, GridState> {
                     if (header.filterable) {
                         return (<td key={uniqueID()}>
                             <input type="text" onKeyPress={this.onFilter.bind(this, index)} name={header.id}
-                                className="form-control" style={{ height: '28px' }}
+                                className="rf-form-control" style={{ height: '28px' }}
                                 placeholder='请输入过滤条件，回车查询...' />
                         </td>);
                     } else if (!header.hideFilterRow) {
@@ -152,9 +152,9 @@ class Grid extends Component<GridProps, GridState> {
         });
         const tableStyle: React.CSSProperties = { margin: 0, width: (this.props.width ? this.props.width : '100%') };
         return (
-            <table className="table table-bordered" style={tableStyle}>
+            <table className="rf-table rf-table-bordered" style={tableStyle}>
                 <thead>
-                    <tr className="well">{headerContent}</tr>
+                    <tr className="rf-well">{headerContent}</tr>
                 </thead>
                 <tbody>{bodyContent}</tbody>
             </table>

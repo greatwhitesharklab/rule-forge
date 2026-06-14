@@ -64,20 +64,20 @@ export default class PackageDialog extends Component<PackageDialogProps, Package
         const {dispatch} = this.props;
         const body = (
             <div>
-                <div className="form-group">
+                <div className="rf-form-group">
                     <label>包ID:</label>
-                    <input type="text" className="form-control" name="packageId"
+                    <input type="text" className="rf-form-control" name="packageId"
                         value={this.state.packageId}
                         disabled={this.state.disabled}
                         onChange={(e) => this.setState({packageId: e.target.value, errors: {...this.state.errors, packageId: undefined}})}/>
-                    {this.state.errors.packageId && <div className="text-danger" style={{fontSize: '12px'}}>{this.state.errors.packageId}</div>}
+                    {this.state.errors.packageId && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.packageId}</div>}
                 </div>
-                <div className="form-group">
+                <div className="rf-form-group">
                     <label>包名称:</label>
-                    <input type="text" className="form-control" name="packageName"
+                    <input type="text" className="rf-form-control" name="packageName"
                         value={this.state.packageName}
                         onChange={(e) => this.setState({packageName: e.target.value, errors: {...this.state.errors, packageName: undefined}})}/>
-                    {this.state.errors.packageName && <div className="text-danger" style={{fontSize: '12px'}}>{this.state.errors.packageName}</div>}
+                    {this.state.errors.packageName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.packageName}</div>}
                 </div>
             </div>
         );

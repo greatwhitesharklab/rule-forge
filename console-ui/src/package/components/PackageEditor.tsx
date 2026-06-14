@@ -23,6 +23,7 @@ import ImportExcelErrorDialog from './ImportExcelErrorDialog.jsx';
 import BatchTestDialog from './BatchTestDialog.jsx';
 import ChildListDialog from '../../components/grid/component/ChildListDialog.tsx';
 import VersionsDialog from './VersionsDialog.jsx'
+import {CloudUploadOutlined, DeleteOutlined, EditOutlined, PlusCircleOutlined, SaveOutlined, SendOutlined, ThunderboltOutlined} from '@ant-design/icons';
 
 interface PackageEditorProps {
     masterData: ResourcePackage[];
@@ -63,7 +64,7 @@ class PackageEditor extends Component<PackageEditorProps> {
             operations: [
                 {
                     label: '编辑',
-                    icon: 'glyphicon glyphicon-edit',
+                    icon: <EditOutlined />,
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 4px', cursor: 'pointer'},
                     click: function (rowIndex: number, rowData: ResourcePackage) {
                         event.eventEmitter.emit(event.OPEN_CREATE_PACKAGE_DIALOG, {
@@ -76,7 +77,7 @@ class PackageEditor extends Component<PackageEditorProps> {
                 },
                 {
                     label: '删除',
-                    icon: 'glyphicon glyphicon-trash',
+                    icon: <DeleteOutlined />,
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 4px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
                         confirm('真的要删除当前记录？', function (result: boolean) {
@@ -95,7 +96,7 @@ class PackageEditor extends Component<PackageEditorProps> {
             operations: [
                 {
                     label: '编辑',
-                    icon: 'glyphicon glyphicon-edit',
+                    icon: <EditOutlined />,
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 4px', cursor: 'pointer'},
                     click: function (rowIndex: number, rowData: ResourceItem) {
                         event.eventEmitter.emit(event.OPEN_CREATE_PACKAGE_ITEM_DIALOG, {
@@ -108,7 +109,7 @@ class PackageEditor extends Component<PackageEditorProps> {
                 },
                 {
                     label: '删除',
-                    icon: 'glyphicon glyphicon-trash',
+                    icon: <DeleteOutlined />,
                     style: {fontSize: 'var(--rf-font-size-lg)', color: 'var(--rf-danger)', padding: '0px 10px', cursor: 'pointer'},
                     click: function (rowIndex: number) {
                         confirm('真的要删除当前记录？', function (result: boolean) {
@@ -136,55 +137,55 @@ class PackageEditor extends Component<PackageEditorProps> {
                 <Splitter orientation='vertical' position='50%' limit='300'>
                     <div>
                         <div style={{margin: '2px'}}>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-primary" type="button" onClick={() => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-primary" type="button" onClick={() => {
                                     event.eventEmitter.emit(event.OPEN_CREATE_PACKAGE_DIALOG, {
                                         create: true,
                                         title: '添加知识包'
                                     });
-                                }}><i className="glyphicon glyphicon-plus-sign"/> 添加包
+                                }}><PlusCircleOutlined /> 添加包
                                 </button>
                             </div>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-success" type="button" onClick={() => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-success" type="button" onClick={() => {
                                     dispatch(action.save(false, project))
-                                }}><i className="glyphicon glyphicon-floppy-saved"/> 保存
+                                }}><SaveOutlined /> 保存
                                 </button>
-                                <button className="btn btn-success" type="button" onClick={() => {
+                                <button className="rf-btn rf-btn-success" type="button" onClick={() => {
                                     if (this.currentPackage) {
                                         event.eventEmitter.emit(event.OPEN_VERSION_DIALOG, this.currentPackage);
                                     } else {
                                         alert('请先选择一个知识包！');
                                     }
-                                }}><i className="glyphicon glyphicon-floppy-disk"/> 生成版本
+                                }}><SaveOutlined /> 生成版本
                                 </button>
                             </div>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-info" type="button" onClick={() => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-info" type="button" onClick={() => {
                                     if (this.currentPackage) {
                                         dispatch(action.apply(project, packageConfig, this.currentPackage))
                                     } else {
                                         alert('请先选择一个知识包！');
                                     }
-                                }}><i className="glyphicon glyphicon-send"/> 发起审批
+                                }}><SendOutlined /> 发起审批
                                 </button>
                             </div>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-warning" type="button" onClick={() => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-warning" type="button" onClick={() => {
                                     if (this.currentPackage) {
                                         action.refreshKnowledgeCache(project, packageConfig, this.currentPackage);
                                     } else {
                                         alert('请先选择一个知识包！');
                                     }
-                                }}><i className="glyphicon glyphicon-cloud-upload"/> 发布测试
+                                }}><CloudUploadOutlined /> 发布测试
                                 </button>
-                                <button className="btn btn-danger" type="button" onClick={() => {
+                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
                                     if (this.currentPackage) {
                                         event.eventEmitter.emit(event.OPEN_SIMULATOR_DIALOG, this.currentPackage);
                                     } else {
                                         alert('请先选择一个知识包！');
                                     }
-                                }}><i className="glyphicon glyphicon-flash"/> 仿真测试
+                                }}><ThunderboltOutlined /> 仿真测试
                                 </button>
                             </div>
                         </div>
@@ -199,8 +200,8 @@ class PackageEditor extends Component<PackageEditorProps> {
                     </div>
                     <div>
                         <div style={{margin: '2px'}}>
-                            <div className="btn-group btn-group-sm" style={{margin: '2px'}}>
-                                <button className="btn btn-primary" type="button" onClick={() => {
+                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
+                                <button className="rf-btn rf-btn-primary" type="button" onClick={() => {
                                     if (masterRowData.resourceItems) {
                                         event.eventEmitter.emit(event.OPEN_CREATE_PACKAGE_ITEM_DIALOG, {
                                             create: true,

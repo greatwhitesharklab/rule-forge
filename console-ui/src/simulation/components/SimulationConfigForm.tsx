@@ -70,47 +70,47 @@ class SimulationConfigForm extends Component<SimulationConfigFormProps, Simulati
         const state = this.state;
         return (
             <div style={{padding: 4}}>
-                <div className="form-group">
+                <div className="rf-form-group">
                     <label style={{fontSize: 12, color: '#666'}}>项目名称</label>
-                    <input type="text" className="form-control input-sm"
+                    <input type="text" className="rf-form-control rf-input-sm"
                            value={state.project}
                            onChange={this.handleChange.bind(this, 'project')}
                            placeholder="项目名"/>
                 </div>
-                <div className="form-group">
+                <div className="rf-form-group">
                     <label style={{fontSize: 12, color: '#666'}}>包ID</label>
-                    <input type="text" className="form-control input-sm"
+                    <input type="text" className="rf-form-control rf-input-sm"
                            value={state.packageId}
                            onChange={this.handleChange.bind(this, 'packageId')}
                            placeholder="规则包ID"/>
                 </div>
-                <div className="form-group">
+                <div className="rf-form-group">
                     <label style={{fontSize: 12, color: '#666'}}>规则文件（;分隔）</label>
-                    <input type="text" className="form-control input-sm"
+                    <input type="text" className="rf-form-control rf-input-sm"
                            value={state.files}
                            onChange={this.handleChange.bind(this, 'files')}
                            placeholder="a.xml,1;b.xml,2"/>
                 </div>
-                <div className="form-group">
+                <div className="rf-form-group">
                     <label style={{fontSize: 12, color: '#666'}}>决策流ID（可选）</label>
-                    <input type="text" className="form-control input-sm"
+                    <input type="text" className="rf-form-control rf-input-sm"
                            value={state.flowId}
                            onChange={this.handleChange.bind(this, 'flowId')}
                            placeholder="flowId"/>
                 </div>
-                <div className="form-group">
+                <div className="rf-form-group">
                     <label style={{fontSize: 12, color: '#666'}}>开始时间</label>
-                    <input type="date" className="form-control input-sm"
+                    <input type="date" className="rf-form-control rf-input-sm"
                            value={state.startTime}
                            onChange={this.handleChange.bind(this, 'startTime')}/>
                 </div>
-                <div className="form-group">
+                <div className="rf-form-group">
                     <label style={{fontSize: 12, color: '#666'}}>结束时间</label>
-                    <input type="date" className="form-control input-sm"
+                    <input type="date" className="rf-form-control rf-input-sm"
                            value={state.endTime}
                            onChange={this.handleChange.bind(this, 'endTime')}/>
                 </div>
-                <button className="btn btn-primary btn-sm btn-block"
+                <button className="rf-btn rf-btn-primary rf-btn-sm rf-btn-block"
                         disabled={state.submitting}
                         onClick={this.handleSubmit.bind(this)}>
                     {state.submitting ? '启动中...' : '启动仿真'}
