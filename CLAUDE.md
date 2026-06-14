@@ -109,7 +109,7 @@ Deployable executor with RestTemplate config for console communication.
   - 内部 N 个 sub-task 各自独立 commit(commit message 标 `V5.x.y.N <title>`)
   - **所有** sub-task 跑完 → `git push -u origin` → `gh pr create` → `gh pr merge --squash --delete-branch`(**自**合并,走 GitHub PR API,**不**本地 merge)
   - 合并后 `git checkout main && git pull` 回到主干,继续下一个特性
-- **何时拆独立 PR**(不走大分支模式):跨周跨月的多 PR 系列、热修复、纯文档/规则改动(CLAUDE.md 之类)
+- **无例外**:任何改动(含热修复、文档/规则、CLAUDE.md 本身)都是一个特性一个分支一次 PR,**禁止中途拆独立 PR**。中途拆 = 合并当前 → 切回 main → 开新分支,会中断 agent 全权委托的连续推进节奏,这是首要避免的。热修复 / 文档改动各自**就是一个特性**,各自走分支 PR,没有特殊通道;跨周跨月的大特性也在同一个分支上连续做完再一次 PR,不拆成系列
 
 ### Versioning Convention (V5.16 起)
 
