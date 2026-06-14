@@ -211,8 +211,7 @@ interface Window {
     // Iframe counter
     iframe_id_: number;
 
-    // Server config
-    _server: string;
+    // Server config (V5.72: _server 已移除,apiBase 改纯 Vite env)
     _projectName: string | null;
     _types: string | null;
     _classify: boolean;
@@ -258,9 +257,6 @@ interface Window {
 
     // Simulator category data (used in Cell editor)
     simulatorCategoryData: SimulatorCategoryItem[] | undefined;
-
-    // Frame styles
-    _frameStyles: Record<string, unknown> | undefined;
 
     // File search term (used by SidebarToolbar, FileTreePanel)
     searchFileName: string;

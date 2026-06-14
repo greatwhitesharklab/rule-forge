@@ -10,8 +10,13 @@ import {jsonPost} from '@/api/client';
 const mockJsonPost = jsonPost as unknown as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
-    (global as any).window._server = 'http://test';
+    // V5.72: apiBase 改纯 Vite env,改用 vi.stubEnv mock VITE_API_BASE
+    vi.stubEnv('VITE_API_BASE', 'http://test');
     mockJsonPost.mockReset();
+});
+
+afterEach(() => {
+    vi.unstubAllEnvs();
 });
 
 describe('RuleHealthView (V5.22.2 + V5.22.3 antd charts)', () => {

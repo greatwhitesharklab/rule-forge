@@ -2,7 +2,7 @@ import {alert, confirm} from '@/utils/modal';
 /**
  * Centralized HTTP client for the RuleForge frontend.
  *
- * All functions auto-prepend the API base (Vite env / `window._server`) to relative paths.
+ * All functions auto-prepend the API base (Vite env `VITE_API_BASE` → `/api` default) to relative paths.
  * Error handling is centralized — 401 shows permission alert, other
  * errors show the response text via alert.
  */
@@ -29,19 +29,23 @@ export interface RequestOptions {
 /**
  * Resolve the API base URL for a relative path.
  *
- * <p>优先级:`import.meta.env.VITE_API_BASE`(Vite build/dev 时注入)→
- * `window._server`(index.html inline `<script>window._server = "/api"</script>` 设的运行时值)→
- * `'/api'`(硬默认)。三者等价于 V5.x 之前直接读 `window._server` 的语义,但允许通过 Vite env
- * 在构建期固定 base,不再强制依赖运行时全局变量。
- *
- * <p>测试环境仍可通过设 `window._server`(或 `import.meta.env.VITE_API_BASE`)来 mock。
+ * <p>V5.72:简化优先级 ——
+ * <ol>
+ *   <li>构建期:`import.meta.env.VITE_API_BASE`(Vite 注入;build/dev tree-shake 友好)</li>
+ *   <li>运行时:`globalThis.process.env.VITE_API_BASE`(vitest 4.x 的 `vi.stubEnv` 只写这里,
+ *       不写 import.meta.env;读两层保证 build + test 都能 mock)</li>
+ *   <li>fallback:`'/api'`(硬默认,匹配 Vite dev proxy + 后端路径前缀)</li>
+ * </ol>
+ * 移除 `window._server` 中间层 — 之前设计意图是允许运行时改 base,但实际部署从不
+ * 用这个口子;Vite env 同样能在构建期固定。
  */
 export function apiBase(): string {
-    const envBase = (import.meta as any).env?.VITE_API_BASE as string | undefined;
-    if (envBase) return envBase;
-    if (typeof window !== 'undefined' && (window as any)._server) {
-        return (window as any)._server as string;
-    }
+    const importMetaEnv = (import.meta as any).env?.VITE_API_BASE as string | undefined;
+    if (importMetaEnv) return importMetaEnv;
+    // console-ui 没装 @types/node,绕开 process 类型检查。
+    // (vitest 4.x vi.stubEnv 只写 process.env 不写 import.meta.env,所以 runtime 测试需要这条)
+    const proc = (globalThis as {process?: {env?: Record<string, string | undefined>}}).process;
+    if (proc?.env?.VITE_API_BASE) return proc.env.VITE_API_BASE;
     return '/api';
 }
 

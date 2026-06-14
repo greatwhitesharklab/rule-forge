@@ -75,7 +75,8 @@ describe('Permission Module - Action Creators', () => {
             json: async () => ({})
         }));
         (global as any).fetch = mockFetch;
-        window._server = 'http://test';
+        // V5.72: apiBase 改纯 Vite env,改用 vi.stubEnv mock VITE_API_BASE
+        vi.stubEnv('VITE_API_BASE', 'http://test');
         clearModalMockState();
 
         const data = [
@@ -119,7 +120,7 @@ describe('Permission Module - Action Creators', () => {
         expect(callArgs[1].method).toBe('POST');
 
         delete (global as any).fetch;
-        delete window._server;
+        vi.unstubAllEnvs();
     });
 });
 
@@ -202,12 +203,13 @@ describe('Permission Module - saveData XML Generation', () => {
             json: async () => ({})
         }));
         (global as any).fetch = mockFetch;
-        window._server = 'http://test';
+        // V5.72: apiBase 改纯 Vite env,改用 vi.stubEnv mock VITE_API_BASE
+        vi.stubEnv('VITE_API_BASE', 'http://test');
     });
 
     afterEach(() => {
         delete (global as any).fetch;
-        delete window._server;
+        vi.unstubAllEnvs();
     });
 
     it('GIVEN valid permission data WHEN save is called THEN it should generate correct XML structure', async () => {

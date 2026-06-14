@@ -16,7 +16,8 @@
       SPA 根在 /,API 前缀用绝对 /api(login/frame/editor.html 在 /html/ 下用相对 ../api)。
       vite proxy /api → /ruleforge(见 vite.config.ts)。
     -->
-    <script>window._server = "/api";</script>
+    <!-- V5.72: 原 inline `window._server = "/api"` 删,改走 Vite env(import.meta.env.VITE_API_BASE)。
+         默认 base 现在硬编码在 client.ts apiBase() 的 '/api' fallback -->
     <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

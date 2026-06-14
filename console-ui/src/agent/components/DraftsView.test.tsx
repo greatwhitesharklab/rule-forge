@@ -10,13 +10,17 @@ vi.mock('@/api/client', () => ({
 import {jsonPost} from '@/api/client';
 const mockJsonPost = jsonPost as unknown as ReturnType<typeof vi.fn>;
 
-// Mock window._server and window.confirm/prompt
+// V5.72: apiBase 改纯 Vite env,改用 vi.stubEnv mock VITE_API_BASE(替代 window._server)
 beforeEach(() => {
-    (global as any).window._server = 'http://test';
+    vi.stubEnv('VITE_API_BASE', 'http://test');
     (global as any).window.confirm = vi.fn(() => true);
     (global as any).window.prompt = vi.fn(() => 'test-package');
     (global as any).window.alert = vi.fn();
     mockJsonPost.mockReset();
+});
+
+afterEach(() => {
+    vi.unstubAllEnvs();
 });
 
 describe('DraftsView (V5.22)', () => {

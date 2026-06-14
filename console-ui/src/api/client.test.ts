@@ -45,10 +45,14 @@ import {
     saveNewVersion,
 } from './client.js';
 
-// Mock window._server and modal mocks (utils/modal mocked via vi.mock at top)
+// V5.72: apiBase 改纯 Vite env,改用 vi.stubEnv mock VITE_API_BASE(替代 window._server)
 beforeEach(function () {
-    (window as any)._server = 'http://localhost:8081';
+    vi.stubEnv('VITE_API_BASE', 'http://localhost:8081');
     clearModalMockState();
+});
+
+afterEach(() => {
+    vi.unstubAllEnvs();
 });
 
 // Helper to mock fetch

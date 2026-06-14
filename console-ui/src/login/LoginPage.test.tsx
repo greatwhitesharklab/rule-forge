@@ -64,7 +64,8 @@ describe('LoginPage Component', () => {
     beforeEach(() => {
         fetchMock = vi.fn();
         window.fetch = fetchMock as unknown as typeof fetch;
-        window._server = 'http://testserver';
+        // V5.72: apiBase 改纯 Vite env,改用 vi.stubEnv mock VITE_API_BASE
+        vi.stubEnv('VITE_API_BASE', 'http://testserver');
 
         // Store and mock window.location
         originalLocation = window.location;
@@ -74,7 +75,7 @@ describe('LoginPage Component', () => {
 
     afterEach(() => {
         window.fetch = undefined as unknown as typeof fetch;
-        delete window._server;
+        vi.unstubAllEnvs();
         (window as unknown as Record<string, unknown>).location = originalLocation;
         vi.restoreAllMocks();
     });
@@ -109,7 +110,7 @@ describe('LoginPage Component', () => {
                 e.preventDefault();
                 this.setState({ loading: true, error: '' });
                 const { username, password } = this.state;
-                fetch(window._server + '/frame/login', {
+                fetch(((globalThis as {process?: {env?: Record<string, string | undefined>}}).process?.env?.VITE_API_BASE || (import.meta as any).env?.VITE_API_BASE) + '/frame/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({ username, password }).toString()

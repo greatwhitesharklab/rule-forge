@@ -2,9 +2,11 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
 // Global test setup
-// 必须有合法 origin,否则 node 24 内置 fetch 拒绝相对 URL
-// (api/client.ts 的 baseUrl() 会把 path 拼到这个值上)
-window._server = 'http://localhost';
+// V5.72: apiBase() 同时读 import.meta.env 和 process.env(因为 vitest 4.x vi.stubEnv
+// 只写 process.env)。设置默认 base 给所有 test 用 —— 必须有合法 origin,否则 node 24
+// 内置 fetch 拒绝相对 URL(api/client.ts 的 baseUrl() 会把 path 拼到这个值上)。
+// 单个 test 可在 beforeEach 用 `vi.stubEnv('VITE_API_BASE', '...')` 重新 stub(写 process.env)。
+process.env.VITE_API_BASE = 'http://localhost';
 
 // Antd Table / Grid 需要 window.matchMedia (jsdom 不提供)
 Object.defineProperty(window, 'matchMedia', {

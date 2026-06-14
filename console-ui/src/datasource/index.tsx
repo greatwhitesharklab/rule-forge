@@ -9,7 +9,7 @@ import {
     loadFieldMappings, saveFieldMappings,
     DatasourceItem, EntityMapping, FieldMapping
 } from './action';
-import {startBatchTestWithFile} from '../api/client';
+import {startBatchTestWithFile, apiBase} from '../api/client';
 import * as batchTestEvent from '../package/event';
 import {ApiOutlined, DeleteOutlined, EditOutlined, FolderOpenOutlined, PlusOutlined, ReloadOutlined, ThunderboltOutlined} from '@ant-design/icons';
 
@@ -361,7 +361,7 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
                     flowId: ''  // not used for DATASOURCE subject
                 };
             }
-            const resp = await fetch((window as any)._server + '/batchtest/start', {
+            const resp = await fetch(apiBase() + '/batchtest/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
