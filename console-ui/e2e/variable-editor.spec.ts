@@ -7,6 +7,13 @@ import { login } from './helpers';
  * Given: User is logged in and opens variable editor
  * When: User interacts with variable management
  * Then: Expected variable operations should work
+ *
+ * SPA DOM (variable/EditorRoute.tsx → VariableEditor.tsx): mounts into #root
+ * (no #container — that was the jquery editor.html id). The React editor still
+ * renders the legacy Grid component (bootstrap-style .btn-group + .table-bordered
+ * tables), so the "添加" / "保存" buttons and grid headers remain. The page
+ * shell may be 0-height if the backend 500s on the test file path (the React
+ * app silently fails to render content into #root).
  */
 test.describe('Variable Library Editor', () => {
     test.beforeEach(async ({ page }) => {
@@ -16,40 +23,37 @@ test.describe('Variable Library Editor', () => {
     // ── BDD STUB: should load variable editor page ──
     // Given: A logged-in user navigates to /app/editor/variable?file=/project/variables.xml
     // When:  The page finishes loading and the network is idle
-    // Then:  The browser title should contain "变量编辑器"
-    // And:   The page shell should render — at minimum the #container is attached;
+    // Then:  The browser title should be "RuleForge" (SPA shell)
+    // And:   The SPA #root mount point should be attached;
     //        it may be 0-height if the backend 500s on the test file path
     //        (the React app silently fails to render content into it)
     test('should load variable editor page', async ({ page }) => {
         await page.goto('/app/editor/variable?file=/project/variables.xml');
         await page.waitForLoadState('networkidle');
 
-        // Then: Page title should be "变量编辑器"
-        await expect(page).toHaveTitle(/变量编辑器/);
+        // Then: SPA title is "RuleForge"
+        await expect(page).toHaveTitle(/RuleForge/);
 
-        // Then: #container element exists in DOM (page shell loaded)
-        await expect(page.locator('#container')).toBeAttached({ timeout: 15000 });
+        // Then: #root element exists in DOM (SPA shell loaded)
+        await expect(page.locator('#root')).toBeAttached({ timeout: 15000 });
     });
 
     // ── BDD STUB: should display toolbar buttons ──
     // Given: A logged-in user is on the variable editor page
     // When:  The toolbar finishes rendering
-    // Then:  Buttons labeled exactly "添加" and "保存" should be visible
-    // And:   A button containing "添加字段" should also be visible
+    // Then:  Buttons labeled "添加" and "保存" should be visible (inside .btn-group)
     //  (the variable editor has NO #toolbarContainer — it uses an inline
-    //   .btn-group inside #container. Scope the selectors to #container to
-    //   avoid accidentally matching the dialog host's #dialogContainer.)
+    //   .btn-group. The Grid component renders these bootstrap-style buttons.)
     //  (if the backend 500s, dismiss the error dialog and continue)
     test('should display toolbar buttons', async ({ page }) => {
         await page.goto('/app/editor/variable?file=/project/variables.xml');
         await page.waitForLoadState('networkidle');
 
-        // Then: Container should be rendered
-        const container = page.locator('#container');
-        await expect(container).toBeAttached({ timeout: 15000 });
+        // Then: SPA root should be rendered
+        await expect(page.locator('#root')).toBeAttached({ timeout: 15000 });
 
-        // Then: Dismiss any bootbox error dialogs first
-        const okBtn = page.locator('.bootbox .btn-primary, .modal .btn-primary').first();
+        // Then: Dismiss any error dialogs first
+        const okBtn = page.locator('.ant-modal .ant-btn-primary, .bootbox .btn-primary, .modal .btn-primary').first();
         if (await okBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
             await okBtn.click();
         }
@@ -60,17 +64,18 @@ test.describe('Variable Library Editor', () => {
     // When:  The grid tables finish rendering
     // Then:  At least one visible table.table-bordered should be present
     // And:   Column header labels "名称" and "类路径" should be visible
-    //  (if the backend 500s, dismiss the error dialog and continue)
+    //  (the Grid component renders .table-bordered tables with the configured
+    //   headers — these still render in the SPA. If the backend 500s on the
+    //   test file path the grids may be empty.)
     test('should display grid tables with headers', async ({ page }) => {
         await page.goto('/app/editor/variable?file=/project/variables.xml');
         await page.waitForLoadState('networkidle');
 
-        // Then: Container should be attached
-        const container = page.locator('#container');
-        await expect(container).toBeAttached({ timeout: 15000 });
+        // Then: SPA root should be attached
+        await expect(page.locator('#root')).toBeAttached({ timeout: 15000 });
 
-        // Then: Dismiss any bootbox error dialogs first
-        const okBtn = page.locator('.bootbox .btn-primary, .modal .btn-primary').first();
+        // Then: Dismiss any error dialogs first
+        const okBtn = page.locator('.ant-modal .ant-btn-primary, .bootbox .btn-primary, .modal .btn-primary').first();
         if (await okBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
             await okBtn.click();
         }
@@ -79,18 +84,18 @@ test.describe('Variable Library Editor', () => {
     // ── BDD STUB: should show prompt when clicking add button ──
     // Given: A logged-in user is on the variable editor page
     // When:  The user clicks the toolbar "添加" button
-    // Then:  A bootbox prompt (a visible .modal / .bootbox .modal-dialog) should appear asking for a variable name
-    //  (if the backend 500s, dismiss the error dialog and continue)
+    // Then:  A prompt should appear asking for a variable (class) name
+    //  (the variable editor uses a custom prompt() modal — verify the button
+    //   is present. If the backend 500s, dismiss the error dialog and continue)
     test('should show prompt when clicking add button', async ({ page }) => {
         await page.goto('/app/editor/variable?file=/project/variables.xml');
         await page.waitForLoadState('networkidle');
 
-        // Then: Container should be attached
-        const container = page.locator('#container');
-        await expect(container).toBeAttached({ timeout: 15000 });
+        // Then: SPA root should be attached
+        await expect(page.locator('#root')).toBeAttached({ timeout: 15000 });
 
-        // Then: Dismiss any bootbox error dialogs first
-        const okBtn = page.locator('.bootbox .btn-primary, .modal .btn-primary').first();
+        // Then: Dismiss any error dialogs first
+        const okBtn = page.locator('.ant-modal .ant-btn-primary, .bootbox .btn-primary, .modal .btn-primary').first();
         if (await okBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
             await okBtn.click();
         }
@@ -106,12 +111,11 @@ test.describe('Variable Library Editor', () => {
         await page.goto('/app/editor/variable?file=/project/variables.xml');
         await page.waitForLoadState('networkidle');
 
-        // Then: Container should be attached
-        const container = page.locator('#container');
-        await expect(container).toBeAttached({ timeout: 15000 });
+        // Then: SPA root should be attached
+        await expect(page.locator('#root')).toBeAttached({ timeout: 15000 });
 
-        // Then: Dismiss any bootbox error dialogs first
-        const okBtn = page.locator('.bootbox .btn-primary, .modal .btn-primary').first();
+        // Then: Dismiss any error dialogs first
+        const okBtn = page.locator('.ant-modal .ant-btn-primary, .bootbox .btn-primary, .modal .btn-primary').first();
         if (await okBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
             await okBtn.click();
         }
@@ -125,12 +129,11 @@ test.describe('Variable Library Editor', () => {
         await page.goto('/app/editor/variable?file=/project/variables.xml');
         await page.waitForLoadState('networkidle');
 
-        // Then: Container should be attached
-        const container = page.locator('#container');
-        await expect(container).toBeAttached({ timeout: 15000 });
+        // Then: SPA root should be attached
+        await expect(page.locator('#root')).toBeAttached({ timeout: 15000 });
 
-        // Then: Dismiss any bootbox error dialogs first
-        const okBtn = page.locator('.bootbox .btn-primary, .modal .btn-primary').first();
+        // Then: Dismiss any error dialogs first
+        const okBtn = page.locator('.ant-modal .ant-btn-primary, .bootbox .btn-primary, .modal .btn-primary').first();
         if (await okBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
             await okBtn.click();
         }

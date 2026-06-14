@@ -225,14 +225,16 @@ test.describe('S: 决策表/树/卡 内部交互', () => {
         await openEditor(page, 'decisiontable', '/test_proj/test_dt.xml');
         await page.waitForTimeout(2500);
         await shot(page, 's1-dt-loaded');
-        // decision table 加载成功的标志:工具栏有 "添加条件行" / "添加属性" 等按钮
-        // (文件可能不存在,但 editor 框架应该渲染)
-        const addRowBtn = page.locator('button:has-text("添加条件行")').first();
-        const addRowVisible = await addRowBtn.isVisible({timeout: 3000}).catch(() => false);
-        const addPropBtn = page.locator('button:has-text("添加属性")').first();
-        const addPropVisible = await addPropBtn.isVisible({timeout: 1000}).catch(() => false);
+        // decision table 加载成功的标志:工具栏有 React 编辑器按钮 "添加列" / "添加行"
+        // (文件可能不存在,但 editor 框架应该渲染;旧 jquery 编辑器的
+        //  "添加条件行"/"添加属性" 按钮在 React DecisionTableEditor 里改成了
+        //  "添加列"/"添加行")
+        const addColBtn = page.getByRole('button', {name: '添加列'}).first();
+        const addColVisible = await addColBtn.isVisible({timeout: 3000}).catch(() => false);
+        const addRowBtn = page.getByRole('button', {name: '添加行'}).first();
+        const addRowVisible = await addRowBtn.isVisible({timeout: 1000}).catch(() => false);
         // 至少有一个工具栏按钮可见 = editor 框架渲染成功
-        expect(addRowVisible || addPropVisible, 'Decision table editor 框架没渲染 (没有工具栏按钮)').toBe(true);
+        expect(addColVisible || addRowVisible, 'Decision table editor 框架没渲染 (没有工具栏按钮)').toBe(true);
     });
 
     test('S-02-decisiontable-add-row-via-api', async ({page}) => {
