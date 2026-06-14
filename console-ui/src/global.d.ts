@@ -209,6 +209,12 @@ interface SimulatorVariable {
     label: string;
 }
 
+// V5.74.4:知识包仿真器分类数据 — 替代 window.simulatorCategoryData 全局变量。
+// Provider 由 SimulatorPage 挂载(只有仿真器打开时才在 React 树内),
+// Cell 通过 contextType 读。null 表示无 Provider(非仿真器场景下 Cells 看到空数组)。
+// 实际 createContext 实例在 components/grid/SimulatorCategoryContext.ts。
+declare const SimulatorCategoryContext: typeof import('./components/grid/SimulatorCategoryContext').SimulatorCategoryContext;
+
 interface Window {
     // Server config (V5.72: _server 已移除,apiBase 改纯 Vite env)
     _projectName: string | null;
@@ -255,9 +261,6 @@ interface Window {
 
     // Current selection state for complex scorecard
     _currentConditionCell: any;
-
-    // Simulator category data (used in Cell editor)
-    simulatorCategoryData: SimulatorCategoryItem[] | undefined;
 
     // File search term (used by SidebarToolbar, FileTreePanel)
     searchFileName: string;
