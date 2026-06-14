@@ -10,8 +10,6 @@
  *
  * @since 5.45
  */
-import CodeMirror from 'codemirror';
-
 const DRL_KEYWORDS = [
     'package', 'dialect', 'import', 'rule', 'when', 'then', 'end', 'extend',
     'declare', 'extends', 'query', 'function', 'global',
@@ -25,7 +23,7 @@ const DRL_KEYWORDS = [
     'over', 'window', 'time',
 ];
 
-export const drlStreamLanguage: CodeMirror.StreamLanguage<string> = {
+export const drlStreamLanguage = {
     startState: () => ({ inString: false }),
     token: (stream, state) => {
         // 字符串字面量

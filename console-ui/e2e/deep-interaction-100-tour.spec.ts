@@ -52,9 +52,9 @@ async function openEditor(page, type, file = '/test_proj/test_vl.xml') {
     await dismissAnyModal(page);
 }
 
-async function apiCall(page, method, path, body) {
-    return await page.evaluate(async ({method, path, body}) => {
-        const opts = {method, credentials: 'include'};
+async function apiCall(page: any, method: string, path: string, body?: Record<string, string>) {
+    return await page.evaluate(async ({method, path, body}: {method: string; path: string; body?: Record<string, string>}) => {
+        const opts: RequestInit = {method, credentials: 'include'};
         if (body) {
             opts.headers = {'Content-Type': 'application/x-www-form-urlencoded'};
             opts.body = new URLSearchParams(body).toString();
@@ -129,7 +129,7 @@ test.describe('Q: editor 真改字段+保存+重载', () => {
             return;
         }
         const addHandle = await addBtn.elementHandle();
-        await page.evaluate((b) => b.click(), addHandle);
+        await page.evaluate((b: any) => { if (b) b.click(); }, addHandle);
         await page.waitForTimeout(800);
         await shot(page, 'q2-const-after-add');
 
@@ -150,7 +150,7 @@ test.describe('Q: editor 真改字段+保存+重载', () => {
             return;
         }
         const addHandle = await addBtn.elementHandle();
-        await page.evaluate((b) => b.click(), addHandle);
+        await page.evaluate((b: any) => { if (b) b.click(); }, addHandle);
         await page.waitForTimeout(800);
         await shot(page, 'q3-param-after-add');
 
