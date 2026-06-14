@@ -17,6 +17,15 @@ import com.ruleforge.runtime.rete.*;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * 规则执行会话:持有知识包、RETE 实例、议程(fact → 激活 → 触发)、参数/fact/事件状态,
+ * 是运行时执行的入口({@link #fireRules} 系列)。
+ *
+ * <p><b>注意</b>:{@link #evaluationRete}、{@link #activeRule}、{@link #activeAgendaGroup}
+ * 含反编译遗留的标签化控制流({@code labelNN} / {@code varN}),逻辑微妙(激活组 + 生效/过期时间窗)。
+ * 本类仅做安全的布尔抽取与构造器整理;<b>不要在无特征化测试覆盖的情况下重写其循环结构</b> ——
+ * 深度清理需先补 characterization test 锁定现有行为。
+ */
 public class KnowledgeSessionImpl implements KnowledgeSession {
     private Context context;
     private EvaluationContextImpl evaluationContext;
@@ -62,27 +71,10 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
         for (KnowledgePackage knowledgePackage : knowledgePackages) {
             this.knowledgePackageList.add(knowledgePackage);
             this.reteInstanceList.add(knowledgePackage.newReteInstance());
-            Map<String, String> p = knowledgePackage.getParameters();
-            if (p != null) {
-                for (String key : p.keySet()) {
-                    Datatype type = Datatype.valueOf(p.get(key));
-                    if (type.equals(Datatype.Integer)) {
-                        this.initParameters.put(key, 0);
-                    } else if (type.equals(Datatype.Long)) {
-                        this.initParameters.put(key, 0);
-                    } else if (type.equals(Datatype.Double)) {
-                        this.initParameters.put(key, 0);
-                    } else if (type.equals(Datatype.Float)) {
-                        this.initParameters.put(key, 0);
-                    } else if (type.equals(Datatype.Boolean)) {
-                        this.initParameters.put(key, false);
-                    } else if (type.equals(Datatype.List)) {
-                        this.initParameters.put(key, new ArrayList<>());
-                    } else if (type.equals(Datatype.Set)) {
-                        this.initParameters.put(key, new HashSet<>());
-                    } else if (type.equals(Datatype.Map)) {
-                        this.initParameters.put(key, new HashMap<>());
-                    }
+            Map<String, String> params = knowledgePackage.getParameters();
+            if (params != null) {
+                for (String key : params.keySet()) {
+                    putDefaultParameter(key, Datatype.valueOf(params.get(key)));
                 }
             }
         }
@@ -189,6 +181,51 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
             this.initParameters.remove(key);
         }
 
+    }
+
+    /** 按声明类型给参数放默认值(与原构造器 if-else 链等价;其他类型不放默认值)。 */
+    private void putDefaultParameter(String key, Datatype type) {
+        Object defaultValue;
+        switch (type) {
+            case Integer:
+            case Long:
+            case Double:
+            case Float:
+                defaultValue = 0;
+                break;
+            case Boolean:
+                defaultValue = false;
+                break;
+            case List:
+                defaultValue = new ArrayList<>();
+                break;
+            case Set:
+                defaultValue = new HashSet<>();
+                break;
+            case Map:
+                defaultValue = new HashMap<>();
+                break;
+            default:
+                return;
+        }
+        this.initParameters.put(key, defaultValue);
+    }
+
+    /** 规则尚未生效(effectiveDate 在未来)。 */
+    private static boolean isNotYetEffective(ReteInstanceUnit unit) {
+        Date effectiveDate = unit.getEffectiveDate();
+        return effectiveDate != null && effectiveDate.getTime() > System.currentTimeMillis();
+    }
+
+    /** 规则已过期(expiresDate 在过去)。 */
+    private static boolean isExpired(ReteInstanceUnit unit) {
+        Date expiresDate = unit.getExpiresDate();
+        return expiresDate != null && expiresDate.getTime() < System.currentTimeMillis();
+    }
+
+    /** 规则在当前时刻处于有效期内(已生效且未过期)。 */
+    private static boolean isWithinValidPeriod(ReteInstanceUnit unit) {
+        return !isNotYetEffective(unit) && !isExpired(unit);
     }
 
     public List<KnowledgePackage> getKnowledgePackageList() {
@@ -315,20 +352,15 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
 
                 while (true) {
                     ReteInstanceUnit insUnit;
-                    Date expiresDate;
                     do {
-                        Date effectiveDate;
                         do {
                             if (!var11.hasNext()) {
                                 continue label82;
                             }
 
                             insUnit = var11.next();
-                            effectiveDate = insUnit.getEffectiveDate();
-                        } while (effectiveDate != null && effectiveDate.getTime() > (new Date()).getTime());
-
-                        expiresDate = insUnit.getExpiresDate();
-                    } while (expiresDate != null && expiresDate.getTime() < (new Date()).getTime());
+                        } while (isNotYetEffective(insUnit));
+                    } while (isExpired(insUnit));
 
                     ReteInstance ri = insUnit.getReteInstance();
                     for (Object fact : facts) {
@@ -365,26 +397,19 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
             label42:
             while (var4.hasNext()) {
                 ReteInstanceUnit insUnit = (ReteInstanceUnit) var4.next();
-                String name = insUnit.getRuleName();
-                if (name.equals(ruleName)) {
-                    Date effectiveDate = insUnit.getEffectiveDate();
-                    if (effectiveDate == null || effectiveDate.getTime() <= (new Date()).getTime()) {
-                        Date expiresDate = insUnit.getExpiresDate();
-                        if (expiresDate == null || expiresDate.getTime() >= (new Date()).getTime()) {
-                            ReteInstance reteIns = insUnit.getReteInstance();
-                            Iterator var10 = this.allFactsMap.values().iterator();
+                if (insUnit.getRuleName().equals(ruleName) && isWithinValidPeriod(insUnit)) {
+                    ReteInstance reteIns = insUnit.getReteInstance();
+                    Iterator var10 = this.allFactsMap.values().iterator();
 
-                            while (true) {
-                                if (!var10.hasNext()) {
-                                    break label42;
-                                }
+                    while (true) {
+                        if (!var10.hasNext()) {
+                            break label42;
+                        }
 
-                                Object fact = var10.next();
-                                Collection<FactTracker> trackers = reteIns.enter(this.evaluationContext, fact);
-                                if (trackers != null) {
-                                    this.agenda.addTrackers(trackers, false);
-                                }
-                            }
+                        Object fact = var10.next();
+                        Collection<FactTracker> trackers = reteIns.enter(this.evaluationContext, fact);
+                        if (trackers != null) {
+                            this.agenda.addTrackers(trackers, false);
                         }
                     }
                 }
@@ -403,20 +428,15 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
 
             while (true) {
                 ReteInstanceUnit insUnit;
-                Date expiresDate;
                 do {
-                    Date effectiveDate;
                     do {
                         if (!var3.hasNext()) {
                             return;
                         }
 
                         insUnit = (ReteInstanceUnit) var3.next();
-                        effectiveDate = insUnit.getEffectiveDate();
-                    } while (effectiveDate != null && effectiveDate.getTime() > (new Date()).getTime());
-
-                    expiresDate = insUnit.getExpiresDate();
-                } while (expiresDate != null && expiresDate.getTime() < (new Date()).getTime());
+                    } while (isNotYetEffective(insUnit));
+                } while (isExpired(insUnit));
 
                 ReteInstance reteIns = insUnit.getReteInstance();
                 Collection<FactTracker> trackers = null;
