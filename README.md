@@ -137,7 +137,7 @@ V5.40-V5.42 路线 B 完成"规则 IR 标准化"三刀:
 - **V5.41 评分卡 + 决策树 → PMML 4.4**(pmml4s 1.5.6,BSD-2-Clause,非 jpmml AGPL-3.0)
 - **V5.42 规则 + DSL → DRL 4**(自研 ANTLR4 grammar,Apache 2.0 clean,无 Drools runtime)
 
-老 .xml / .ul 路径保留并行,V5.43+ 一次性删除。详细架构叙事 →
+老 `.xml` / `.ul` 路径作为向后兼容并行保留(双路径是有意迁移策略 —— 新文件走 DMN/DRL/PMML 标准 IR,存量 `.xml` 规则继续在老路径跑,非待删债)。详细架构叙事 →
 [AI 规则混合架构](docs-site/architecture/ai-rules-hybrid.md)
 </details>
 

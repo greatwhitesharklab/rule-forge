@@ -5,6 +5,7 @@ import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.Node;
 import com.ruleforge.model.library.ResourceLibrary;
 import com.ruleforge.model.rete.*;
+import com.ruleforge.model.rule.ElseRuleBuilder;
 import com.ruleforge.model.rule.Other;
 import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.rule.lhs.BaseCriterion;
@@ -151,7 +152,7 @@ public class ReteBuilder implements ApplicationContextAware {
             Other other = rule.getOther();
             if (other != null && other.getActions() != null && !other.getActions().isEmpty()) {
                 rule.setWithElse(true);
-                Utils.buildElseRule(rule);
+                ElseRuleBuilder.buildElseRule(rule);
                 ObjectTypeNode typeNode = context.buildObjectTypeNode("__*__");
                 typeNode.addLine(terminalNode);
             }

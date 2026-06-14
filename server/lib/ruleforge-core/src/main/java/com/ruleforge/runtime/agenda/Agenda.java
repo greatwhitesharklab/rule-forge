@@ -2,6 +2,7 @@ package com.ruleforge.runtime.agenda;
 
 import com.ruleforge.Utils;
 import com.ruleforge.action.ActionValue;
+import com.ruleforge.model.rule.ElseRuleBuilder;
 import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.rule.RuleInfo;
 import com.ruleforge.runtime.KnowledgeSession;
@@ -49,7 +50,7 @@ public class Agenda {
             Rule rule = activation.getRule();
             if (noCondition && rule.isWithElse()) {
                 if (!this.ruleBox.getRules().contains(rule)) {
-                    Rule elseRule = Utils.buildElseRule(rule);
+                    Rule elseRule = ElseRuleBuilder.buildElseRule(rule);
                     ActivationImpl ac = new ActivationImpl(elseRule);
                     this.ruleBox.add(ac);
                 }
