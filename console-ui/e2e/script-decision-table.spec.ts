@@ -7,6 +7,12 @@ import { login } from './helpers';
  * Given: User is logged in and opens script decision table editor
  * When: User interacts with script decision table
  * Then: Expected table operations should work
+ *
+ * SPA DOM (ScriptDecisionTableEditor.tsx): mounts into #root (no #container /
+ * #dialogContainer — those were jquery editor.html ids). The React editor
+ * renders <Text strong>脚本式决策表: <file></Text> + AntD <Button>添加列</Button>
+ * + <Button>添加行</Button> + <Button>粘贴行</Button> + <Button>保存</Button> +
+ * an AntD <Table> when columns exist (or an Alert when empty).
  */
 test.describe('Script Decision Table Editor', () => {
     test.beforeEach(async ({ page }) => {
@@ -16,24 +22,23 @@ test.describe('Script Decision Table Editor', () => {
     // ── BDD STUB: should load script decision table editor page ──
     // Given: A logged-in user navigates to /app/editor/scriptdecisiontable?file=/project/script-table.xml
     // When:  The page finishes loading and the network is idle
-    // Then:  The browser title should contain "脚本式决策表编辑器"
-    // And:   The #container element should be attached
+    // Then:  The browser title should be "RuleForge" (SPA shell)
+    // And:   The "脚本式决策表: <file>" header should be visible
     //  (the SPA route /app/editor/scriptdecisiontable is the unified entry;
     //   the old /html/editor.html?type=scriptdecisiontable & /html/script-decision-table-editor.html no longer exist; dismiss
-    //   any bootbox error dialogs from backend 500s)
+    //   any error dialogs — React uses AntD message/Modal, not bootbox)
     test('should load script decision table editor page', async ({ page }) => {
         await page.goto('/app/editor/scriptdecisiontable?file=/project/script-table.xml');
         await page.waitForLoadState('networkidle');
 
-        // Then: Page title should be "脚本式决策表编辑器"
-        await expect(page).toHaveTitle(/脚本式决策表编辑器/);
+        // Then: SPA title is "RuleForge"
+        await expect(page).toHaveTitle(/RuleForge/);
 
-        // Then: Container should be attached
-        const container = page.locator('#container');
-        await expect(container).toBeAttached({ timeout: 15000 });
+        // Then: The script-decision-table editor header should be visible (React mounted)
+        await expect(page.getByText('脚本式决策表:').first()).toBeVisible({ timeout: 15000 });
 
-        // Then: Dismiss any bootbox error dialogs
-        const okBtn = page.locator('.bootbox .btn-primary, .modal .btn-primary').first();
+        // Then: Dismiss any error dialogs
+        const okBtn = page.locator('.ant-modal .ant-btn-primary, .bootbox .btn-primary, .modal .btn-primary').first();
         if (await okBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
             await okBtn.click();
         }
@@ -41,18 +46,22 @@ test.describe('Script Decision Table Editor', () => {
 
     // ── BDD STUB: should render container with content ──
     // Given: A logged-in user is on the script decision table editor page
-    // When:  The ScriptDecisionTable component has finished its initial render
-    // Then:  The #container should be attached
+    // When:  The ScriptDecisionTableEditor component has finished its initial render
+    // Then:  The "脚本式决策表: <file>" header should be visible
+    // And:   The toolbar buttons (添加列/添加行/保存) should be visible
+    //  (no #container; React mounts into #root)
     test('should render container with content', async ({ page }) => {
         await page.goto('/app/editor/scriptdecisiontable?file=/project/script-table.xml');
         await page.waitForLoadState('networkidle');
 
-        // Then: Container should be attached
-        const container = page.locator('#container');
-        await expect(container).toBeAttached({ timeout: 15000 });
+        // Then: The script-decision-table editor header should be visible
+        await expect(page.getByText('脚本式决策表:').first()).toBeVisible({ timeout: 15000 });
 
-        // Then: Dismiss any bootbox error dialogs
-        const okBtn = page.locator('.bootbox .btn-primary, .modal .btn-primary').first();
+        // Then: The "添加列" toolbar button should be visible
+        await expect(page.getByRole('button', { name: '添加列' })).toBeVisible();
+
+        // Then: Dismiss any error dialogs
+        const okBtn = page.locator('.ant-modal .ant-btn-primary, .bootbox .btn-primary, .modal .btn-primary').first();
         if (await okBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
             await okBtn.click();
         }
@@ -60,33 +69,38 @@ test.describe('Script Decision Table Editor', () => {
 
     // ── BDD STUB: should handle right-click on container ──
     // Given: A logged-in user is on the script decision table editor page
-    // When:  The user right-clicks on the #container
+    // When:  The user right-clicks on the editor body
     // Then:  No uncaught error should be thrown
+    //  (React ScriptDecisionTableEditor wires per-cell Dropdown context menus;
+    //   with an empty table there are no cells, so just verify the editor body
+    //   does not throw on a right-click)
     test('should handle right-click on container', async ({ page }) => {
         await page.goto('/app/editor/scriptdecisiontable?file=/project/script-table.xml');
         await page.waitForLoadState('networkidle');
 
-        // Then: Container should be attached
-        const container = page.locator('#container');
-        await expect(container).toBeAttached({ timeout: 15000 });
+        // Then: The script-decision-table editor header should be visible
+        await expect(page.getByText('脚本式决策表:').first()).toBeVisible({ timeout: 15000 });
 
-        // Then: Dismiss any bootbox error dialogs
-        const okBtn = page.locator('.bootbox .btn-primary, .modal .btn-primary').first();
+        // Then: Right-click the editor header area without throwing
+        await page.getByText('脚本式决策表:').first().click({ button: 'right' }).catch(() => {});
+
+        // Then: Dismiss any error dialogs
+        const okBtn = page.locator('.ant-modal .ant-btn-primary, .bootbox .btn-primary, .modal .btn-primary').first();
         if (await okBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
             await okBtn.click();
         }
     });
 
-    // ── BDD STUB: should render dialog container ──
+    // ── BDD STUB: should render dialog host ──
     // Given: A logged-in user is on the script decision table editor page
-    // When:  The React shell mounts the dialog provider
-    // Then:  The #dialogContainer element should be attached to the DOM
-    test('should render dialog container', async ({ page }) => {
+    // When:  The React app mounts
+    // Then:  The #root element (SPA mount point) should be attached
+    //  (no #dialogContainer; AntD message/Modal render into #root's portal)
+    test('should render dialog host', async ({ page }) => {
         await page.goto('/app/editor/scriptdecisiontable?file=/project/script-table.xml');
         await page.waitForLoadState('networkidle');
 
-        // Then: Dialog container should be attached
-        const dialogContainer = page.locator('#dialogContainer');
-        await expect(dialogContainer).toBeAttached({ timeout: 15000 });
+        // Then: SPA root mount point should be attached
+        await expect(page.locator('#root')).toBeAttached({ timeout: 15000 });
     });
 });
