@@ -189,6 +189,20 @@ describe('decision-table model', () => {
       // Then
       expect(xml).toContain('<cell row="1" col="1" rowspan="1"></cell>');
     });
+
+    it('Given a merged (rowspan=2) Criteria cell, When serialized, Then emits rowspan="2" and no cell on the covered row', () => {
+      // Given — a 2-row merge: the top cell at (row=1,col=1) has rowspan=2,
+      // and the covered row (row=2,col=1) deliberately has NO cell element
+      // (the backend resolves it by walking up — see DecisionTableRulesBuilder
+      // getCell). This mirrors what the React editor's "向下合并" gesture emits.
+      const dt = emptyTable();
+      dt.cells = [{ row: 1, col: 1, rowspan: 2, content: { joint: { type: 'and', conditions: [{ op: 'GreaterThen', right: inputValue('30') }] } } }];
+      // When
+      const xml = serializeDecisionTable(dt);
+      // Then
+      expect(xml).toContain('<cell row="1" col="1" rowspan="2">');
+      expect(xml).not.toContain('<cell row="2" col="1"');
+    });
   });
 
   describe('round-trip: parse(serialize(state)) deep-equals state', () => {
@@ -236,6 +250,28 @@ describe('decision-table model', () => {
       const roundTrip = parseDecisionTable(serializeDecisionTable(original));
       // Then
       expect(roundTrip).toEqual(original);
+    });
+
+    it('Given a merged Criteria cell with rowspan=2 and no cell on the covered row, When round-tripped, Then rowspan and the absent covered cell are both preserved', () => {
+      // Given — the editor's "向下合并" output: top cell rowspan=2, no cell at
+      // (row=2,col=1). parse must NOT synthesize a cell for the covered row,
+      // and the top cell's rowspan must come back as 2.
+      const original = emptyTable('合并示例');
+      original.columns = [criteriaColumn(0, 'age', '年龄', 'Integer'), assignmentColumn(1)];
+      original.rows = [{ num: 0, height: 40 }, { num: 1, height: 40 }];
+      original.cells = [
+        { row: 1, col: 1, rowspan: 2, content: { joint: { type: 'and', conditions: [{ op: 'GreaterThen', right: inputValue('30') }] } } },
+        varAssignCell(1, 2, 'tier', 'GOLD'),
+        varAssignCell(2, 2, 'tier', 'SILVER'),
+      ];
+      // When
+      const roundTrip = parseDecisionTable(serializeDecisionTable(original));
+      // Then
+      expect(roundTrip).toEqual(original);
+      // Explicit belt-and-braces: the covered (row=2,col=1) stays absent.
+      expect(roundTrip.cells.some((c) => c.row === 2 && c.col === 1)).toBe(false);
+      const top = roundTrip.cells.find((c) => c.row === 1 && c.col === 1);
+      expect(top?.rowspan).toBe(2);
     });
   });
 });
