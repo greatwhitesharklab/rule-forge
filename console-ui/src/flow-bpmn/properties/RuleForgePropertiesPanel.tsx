@@ -4,6 +4,7 @@ import * as componentEvent from '../../components/componentEvent.js';
 import {formPost} from '../../api/client.js';
 import './ruleforge-properties.css';
 import {ArrowDownOutlined, ArrowUpOutlined, CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined} from '@ant-design/icons';
+import {ProjectContext} from '@/editor/EditorContexts';
 
 interface FlowItem {
     flowElement: any;

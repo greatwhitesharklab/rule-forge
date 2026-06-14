@@ -17,11 +17,35 @@ export const SET_ACTIVE_PANEL = 'set_active_panel';
 export const SET_MONITORING_TAB = 'set_monitoring_tab';
 export const SET_SIMULATION_TAB = 'set_simulation_tab';
 export const SET_GIT_STATUS_TAB = 'set_git_status_tab';
+export const SET_PROJECT_NAME = 'set_project_name';
+export const SET_CLASSIFY = 'set_classify';
+export const SET_TYPES = 'set_types';
+export const SET_SEARCH_FILE_NAME = 'set_search_file_name';
 
 // ---- Action creators ----
 
 export function setActivePanel(panel: string) {
     return {type: SET_ACTIVE_PANEL, panel};
+}
+
+/** 设置当前选中的项目名(原 window._projectName 赋值)。传 null 清空(显示所有项目)。 */
+export function setProjectName(projectName: string | null) {
+    return {type: SET_PROJECT_NAME, projectName};
+}
+
+/** 设置树展示模式(原 window._classify 赋值)。 */
+export function setClassify(classify: boolean) {
+    return {type: SET_CLASSIFY, classify};
+}
+
+/** 设置文件类型过滤(原 window._types 赋值)。传 null 清空。 */
+export function setTypes(types: string | null) {
+    return {type: SET_TYPES, types};
+}
+
+/** 设置文件搜索关键字(原 window.searchFileName 赋值)。传 null 清空。 */
+export function setSearchFileName(searchFileName: string | null) {
+    return {type: SET_SEARCH_FILE_NAME, searchFileName};
 }
 
 export function setMonitoringTab(tab: string) {
@@ -38,10 +62,32 @@ export function setGitStatusTab(tab: string) {
 
 // ---- Thunk action creators ----
 
+/**
+ * 从 thunk 的 getState() 提取当前 UI 过滤参数(projectName / classify / types / searchFileName)。
+ * 替代历史 window._projectName / window._classify / window._types / window.searchFileName。
+ * getState 类型用 Function 兼容 redux-thunk 默认签名,内部 cast 后读字段。
+ */
+function readUiFilters(getState: Function): {
+    projectName: string | null;
+    classify: boolean;
+    types: string | null;
+    searchFileName: string | null;
+} {
+    const st = getState() as {ui?: {projectName?: string | null; classify?: boolean; types?: string | null; searchFileName?: string | null}};
+    const ui = (st && st.ui) || {};
+    return {
+        projectName: ui.projectName ?? null,
+        classify: ui.classify ?? true,
+        types: ui.types ?? null,
+        searchFileName: ui.searchFileName ?? null,
+    };
+}
+
 export function createNewFile(newFileName: string, fileType: string, parentNodeData: TreeNodeData) {
-    return function (dispatch: Function) {
+    return function (dispatch: Function, getState: Function) {
         const fileName = newFileName + "." + fileType;
         const serverType = FILE_TYPE_MAP[fileType] || fileType;
+        const {projectName} = readUiFilters(getState);
 
         formPost('/frame/createFile', {
             path: encodeURI(parentNodeData.fullPath + "/" + fileName),
@@ -49,7 +95,7 @@ export function createNewFile(newFileName: string, fileType: string, parentNodeD
         }).then(function () {
             event.eventEmitter.emit(event.CLOSE_CREATE_FILE_DIALOG);
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-            dispatch(loadData(true, window._projectName, null, null, [parentNodeData.fullPath]));
+            dispatch(loadData(true, projectName, null, null, [parentNodeData.fullPath]));
         }).catch(function () {
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
         });
@@ -57,13 +103,14 @@ export function createNewFile(newFileName: string, fileType: string, parentNodeD
 }
 
 export function rename(path: string, newPath: string) {
-    return function (dispatch: Function) {
+    return function (dispatch: Function, getState: Function) {
+        const {classify, projectName, types} = readUiFilters(getState);
         formPost('/frame/fileRename', {
             path: path,
             newPath: newPath,
-            classify: String(window._classify),
-            projectName: window._projectName || '',
-            types: window._types || ''
+            classify: String(classify),
+            projectName: projectName || '',
+            types: types || ''
         }).then(function (data: { repo: { rootFile: TreeNodeData } }) {
             const rootFile = data.repo.rootFile;
             buildData(rootFile, 1);
@@ -78,7 +125,7 @@ export function rename(path: string, newPath: string) {
 export function createNewProject(newProjectName: string) {
     return function (dispatch: Function) {
         formPost('/frame/createProject', {newProjectName: newProjectName}).then(function () {
-            window._projectName = newProjectName;
+            dispatch(setProjectName(newProjectName));
             dispatch(loadData(true, newProjectName));
             event.eventEmitter.emit(event.PROJECT_SELECT, newProjectName);
             event.eventEmitter.emit(event.PROJECT_FILTER_CHANGE, newProjectName);
@@ -91,16 +138,17 @@ export function createNewProject(newProjectName: string) {
 
 export function createNewFolder(newFolderName: string, parentNodeData: TreeNodeData) {
     const fullFolderName = parentNodeData.fullPath + '/' + newFolderName;
-    return function (dispatch: Function) {
+    return function (dispatch: Function, getState: Function) {
+        const {classify, projectName, types} = readUiFilters(getState);
         formPost('/frame/createFolder', {
             fullFolderName: fullFolderName,
-            classify: String(window._classify),
-            projectName: window._projectName || '',
-            types: window._types || '',
+            classify: String(classify),
+            projectName: projectName || '',
+            types: types || '',
         }).then(function () {
             event.eventEmitter.emit(event.CLOSE_CREATE_FOLDER_DIALOG);
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-            dispatch(loadData(true, window._projectName, null));
+            dispatch(loadData(true, projectName, null));
         }).catch(function () {
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
         });
@@ -108,7 +156,8 @@ export function createNewFolder(newFolderName: string, parentNodeData: TreeNodeD
 }
 
 export function fileRename(itemData: TreeNodeData, newName: string) {
-    return function (dispatch: Function) {
+    return function (dispatch: Function, getState: Function) {
+        const {classify, projectName, types} = readUiFilters(getState);
         var fullPath = itemData.fullPath;
         var namePos = fullPath.lastIndexOf(itemData.name);
         var basePath = fullPath.substring(0, namePos);
@@ -116,9 +165,9 @@ export function fileRename(itemData: TreeNodeData, newName: string) {
         formPost('/frame/fileRename', {
             path: fullPath,
             newPath: newFullPath,
-            classify: String(window._classify),
-            projectName: window._projectName || '',
-            types: window._types || ''
+            classify: String(classify),
+            projectName: projectName || '',
+            types: types || ''
         }).then(function (data: { repo: { rootFile: TreeNodeData } }) {
             const pos = newName.indexOf('.');
             if (pos !== -1) {
@@ -139,7 +188,8 @@ export function fileRename(itemData: TreeNodeData, newName: string) {
 }
 
 function moveFile(path: string, newPath: string, dispatch: Function) {
-    formPost('/frame/fileRename', {path, newPath, classify: String(window._classify), projectName: window._projectName || '', types: window._types || ''}).then(function (data: { repo: { rootFile: TreeNodeData } }) {
+    const {classify, projectName, types} = readUiFilters(_getState);
+    formPost('/frame/fileRename', {path, newPath, classify: String(classify), projectName: projectName || '', types: types || ''}).then(function (data: { repo: { rootFile: TreeNodeData } }) {
         const rootFile = data.repo.rootFile;
         buildData(rootFile, 1);
         dispatch({data: rootFile, type: LOAD_END});
@@ -174,7 +224,9 @@ export function loadData(classify?: boolean | null, projectName?: string | null,
         _pathsToExpand = pathsToExpand;
     }
     const requestId = ++_loadDataRequestId;
-    return function (dispatch: Function) {
+    return function (dispatch: Function, getState: Function) {
+        _dispatch = dispatch;
+        _getState = getState;
         const params: Record<string, string> = {};
         if (classify !== undefined && classify !== null) params.classify = String(classify);
         if (projectName !== undefined && projectName !== null) params.projectName = projectName;
@@ -271,14 +323,21 @@ export function loadData(classify?: boolean | null, projectName?: string | null,
 
 
 
-// 加载子菜单的函数
-export function loadChildren(parentNodeData: TreeNodeData, classify: boolean, projectName: string | null, types: string | null) {
+// 加载子菜单的函数。classify/projectName/types 可省略,thunk 自动从 store 读
+// (替代 TreeItem 历史上传 window._classify / window._types)。
+export function loadChildren(parentNodeData: TreeNodeData, classify?: boolean | null, projectName?: string | null, types?: string | null) {
     componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
-    return function (dispatch: Function) {
+    return function (dispatch: Function, getState: Function) {
+        _dispatch = dispatch;
+        _getState = getState;
+        const uiFilters = readUiFilters(getState);
+        const effectiveClassify = classify !== undefined && classify !== null ? classify : uiFilters.classify;
+        const effectiveProjectName = projectName !== undefined ? projectName : uiFilters.projectName;
+        const effectiveTypes = types !== undefined ? types : uiFilters.types;
         formPost('/frame/loadProjects', {
-            classify: String(classify),
-            projectName: projectName || '',
-            types: types || '',
+            classify: String(effectiveClassify),
+            projectName: effectiveProjectName || '',
+            types: effectiveTypes || '',
             parentPath: parentNodeData.fullPath,
             loadChildren: 'true'
         }).then(function (data: {
@@ -401,8 +460,16 @@ export function buildType(fileType: string): string {
     return type;
 }
 
-// Global dispatch used by context-menu callbacks (set during buildData call chain)
+// Global dispatch / getState used by context-menu callbacks (set during loadData thunk
+// execution so the menu click closures — invoked later — can dispatch + read store).
 let _dispatch: Function = () => {};
+let _getState: Function = () => ({ui: {}});
+
+// File clipboard state(剪切 / 复制)。原 window.___cutFileData / window.___copyFileData。
+// 上下文菜单的 click 回调是模块级闭包(非 React 组件),所以用模块级 holder 而非 Context;
+// 这避免了把临时剪贴板状态挂在 window 全局对象上。
+let _cutFileData: TreeNodeData | null = null;
+let _copyFileData: TreeNodeData | null = null;
 // Track whether the current buildData invocation has a user argument
 let _hasUser: boolean = false;
 
@@ -944,9 +1011,9 @@ function buildPasteMenuItem(): ContextMenuItem {
         name: '粘贴文件',
         icon: 'rf rf-paste',
         click: function (data: TreeNodeData) {
-            let sourceFileData = window.___cutFileData, copy = false;
+            let sourceFileData = _cutFileData, copy = false;
             if (!sourceFileData) {
-                sourceFileData = window.___copyFileData;
+                sourceFileData = _copyFileData;
                 copy = true;
             }
             if (!sourceFileData) {
@@ -967,8 +1034,8 @@ function buildPasteMenuItem(): ContextMenuItem {
                 if (!result) {
                     return;
                 }
-                window.___cutFileData = null;
-                window.___copyFileData = null;
+                _cutFileData = null;
+                _copyFileData = null;
                 if (!copy) {
                     moveFile(oldFullPath, newFullPath, _dispatch);
                 } else {
@@ -1024,16 +1091,16 @@ function buildFileContextMenu(): ContextMenuItem[] {
             name: '复制文件',
             icon: 'rf rf-copy',
             click: function (data: TreeNodeData) {
-                window.___copyFileData = data;
-                window.___cutFileData = null;
+                _copyFileData = data;
+                _cutFileData = null;
             }
         },
         {
             name: '剪切文件',
             icon: 'rf rf-cut',
             click: function (data: TreeNodeData) {
-                window.___cutFileData = data;
-                window.___copyFileData = null;
+                _cutFileData = data;
+                _copyFileData = null;
             }
         },
         {
@@ -1109,14 +1176,15 @@ export function seeFileVersions(data: TreeNodeData & { rpp?: string; page?: numb
 }
 
 function projectDelete(item: TreeNodeData, dispatch: Function, isFolder?: boolean) {
+    const {classify, projectName, types} = readUiFilters(_getState);
     componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
     setTimeout(function () {
         formPost("/frame/deleteProject", {
             isFolder: String(!!isFolder),
             path: item.fullPath,
-            classify: String(window._classify),
-            projectName: window._projectName || '',
-            types: window._types || ''
+            classify: String(classify),
+            projectName: projectName || '',
+            types: types || ''
         }).then(function () {
             if (!isFolder) {
                 dispatch({data: item, type: DEL});
@@ -1132,14 +1200,15 @@ function projectDelete(item: TreeNodeData, dispatch: Function, isFolder?: boolea
 }
 
 function fileDelete(item: TreeNodeData, dispatch: Function, isFolder?: boolean) {
+    const {classify, projectName, types} = readUiFilters(_getState);
     componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
     setTimeout(function () {
         formPost("/frame/deleteFile", {
             isFolder: String(!!isFolder),
             path: item.fullPath,
-            classify: String(window._classify),
-            projectName: window._projectName || '',
-            types: window._types || ''
+            classify: String(classify),
+            projectName: projectName || '',
+            types: types || ''
         }).then(function () {
             if (!isFolder) {
                 dispatch({data: item, type: DEL});

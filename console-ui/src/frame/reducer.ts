@@ -13,6 +13,18 @@ interface UIState {
     monitoringTab: string;
     simulationTab: string;
     gitStatusTab: string;
+    /**
+     * 当前选中的项目名(项目过滤)。SidebarToolbar / RuleEditorPanel 选择项目时 dispatch
+     * SET_PROJECT_NAME;action.ts thunks(loadData/rename/fileRename/...)通过 getState() 读取,
+     * 不再走 window._projectName。
+     */
+    projectName: string | null;
+    /** 树展示模式:分类(true)/集中(false)。原 window._classify。 */
+    classify: boolean;
+    /** 文件类型过滤(原 window._types,null/'all'=全部)。 */
+    types: string | null;
+    /** 文件搜索关键字(原 window.searchFileName)。 */
+    searchFileName: string | null;
 }
 
 interface FrameState {
@@ -24,7 +36,7 @@ interface FrameState {
     [key: string]: unknown;
 }
 
-function ui(state: UIState = {activePanel: 'rules', monitoringTab: 'overview', simulationTab: 'configure', gitStatusTab: 'summary'}, action: { type: string; [key: string]: any }): UIState {
+function ui(state: UIState = {activePanel: 'rules', monitoringTab: 'overview', simulationTab: 'configure', gitStatusTab: 'summary', projectName: null, classify: true, types: null, searchFileName: null}, action: { type: string; [key: string]: any }): UIState {
     switch (action.type) {
         case ACTIONS.SET_ACTIVE_PANEL:
             return {...state, activePanel: action.panel};
@@ -34,9 +46,37 @@ function ui(state: UIState = {activePanel: 'rules', monitoringTab: 'overview', s
             return {...state, simulationTab: action.tab};
         case ACTIONS.SET_GIT_STATUS_TAB:
             return {...state, gitStatusTab: action.tab};
+        case ACTIONS.SET_PROJECT_NAME:
+            return {...state, projectName: action.projectName ?? null};
+        case ACTIONS.SET_CLASSIFY:
+            return {...state, classify: action.classify};
+        case ACTIONS.SET_TYPES:
+            return {...state, types: action.types ?? null};
+        case ACTIONS.SET_SEARCH_FILE_NAME:
+            return {...state, searchFileName: action.searchFileName ?? null};
         default:
             return state;
     }
+}
+
+/** Select current projectName from a frame store state(供非 connect 组件 / panel 用)。 */
+export function selectProjectName(state: FrameState): string | null {
+    return (state.ui && state.ui.projectName) ?? null;
+}
+
+/** Select current classify flag. */
+export function selectClassify(state: FrameState): boolean {
+    return (state.ui && state.ui.classify) ?? true;
+}
+
+/** Select current file-type filter. */
+export function selectTypes(state: FrameState): string | null {
+    return (state.ui && state.ui.types) ?? null;
+}
+
+/** Select current file search term. */
+export function selectSearchFileName(state: FrameState): string | null {
+    return (state.ui && state.ui.searchFileName) ?? null;
 }
 
 function tree(state: FrameState = {}, action: { type: string; [key: string]: any }): FrameState {

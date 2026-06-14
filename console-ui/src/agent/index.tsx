@@ -22,6 +22,8 @@ interface AgentPanelProps {
     status: AgentState['status'];
     dispatch: (action: unknown) => void;
     project?: string;
+    /** 当前选中的项目名(来自 frame store ui.projectName,替代 window._projectName)。 */
+    projectName?: string | null;
     username?: string;
 }
 
@@ -44,7 +46,7 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
     };
 
     handleNewChat = () => {
-        this.props.dispatch(createSession('新对话', window._projectName || this.props.project || undefined));
+        this.props.dispatch(createSession('新对话', this.props.projectName || this.props.project || undefined));
     };
 
     handleDeleteSession = (sessionId: string) => {
@@ -218,13 +220,14 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
     }
 }
 
-const selector = (state: { agent: AgentState }) => ({
+const selector = (state: { agent: AgentState; ui?: { projectName?: string | null } }) => ({
     sessions: state.agent?.sessions || [],
     activeSessionId: state.agent?.activeSessionId || null,
     messages: state.agent?.messages || [],
     loading: state.agent?.loading || false,
     streaming: state.agent?.streaming || false,
     status: state.agent?.status || null,
+    projectName: state.ui?.projectName ?? null,
 });
 
 const AgentPanelConnected = connect(selector)(AgentPanel);
