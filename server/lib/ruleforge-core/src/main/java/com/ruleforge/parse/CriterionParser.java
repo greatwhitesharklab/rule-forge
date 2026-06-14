@@ -5,16 +5,14 @@ import java.util.Collection;
 import java.util.List;
 
 import org.dom4j.Element;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import com.ruleforge.plugin.EnginePluginRegistry;
 
 import com.ruleforge.model.rule.lhs.Criterion;
 /**
  * @author Jacky.gao
  * @since 2014年12月23日
  */
-public abstract class CriterionParser extends AbstractParser<Criterion> implements ApplicationContextAware {
+public abstract class CriterionParser extends AbstractParser<Criterion> {
 	protected Collection<CriterionParser> criterionParsers;
 	
 	protected List<Criterion> parseCriterion(Element element){
@@ -39,8 +37,7 @@ public abstract class CriterionParser extends AbstractParser<Criterion> implemen
 		return list;
 	}
 		
-	public void setApplicationContext(ApplicationContext applicationContext)
-			throws BeansException {
-		criterionParsers=applicationContext.getBeansOfType(CriterionParser.class).values();
+	public void setPluginRegistry(EnginePluginRegistry pluginRegistry) {
+		this.criterionParsers=pluginRegistry.getCriterionParsers();
 	}
 }

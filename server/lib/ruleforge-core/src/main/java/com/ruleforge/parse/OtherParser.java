@@ -3,9 +3,7 @@ package com.ruleforge.parse;
 import java.util.Collection;
 
 import org.dom4j.Element;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import com.ruleforge.plugin.EnginePluginRegistry;
 
 import com.ruleforge.model.rule.Other;
 
@@ -13,7 +11,7 @@ import com.ruleforge.model.rule.Other;
  * @author Jacky.gao
  * @since 2014年12月23日
  */
-public class OtherParser implements Parser<Other>,ApplicationContextAware {
+public class OtherParser implements Parser<Other> {
 	private Collection<ActionParser> actionParsers;
 	public Other parse(Element element) {
 		Other other=new Other();
@@ -35,7 +33,7 @@ public class OtherParser implements Parser<Other>,ApplicationContextAware {
 	public boolean support(String name) {
 		return name.equals("else");
 	}
-	public void setApplicationContext(ApplicationContext context) throws BeansException {
-		actionParsers=context.getBeansOfType(ActionParser.class).values();
+	public void setPluginRegistry(EnginePluginRegistry pluginRegistry) {
+		this.actionParsers=pluginRegistry.getActionParsers();
 	}
 }

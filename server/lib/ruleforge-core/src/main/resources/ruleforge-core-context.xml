@@ -187,7 +187,9 @@
     <!-- V5.44.3 — 4 library deserializer bean (actionLibraryDeserializer / variableLibraryDeserializer /
          constantLibraryDeserializer / parameterLibraryDeserializer) 删。library 走 DRL import 段。 -->
 
-    <bean id="ruleforge.assertorEvaluator" class="com.ruleforge.runtime.assertor.AssertorEvaluator"/>
+    <bean id="ruleforge.assertorEvaluator" class="com.ruleforge.runtime.assertor.AssertorEvaluator">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
 
     <bean id="ruleforge.jointParser" class="com.ruleforge.parse.table.JointParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>
@@ -195,6 +197,7 @@
     <bean id="ruleforge.cellParser" class="com.ruleforge.parse.table.CellParser">
         <property name="jointParser" ref="ruleforge.jointParser"/>
         <property name="valueParser" ref="ruleforge.valueParser"/>
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
     </bean>
     <bean id="ruleforge.complexColumnParser" class="com.ruleforge.parse.scorecard.ComplexColumnParser"/>
     <bean id="ruleforge.scriptCellParser" class="com.ruleforge.parse.table.ScriptCellParser"/>
@@ -253,7 +256,9 @@
     <bean id="ruleforge.executeMethodActionParser" class="com.ruleforge.parse.ExecuteMethodActionParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>
     </bean>
-    <bean id="ruleforge.lhsParser" class="com.ruleforge.parse.LhsParser"/>
+    <bean id="ruleforge.lhsParser" class="com.ruleforge.parse.LhsParser">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
 
     <bean id="ruleforge.leftParser" class="com.ruleforge.parse.LeftParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>
@@ -264,10 +269,15 @@
     <bean id="ruleforge.criteriaParser" class="com.ruleforge.parse.CriteriaParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>
         <property name="leftParser" ref="ruleforge.leftParser"/>
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
     </bean>
-    <bean id="ruleforge.junctionParser" class="com.ruleforge.parse.JunctionParser"/>
+    <bean id="ruleforge.junctionParser" class="com.ruleforge.parse.JunctionParser">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
 
-    <bean id="ruleforge.rhsParser" class="com.ruleforge.parse.RhsParser"/>
+    <bean id="ruleforge.rhsParser" class="com.ruleforge.parse.RhsParser">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
     <bean id="ruleforge.ruleParser" class="com.ruleforge.parse.RuleParser">
         <property name="lhsParser" ref="ruleforge.lhsParser"/>
         <property name="rhsParser" ref="ruleforge.rhsParser"/>
@@ -279,7 +289,9 @@
         <property name="otherParser" ref="ruleforge.otherParser"/>
         <property name="valueParser" ref="ruleforge.valueParser"/>
     </bean>
-    <bean id="ruleforge.otherParser" class="com.ruleforge.parse.OtherParser"/>
+    <bean id="ruleforge.otherParser" class="com.ruleforge.parse.OtherParser">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
     <bean id="ruleforge.variableAssignActionParser" class="com.ruleforge.parse.VariableAssignActionParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>
     </bean>
@@ -320,7 +332,9 @@
         <property name="complexScorecardParser" ref="ruleforge.complexScorecardParser"/>
     </bean>
 
-    <bean id="ruleforge.actionTreeNodeParser" class="com.ruleforge.parse.decisiontree.ActionTreeNodeParser"/>
+    <bean id="ruleforge.actionTreeNodeParser" class="com.ruleforge.parse.decisiontree.ActionTreeNodeParser">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
     <bean id="ruleforge.variableTreeNodeParser" class="com.ruleforge.parse.decisiontree.VariableTreeNodeParser">
         <property name="leftParser" ref="ruleforge.leftParser"/>
         <property name="conditionTreeNodeParser" ref="ruleforge.conditionTreeNodeParser"/>
