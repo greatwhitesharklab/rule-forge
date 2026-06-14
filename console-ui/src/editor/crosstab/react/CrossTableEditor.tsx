@@ -27,17 +27,34 @@
  * ── TODO (jquery features NOT yet ported) ──────────────────────────────────
  *   - hierarchical rowspan/colspan merging (multi-level condition headers)
  *   - Excel import (the toolbar button is wired but a no-op alert for now)
- *   - copy/paste of cell data
+ *   - cell-level copy/paste of cell data (row-level copy/paste IS implemented
+ *     below; single-cell / cell-range copy-paste is still TODO)
  *   - full condition-cell joint UI (flat single condition only, like DT)
+ *
+ * ── Row copy/paste ───────────────────────────────────────────────────────
+ * Mirrors DecisionTableEditor's V5.60 pattern. The copy granularity is a single
+ * ROW (top condition row or left data row) plus every cell that row owns:
+ *   - a top row owns conditionCells on its row (the top band, every left col);
+ *   - a left row owns conditionCells on its row (the left band, every left col
+ *     — i.e. cells where row==thisRow && the col is a left col) AND valueCells
+ *     on its row (every top col).
+ * Paste appends a fresh row at the end of `rows` with a brand-new `number` and
+ * re-stamps every cloned cell to that number. Columns are left untouched (a
+ * pasted row lands on the same set of columns). The whole payload is
+ * deep-cloned on both copy and paste so a pasted row never shares references
+ * with its source. We store the source row + its cells in a component-local
+ * clipboard (`clipboardRow`); `null` disables the paste buttons. Column
+ * copy/paste is a TODO.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Alert, Button, Input, Modal, Select, Space, Spin, Table, Typography, message,
+  Alert, Button, Dropdown, Input, Modal, Select, Space, Spin, Table, Typography, message,
 } from 'antd';
 import {
-  DeleteOutlined, PlusOutlined, SaveOutlined, SettingOutlined,
+  CopyOutlined, DeleteOutlined, MoreOutlined, PlusOutlined, SaveOutlined, SettingOutlined, SnippetsOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import type { MenuProps } from 'antd';
 import type { ValueExpr } from '../../ruleforge/model/types';
 import { ValueEditor } from '../../ruleforge/react/ValueEditor';
 import {
@@ -51,7 +68,9 @@ import type {
   BundleData,
   ConditionCellContent,
   ConditionCrossCell,
+  CrossRow,
   CrossTableData,
+  ValueCrossCell,
 } from '../model/types';
 import { parseCrossTable } from '../model/parse';
 import { serializeCrossTable } from '../model/serialize';
@@ -80,6 +99,35 @@ function emptyTable(): CrossTableData {
     conditionCells: [],
     valueCells: [],
   };
+}
+
+/**
+ * Deep-clone a value independent of the source. Prefer the platform
+ * `structuredClone` (Node ≥17, all evergreen browsers); fall back to a JSON
+ * round-trip for the older jsdom test environment. Used by row copy/paste so a
+ * pasted row never shares references with the row it was copied from.
+ */
+function deepClone<T>(value: T): T {
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+/**
+ * Component-local clipboard payload for row copy/paste. Stores the source row
+ * plus every cell it owns:
+ *   - conditionCells whose `row` === source.number (both bands);
+ *   - valueCells whose `row` === source.number (left rows only have these, but
+ *     storing an empty list for a top row is harmless).
+ * Stored cell `.row` values are placeholders (the source's own number); paste
+ * re-stamps every cell to the new row's number.
+ */
+interface ClipboardRow {
+  /** Deep-cloned source row (number placeholder). */
+  row: CrossRow;
+  /** Deep-cloned condition cells owned by the source row. */
+  conditionCells: ConditionCrossCell[];
+  /** Deep-cloned value cells owned by the source row. */
+  valueCells: ValueCrossCell[];
 }
 
 /** Default loader: GET /common/loadXml, read raw XML under editorData.xml/content. */
@@ -111,6 +159,9 @@ export function CrossTableEditor({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [targetModal, setTargetModal] = useState(false);
+  // Row copy/paste clipboard. `null` = nothing copied yet (disables the paste
+  // buttons).
+  const [clipboardRow, setClipboardRow] = useState<ClipboardRow | null>(null);
 
   // Load the project's imported variable libraries once; passed down to the
   // bundle/target modals so they can render the shared VariablePicker.
@@ -225,6 +276,65 @@ export function CrossTableEditor({
       return { ...prev, rows };
     });
   }, []);
+
+  // ---- row copy / paste ----
+  //
+  // Copy grabs the source row plus every cell whose `row` === source.number
+  // (conditionCells + valueCells — top rows have only conditionCells, left rows
+  // have conditionCells on left cols + valueCells on top cols), deep-clones
+  // them, and stashes them in `clipboardRow`. Paste appends a fresh row at the
+  // end of `rows` with a brand-new `number` and re-stamps every cloned cell to
+  // that number. Columns are untouched (the pasted row lands on the same set
+  // of columns). The whole payload is deep-cloned again on paste so repeated
+  // pastes are independent.
+  //
+  // We append at the end (rather than splicing mid-grid) because the wire
+  // format accepts non-contiguous row numbers (removeRow never renumbers
+  // either) — appending avoids shifting every cell below the insertion point.
+  const copyRow = useCallback(
+    (displayRow: number) => {
+      const row = state.rows[displayRow];
+      if (!row) return;
+      const wireRow = row.number;
+      const conditionCells = state.conditionCells
+        .filter((c) => c.row === wireRow)
+        .map((c) => deepClone(c));
+      const valueCells = state.valueCells
+        .filter((c) => c.row === wireRow)
+        .map((c) => deepClone(c));
+      setClipboardRow({ row: deepClone(row), conditionCells, valueCells });
+      message.success('已复制行 ' + wireRow);
+    },
+    [state.rows, state.conditionCells, state.valueCells],
+  );
+
+  const pasteRow = useCallback(() => {
+    if (!clipboardRow) {
+      message.warning('剪贴板为空,请先复制一行');
+      return;
+    }
+    setState((prev) => {
+      // Allocate a brand-new row number past every number currently in use.
+      const nextNum =
+        prev.rows.length > 0 ? Math.max(...prev.rows.map((r) => r.number)) + 1 : 1;
+      const newRow: CrossRow = { ...deepClone(clipboardRow.row), number: nextNum };
+      // Re-stamp every cloned cell to the new row number (deep-clone again so
+      // repeated pastes don't share references).
+      const conditionCells = clipboardRow.conditionCells.map((c) =>
+        deepClone({ ...c, row: nextNum }),
+      );
+      const valueCells = clipboardRow.valueCells.map((c) =>
+        deepClone({ ...c, row: nextNum }),
+      );
+      return {
+        ...prev,
+        rows: prev.rows.concat([newRow]),
+        conditionCells: prev.conditionCells.concat(conditionCells),
+        valueCells: prev.valueCells.concat(valueCells),
+      };
+    });
+    message.success('已粘贴行');
+  }, [clipboardRow]);
 
   // ---- column management ----
   const addTopColumn = useCallback(() => {
@@ -385,7 +495,8 @@ export function CrossTableEditor({
       });
     }
 
-    // Trailing action column: delete row.
+    // Trailing action column: per-row ⋯ dropdown (copy/paste/delete). The
+    // paste item copies + appends the clipboard row at the end.
     cols.push({
       title: '',
       key: 'row-actions',
@@ -393,14 +504,33 @@ export function CrossTableEditor({
       fixed: 'right',
       render: (_v, wireRow) => {
         const displayRow = state.rows.findIndex((r) => r.number === wireRow);
+        const rowMenuItems: MenuProps['items'] = [
+          {
+            key: 'copy-row',
+            label: '复制此行',
+            icon: <CopyOutlined />,
+            onClick: () => copyRow(displayRow),
+          },
+          {
+            key: 'paste-row',
+            label: '粘贴行',
+            icon: <SnippetsOutlined />,
+            disabled: !clipboardRow,
+            onClick: () => pasteRow(),
+          },
+          { type: 'divider' },
+          {
+            key: 'delete-row',
+            label: '删除此行',
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: () => removeRow(displayRow),
+          },
+        ];
         return (
-          <Button
-            size="small"
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => removeRow(displayRow)}
-          />
+          <Dropdown menu={{ items: rowMenuItems }} trigger={['click']}>
+            <Button size="small" type="text" icon={<MoreOutlined />} />
+          </Dropdown>
         );
       },
     });
@@ -409,6 +539,7 @@ export function CrossTableEditor({
     state.rows, state.columns, findConditionCell, findValueCell,
     setConditionCell, setValueCell, removeColumn, removeRow,
     configureTopRowBundle, configureLeftColumnBundle,
+    copyRow, pasteRow, clipboardRow,
   ]);
 
   // Wire rows — 1..n (one table row per model row).
@@ -443,6 +574,13 @@ export function CrossTableEditor({
             onClick={() => message.info('Excel 导入暂未实现(TODO)')}
           >
             导入Excel
+          </Button>
+          <Button
+            icon={<SnippetsOutlined />}
+            disabled={!clipboardRow}
+            onClick={() => pasteRow()}
+          >
+            粘贴行
           </Button>
           <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>
             保存

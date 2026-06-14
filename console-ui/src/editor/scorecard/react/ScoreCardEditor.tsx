@@ -34,11 +34,33 @@
  *   - per-row property overrides (salience / dates / enabled) — table-level
  *     only for now
  *   - col width resize drag handles
+ *   - cell-level copy/paste (row-level copy/paste IS implemented below;
+ *     single-cell / cell-range copy-paste is still TODO)
+ *
+ * ── Row copy/paste ───────────────────────────────────────────────────────
+ * Mirrors DecisionTableEditor's V5.60 pattern. The copy granularity is a whole
+ * ATTRIBUTE GROUP: an attribute row plus every nested condition row and every
+ * cell those rows own. Cells are keyed by (row, col), and rowNumber is sparse
+ * (attribute row at 2 + one condition row → next attribute row at 4), so paste
+ * APPENDS a fresh group at the end with brand-new rowNumbers instead of
+ * splicing mid-table — that keeps rowNumber stable for existing cells (no
+ * renumber cascade) and the wire format accepts non-contiguous rows (the
+ * backend walks rows by number, not by index). The whole group is deep-cloned
+ * on both copy and paste so a pasted group never shares references with its
+ * source. We store the source AttributeRow + its conditionRows + the cells in
+ * a component-local clipboard (`clipboardGroup`); `null` disables the paste
+ * button. Condition-row-only copy/paste is a TODO (row-level here means
+ * attribute-group level).
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Input, InputNumber, Radio, Select, Space, Spin, Table, Typography, message } from 'antd';
-import { DeleteOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
+import {
+  Alert, Button, Dropdown, Input, InputNumber, Radio, Select, Space, Spin, Table, Typography, message,
+} from 'antd';
+import {
+  CopyOutlined, DeleteOutlined, MoreOutlined, PlusOutlined, SaveOutlined, SnippetsOutlined,
+} from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import type { MenuProps } from 'antd';
 import type { ValueExpr } from '../../ruleforge/model/types';
 import { OPERATOR_OPTIONS, opHasNoInput } from '../../ruleforge/react/constants';
 import { ValueEditor } from '../../ruleforge/react/ValueEditor';
@@ -124,6 +146,30 @@ interface DisplayRow {
   attributeRowNumber: number;
 }
 
+/**
+ * Deep-clone a value independent of the source. Prefer the platform
+ * `structuredClone` (Node ≥17, all evergreen browsers); fall back to a JSON
+ * round-trip for the older jsdom test environment. Used by row copy/paste so a
+ * pasted group never shares references with the group it was copied from.
+ */
+function deepClone<T>(value: T): T {
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+/**
+ * Component-local clipboard payload for attribute-group copy/paste. Stores the
+ * source attribute row, its nested condition rows, and the cells owned by all
+ * of those rows. Cell `.row` values are placeholders here (the source's own
+ * rowNumbers); paste re-stamps every cell to a brand-new rowNumber.
+ */
+interface ClipboardGroup {
+  /** Deep-cloned source attribute row (rowNumber placeholder). */
+  attributeRow: AttributeRow;
+  /** Deep-cloned source cells owned by the attribute row + its condition rows. */
+  cells: CardCell[];
+}
+
 export function ScoreCardEditor({
   file,
   onLoad = loadFromServer,
@@ -133,6 +179,9 @@ export function ScoreCardEditor({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Attribute-group copy/paste clipboard. `null` = nothing copied yet (disables
+  // the paste buttons).
+  const [clipboardGroup, setClipboardGroup] = useState<ClipboardGroup | null>(null);
 
   // Load the project's imported variable libraries once (paths are stable per
   // scorecard). Passed down to ConfigArea + AttributeCellEditor so the
@@ -256,6 +305,94 @@ export function ScoreCardEditor({
       return { ...prev, cells, rows };
     });
   }, []);
+
+  // ---- attribute-group copy / paste ----
+  //
+  // Copy grabs the source AttributeRow (incl. nested condition rows) and every
+  // cell owned by one of those rows, deep-clones them, and stashes them in
+  // `clipboardGroup`. Paste appends a fresh group at the end with brand-new
+  // rowNumbers (one for the attribute row, one per nested condition row) and
+  // re-stamps every cell's `row` to its new owner rowNumber. The whole group
+  // is deep-cloned again on paste so repeated pastes are independent.
+  //
+  // We append at the end (rather than splicing mid-table) because rowNumber is
+  // sparse and the wire format accepts non-contiguous rows — appending avoids
+  // a renumber cascade across all existing cells.
+  const copyAttributeRow = useCallback(
+    (attributeRowNumber: number) => {
+      const ar = state.rows.find((r) => r.rowNumber === attributeRowNumber);
+      if (!ar) return;
+      const ownedRowNumbers = new Set<number>([
+        ar.rowNumber,
+        ...ar.conditionRows.map((cr) => cr.rowNumber),
+      ]);
+      const ownedCells = state.cells
+        .filter((c) => ownedRowNumbers.has(c.row))
+        .map((c) => deepClone(c));
+      setClipboardGroup({
+        attributeRow: deepClone(ar),
+        cells: ownedCells,
+      });
+      message.success('已复制属性组');
+    },
+    [state.rows, state.cells],
+  );
+
+  const pasteAttributeRow = useCallback(() => {
+    if (!clipboardGroup) {
+      message.warning('剪贴板为空,请先复制一个属性组');
+      return;
+    }
+    setState((prev) => {
+      // Allocate fresh, monotonically-increasing rowNumbers past every number
+      // currently in use (cells + attribute rows + condition rows).
+      const usedRowNumbers = new Set<number>();
+      for (const c of prev.cells) usedRowNumbers.add(c.row);
+      for (const r of prev.rows) {
+        usedRowNumbers.add(r.rowNumber);
+        for (const cr of r.conditionRows) usedRowNumbers.add(cr.rowNumber);
+      }
+      let next = 1;
+      const alloc = (): number => {
+        while (usedRowNumbers.has(next)) next++;
+        usedRowNumbers.add(next);
+        return next++;
+      };
+
+      // Map each source rowNumber to a brand-new one (attribute row first,
+      // then condition rows in their original order).
+      const newRowNumber = alloc();
+      const conditionRowMap = new Map<number, number>();
+      for (const cr of clipboardGroup.attributeRow.conditionRows) {
+        conditionRowMap.set(cr.rowNumber, alloc());
+      }
+
+      // Build the new AttributeRow with re-stamped rowNumbers.
+      const newAttributeRow: AttributeRow = {
+        rowNumber: newRowNumber,
+        conditionRows: clipboardGroup.attributeRow.conditionRows.map((cr) => ({
+          rowNumber: conditionRowMap.get(cr.rowNumber)!,
+        })),
+      };
+
+      // Re-stamp every cell to its new owner rowNumber (attribute row or one of
+      // its condition rows). Cells belonging to the attribute row stay on the
+      // new attribute rowNumber; condition-row cells move to the mapped number.
+      const pastedCells = clipboardGroup.cells.map((c) => {
+        const srcAttr = clipboardGroup.attributeRow.rowNumber;
+        const targetRow =
+          c.row === srcAttr ? newRowNumber : conditionRowMap.get(c.row) ?? newRowNumber;
+        return deepClone({ ...c, row: targetRow });
+      });
+
+      return {
+        ...prev,
+        rows: prev.rows.concat([newAttributeRow]),
+        cells: prev.cells.concat(pastedCells),
+      };
+    });
+    message.success('已粘贴属性组');
+  }, [clipboardGroup]);
 
   // ---- custom col management ----
   const addCustomCol = useCallback(() => {
@@ -385,21 +522,54 @@ export function ScoreCardEditor({
       });
     }
 
-    // Trailing action column: delete custom col header / delete row.
+    // Trailing action column: per-row ⋯ dropdown (copy/paste/delete) on
+    // attribute rows; plain delete button on condition rows. The attribute-row
+    // menu's paste item copies + appends the clipboard group at the end.
     cols.push({
       title: '',
       key: 'row-actions',
       width: 50,
-      render: (_v, dr) =>
-        dr.kind === 'condition' ? (
-          <Button
-            size="small"
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => removeRow(dr.rowNumber, true, dr.attributeRowNumber)}
-          />
-        ) : null,
+      render: (_v, dr) => {
+        if (dr.kind === 'condition') {
+          return (
+            <Button
+              size="small"
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => removeRow(dr.rowNumber, true, dr.attributeRowNumber)}
+            />
+          );
+        }
+        const rowMenuItems: MenuProps['items'] = [
+          {
+            key: 'copy-group',
+            label: '复制属性组',
+            icon: <CopyOutlined />,
+            onClick: () => copyAttributeRow(dr.rowNumber),
+          },
+          {
+            key: 'paste-group',
+            label: '粘贴属性组',
+            icon: <SnippetsOutlined />,
+            disabled: !clipboardGroup,
+            onClick: () => pasteAttributeRow(),
+          },
+          { type: 'divider' },
+          {
+            key: 'delete-group',
+            label: '删除属性行',
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: () => removeRow(dr.rowNumber, false),
+          },
+        ];
+        return (
+          <Dropdown menu={{ items: rowMenuItems }} trigger={['click']}>
+            <Button size="small" type="text" icon={<MoreOutlined />} />
+          </Dropdown>
+        );
+      },
     });
 
     return cols;
@@ -413,6 +583,9 @@ export function ScoreCardEditor({
     setCell,
     addConditionRow,
     removeRow,
+    copyAttributeRow,
+    pasteAttributeRow,
+    clipboardGroup,
   ]);
 
   if (loading) {
@@ -430,6 +603,13 @@ export function ScoreCardEditor({
         <Space wrap>
           <Button icon={<PlusOutlined />} onClick={addAttributeRow}>添加属性行</Button>
           <Button icon={<PlusOutlined />} onClick={addCustomCol}>添加自定义列</Button>
+          <Button
+            icon={<SnippetsOutlined />}
+            disabled={!clipboardGroup}
+            onClick={() => pasteAttributeRow()}
+          >
+            粘贴属性组
+          </Button>
           <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>保存</Button>
         </Space>
       </Space>
