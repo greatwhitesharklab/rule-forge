@@ -1,7 +1,8 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import * as componentEvent from '../../componentEvent.js';
 
 import {alert} from '@/utils/modal';
+import {useDirty, useProject} from '@/editor/EditorContexts';
 declare const variableLibraries: string[];
 declare const constantLibraries: string[];
 declare const actionLibraries: string[];
@@ -55,46 +56,45 @@ const CONFIGS: Record<string, LibConfig> = {
 export const OPEN_CONFIG_LIBRARY_DIALOG = 'open_config_library_dialog';
 export const CLOSE_CONFIG_LIBRARY_DIALOG = 'close_config_library_dialog';
 
-interface ConfigLibraryDialogState {
-    visible: boolean;
-    type: LibType | null;
-    libraries: string[];
-}
+/**
+ * 复用库配置对话框 — 由 editor 路由 mount,open/close 走 event emitter。
+ *
+ * <p>添加 / 删除库路径后通过 {@link DirtyContext} 通知编辑器变脏,项目名由
+ * {@link ProjectContext} 读(替代历史 {@code window._project} / {@code window._setDirty} 全局变量)。
+ */
+export default function ConfigLibraryDialog() {
+    const [visible, setVisible] = useState(false);
+    const [type, setType] = useState<LibType | null>(null);
+    const [libraries, setLibraries] = useState<string[]>([]);
 
-export default class ConfigLibraryDialog extends Component<{}, ConfigLibraryDialogState> {
-    constructor(props: {}) {
-        super(props);
-        this.state = {
-            visible: false,
-            type: null,
-            libraries: []
-        };
-    }
+    const project = useProject();
+    const dirty = useDirty();
 
-    componentDidMount(): void {
-        componentEvent.eventEmitter.on(OPEN_CONFIG_LIBRARY_DIALOG, (type: LibType) => {
-            const config = CONFIGS[type];
+    useEffect(() => {
+        const onOpen = (openType: LibType) => {
+            const config = CONFIGS[openType];
             if (!config) return;
-            this.setState({
-                visible: true,
-                type: type,
-                libraries: [...config.getLibraries()]
-            });
-        });
-        componentEvent.eventEmitter.on(CLOSE_CONFIG_LIBRARY_DIALOG, () => {
-            this.setState({ visible: false, type: null });
-        });
-    }
+            setVisible(true);
+            setType(openType);
+            setLibraries([...config.getLibraries()]);
+        };
+        const onClose = () => {
+            setVisible(false);
+            setType(null);
+        };
+        componentEvent.eventEmitter.on(OPEN_CONFIG_LIBRARY_DIALOG, onOpen);
+        componentEvent.eventEmitter.on(CLOSE_CONFIG_LIBRARY_DIALOG, onClose);
+        return () => {
+            componentEvent.eventEmitter.removeAllListeners(OPEN_CONFIG_LIBRARY_DIALOG);
+            componentEvent.eventEmitter.removeAllListeners(CLOSE_CONFIG_LIBRARY_DIALOG);
+        };
+    }, []);
 
-    componentWillUnmount(): void {
-        componentEvent.eventEmitter.removeAllListeners(OPEN_CONFIG_LIBRARY_DIALOG);
-        componentEvent.eventEmitter.removeAllListeners(CLOSE_CONFIG_LIBRARY_DIALOG);
-    }
-
-    handleAdd = (): void => {
-        const config = CONFIGS[this.state.type!];
+    const handleAdd = (): void => {
+        if (!type) return;
+        const config = CONFIGS[type];
         componentEvent.eventEmitter.emit(componentEvent.OPEN_KNOWLEDGE_TREE_DIALOG, {
-            project: window._project,
+            project: project,
             fileType: config.fileType,
             callback: (file: string, version: string) => {
                 let path = 'jcr:' + file;
@@ -108,75 +108,74 @@ export default class ConfigLibraryDialog extends Component<{}, ConfigLibraryDial
                 }
                 libs.push(path);
                 config.refresh();
-                window._setDirty?.();
-                this.setState({ libraries: [...libs] });
+                dirty.setDirty();
+                setLibraries([...libs]);
             }
         });
     };
 
-    handleDelete = (lib: string): void => {
-        const config = CONFIGS[this.state.type!];
+    const handleDelete = (lib: string): void => {
+        if (!type) return;
+        const config = CONFIGS[type];
         const libs = config.getLibraries();
         const pos = libs.indexOf(lib);
         if (pos !== -1) {
             libs.splice(pos, 1);
             config.refresh();
-            window._setDirty?.();
-            this.setState({ libraries: [...libs] });
+            dirty.setDirty();
+            setLibraries([...libs]);
         }
     };
 
-    handleClose = (): void => {
-        this.setState({ visible: false, type: null });
+    const handleClose = (): void => {
+        setVisible(false);
+        setType(null);
     };
 
-    render() {
-        const { visible, type, libraries } = this.state;
-        if (!visible || !type) return null;
-        const config = CONFIGS[type];
+    if (!visible || !type) return null;
+    const config = CONFIGS[type];
 
-        return (
-            <div>
-                <div className="rf-modal-backdrop rf-fade in"></div>
-                <div className="rf-modal rf-fade in" style={{ display: 'block' }} tabIndex={-1} role="dialog">
-                    <div className="rf-modal-dialog">
-                        <div className="rf-modal-content">
-                            <div className="rf-modal-header" style={{ borderBottom: '1px solid var(--rf-border-split)' }}>
-                                <button type="button" className="rf-close" onClick={this.handleClose}>&times;</button>
-                                <h4 className="rf-modal-title" style={{ fontWeight: 'var(--rf-font-weight-semibold)', color: 'var(--rf-text-primary)' }}>{config.title}</h4>
-                            </div>
-                            <div className="rf-modal-body" style={{ padding: 'var(--rf-space-6)' }}>
-                                <table className="rf-table rf-table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <td>{config.title.replace('配置', '文件')}</td>
-                                            <td style={{ width: '70px' }}>操作</td>
+    return (
+        <div>
+            <div className="rf-modal-backdrop rf-fade in"></div>
+            <div className="rf-modal rf-fade in" style={{ display: 'block' }} tabIndex={-1} role="dialog">
+                <div className="rf-modal-dialog">
+                    <div className="rf-modal-content">
+                        <div className="rf-modal-header" style={{ borderBottom: '1px solid var(--rf-border-split)' }}>
+                            <button type="button" className="rf-close" onClick={handleClose}>&times;</button>
+                            <h4 className="rf-modal-title" style={{ fontWeight: 'var(--rf-font-weight-semibold)', color: 'var(--rf-text-primary)' }}>{config.title}</h4>
+                        </div>
+                        <div className="rf-modal-body" style={{ padding: 'var(--rf-space-6)' }}>
+                            <table className="rf-table rf-table-bordered">
+                                <thead>
+                                    <tr>
+                                        <td>{config.title.replace('配置', '文件')}</td>
+                                        <td style={{ width: '70px' }}>操作</td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {libraries.map((lib, index) => (
+                                        <tr key={index}>
+                                            <td>{lib}</td>
+                                            <td>
+                                                <button type="button" className="rf-btn rf-btn-link"
+                                                    onClick={() => handleDelete(lib)}>删除
+                                                </button>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        {libraries.map((lib, index) => (
-                                            <tr key={index}>
-                                                <td>{lib}</td>
-                                                <td>
-                                                    <button type="button" className="rf-btn rf-btn-link"
-                                                        onClick={() => this.handleDelete(lib)}>删除
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div className="rf-modal-footer">
-                                <button type="button" className="rf-btn rf-btn-primary" onClick={this.handleAdd}>添加
-                                </button>
-                                <button type="button" className="rf-btn rf-btn-default" onClick={this.handleClose}>关闭
-                                </button>
-                            </div>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="rf-modal-footer">
+                            <button type="button" className="rf-btn rf-btn-primary" onClick={handleAdd}>添加
+                            </button>
+                            <button type="button" className="rf-btn rf-btn-default" onClick={handleClose}>关闭
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-        );
-    }
+        </div>
+    );
 }

@@ -2,12 +2,16 @@
  * Collapsible remark widget.
  *
  * Renders a toggle toolbar + editable textarea inside the given container.
+ *
+ * <p>dirty 通知通过构造器注入的 {@link onChange} 回调(替代历史 {@code window.setDirty} /
+ * {@code window._setDirty} 全局变量)。未传时 no-op,保持向后兼容。
  */
 
 export class Remark {
     private remark: string;
     private readonly defaultRemark: string;
     private readonly container: HTMLElement;
+    private readonly onChange: () => void;
     private _collapsed: boolean;
     private icon!: HTMLElement;
     private contentContainer!: HTMLElement;
@@ -21,10 +25,11 @@ export class Remark {
     private static readonly DOWN_ARROW_SVG =
         '<svg viewBox="64 64 896 896" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3.1-12.7-6.4-12.7z"/></svg>';
 
-    constructor(container: HTMLElement) {
+    constructor(container: HTMLElement, options?: {onChange?: () => void}) {
         this.remark = '';
         this.defaultRemark = '请输入备注内容';
         this.container = container;
+        this.onChange = options?.onChange ?? (() => {});
         this._collapsed = true;
         this._buildUI();
     }
@@ -82,12 +87,8 @@ export class Remark {
             } else {
                 Remark_instance.remarkLabel.innerHTML = Remark_instance.parseBreak(Remark_instance.remark);
             }
-            if (window.setDirty) {
-                window.setDirty(true);
-            }
-            if (window._setDirty) {
-                window._setDirty();
-            }
+            // 通知调用方编辑器已变脏(替代历史 window.setDirty / window._setDirty 全局回调)。
+            Remark_instance.onChange();
         });
         this.remarkEditor.addEventListener('blur', () => {
             this.remarkEditor.style.display = 'none';
