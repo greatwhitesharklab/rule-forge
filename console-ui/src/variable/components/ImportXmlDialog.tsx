@@ -30,27 +30,13 @@ export default class ImportXmlDialog extends Component<ImportXmlDialogProps, Imp
 
     render() {
         const dispatch = this.props.dispatch;
-        const iFrameName = 'upload_iframe';
         const formId = 'import_xml_form';
+        const $vm = this;
         const body = (
             <div>
-                <form id={formId} method="post" encType="multipart/form-data" target={iFrameName}
-                      action={window._server + '/variableeditor/importXml'}>
+                <form id={formId}>
                     <input name="file" style={{width: '100%'}} type="file"/>
                 </form>
-                <iframe name={iFrameName} height="0px" width="0px" frameBorder="0" onLoad={(e: React.SyntheticEvent<HTMLIFrameElement>) => {
-                    try {
-                        const content = (e.target as HTMLIFrameElement).contentDocument?.body?.textContent;
-                        if (!content || content === '') {
-                            return;
-                        }
-                        let jsonResult = JSON.parse(content);
-                        dispatch(action.importFields(this.state.rowIndex, jsonResult));
-                        this.setState({visible: false});
-                    } catch (error) {
-                        alert('上传文件不合法');
-                    }
-                }}/>
             </div>
         );
         const buttons = [
@@ -59,7 +45,36 @@ export default class ImportXmlDialog extends Component<ImportXmlDialogProps, Imp
                 className: 'btn btn-danger',
                 icon: 'glyphicon glyphicon-cloud-upload',
                 click: function () {
-                    (document.getElementById(formId) as HTMLFormElement).submit();
+                    const fileInput = document.querySelector('#' + formId + ' [name=file]') as HTMLInputElement;
+                    const file = fileInput && fileInput.files && fileInput.files[0];
+                    if (!file) {
+                        alert('请选择要上传的文件');
+                        return;
+                    }
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    fetch(window._server + '/variableeditor/importXml', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                        .then(function (response: Response) {
+                            return response.text();
+                        })
+                        .then(function (content: string) {
+                            if (!content || content === '') {
+                                return;
+                            }
+                            try {
+                                const jsonResult = JSON.parse(content);
+                                dispatch(action.importFields($vm.state.rowIndex, jsonResult));
+                                $vm.setState({visible: false});
+                            } catch (error) {
+                                alert('上传文件不合法');
+                            }
+                        })
+                        .catch(function () {
+                            alert('上传文件不合法');
+                        });
                 }
             }
         ];

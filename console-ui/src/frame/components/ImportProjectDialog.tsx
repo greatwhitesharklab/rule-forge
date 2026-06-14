@@ -29,28 +29,6 @@ export default class ImportProjectDialog extends Component<ImportProjectDialogPr
         event.eventEmitter.on(event.CLOSE_IMPORT_PROJECT_DIALOG, () => {
             this.setState({visible: false});
         });
-
-        const $vm = this;
-        const oFrm = document.getElementById("hiddenFrame") as HTMLIFrameElement & { readyState?: string; onreadystatechange?: ((this: any) => void) | null };
-        oFrm.onload = oFrm.onreadystatechange = function () {
-            if (oFrm.readyState && oFrm.readyState !== "complete") {
-                // still loading
-            } else {
-                event.eventEmitter.emit(event.CLOSE_IMPORT_PROJECT_DIALOG);
-                const frame = document.getElementById('hiddenFrame') as HTMLIFrameElement;
-                const responseText = frame.contentDocument!.body.textContent || '';
-                $vm.setState({isImporting: false});
-                if (responseText !== "") {
-                    const responseData = JSON.parse(responseText) as ImportResponse;
-                    if (responseData && responseData.status) {
-                        alert('导入成功');
-                        return;
-                    }
-                }
-
-                alert('导入失败');
-            }
-        };
     }
 
     componentWillUnmount() {
@@ -62,9 +40,7 @@ export default class ImportProjectDialog extends Component<ImportProjectDialogPr
         const formId = 'import_xml_form';
         const body = (
             <div>
-                <iframe name='hiddenFrame' id="hiddenFrame" style={{display: 'none'}}></iframe>
-                <form id={formId} method="post" encType="multipart/form-data" target='hiddenFrame'
-                      action={window._server + '/frame/importProject'}>
+                <form id={formId}>
                     <div className="row">
                         <div className="form-group">
                             <div className="col-xs-4" style={{textAlign: 'right', padding: 0}}>
@@ -91,13 +67,44 @@ export default class ImportProjectDialog extends Component<ImportProjectDialogPr
                         return;
                     }
                     const fileInput = document.querySelector('[name=file]') as HTMLInputElement;
-                    const file = fileInput ? fileInput.value : '';
-                    if (!file || file.length < 2) {
+                    const file = fileInput && fileInput.files && fileInput.files[0];
+                    if (!file) {
                         alert('请选择要导入的文件');
                         return;
                     }
                     $vm.setState({isImporting: true});
-                    (document.getElementById(formId) as HTMLFormElement).submit();
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    fetch(window._server + '/frame/importProject', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                        .then(function (response: Response) {
+                            return response.text().then(function (responseText: string) {
+                                return {responseText, ok: response.ok};
+                            });
+                        })
+                        .then(function (result: { responseText: string; ok: boolean }) {
+                            event.eventEmitter.emit(event.CLOSE_IMPORT_PROJECT_DIALOG);
+                            $vm.setState({isImporting: false});
+                            if (result.responseText !== "") {
+                                try {
+                                    const responseData = JSON.parse(result.responseText) as ImportResponse;
+                                    if (responseData && responseData.status) {
+                                        alert('导入成功');
+                                        return;
+                                    }
+                                } catch (e) {
+                                    // fall through to failure
+                                }
+                            }
+                            alert('导入失败');
+                        })
+                        .catch(function () {
+                            event.eventEmitter.emit(event.CLOSE_IMPORT_PROJECT_DIALOG);
+                            $vm.setState({isImporting: false});
+                            alert('导入失败');
+                        });
                 }
             }
         ];
