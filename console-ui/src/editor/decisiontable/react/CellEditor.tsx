@@ -10,8 +10,10 @@
  * For a Criteria cell we surface a FLAT single condition (the column already
  * binds the left variable, so a condition is just op + right value). The model
  * keeps the `<joint>` wrapper for XML fidelity; this editor writes the first
- * condition of the joint. Nested joints / multi-condition cells are a TODO
- * (handsontable supported them via merge; the React table does not yet).
+ * condition of the joint. Multi-ROW criteria sharing (rowspan) is handled at
+ * the table level (DecisionTableEditor merges via onCell rowSpan + a right-
+ * click "向下合并"/"拆分合并" context menu); nested joints / multi-condition
+ * WITHIN one cell are still a TODO.
  *
  * An empty cell renders a placeholder; clicking it seeds a default condition
  * or action matching the column type.

@@ -23,16 +23,25 @@
  * string means a fresh file.
  *
  * ── TODO (handsontable features NOT yet ported) ──────────────────────────
- *   - merged cells (rowspan > 1 for multi-condition Criteria cells)
  *   - freeze panes
  *   - copy/paste of cell ranges
  *   - per-row salience / property overrides (table-level only for now)
  *   - nested joints inside a Criteria cell (flat single condition only)
+ *
+ * ── Merged cells (rowspan) ───────────────────────────────────────────────
+ * Criteria cells can span N rows: a "向下合并" gesture on a Criteria cell
+ * bumps its rowspan and removes the cell on the next row (so the next row is
+ * "covered" — the backend rule builder walks up to find the owner, see
+ * DecisionTableRulesBuilder.getCell). onCell returns {rowSpan:N} for the owner
+ * and {rowSpan:0} for covered rows (AntD's merge idiom). Right-click a Criteria
+ * cell for the "向下合并" / "拆分合并" context menu. Action columns are never
+ * merged.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Input, Space, Spin, Table, Typography, message } from 'antd';
+import { Alert, Button, Dropdown, Input, Space, Spin, Table, Typography, message } from 'antd';
 import { DeleteOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import type { MenuProps } from 'antd';
 import type { CellContent, Column, DecisionTableData } from '../model/types';
 import { parseDecisionTable } from '../model/parse';
 import { serializeDecisionTable } from '../model/serialize';
@@ -115,10 +124,6 @@ export function DecisionTableEditor({
   // Cells are keyed by (row, col) in the model; the editor indexes them
   // 1-based to match the legacy wire format. We map display row i (0-based)
   // to wire row i+1, and display col j to wire col j+1.
-  const findCell = useCallback(
-    (wireRow: number, wireCol: number) => state.cells.find((c) => c.row === wireRow && c.col === wireCol),
-    [state.cells],
-  );
 
   const setCellContent = useCallback((wireRow: number, wireCol: number, content: CellContent) => {
     setState((prev) => {
@@ -128,6 +133,77 @@ export function DecisionTableEditor({
         cells[idx] = { ...cells[idx], content };
       } else {
         cells.push({ row: wireRow, col: wireCol, rowspan: 1, content });
+      }
+      return { ...prev, cells };
+    });
+  }, []);
+
+  // ---- merged-cell (rowspan) helpers ----
+  //
+  // Merge semantics (matches the backend DecisionTableRulesBuilder.getCell
+  // walk-up: server/lib/ruleforge-core/.../DecisionTableRulesBuilder.java).
+  // A merged cell is represented as:
+  //   - the TOP cell holds the content + rowspan=N (covers N rows total);
+  //   - the N-1 rows BELOW it have NO <cell> element at that column at all
+  //     (they are "covered" — the rule builder resolves them by walking up to
+  //     the first row that has a cell).
+  // So on merge-down we (a) bump the top cell's rowspan and (b) delete any
+  // cell at the covered (row, col); on unmerge we reset the top rowspan to 1
+  // and re-seed empty cells on the previously-covered rows.
+
+  /**
+   * Find the cell that OWNS (wireRow, wireCol) — i.e. the topmost cell at this
+   * column whose rowspan range includes wireRow. Returns undefined when nothing
+   * covers it (the cell is genuinely empty/unmerged). Mirrors the backend
+   * getCell walk-up.
+   */
+  const findOwningCell = useCallback(
+    (wireRow: number, wireCol: number) => {
+      for (let r = wireRow; r >= 1; r--) {
+        const c = state.cells.find((cc) => cc.row === r && cc.col === wireCol);
+        if (c) {
+          // Does this cell's rowspan reach down to wireRow?
+          if (c.row + (c.rowspan || 1) - 1 >= wireRow) return c;
+          return undefined; // a cell exists above but doesn't span to us
+        }
+      }
+      return undefined;
+    },
+    [state.cells],
+  );
+
+  /** Merge the cell at (wireRow, wireCol) DOWN into the next row. */
+  const mergeCellDown = useCallback((wireRow: number, wireCol: number) => {
+    setState((prev) => {
+      const top = prev.cells.find((c) => c.row === wireRow && c.col === wireCol);
+      // No cell here, or the next row doesn't exist → nothing to merge.
+      const maxRow = prev.rows.length > 0 ? Math.max(...prev.rows.map((r) => r.num)) + 1 : 0;
+      const nextWireRow = wireRow + 1;
+      if (!top || nextWireRow > maxRow) return prev;
+      const cells = prev.cells.filter(
+        (c) => !(c.row === nextWireRow && c.col === wireCol),
+      );
+      const topIdx = cells.findIndex((c) => c.row === wireRow && c.col === wireCol);
+      cells[topIdx] = { ...cells[topIdx], rowspan: (top.rowspan || 1) + 1 };
+      return { ...prev, cells };
+    });
+  }, []);
+
+  /** Unmerge the cell at (wireRow, wireCol): collapse rowspan back to 1. */
+  const unmergeCell = useCallback((wireRow: number, wireCol: number) => {
+    setState((prev) => {
+      const top = prev.cells.find((c) => c.row === wireRow && c.col === wireCol);
+      if (!top || (top.rowspan || 1) <= 1) return prev;
+      const cells = prev.cells.slice();
+      const topIdx = cells.findIndex((c) => c.row === wireRow && c.col === wireCol);
+      cells[topIdx] = { ...cells[topIdx], rowspan: 1 };
+      // Re-seed empty cells on the rows that were covered so they become
+      // independently editable (parse/serialize already treat absence as
+      // covered; seeding keeps them visible as "无" instead of inherited).
+      for (let r = wireRow + 1; r < wireRow + (top.rowspan || 1); r++) {
+        if (!cells.some((c) => c.row === r && c.col === wireCol)) {
+          cells.push({ row: r, col: wireCol, rowspan: 1, content: { empty: true } });
+        }
       }
       return { ...prev, cells };
     });
@@ -174,8 +250,35 @@ export function DecisionTableEditor({
     setState((prev) => {
       const wireRow = displayRow + 1;
       const rows = prev.rows.filter((_, i) => i !== displayRow).map((r, i) => ({ ...r, num: i }));
-      const cells = prev.cells.filter((c) => c.row !== wireRow);
-      return { ...prev, rows, cells };
+      // Fix merges before dropping cells:
+      //   - For each column, find the cell owning wireRow.
+      //   - If the owning cell is ABOVE wireRow (covered by a merge) the removed
+      //     row was inside a merge → shrink that merge's rowspan by 1.
+      //   - If the owning cell IS wireRow and it had rowspan>1, the merge top
+      //     is gone: collapse (the covered rows below just become ownerless /
+      //     inherited-from-nothing, which the renderer treats as empty).
+      const cells = prev.cells.map((c) => ({ ...c }));
+      for (const col of prev.columns) {
+        const wireCol = col.num + 1;
+        // walk up to the owner at this column
+        let owner: typeof cells[number] | undefined;
+        for (let r = wireRow; r >= 1; r--) {
+          const found = cells.find((c) => c.row === r && c.col === wireCol);
+          if (found) { owner = found; break; }
+        }
+        if (!owner) continue;
+        if (owner.row < wireRow && (owner.rowspan || 1) > 1) {
+          owner.rowspan = (owner.rowspan || 1) - 1;
+        } else if (owner.row === wireRow && (owner.rowspan || 1) > 1) {
+          // Merge top removed → collapse; covered rows below become empty.
+          owner.rowspan = 1;
+        }
+      }
+      // Drop the cells on the removed row, then renumber surviving cell.row to
+      // match the dense 1..n wire-row numbering (rows were renumbered above).
+      const kept = cells.filter((c) => c.row !== wireRow);
+      const renumbered = kept.map((c) => (c.row > wireRow ? { ...c, row: c.row - 1 } : c));
+      return { ...prev, rows, cells: renumbered };
     });
   }, []);
 
@@ -202,24 +305,74 @@ export function DecisionTableEditor({
   }, [state, file, onSave]);
 
   // ---- AntD table columns ----
+  // onCell drives AntD's cell-merge: the OWNING cell returns { rowSpan: N }
+  // and every covered row below returns { rowSpan: 0 } (AntD hides rowSpan:0
+  // cells, fusing them into the owner's vertical span). This is the standard
+  // AntD Table rowspan idiom (see antd Table "colSpan and rowSpan" docs).
   const antColumns: ColumnsType<number> = useMemo(() => {
-    const cols: ColumnsType<number> = state.columns.map((col, displayCol) => ({
-      title: columnTitle(col, displayCol),
-      key: 'col-' + col.num,
-      width: col.width,
-      render: (_value, wireRow, displayRow) => {
-        const wireCol = displayCol + 1;
-        const cell = findCell(wireRow, wireCol);
-        const content: CellContent = cell?.content ?? { empty: true };
-        return (
-          <CellEditor
-            columnType={col.type}
-            value={content}
-            onChange={(next) => setCellContent(wireRow, wireCol, next)}
-          />
-        );
-      },
-    }));
+    const cols: ColumnsType<number> = state.columns.map((col, displayCol) => {
+      const wireCol = displayCol + 1;
+      return {
+        title: columnTitle(col, displayCol),
+        key: 'col-' + col.num,
+        width: col.width,
+        onCell: (wireRow) => {
+          const owner = findOwningCell(wireRow, wireCol);
+          if (!owner) return {}; // genuinely empty — single cell
+          if (owner.row === wireRow) {
+            // This row owns the cell → span down by its rowspan.
+            return { rowSpan: owner.rowspan || 1 };
+          }
+          // Covered by an owner above → AntD hides this cell.
+          return { rowSpan: 0 };
+        },
+        render: (_value, wireRow) => {
+          // Render the OWNING cell's content (covered rows inherit the top).
+          const owner = findOwningCell(wireRow, wireCol);
+          const content: CellContent = owner?.content ?? { empty: true };
+          const ownerRow = owner?.row ?? wireRow;
+          const rowspan = owner?.rowspan ?? 1;
+          // Merge / unmerge only makes sense on Criteria columns (the original
+          // handsontable merged multi-condition criteria cells). Action columns
+          // are always single-row.
+          const mergeable = col.type === 'Criteria';
+          // Next row exists? (wireRow is 1-based; max wireRow == rows.length)
+          const hasNextRow = wireRow < state.rows.length;
+          const menuItems: MenuProps['items'] = mergeable
+            ? [
+                {
+                  key: 'merge-down',
+                  label: '向下合并',
+                  disabled: !hasNextRow,
+                  onClick: () => mergeCellDown(ownerRow, wireCol),
+                },
+                {
+                  key: 'unmerge',
+                  label: '拆分合并',
+                  disabled: rowspan <= 1,
+                  onClick: () => unmergeCell(ownerRow, wireCol),
+                },
+              ]
+            : [];
+          const editor = (
+            <CellEditor
+              columnType={col.type}
+              value={content}
+              onChange={(next) => setCellContent(ownerRow, wireCol, next)}
+            />
+          );
+          if (!mergeable) return editor;
+          return (
+            <Dropdown
+              menu={{ items: menuItems }}
+              trigger={['contextMenu']}
+            >
+              <div style={{ cursor: 'context-menu' }}>{editor}</div>
+            </Dropdown>
+          );
+        },
+      };
+    });
     // Trailing action column: delete row.
     cols.push({
       title: '',
@@ -236,7 +389,7 @@ export function DecisionTableEditor({
       ),
     });
     return cols;
-  }, [state.columns, findCell, setCellContent, removeRow]);
+  }, [state.columns, state.rows.length, findOwningCell, setCellContent, mergeCellDown, unmergeCell, removeRow]);
 
   // Wire rows (1..n) — one table row per model row.
   const dataRows = useMemo(() => state.rows.map((r) => r.num + 1), [state.rows]);
