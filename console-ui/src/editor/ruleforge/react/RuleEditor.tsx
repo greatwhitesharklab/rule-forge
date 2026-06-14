@@ -102,7 +102,11 @@ export function RuleEditor({ value, onChange, onDelete, index, actionLibraries =
           条件 (if)
         </Text>
         <div style={{ marginTop: 4 }}>
-          <ConditionFlow value={value.if} onChange={(n) => patch({ if: n })} />
+          <ConditionFlow
+            value={value.if}
+            methodLibraries={methodLibraries}
+            onChange={(n) => patch({ if: n })}
+          />
         </div>
       </div>
 

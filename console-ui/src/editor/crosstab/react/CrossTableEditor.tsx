@@ -24,11 +24,22 @@
  * format is identical); condition cells reuse the OPERATOR_OPTIONS + a flat
  * joint (matches the decision-table CellEditor). Excel import is a TODO.
  *
+ * ── Merged cells (rowspan) ───────────────────────────────────────────────
+ * Mirrors DecisionTableEditor V5.57 but adapted to the crosstab's SPARSE row
+ * model (row `number` is a stable identity; removeRow never renumbers). Only
+ * CONDITION cells merge (top-row cells + left-col cells — both form the
+ * condition bands); VALUE cells (the LEFT-row × TOP-col intersection) never
+ * merge. "向下合并" bumps the top condition cell's rowspan and removes the
+ * condition cell on the next row (covered). onCell returns {rowSpan:N} for the
+ * owner and {rowSpan:0} for covered rows (AntD's merge idiom). Right-click a
+ * condition cell for "向下合并" / "拆分合并". colspan stays at 1 (only vertical
+ * merges here — multi-level horizontal merging is still TODO). "Next row" is
+ * the row with the smallest number strictly greater than the current.
+ *
  * ── TODO (jquery features NOT yet ported) ──────────────────────────────────
- *   - hierarchical rowspan/colspan merging (multi-level condition headers)
+ *   - multi-level horizontal colspan merging (vertical rowspan IS implemented)
  *   - Excel import (the toolbar button is wired but a no-op alert for now)
- *   - cell-level copy/paste of cell data (row-level copy/paste IS implemented
- *     below; single-cell / cell-range copy-paste is still TODO)
+ *   - cell-range copy-paste (single-cell + row copy-paste IS implemented)
  *   - full condition-cell joint UI (flat single condition only, like DT)
  *
  * ── Row copy/paste ───────────────────────────────────────────────────────
@@ -248,11 +259,6 @@ export function CrossTableEditor({
     [state.valueCells],
   );
 
-  const findConditionCell = useCallback(
-    (row: number, col: number) => state.conditionCells.find((c) => c.row === row && c.col === col),
-    [state.conditionCells],
-  );
-
   const setValueCell = useCallback((row: number, col: number, value: ValueExpr | undefined) => {
     setState((prev) => {
       const cells = prev.valueCells.slice();
@@ -285,6 +291,102 @@ export function CrossTableEditor({
     });
   }, []);
 
+  // ---- merged-cell (rowspan) helpers ----
+  //
+  // Merge semantics mirror DecisionTableEditor V5.57 but adapted to the
+  // crosstab's SPARSE row model (row `number` is a stable identity; removeRow
+  // never renumbers). Only CONDITION cells merge (top-row cells and left-col
+  // cells — both form the condition bands); VALUE cells (the LEFT-row × TOP-col
+  // intersection) never merge. colspan is left at 1 (only vertical merges here).
+  //   - the TOP cell holds the content + rowspan=N (covers N rows total);
+  //   - the N-1 rows BELOW it have NO condition-cell at that (row, col) — they
+  //     are covered.
+  // "Next row" = the row with the smallest number strictly greater than the
+  // current (rows are sparse, not num+1).
+
+  /**
+   * Find the condition cell that OWNS (row, col) — i.e. the topmost condition
+   * cell at this column whose rowspan range covers `row`. Returns undefined
+   * when nothing covers it. Walks up the sorted row-number order.
+   */
+  const findConditionOwningCell = useCallback(
+    (row: number, col: number): ConditionCrossCell | undefined => {
+      const rowNums = state.rows.map((r) => r.number).sort((a, b) => a - b);
+      const idx = rowNums.indexOf(row);
+      if (idx < 0) return undefined;
+      for (let i = idx; i >= 0; i--) {
+        const c = state.conditionCells.find((cc) => cc.row === rowNums[i] && cc.col === col);
+        if (c) {
+          const spanEndIdx = i + (c.rowspan || 1) - 1;
+          if (spanEndIdx >= idx) return c;
+          return undefined;
+        }
+      }
+      return undefined;
+    },
+    [state.conditionCells, state.rows],
+  );
+
+  /**
+   * The row number immediately BELOW `row` in the sorted row-number order, or
+   * undefined if `row` is the last row.
+   */
+  const nextRowNum = useCallback(
+    (row: number): number | undefined => {
+      const nums = state.rows.map((r) => r.number).sort((a, b) => a - b);
+      const i = nums.indexOf(row);
+      if (i < 0 || i >= nums.length - 1) return undefined;
+      return nums[i + 1];
+    },
+    [state.rows],
+  );
+
+  /** Merge the condition cell at (row, col) DOWN into the next row. */
+  const mergeConditionCellDown = useCallback((row: number, col: number) => {
+    setState((prev) => {
+      const nums = prev.rows.map((r) => r.number).sort((a, b) => a - b);
+      const i = nums.indexOf(row);
+      if (i < 0 || i >= nums.length - 1) return prev; // no next row
+      const top = prev.conditionCells.find((c) => c.row === row && c.col === col);
+      if (!top) return prev;
+      const nextNum = nums[i + 1];
+      const cells = prev.conditionCells.filter(
+        (c) => !(c.row === nextNum && c.col === col),
+      );
+      const topIdx = cells.findIndex((c) => c.row === row && c.col === col);
+      cells[topIdx] = { ...cells[topIdx], rowspan: (top.rowspan || 1) + 1 };
+      return { ...prev, conditionCells: cells };
+    });
+  }, []);
+
+  /** Unmerge the condition cell at (row, col): collapse rowspan back to 1. */
+  const unmergeConditionCell = useCallback((row: number, col: number) => {
+    setState((prev) => {
+      const top = prev.conditionCells.find((c) => c.row === row && c.col === col);
+      if (!top || (top.rowspan || 1) <= 1) return prev;
+      const nums = prev.rows.map((r) => r.number).sort((a, b) => a - b);
+      const startIdx = nums.indexOf(row);
+      const cells = prev.conditionCells.slice();
+      const topIdx = cells.findIndex((c) => c.row === row && c.col === col);
+      cells[topIdx] = { ...cells[topIdx], rowspan: 1 };
+      // Re-seed empty condition cells on the rows that were covered.
+      for (let k = 1; k < (top.rowspan || 1); k++) {
+        const coveredRow = nums[startIdx + k];
+        if (coveredRow === undefined) break;
+        if (!cells.some((c) => c.row === coveredRow && c.col === col)) {
+          cells.push({
+            row: coveredRow,
+            col,
+            rowspan: 1,
+            colspan: 1,
+            content: { empty: true },
+          });
+        }
+      }
+      return { ...prev, conditionCells: cells };
+    });
+  }, []);
+
   // ---- row management ----
   const addLeftRow = useCallback(() => {
     setState((prev) => {
@@ -305,10 +407,42 @@ export function CrossTableEditor({
       const removed = prev.rows[displayRow];
       if (!removed) return prev;
       const wireRow = removed.number;
+      // Fix condition-cell merges before dropping the row:
+      //   - For each condition column, walk up to the cell OWNING this row.
+      //   - If the owning cell is ABOVE this row (covered by a merge) the
+      //     removed row was inside a merge → shrink that merge's rowspan by 1.
+      //   - If the owning cell IS this row and it had rowspan>1, the merge top
+      //     is gone: collapse (covered rows below become ownerless, treated as
+      //     empty by the renderer).
+      // Sparse rows: walk by sorted number order, not number±1.
+      const nums = prev.rows.map((r) => r.number).sort((a, b) => a - b);
+      const removedIdx = nums.indexOf(wireRow);
+      if (removedIdx < 0) return prev;
+      // Only LEFT (condition) columns can carry merged condition cells.
+      const conditionCols = prev.columns.filter((c) => c.type === 'left').map((c) => c.number);
+      const conditionCells = prev.conditionCells.map((c) => ({ ...c }));
+      for (const col of conditionCols) {
+        let owner: typeof conditionCells[number] | undefined;
+        for (let i = removedIdx; i >= 0; i--) {
+          const found = conditionCells.find((c) => c.row === nums[i] && c.col === col);
+          if (found) { owner = found; break; }
+        }
+        if (!owner) continue;
+        if (owner.row !== wireRow && (owner.rowspan || 1) > 1) {
+          const ownerIdx = nums.indexOf(owner.row);
+          const spanEnd = ownerIdx + (owner.rowspan || 1) - 1;
+          if (spanEnd >= removedIdx) owner.rowspan = (owner.rowspan || 1) - 1;
+        } else if (owner.row === wireRow && (owner.rowspan || 1) > 1) {
+          owner.rowspan = 1;
+        }
+      }
       const rows = prev.rows.filter((_, i) => i !== displayRow);
-      const conditionCells = prev.conditionCells.filter((c) => c.row !== wireRow);
-      const valueCells = prev.valueCells.filter((c) => c.row !== wireRow);
-      return { ...prev, rows, conditionCells, valueCells };
+      return {
+        ...prev,
+        rows,
+        conditionCells: conditionCells.filter((c) => c.row !== wireRow),
+        valueCells: prev.valueCells.filter((c) => c.row !== wireRow),
+      };
     });
   }, []);
 
@@ -341,7 +475,10 @@ export function CrossTableEditor({
       const wireRow = row.number;
       const conditionCells = state.conditionCells
         .filter((c) => c.row === wireRow)
-        .map((c) => deepClone(c));
+        // Clamp rowspan to 1 so a later paste never extends a merge beyond the
+        // single pasted row (the original merge spanned specific source rows;
+        // copying one row should not reproduce that span). Matches DT V5.57.
+        .map((c) => deepClone({ ...c, rowspan: 1 }));
       const valueCells = state.valueCells
         .filter((c) => c.row === wireRow)
         .map((c) => deepClone(c));
@@ -392,8 +529,9 @@ export function CrossTableEditor({
   const copyCell = useCallback(
     (wireRow: number, wireCol: number, kind: 'condition' | 'value') => {
       if (kind === 'condition') {
-        const cell = findConditionCell(wireRow, wireCol);
-        const content: ConditionCellContent = cell?.content ?? { empty: true };
+        // Copy the OWNER's content (top of a merge when the cell is covered).
+        const owner = findConditionOwningCell(wireRow, wireCol);
+        const content: ConditionCellContent = owner?.content ?? { empty: true };
         setClipboardCell({ kind: 'condition', content: deepClone(content) });
       } else {
         const cell = findValueCell(wireRow, wireCol);
@@ -401,7 +539,7 @@ export function CrossTableEditor({
       }
       message.success('已复制单元格内容');
     },
-    [findConditionCell, findValueCell],
+    [findConditionOwningCell, findValueCell],
   );
 
   const pasteCell = useCallback(
@@ -417,13 +555,38 @@ export function CrossTableEditor({
       // Branch on clipboardCell.kind (not `kind`) so TypeScript narrows the
       // discriminated-union content to the matching shape.
       if (clipboardCell.kind === 'condition') {
-        setConditionCell(wireRow, wireCol, deepClone(clipboardCell.content));
+        // Resolve the OWNER of the target (top of a merge when the cell is
+        // covered) so a paste onto a covered cell writes onto the merge owner,
+        // not into a phantom covered slot.
+        setState((prev) => {
+          const nums = prev.rows.map((r) => r.number).sort((a, b) => a - b);
+          let ownerRow = wireRow;
+          const idx = nums.indexOf(wireRow);
+          if (idx >= 0) {
+            for (let i = idx; i >= 0; i--) {
+              const c = prev.conditionCells.find((cc) => cc.row === nums[i] && cc.col === wireCol);
+              if (c) {
+                if (i + (c.rowspan || 1) - 1 >= idx) ownerRow = c.row;
+                break;
+              }
+            }
+          }
+          const content = deepClone(clipboardCell.content);
+          const cells = prev.conditionCells.slice();
+          const targetIdx = cells.findIndex((c) => c.row === ownerRow && c.col === wireCol);
+          if (targetIdx >= 0) {
+            cells[targetIdx] = { ...cells[targetIdx], content };
+          } else {
+            cells.push({ row: ownerRow, col: wireCol, rowspan: 1, colspan: 1, content });
+          }
+          return { ...prev, conditionCells: cells };
+        });
       } else {
         setValueCell(wireRow, wireCol, deepClone(clipboardCell.content));
       }
       message.success('已粘贴单元格内容');
     },
-    [clipboardCell, setConditionCell, setValueCell],
+    [clipboardCell, setValueCell],
   );
 
   // ---- column management ----
@@ -557,6 +720,23 @@ export function CrossTableEditor({
         ),
         key: 'col-' + col.number,
         width: 180,
+        // AntD cell-merge idiom on condition cells: the OWNING condition cell
+        // returns { rowSpan: N } and every covered row below returns
+        // { rowSpan: 0 }. Value cells never merge. Only applies to cells in
+        // the condition band (top row × any col, or any row × left col).
+        onCell: (wireRow) => {
+          const displayRow = state.rows.findIndex((r) => r.number === wireRow);
+          const row = state.rows[displayRow];
+          if (!row) return {};
+          const isCondition = row.type === 'top' || col.type === 'left';
+          if (!isCondition) return {};
+          const owner = findConditionOwningCell(wireRow, wireCol);
+          if (!owner) return {};
+          if (owner.row === wireRow) {
+            return { rowSpan: owner.rowspan || 1 };
+          }
+          return { rowSpan: 0 };
+        },
         render: (_v, wireRow) => {
           const displayRow = state.rows.findIndex((r) => r.number === wireRow);
           const row = state.rows[displayRow];
@@ -566,11 +746,40 @@ export function CrossTableEditor({
           //   any row × left col  → condition-cell
           //   left row × top col  → value-cell
           const isCondition = row.type === 'top' || col.type === 'left';
-          // Right-click Dropdown exposing cell-level copy/paste. The cell's kind
-          // is fixed by its position (condition band vs value intersection);
-          // copyCell/pasteCell carry that kind so paste only lands on the same
-          // kind elsewhere in the grid.
+          // Right-click Dropdown exposing cell-level copy/paste + merge/unmerge
+          // (merge only on condition cells). The cell's kind is fixed by its
+          // position; copyCell/pasteCell carry that kind so paste only lands on
+          // the same kind elsewhere in the grid.
+          // For condition cells, render the OWNER's content (covered rows
+          // inherit the top) and target merge/paste ops at the owner.
+          let ownerRow = wireRow;
+          let rowspan = 1;
+          let condContent: ConditionCellContent = { empty: true };
+          if (isCondition) {
+            const owner = findConditionOwningCell(wireRow, wireCol);
+            ownerRow = owner?.row ?? wireRow;
+            rowspan = owner?.rowspan ?? 1;
+            condContent = owner?.content ?? { empty: true };
+          }
+          const hasNextRow = nextRowNum(ownerRow) !== undefined;
           const cellMenuItems: MenuProps['items'] = [
+            ...(isCondition
+              ? [
+                  {
+                    key: 'merge-down',
+                    label: '向下合并',
+                    disabled: !hasNextRow,
+                    onClick: () => mergeConditionCellDown(ownerRow, wireCol),
+                  },
+                  {
+                    key: 'unmerge',
+                    label: '拆分合并',
+                    disabled: rowspan <= 1,
+                    onClick: () => unmergeConditionCell(ownerRow, wireCol),
+                  },
+                  { type: 'divider' as const },
+                ]
+              : []),
             {
               key: 'copy-cell',
               label: '复制单元格',
@@ -586,17 +795,12 @@ export function CrossTableEditor({
             },
           ];
           const editor = isCondition ? (
-            (() => {
-              const cond = findConditionCell(wireRow, wireCol);
-              return (
-                <ConditionCellEditor
-                  value={cond?.content ?? { empty: true }}
-                  constantLibraries={constantLibraries}
-                  parameterLibraries={parameterLibraries}
-                  onChange={(next) => setConditionCell(wireRow, wireCol, next)}
-                />
-              );
-            })()
+            <ConditionCellEditor
+              value={condContent}
+              constantLibraries={constantLibraries}
+              parameterLibraries={parameterLibraries}
+              onChange={(next) => setConditionCell(ownerRow, wireCol, next)}
+            />
           ) : (
             (() => {
               const valueCell = findValueCell(wireRow, wireCol);
@@ -660,8 +864,10 @@ export function CrossTableEditor({
     });
     return cols;
   }, [
-    state.rows, state.columns, findConditionCell, findValueCell,
-    setConditionCell, setValueCell, removeColumn, removeRow,
+    state.rows, state.columns, findValueCell,
+    findConditionOwningCell, nextRowNum,
+    setConditionCell, setValueCell, mergeConditionCellDown, unmergeConditionCell,
+    removeColumn, removeRow,
     configureTopRowBundle, configureLeftColumnBundle,
     copyRow, pasteRow, clipboardRow,
     copyCell, pasteCell, clipboardCell,

@@ -40,6 +40,7 @@ import {
   toFlow,
 } from './flowLayout';
 import { AtomEditor } from './AtomEditor';
+import type { ActionLibrary } from './MethodPicker';
 
 export interface ConditionFlowProps {
   /** The root condition node (must be a junction). Controlled. */
@@ -48,20 +49,26 @@ export interface ConditionFlowProps {
   onChange: (next: ConditionNode) => void;
   /** Canvas height in px (default 420). */
   height?: number;
+  /**
+   * Optional imported action libraries. When provided AND non-empty, atom
+   * method left/right values render a MethodPicker instead of free-text.
+   * Threaded down to the AtomEditor inside the edit-atom Modal.
+   */
+  methodLibraries?: ActionLibrary[];
 }
 
 /** The react-flow nodeTypes map. Stable identity across renders. */
 const NODE_TYPES = { rfCondition: ConditionNodeBody };
 
-export function ConditionFlow({ value, onChange, height = 420 }: ConditionFlowProps) {
+export function ConditionFlow({ value, onChange, height = 420, methodLibraries }: ConditionFlowProps) {
   return (
     <ReactFlowProvider>
-      <ConditionFlowInner value={value} onChange={onChange} height={height} />
+      <ConditionFlowInner value={value} onChange={onChange} height={height} methodLibraries={methodLibraries} />
     </ReactFlowProvider>
   );
 }
 
-function ConditionFlowInner({ value, onChange, height }: ConditionFlowProps) {
+function ConditionFlowInner({ value, onChange, height, methodLibraries }: ConditionFlowProps) {
   // The atom currently being edited in the modal (path id) — undefined when closed.
   const [editingPath, setEditingPath] = useState<string | null>(null);
 
@@ -159,7 +166,11 @@ function ConditionFlowInner({ value, onChange, height }: ConditionFlowProps) {
         destroyOnHidden
       >
         {editingNode && editingNode.kind === 'atom' && (
-          <AtomEditor value={editingNode} onChange={(next) => onChange(replaceNode(value, editingPath!, next))} />
+          <AtomEditor
+            value={editingNode}
+            methodLibraries={methodLibraries}
+            onChange={(next) => onChange(replaceNode(value, editingPath!, next))}
+          />
         )}
       </Modal>
     </div>
