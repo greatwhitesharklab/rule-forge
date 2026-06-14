@@ -42,6 +42,11 @@ import type { ColumnsType } from 'antd/es/table';
 import type { ValueExpr } from '../../ruleforge/model/types';
 import { OPERATOR_OPTIONS, opHasNoInput } from '../../ruleforge/react/constants';
 import { ValueEditor } from '../../ruleforge/react/ValueEditor';
+import {
+  VariablePicker,
+  useVariableLibraries,
+  type VariableCategoryGroup,
+} from '../../ruleforge/react';
 import type {
   AssignTarget,
   AssignTargetType,
@@ -128,6 +133,15 @@ export function ScoreCardEditor({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Load the project's imported variable libraries once (paths are stable per
+  // scorecard). Passed down to ConfigArea + AttributeCellEditor so the
+  // Variable/Parameter value editor + the attribute-cell binding can render
+  // the shared VariablePicker instead of free-text inputs.
+  const variableLibraryPaths = state.libraries
+    .filter((lib) => lib.type === 'Variable' && lib.path)
+    .map((lib) => lib.path);
+  const { libraries: variableLibraries } = useVariableLibraries(variableLibraryPaths);
 
   // ---- load on mount ----
   useEffect(() => {
@@ -312,6 +326,7 @@ export function ScoreCardEditor({
           <AttributeCellEditor
             value={cell}
             weightSupport={state.weightSupport}
+            libraries={variableLibraries}
             onChange={(next) => setCell(dr.rowNumber, 1, 'attribute', next)}
             onAddCondition={() => addConditionRow(dr.rowNumber)}
             onRemove={() => removeRow(dr.rowNumber, false)}
@@ -430,7 +445,7 @@ export function ScoreCardEditor({
         />
       )}
 
-      <ConfigArea state={state} setState={setState} />
+      <ConfigArea state={state} setState={setState} libraries={variableLibraries} />
 
       <div style={{ marginBottom: 12 }}>
         <Input.TextArea
@@ -490,9 +505,11 @@ export function ScoreCardEditor({
 function ConfigArea({
   state,
   setState,
+  libraries = [],
 }: {
   state: ScoreCardData;
   setState: React.Dispatch<React.SetStateAction<ScoreCardData>>;
+  libraries?: VariableCategoryGroup[];
 }) {
   const patchName = (name: string) => setState((prev) => ({ ...prev, name }));
   const patchCol = (key: 'attributeCol' | 'conditionCol' | 'scoreCol') => (name: string) =>
@@ -619,6 +636,7 @@ function ConfigArea({
           <div style={{ marginTop: 4 }}>
             <ValueEditor
               value={state.assignTarget.value}
+              libraries={libraries}
               onChange={(value) => patchAssignTarget({ ...state.assignTarget, value })}
             />
           </div>
@@ -632,16 +650,18 @@ function ConfigArea({
 // Cell editors (one per cell type)
 // ---------------------------------------------------------------------------
 
-/** Attribute cell: category / variable binding (free-text) + optional weight. */
+/** Attribute cell: category / variable binding (free-text or VariablePicker) + optional weight. */
 function AttributeCellEditor({
   value,
   weightSupport,
+  libraries = [],
   onChange,
   onAddCondition,
   onRemove,
 }: {
   value: CardCell | undefined;
   weightSupport: boolean;
+  libraries?: VariableCategoryGroup[];
   onChange: (next: CardCell) => void;
   onAddCondition: () => void;
   onRemove: () => void;
@@ -649,33 +669,61 @@ function AttributeCellEditor({
   const cell: CardCell = value ?? { type: 'attribute', row: 0, col: 1 };
   const patch = (p: Partial<CardCell>) => onChange({ ...cell, ...p });
 
+  // Map the CardCell's category/variableName/variableLabel/datatype fields
+  // to/from the VariablePicker's VariableBinding (varCategory/var/…).
+  const usePicker = libraries.some((lib) => (lib || []).length > 0);
+
   return (
     <div>
       <Space direction="vertical" size={4} style={{ width: '100%' }}>
-        <Input
-          size="small"
-          placeholder="分类 (category)"
-          value={cell.category ?? ''}
-          onChange={(e) => patch({ category: e.target.value })}
-        />
-        <Input
-          size="small"
-          placeholder="变量名 (var)"
-          value={cell.variableName ?? ''}
-          onChange={(e) => patch({ variableName: e.target.value })}
-        />
-        <Input
-          size="small"
-          placeholder="变量标签 (var-label)"
-          value={cell.variableLabel ?? ''}
-          onChange={(e) => patch({ variableLabel: e.target.value })}
-        />
-        <Input
-          size="small"
-          placeholder="数据类型 (datatype)"
-          value={cell.datatype ?? ''}
-          onChange={(e) => patch({ datatype: e.target.value })}
-        />
+        {usePicker ? (
+          <VariablePicker
+            compact
+            libraries={libraries}
+            allowDatatypeEdit
+            value={{
+              varCategory: cell.category,
+              var: cell.variableName,
+              varLabel: cell.variableLabel,
+              datatype: cell.datatype,
+            }}
+            onChange={(b) =>
+              patch({
+                category: b.varCategory,
+                variableName: b.var,
+                variableLabel: b.varLabel,
+                datatype: b.datatype,
+              })
+            }
+          />
+        ) : (
+          <>
+            <Input
+              size="small"
+              placeholder="分类 (category)"
+              value={cell.category ?? ''}
+              onChange={(e) => patch({ category: e.target.value })}
+            />
+            <Input
+              size="small"
+              placeholder="变量名 (var)"
+              value={cell.variableName ?? ''}
+              onChange={(e) => patch({ variableName: e.target.value })}
+            />
+            <Input
+              size="small"
+              placeholder="变量标签 (var-label)"
+              value={cell.variableLabel ?? ''}
+              onChange={(e) => patch({ variableLabel: e.target.value })}
+            />
+            <Input
+              size="small"
+              placeholder="数据类型 (datatype)"
+              value={cell.datatype ?? ''}
+              onChange={(e) => patch({ datatype: e.target.value })}
+            />
+          </>
+        )}
         {weightSupport && (
           <Input
             size="small"

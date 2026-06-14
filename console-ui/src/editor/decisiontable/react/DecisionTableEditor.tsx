@@ -480,6 +480,9 @@ export function DecisionTableEditor({
         column={colModal.editIndex !== undefined ? state.columns[colModal.editIndex] : undefined}
         onOk={applyColumnDraft}
         onCancel={() => setColModal({ open: false })}
+        variableLibraryPaths={state.libraries
+          .filter((lib) => lib.type === 'Variable' && lib.path)
+          .map((lib) => lib.path)}
       />
     </div>
   );

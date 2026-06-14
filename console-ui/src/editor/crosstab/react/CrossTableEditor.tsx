@@ -40,6 +40,11 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import type { ValueExpr } from '../../ruleforge/model/types';
 import { ValueEditor } from '../../ruleforge/react/ValueEditor';
+import {
+  VariablePicker,
+  useVariableLibraries,
+  type VariableCategoryGroup,
+} from '../../ruleforge/react';
 import { OPERATOR_OPTIONS, opHasNoInput } from '../../ruleforge/react/constants';
 import type {
   AssignTarget,
@@ -106,6 +111,13 @@ export function CrossTableEditor({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [targetModal, setTargetModal] = useState(false);
+
+  // Load the project's imported variable libraries once; passed down to the
+  // bundle/target modals so they can render the shared VariablePicker.
+  const variableLibraryPaths = state.libraries
+    .filter((lib) => lib.type === 'Variable' && lib.path)
+    .map((lib) => lib.path);
+  const { libraries: variableLibraries } = useVariableLibraries(variableLibraryPaths);
 
   // ---- load on mount ----
   useEffect(() => {
@@ -302,6 +314,7 @@ export function CrossTableEditor({
                 {isTop && (
                   <RowBundleButton
                     bundle={row.bundleData}
+                    libraries={variableLibraries}
                     onChange={(b) => configureTopRowBundle(displayRow, b)}
                   />
                 )}
@@ -328,6 +341,7 @@ export function CrossTableEditor({
               {isLeft && (
                 <ColBundleButton
                   bundle={col.bundleData}
+                  libraries={variableLibraries}
                   onChange={(b) => configureLeftColumnBundle(displayCol, b)}
                 />
               )}
@@ -487,6 +501,7 @@ export function CrossTableEditor({
       <AssignTargetModal
         open={targetModal}
         target={state.assignTarget}
+        libraries={variableLibraries}
         onOk={(t) => {
           setAssignTarget(t);
           setTargetModal(false);
@@ -600,9 +615,11 @@ function ConditionCellEditor({
  */
 function RowBundleButton({
   bundle,
+  libraries = [],
   onChange,
 }: {
   bundle: BundleData | undefined;
+  libraries?: VariableCategoryGroup[];
   onChange: (next: BundleData) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -615,6 +632,7 @@ function RowBundleButton({
         open={open}
         title="配置条件行变量"
         bundle={bundle}
+        libraries={libraries}
         onOk={(b) => {
           onChange(b);
           setOpen(false);
@@ -627,9 +645,11 @@ function RowBundleButton({
 
 function ColBundleButton({
   bundle,
+  libraries = [],
   onChange,
 }: {
   bundle: BundleData | undefined;
+  libraries?: VariableCategoryGroup[];
   onChange: (next: BundleData) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -642,6 +662,7 @@ function ColBundleButton({
         open={open}
         title="配置条件列变量"
         bundle={bundle}
+        libraries={libraries}
         onOk={(b) => {
           onChange(b);
           setOpen(false);
@@ -663,12 +684,14 @@ function BundleModal({
   open,
   title,
   bundle,
+  libraries = [],
   onOk,
   onCancel,
 }: {
   open: boolean;
   title: string;
   bundle: BundleData | undefined;
+  libraries?: VariableCategoryGroup[];
   onOk: (next: BundleData) => void;
   onCancel: () => void;
 }) {
@@ -688,6 +711,14 @@ function BundleModal({
       setDatatype(bundle?.datatype ?? '');
     }
   }, [open, bundle]);
+
+  const usePicker = libraries.some((lib) => (lib || []).length > 0);
+  const setFromBinding = (b: { varCategory?: string; var?: string; varLabel?: string; datatype?: string }) => {
+    setVariableCategory(b.varCategory ?? '');
+    setVariableName(b.var ?? '');
+    setVariableLabel(b.varLabel ?? '');
+    setDatatype(b.datatype ?? '');
+  };
 
   return (
     <Modal
@@ -719,44 +750,60 @@ function BundleModal({
             ]}
           />
         </div>
-        {type === 'variable' && (
+        {type === 'variable' && usePicker ? (
           <div>
-            <Text style={{ width: 100, display: 'inline-block' }}>变量分类</Text>
-            <Input
-              style={{ width: 300 }}
-              placeholder="如 客户.客户"
-              value={variableCategory}
-              onChange={(e) => setVariableCategory(e.target.value)}
-            />
+            <Text style={{ width: 100, display: 'inline-block', verticalAlign: 'top' }}>变量绑定</Text>
+            <span style={{ display: 'inline-block', width: 300 }}>
+              <VariablePicker
+                libraries={libraries}
+                allowDatatypeEdit
+                value={{ varCategory: variableCategory, var: variableName, varLabel: variableLabel, datatype }}
+                onChange={setFromBinding}
+              />
+            </span>
           </div>
+        ) : (
+          <>
+            {type === 'variable' && (
+              <div>
+                <Text style={{ width: 100, display: 'inline-block' }}>变量分类</Text>
+                <Input
+                  style={{ width: 300 }}
+                  placeholder="如 客户.客户"
+                  value={variableCategory}
+                  onChange={(e) => setVariableCategory(e.target.value)}
+                />
+              </div>
+            )}
+            <div>
+              <Text style={{ width: 100, display: 'inline-block' }}>变量名/参数名</Text>
+              <Input
+                style={{ width: 300 }}
+                placeholder="如 age"
+                value={variableName}
+                onChange={(e) => setVariableName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Text style={{ width: 100, display: 'inline-block' }}>标签</Text>
+              <Input
+                style={{ width: 300 }}
+                placeholder="如 年龄"
+                value={variableLabel}
+                onChange={(e) => setVariableLabel(e.target.value)}
+              />
+            </div>
+            <div>
+              <Text style={{ width: 100, display: 'inline-block' }}>数据类型</Text>
+              <Input
+                style={{ width: 300 }}
+                placeholder="如 Integer"
+                value={datatype}
+                onChange={(e) => setDatatype(e.target.value)}
+              />
+            </div>
+          </>
         )}
-        <div>
-          <Text style={{ width: 100, display: 'inline-block' }}>变量名/参数名</Text>
-          <Input
-            style={{ width: 300 }}
-            placeholder="如 age"
-            value={variableName}
-            onChange={(e) => setVariableName(e.target.value)}
-          />
-        </div>
-        <div>
-          <Text style={{ width: 100, display: 'inline-block' }}>标签</Text>
-          <Input
-            style={{ width: 300 }}
-            placeholder="如 年龄"
-            value={variableLabel}
-            onChange={(e) => setVariableLabel(e.target.value)}
-          />
-        </div>
-        <div>
-          <Text style={{ width: 100, display: 'inline-block' }}>数据类型</Text>
-          <Input
-            style={{ width: 300 }}
-            placeholder="如 Integer"
-            value={datatype}
-            onChange={(e) => setDatatype(e.target.value)}
-          />
-        </div>
       </Space>
     </Modal>
   );
@@ -772,11 +819,13 @@ function BundleModal({
 function AssignTargetModal({
   open,
   target,
+  libraries = [],
   onOk,
   onCancel,
 }: {
   open: boolean;
   target: AssignTarget | undefined;
+  libraries?: VariableCategoryGroup[];
   onOk: (next: AssignTarget) => void;
   onCancel: () => void;
 }) {
@@ -795,6 +844,14 @@ function AssignTargetModal({
       setDatatype(target?.datatype ?? '');
     }
   }, [open, target]);
+
+  const usePicker = libraries.some((lib) => (lib || []).length > 0);
+  const setFromBinding = (b: { varCategory?: string; var?: string; varLabel?: string; datatype?: string }) => {
+    setVariableCategory(b.varCategory ?? '');
+    setVariableName(b.var ?? '');
+    setVariableLabel(b.varLabel ?? '');
+    setDatatype(b.datatype ?? '');
+  };
 
   return (
     <Modal
@@ -826,44 +883,60 @@ function AssignTargetModal({
             ]}
           />
         </div>
-        {type === 'variable' && (
+        {type === 'variable' && usePicker ? (
           <div>
-            <Text style={{ width: 100, display: 'inline-block' }}>变量分类</Text>
-            <Input
-              style={{ width: 300 }}
-              placeholder="如 客户.客户"
-              value={variableCategory}
-              onChange={(e) => setVariableCategory(e.target.value)}
-            />
+            <Text style={{ width: 100, display: 'inline-block', verticalAlign: 'top' }}>变量绑定</Text>
+            <span style={{ display: 'inline-block', width: 300 }}>
+              <VariablePicker
+                libraries={libraries}
+                allowDatatypeEdit
+                value={{ varCategory: variableCategory, var: variableName, varLabel: variableLabel, datatype }}
+                onChange={setFromBinding}
+              />
+            </span>
           </div>
+        ) : (
+          <>
+            {type === 'variable' && (
+              <div>
+                <Text style={{ width: 100, display: 'inline-block' }}>变量分类</Text>
+                <Input
+                  style={{ width: 300 }}
+                  placeholder="如 客户.客户"
+                  value={variableCategory}
+                  onChange={(e) => setVariableCategory(e.target.value)}
+                />
+              </div>
+            )}
+            <div>
+              <Text style={{ width: 100, display: 'inline-block' }}>变量名/参数名</Text>
+              <Input
+                style={{ width: 300 }}
+                placeholder="如 result"
+                value={variableName}
+                onChange={(e) => setVariableName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Text style={{ width: 100, display: 'inline-block' }}>标签</Text>
+              <Input
+                style={{ width: 300 }}
+                placeholder="如 结果"
+                value={variableLabel}
+                onChange={(e) => setVariableLabel(e.target.value)}
+              />
+            </div>
+            <div>
+              <Text style={{ width: 100, display: 'inline-block' }}>数据类型</Text>
+              <Input
+                style={{ width: 300 }}
+                placeholder="如 String"
+                value={datatype}
+                onChange={(e) => setDatatype(e.target.value)}
+              />
+            </div>
+          </>
         )}
-        <div>
-          <Text style={{ width: 100, display: 'inline-block' }}>变量名/参数名</Text>
-          <Input
-            style={{ width: 300 }}
-            placeholder="如 result"
-            value={variableName}
-            onChange={(e) => setVariableName(e.target.value)}
-          />
-        </div>
-        <div>
-          <Text style={{ width: 100, display: 'inline-block' }}>标签</Text>
-          <Input
-            style={{ width: 300 }}
-            placeholder="如 结果"
-            value={variableLabel}
-            onChange={(e) => setVariableLabel(e.target.value)}
-          />
-        </div>
-        <div>
-          <Text style={{ width: 100, display: 'inline-block' }}>数据类型</Text>
-          <Input
-            style={{ width: 300 }}
-            placeholder="如 String"
-            value={datatype}
-            onChange={(e) => setDatatype(e.target.value)}
-          />
-        </div>
       </Space>
     </Modal>
   );

@@ -30,6 +30,19 @@ export type { ValueEditorProps } from './ValueEditor';
 export { default as LeftValueEditor } from './LeftValueEditor';
 export type { LeftValueEditorProps } from './LeftValueEditor';
 
+// Shared variable-library browser (used by every React rule editor's
+// Criteria / variable binding).
+export { VariablePicker } from './VariablePicker';
+export type {
+  VariablePickerProps,
+  VariableBinding,
+  PickerVariableItem,
+  PickerVariableCategory,
+  VariableCategoryGroup,
+} from './VariablePicker';
+export { useVariableLibraries } from './useVariableLibraries';
+export type { UseVariableLibrariesResult } from './useVariableLibraries';
+
 export { default as RulePropertyEditor } from './RulePropertyEditor';
 export type { RulePropertyEditorProps } from './RulePropertyEditor';
 
