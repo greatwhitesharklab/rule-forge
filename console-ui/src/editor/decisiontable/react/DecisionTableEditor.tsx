@@ -24,9 +24,23 @@
  *
  * ── TODO (handsontable features NOT yet ported) ──────────────────────────
  *   - freeze panes
- *   - copy/paste of cell ranges
+ *   - copy/paste of cell ranges (row-level copy/paste IS implemented below;
+ *     cell-range / multi-cell selection copy-paste is still TODO)
  *   - per-row salience / property overrides (table-level only for now)
  *   - nested joints inside a Criteria cell (flat single condition only)
+ *
+ * ── Row copy/paste ───────────────────────────────────────────────────────
+ * The handsontable editor let users duplicate a whole row. The React port
+ * implements it as component-local clipboard state (no system clipboard
+ * dependency — copy stores the source cells in `clipboardRow`, paste reads
+ * them back). Each paste deep-clones the stored cells so the pasted row is
+ * fully independent of the source, and re-stamps every cell's `row` to the
+ * new wire-row (cells are keyed by (row, col), so leaving the old row would
+ * collide with the source). A pasted cell's rowspan is clamped to 1 so the
+ * new row never silently swallows rows below it (the original merge spanned
+ * specific source rows; copying one row should not reproduce that span).
+ * The new Row gets a fresh dense `num` via the same renumber pass addRow/
+ * removeRow use (there is no uuid field on Row — num IS the identity).
  *
  * ── Merged cells (rowspan) ───────────────────────────────────────────────
  * Criteria cells can span N rows: a "向下合并" gesture on a Criteria cell
@@ -39,10 +53,17 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Dropdown, Input, Space, Spin, Table, Typography, message } from 'antd';
-import { DeleteOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
+import {
+  CopyOutlined,
+  DeleteOutlined,
+  MoreOutlined,
+  PlusOutlined,
+  SaveOutlined,
+  SnippetsOutlined,
+} from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps } from 'antd';
-import type { CellContent, Column, DecisionTableData } from '../model/types';
+import type { Cell, CellContent, Column, DecisionTableData } from '../model/types';
 import { parseDecisionTable } from '../model/parse';
 import { serializeDecisionTable } from '../model/serialize';
 import { formPost, save } from '@/api/client';
@@ -63,6 +84,31 @@ export interface DecisionTableEditorProps {
 /** Build an empty decision table (used when the server has nothing yet). */
 function emptyTable(): DecisionTableData {
   return { remark: '', libraries: [], properties: [], columns: [], rows: [], cells: [] };
+}
+
+/**
+ * Deep-clone a value independent of the source. Prefer the platform
+ * `structuredClone` (Node ≥17, all evergreen browsers); fall back to JSON
+ * round-trip for the older test/jsdom environment. Used by row copy/paste so a
+ * pasted row never shares references with the row it was copied from.
+ */
+function deepClone<T>(value: T): T {
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+/**
+ * Component-local clipboard payload for row copy/paste. Stores the source
+ * row's CELLS (with their `row` cleared — paste re-stamps it to the target
+ * wire-row) plus the row's height. We store cells rather than the whole Row
+ * because Row is just {num, height} and the cells are where the content lives.
+ * Cells here are NOT bound to any grid row until paste assigns one.
+ */
+interface ClipboardRow {
+  /** Deep-cloned, rowspan-clamped source cells; `.row` is a placeholder (0). */
+  cells: Cell[];
+  /** Source row height, copied onto the new row. */
+  height: number;
 }
 
 /** Default loader: GET /common/loadXml, read raw XML under editorData.xml/content. */
@@ -94,6 +140,8 @@ export function DecisionTableEditor({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [colModal, setColModal] = useState<{ open: boolean; editIndex?: number }>({ open: false });
+  // Row-copy clipboard. `null` = nothing copied yet (disables the paste button).
+  const [clipboardRow, setClipboardRow] = useState<ClipboardRow | null>(null);
 
   // ---- load on mount ----
   useEffect(() => {
@@ -282,6 +330,72 @@ export function DecisionTableEditor({
     });
   }, []);
 
+  // ---- row copy / paste ----
+  //
+  // Copy grabs the cells OWNED by the source row (top of a merge, or a plain
+  // single-row cell), deep-clones them, and clamps every rowspan to 1 so a
+  // later paste can never extend a merge beyond the single pasted row. The
+  // stored cells carry a placeholder row=0; paste re-stamps them to the target.
+  // We snapshot from the LIVE state (not the closure's `state`, which can be
+  // stale across rapid edits) by reading inside setState's prev — but copy has
+  // no state transition of its own, so reading the latest render's state is
+  // fine here.
+  const copyRow = useCallback(
+    (displayRow: number) => {
+      const wireRow = displayRow + 1;
+      const owned = state.cells
+        .filter((c) => c.row === wireRow)
+        .map((c) => deepClone({ ...c, row: 0, rowspan: 1 }));
+      const height = state.rows[displayRow]?.height ?? 40;
+      setClipboardRow({ cells: owned, height });
+      message.success('已复制行 ' + (displayRow + 1));
+    },
+    [state.cells, state.rows],
+  );
+
+  /**
+   * Paste the clipboard row BELOW `displayRow`. Inserts a new grid row there,
+   * shifts every existing cell whose row is strictly below the insertion point
+   * down by one, then drops in the clipboard cells re-stamped to the new
+   * wire-row. The new Row gets a fresh dense `num`.
+   *
+   * Pass `displayRow = -1` to paste at the very top (before the first row);
+   * `displayRow = rows.length - 1` (or undefined) appends at the bottom.
+   */
+  const pasteRow = useCallback(
+    (displayRow: number) => {
+      if (!clipboardRow) {
+        message.warning('剪贴板为空,请先复制一行');
+        return;
+      }
+      setState((prev) => {
+        // Resolve the insertion index into a valid 0..rows.length slot.
+        const insertAt = Math.max(0, Math.min(displayRow + 1, prev.rows.length));
+        const insertWire = insertAt + 1; // 1-based grid row of the new row
+
+        // 1. Renumber existing rows to stay dense 0..n after insertion.
+        const rows = prev.rows.slice();
+        rows.splice(insertAt, 0, { num: insertAt, height: clipboardRow.height });
+        const renumberedRows = rows.map((r, i) => ({ ...r, num: i }));
+
+        // 2. Shift cells below the insertion point down by one wire-row.
+        const shifted = prev.cells.map((c) =>
+          c.row >= insertWire ? { ...c, row: c.row + 1 } : c,
+        );
+
+        // 3. Drop in the clipboard cells, deep-cloned again (so repeated pastes
+        //    are independent of each other) and re-stamped to the new wire-row.
+        const pasted = clipboardRow.cells.map((c) =>
+          deepClone({ ...c, row: insertWire }),
+        );
+
+        return { ...prev, rows: renumberedRows, cells: shifted.concat(pasted) };
+      });
+      message.success('已粘贴行');
+    },
+    [clipboardRow],
+  );
+
   // ---- save ----
   const handleSave = useCallback(() => {
     setSaving(true);
@@ -373,23 +487,58 @@ export function DecisionTableEditor({
         },
       };
     });
-    // Trailing action column: delete row.
+    // Trailing action column: per-row copy/paste/delete via a dropdown trigger
+    // (the ⋯ button opens a menu; right-click also works). This mirrors the
+    // handsontable row context menu. "粘贴到此行下方" is disabled when the
+    // clipboard is empty.
     cols.push({
       title: '',
       key: 'row-actions',
-      width: 50,
-      render: (_v, _wireRow, displayRow) => (
-        <Button
-          size="small"
-          type="text"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => removeRow(displayRow)}
-        />
-      ),
+      width: 60,
+      render: (_v, _wireRow, displayRow) => {
+        const rowMenuItems: MenuProps['items'] = [
+          {
+            key: 'copy-row',
+            label: '复制此行',
+            icon: <CopyOutlined />,
+            onClick: () => copyRow(displayRow),
+          },
+          {
+            key: 'paste-row',
+            label: '粘贴到此行下方',
+            icon: <SnippetsOutlined />,
+            disabled: !clipboardRow,
+            onClick: () => pasteRow(displayRow),
+          },
+          { type: 'divider' },
+          {
+            key: 'delete-row',
+            label: '删除此行',
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: () => removeRow(displayRow),
+          },
+        ];
+        return (
+          <Dropdown menu={{ items: rowMenuItems }} trigger={['click']}>
+            <Button size="small" type="text" icon={<MoreOutlined />} />
+          </Dropdown>
+        );
+      },
     });
     return cols;
-  }, [state.columns, state.rows.length, findOwningCell, setCellContent, mergeCellDown, unmergeCell, removeRow]);
+  }, [
+    state.columns,
+    state.rows.length,
+    findOwningCell,
+    setCellContent,
+    mergeCellDown,
+    unmergeCell,
+    removeRow,
+    copyRow,
+    pasteRow,
+    clipboardRow,
+  ]);
 
   // Wire rows (1..n) — one table row per model row.
   const dataRows = useMemo(() => state.rows.map((r) => r.num + 1), [state.rows]);
@@ -415,6 +564,13 @@ export function DecisionTableEditor({
           </Button>
           <Button icon={<PlusOutlined />} onClick={addRow}>
             添加行
+          </Button>
+          <Button
+            icon={<SnippetsOutlined />}
+            disabled={!clipboardRow}
+            onClick={() => pasteRow(state.rows.length - 1)}
+          >
+            粘贴行
           </Button>
           <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>
             保存
