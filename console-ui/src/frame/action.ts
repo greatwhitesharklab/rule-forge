@@ -410,6 +410,11 @@ function buildData(data: TreeNodeData, level: number): void;
 function buildData(data: TreeNodeData, level: number, user: { import: boolean; export: boolean }): void;
 function buildData(data: TreeNodeData, level: number, user?: { import: boolean; export: boolean }): void {
     data._level = level++;
+    // NOTE: 下方各分支设置的 data.editorPath("/html/editor.html?type=<type>")在 SPA 化后
+    // 已不再被 TreeItem 使用(所有文件类型改走 window.open('/app/editor/<type>'))。
+    // 当前唯一活引用是 VersionListDialog,它用 editorPathToSpaSegment(data.editorPath)
+    // 把版本历史打开到 /app/editor/<segment>?file=...:<version>。等 VersionListDialog 改用
+    // data.type 直接映射后,这些 editorPath 赋值即可整批删除。保留以避免破坏版本打开功能。
     switch (data.type) {
         case "root":
             data._icon = Styles.frameStyle.getRootIcon();

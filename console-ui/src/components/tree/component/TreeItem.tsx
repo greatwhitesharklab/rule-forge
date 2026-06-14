@@ -1,9 +1,7 @@
 import React, {Component} from 'react';
 import TreeParentItem from './TreeParentItem';
 import Menu from '../../menu/component/Menu';
-import * as event from '../../componentEvent.js';
 import * as ACTIONS from '../../../frame/action.js';
-import {buildEditorUrl} from '../../../Utils.ts';
 
 interface TreeItemProps {
     data: TreeNodeData;
@@ -268,23 +266,10 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                                 return;
                             }
 
-                            const editorBasePath = this.props.treeType === 'public' ? '/html/editor.html?type=resource' : data.editorPath;
-
-                            let url = buildEditorUrl(editorBasePath, data.fullPath);
-                            let fullPath = data.fullPath;
-                            if (data.type === 'resourcePackage') {
-                                const packageName = data.fullPath.split("/")[1];
-                                url = buildEditorUrl(data.editorPath, packageName + '.rp');
-                                fullPath = '/' + packageName;
-                            }
-
-                            event.eventEmitter.emit(event.TREE_NODE_CLICK, {
-                                id: data.id,
-                                name: data.name,
-                                fullPath: fullPath,
-                                path: url,
-                                active: true
-                            });
+                            // 所有 SPA 化编辑器类型(rule/decisionTable/.../flow/libs/public/resourcePackage)
+                            // 已在上方各自分支 window.open 后 return。到达此处的类型(如 .ul.xml 脚本决策集)
+                            // 尚无 SPA 路由,原走 iframe + TREE_NODE_CLICK 的通道在 SPA 化后已废弃
+                            // (FrameTab 不再托管 iframe)。保留节点选中视觉反馈,不再尝试打开编辑器。
                             document.querySelectorAll('.tree .tree-active').forEach(el => el.classList.remove('tree-active'));
                             const spanEl = document.getElementById(spanId);
                             if (spanEl) spanEl.classList.add('tree-active');
