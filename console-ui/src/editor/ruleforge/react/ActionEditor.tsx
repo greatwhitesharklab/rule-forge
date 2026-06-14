@@ -90,7 +90,11 @@ export function ActionEditor({ value, onChange, onDelete, methodLibraries = [] }
       </Space>
 
       {value.kind === 'console-print' && (
-        <ValueEditor value={value.value} onChange={(v: ValueExpr) => onChange({ ...value, value: v })} />
+        <ValueEditor
+          value={value.value}
+          methodLibraries={methodLibraries}
+          onChange={(v: ValueExpr) => onChange({ ...value, value: v })}
+        />
       )}
 
       {value.kind === 'var-assign' && (
@@ -131,7 +135,11 @@ export function ActionEditor({ value, onChange, onDelete, methodLibraries = [] }
               options={VAR_ASSIGN_TYPE_OPTIONS}
             />
           </div>
-          <ValueEditor value={value.value} onChange={(v: ValueExpr) => onChange({ ...value, value: v })} />
+          <ValueEditor
+            value={value.value}
+            methodLibraries={methodLibraries}
+            onChange={(v: ValueExpr) => onChange({ ...value, value: v })}
+          />
         </div>
       )}
 

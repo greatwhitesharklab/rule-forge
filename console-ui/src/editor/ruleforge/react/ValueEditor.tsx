@@ -45,6 +45,11 @@ import {
   type ParameterBinding,
   type ParameterLibrary,
 } from './ParameterPicker';
+import {
+  MethodPicker,
+  type ActionLibrary,
+  type MethodBinding,
+} from './MethodPicker';
 
 export interface ValueEditorProps {
   /** The current value expression (controlled). */
@@ -75,6 +80,16 @@ export interface ValueEditorProps {
    * omitted or empty, free-text inputs are shown.
    */
   parameterLibraries?: ParameterLibrary[];
+  /**
+   * Optional imported action libraries (one {@link ActionLibrary} per
+   * `.al.xml`). When provided AND non-empty, the `Method` value type renders
+   * a {@link MethodPicker} (bean→method Cascader) instead of the four
+   * free-text bean/method inputs. When omitted or empty, free-text inputs are
+   * shown (back-compat for editors that have not wired the libraries prop yet).
+   * Reuses the same picker / hook V5.64 added for ActionEditor's
+   * execute-method kind.
+   */
+  methodLibraries?: ActionLibrary[];
 }
 
 /**
@@ -121,6 +136,7 @@ export function ValueEditor({
   libraries = [],
   constantLibraries = [],
   parameterLibraries = [],
+  methodLibraries = [],
 }: ValueEditorProps) {
   const onTypeChange = (next: string) => {
     onChange(freshValueForType(next as ValueExpr['type']));
@@ -347,7 +363,13 @@ export function ValueEditor({
       )}
 
       {value.type === 'Method' && (
-        <MethodValueFields value={value} onChange={onChange} rowStyle={rowStyle} />
+        <MethodValueFields
+          value={value}
+          onChange={onChange}
+          rowStyle={rowStyle}
+          compact={compact}
+          methodLibraries={methodLibraries}
+        />
       )}
 
       {value.type === 'CommonFunction' && (
@@ -406,49 +428,87 @@ interface MethodValueFieldsProps {
   value: ValueExpr;
   onChange: (next: ValueExpr) => void;
   rowStyle: React.CSSProperties;
+  compact?: boolean;
+  methodLibraries: ActionLibrary[];
 }
 
-function MethodValueFields({ value, onChange, rowStyle }: MethodValueFieldsProps) {
+function MethodValueFields({
+  value,
+  onChange,
+  rowStyle,
+  compact,
+  methodLibraries,
+}: MethodValueFieldsProps) {
   const patchMethod = (p: Partial<ValueExpr>) => onChange(patch(value, p));
+
+  // When the project imports action libraries, replace the four free-text
+  // bean/method inputs with the shared MethodPicker. The ValueExpr stores the
+  // bean under `beanName` while the MethodPicker binding uses `bean`, so we
+  // translate at the boundary.
+  const useMethodPicker = methodLibraries.some((lib) => (lib || []).length > 0);
+  const onPickMethod = (b: MethodBinding): void => {
+    patchMethod({
+      beanName: b.bean ?? '',
+      beanLabel: b.beanLabel ?? '',
+      methodName: b.methodName ?? '',
+      methodLabel: b.methodLabel ?? '',
+    });
+  };
 
   return (
     <>
-      <div style={rowStyle}>
-        <Input
-          size="small"
-          prefix={<FieldLabel>bean</FieldLabel>}
-          placeholder="bean-name"
-          value={value.beanName ?? ''}
-          onChange={(e) => patchMethod({ beanName: e.target.value })}
+      {useMethodPicker ? (
+        <MethodPicker
+          value={{
+            bean: value.beanName,
+            beanLabel: value.beanLabel,
+            methodName: value.methodName,
+            methodLabel: value.methodLabel,
+          }}
+          onChange={onPickMethod}
+          libraries={methodLibraries}
+          compact={compact}
         />
-      </div>
-      <div style={rowStyle}>
-        <Input
-          size="small"
-          prefix={<FieldLabel>bean标签</FieldLabel>}
-          placeholder="bean-label"
-          value={value.beanLabel ?? ''}
-          onChange={(e) => patchMethod({ beanLabel: e.target.value })}
-        />
-      </div>
-      <div style={rowStyle}>
-        <Input
-          size="small"
-          prefix={<FieldLabel>方法</FieldLabel>}
-          placeholder="method-name"
-          value={value.methodName ?? ''}
-          onChange={(e) => patchMethod({ methodName: e.target.value })}
-        />
-      </div>
-      <div style={rowStyle}>
-        <Input
-          size="small"
-          prefix={<FieldLabel>方法标签</FieldLabel>}
-          placeholder="method-label"
-          value={value.methodLabel ?? ''}
-          onChange={(e) => patchMethod({ methodLabel: e.target.value })}
-        />
-      </div>
+      ) : (
+        <>
+          <div style={rowStyle}>
+            <Input
+              size="small"
+              prefix={<FieldLabel>bean</FieldLabel>}
+              placeholder="bean-name"
+              value={value.beanName ?? ''}
+              onChange={(e) => patchMethod({ beanName: e.target.value })}
+            />
+          </div>
+          <div style={rowStyle}>
+            <Input
+              size="small"
+              prefix={<FieldLabel>bean标签</FieldLabel>}
+              placeholder="bean-label"
+              value={value.beanLabel ?? ''}
+              onChange={(e) => patchMethod({ beanLabel: e.target.value })}
+            />
+          </div>
+          <div style={rowStyle}>
+            <Input
+              size="small"
+              prefix={<FieldLabel>方法</FieldLabel>}
+              placeholder="method-name"
+              value={value.methodName ?? ''}
+              onChange={(e) => patchMethod({ methodName: e.target.value })}
+            />
+          </div>
+          <div style={rowStyle}>
+            <Input
+              size="small"
+              prefix={<FieldLabel>方法标签</FieldLabel>}
+              placeholder="method-label"
+              value={value.methodLabel ?? ''}
+              onChange={(e) => patchMethod({ methodLabel: e.target.value })}
+            />
+          </div>
+        </>
+      )}
       <ValueMethodParametersEditor
         parameters={value.parameters ?? []}
         onChange={(parameters) => patchMethod({ parameters })}

@@ -69,7 +69,7 @@ import {
   Alert, Button, Dropdown, Input, InputNumber, Radio, Select, Space, Spin, Table, Typography, message,
 } from 'antd';
 import {
-  CopyOutlined, DeleteOutlined, MoreOutlined, PlusOutlined, SaveOutlined, SnippetsOutlined, BlockOutlined,
+  CopyOutlined, DeleteOutlined, ExperimentOutlined, MoreOutlined, PlusOutlined, SaveOutlined, SnippetsOutlined, BlockOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps } from 'antd';
@@ -91,12 +91,30 @@ import type {
   AttributeRow,
   CardCell,
   CardCellType,
+  LibraryImport,
   ScoreCardData,
   ScoringType,
 } from '../model/types';
 import { parseScoreCard } from '../model/parse';
 import { serializeScoreCard } from '../model/serialize';
 import { formPost, save } from '@/api/client';
+// Reused jquery-era dialogs (event-driven class components). Mounted once in the
+// JSX tree below; opened by emitting OPEN_* events. ConfigLibraryDialog reads
+// the project-global `variableLibraries` / `constantLibraries` / etc. arrays and
+// calls the `refreshXxxLibraries()` globals on add/delete, so we bridge those
+// globals to the scorecard's flat `state.libraries` (LibraryImport[]) in a mount
+// effect (see installLibrariesBridge).
+import * as componentEvent from '@/components/componentEvent.js';
+import { OPEN_CONFIG_LIBRARY_DIALOG } from '@/components/dialog/component/ConfigLibraryDialog';
+import ConfigLibraryDialog from '@/components/dialog/component/ConfigLibraryDialog';
+import QuickTestDialog from '@/components/dialog/component/QuickTestDialog';
+import KnowledgeTreeDialog from '@/components/dialog/component/KnowledgeTreeDialog';
+import { buildProjectNameFromFile } from '@/Utils';
+
+// Lib-type discriminator used by the shared ConfigLibraryDialog (one of the
+// four kinds of `<import-*-library>` it manages). Matches the dialog's
+// `CONFIGS` record keys exactly, and the LibraryImport `type` union.
+type LibType = 'variable' | 'constant' | 'action' | 'parameter';
 
 const { Text } = Typography;
 
@@ -174,6 +192,78 @@ function deepClone<T>(value: T): T {
 }
 
 /**
+ * Map a scorecard LibraryImport `type` to its ConfigLibraryDialog lib-type key.
+ * The scorecard stores imports in a flat `state.libraries` array of
+ * `{type: 'Variable'|'Constant'|'Action'|'Parameter', path}`, whereas the
+ * reused ConfigLibraryDialog manages four SEPARATE project-global arrays keyed
+ * by `'variable' | 'constant' | 'action' | 'parameter'`.
+ */
+const LIB_TYPE_TO_IMPORT_TYPE: Record<LibType, LibraryImport['type']> = {
+  variable: 'Variable',
+  constant: 'Constant',
+  action: 'Action',
+  parameter: 'Parameter',
+};
+
+/**
+ * Bridge the React scorecard state to the jquery-era globals that the shared
+ * ConfigLibraryDialog reads (`variableLibraries` / `constantLibraries` /
+ * `actionLibraries` / `parameterLibraries`) and refreshes through
+ * (`refreshVariableLibraries()` etc.).
+ *
+ * The scorecard keeps its imports in ONE flat `state.libraries` list, so on
+ * sync-out we project it into the four array globals (filtered by import type),
+ * and each `refresh*` global merges its single array back into
+ * `state.libraries` (replacing the entries of its type, keeping the others).
+ *
+ * The React editor never goes through the legacy `loadEditorData` /
+ * `loadLibraries` path that populates these globals, so on mount we install
+ * them on `window` if missing and re-point each `refresh*` global to a function
+ * that reads its array back into React state. That makes the reused dialog's
+ * add/delete flow round-trip through React state without rewriting the dialog.
+ */
+function installLibrariesBridge(
+  state: ScoreCardData,
+  setState: React.Dispatch<React.SetStateAction<ScoreCardData>>,
+): void {
+  const w = window as unknown as Record<string, unknown>;
+  const libsByType = (type: LibraryImport['type']) =>
+    state.libraries.filter((lib) => lib.type === type && lib.path).map((lib) => lib.path);
+  w.variableLibraries = libsByType('Variable');
+  w.constantLibraries = libsByType('Constant');
+  w.actionLibraries = libsByType('Action');
+  w.parameterLibraries = libsByType('Parameter');
+
+  // Merge one lib-type's array back into state.libraries, replacing that type's
+  // entries and keeping the others. Only installed once per mount.
+  if (typeof w.refreshVariableLibraries !== 'function') {
+    const pushBack = (libType: LibType, importType: LibraryImport['type']) => {
+      return () => {
+        const globalKey =
+          libType === 'variable'
+            ? 'variableLibraries'
+            : libType === 'constant'
+              ? 'constantLibraries'
+              : libType === 'action'
+                ? 'actionLibraries'
+                : 'parameterLibraries';
+        const paths = (w[globalKey] as string[] | undefined) ?? [];
+        setState((prev) => {
+          const others = prev.libraries.filter((lib) => lib.type !== importType);
+          const rebuilt: LibraryImport[] = paths.map((path) => ({ type: importType, path }));
+          return { ...prev, libraries: others.concat(rebuilt) };
+        });
+        window._setDirty?.();
+      };
+    };
+    w.refreshVariableLibraries = pushBack('variable', LIB_TYPE_TO_IMPORT_TYPE.variable);
+    w.refreshConstantLibraries = pushBack('constant', LIB_TYPE_TO_IMPORT_TYPE.constant);
+    w.refreshActionLibraries = pushBack('action', LIB_TYPE_TO_IMPORT_TYPE.action);
+    w.refreshParameterLibraries = pushBack('parameter', LIB_TYPE_TO_IMPORT_TYPE.parameter);
+  }
+}
+
+/**
  * Component-local clipboard payload for attribute-group copy/paste. Stores the
  * source attribute row, its nested condition rows, and the cells owned by all
  * of those rows. Cell `.row` values are placeholders here (the source's own
@@ -224,6 +314,37 @@ export function ScoreCardEditor({
     .map((lib) => lib.path);
   const { libraries: constantLibraries } = useConstantLibraries(constantLibraryPaths);
   const { libraries: parameterLibraries } = useParameterLibraries(parameterLibraryPaths);
+
+  // ---- window._project (consumed by the reused dialogs' add/test flows) ----
+  // The shared ConfigLibraryDialog / QuickTestDialog / KnowledgeTreeDialog read
+  // `window._project` (set to the project derived from the file path), so set
+  // it once on mount and when the file changes. Mirrors flow-bpmn's EditorRoute.
+  useEffect(() => {
+    window._project = buildProjectNameFromFile(file);
+  }, [file]);
+
+  // ---- bridge React state ↔ jquery library globals ----
+  // Keep the four `*Libraries` array globals + the four `refresh*Libraries`
+  // function globals in sync with the scorecard's flat `state.libraries` so the
+  // reused ConfigLibraryDialog (which reads/mutates them) round-trips through
+  // React state. Re-runs on every state change to keep the dialog's view fresh;
+  // the refresh* install is idempotent (guarded on first install).
+  useEffect(() => {
+    installLibrariesBridge(state, setState);
+  }, [state, setState]);
+
+  // ---- open reused dialogs ----
+  const openLibraryDialog = useCallback((type: LibType) => {
+    componentEvent.eventEmitter.emit(OPEN_CONFIG_LIBRARY_DIALOG, type);
+  }, []);
+
+  const openQuickTest = useCallback(() => {
+    componentEvent.eventEmitter.emit(componentEvent.OPEN_QUICK_TEST_DIALOG, {
+      project: window._project,
+      file: decodeURIComponent(file),
+      type: 'scorecard',
+    });
+  }, [file]);
 
   // ---- load on mount ----
   useEffect(() => {
@@ -761,6 +882,11 @@ export function ScoreCardEditor({
           >
             粘贴属性组
           </Button>
+          <Button icon={<ExperimentOutlined />} onClick={openQuickTest}>快速测试</Button>
+          <Button onClick={() => openLibraryDialog('variable')}>变量库</Button>
+          <Button onClick={() => openLibraryDialog('constant')}>常量库</Button>
+          <Button onClick={() => openLibraryDialog('action')}>动作库</Button>
+          <Button onClick={() => openLibraryDialog('parameter')}>参数库</Button>
           <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>保存</Button>
         </Space>
       </Space>
@@ -831,6 +957,20 @@ export function ScoreCardEditor({
           )}
         </>
       )}
+
+      {/*
+        Reused jquery-era dialogs (event-driven class components). Mounted once
+        here so their componentDidMount event listeners are live; opened by
+        emitting OPEN_* events from the toolbar buttons above.
+          - ConfigLibraryDialog: 变量库/常量库/动作库/参数库 import-path manager.
+            Its "添加" button opens KnowledgeTreeDialog (mounted below) to pick a
+            library file, so KnowledgeTreeDialog must be mounted in the same tree.
+          - QuickTestDialog: 快速测试 of the current file (loads versions, runs
+            the test, renders input/output tables).
+      */}
+      <ConfigLibraryDialog />
+      <KnowledgeTreeDialog />
+      <QuickTestDialog />
     </div>
   );
 }

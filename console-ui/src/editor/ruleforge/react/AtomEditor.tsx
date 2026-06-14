@@ -17,6 +17,7 @@ import type { ConditionNode } from '../model/types';
 import { OPERATOR_OPTIONS, opHasNoInput } from './constants';
 import { LeftValueEditor } from './LeftValueEditor';
 import { ValueEditor } from './ValueEditor';
+import type { ActionLibrary } from './MethodPicker';
 
 /** The atom variant of ConditionNode (a compile-time narrowing for props). */
 type AtomNode = Extract<ConditionNode, { kind: 'atom' }>;
@@ -28,6 +29,14 @@ export interface AtomEditorProps {
   onChange: (next: AtomNode) => void;
   /** Optional compact mode passed to sub-editors. */
   compact?: boolean;
+  /**
+   * Optional imported action libraries. When provided AND non-empty, the
+   * `method` left type and the `Method` right value render a MethodPicker
+   * (bean→method Cascader) instead of the free-text inputs. Threaded down from
+   * RuleEditor (which loads them once via useActionLibraries) through
+   * ConditionFlow.
+   */
+  methodLibraries?: ActionLibrary[];
 }
 
 /**
@@ -43,7 +52,7 @@ function withOp(node: AtomNode, op: string): AtomNode {
   return { ...node, op, right: node.right ?? { type: 'Input', content: '' } };
 }
 
-export function AtomEditor({ value, onChange, compact }: AtomEditorProps) {
+export function AtomEditor({ value, onChange, compact, methodLibraries = [] }: AtomEditorProps) {
   const noRight = opHasNoInput(value.op);
 
   return (
@@ -52,6 +61,7 @@ export function AtomEditor({ value, onChange, compact }: AtomEditorProps) {
         <LeftValueEditor
           value={value.left}
           compact={compact}
+          methodLibraries={methodLibraries}
           onChange={(left) => onChange({ ...value, left })}
         />
       </div>
@@ -70,6 +80,7 @@ export function AtomEditor({ value, onChange, compact }: AtomEditorProps) {
         <ValueEditor
           value={value.right ?? { type: 'Input', content: '' }}
           compact={compact}
+          methodLibraries={methodLibraries}
           onChange={(right) => onChange({ ...value, right })}
         />
       )}

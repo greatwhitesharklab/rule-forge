@@ -28,11 +28,21 @@
  *     CardProperty / LibraryImport / ScoringType) are re-exported from
  *     ../model/types → imported from there
  *
+ * ── Merged cells (rowspan) ───────────────────────────────────────────────
+ * Mirrors DecisionTableEditor V5.57 but adapted to the complex-scorecard's
+ * SPARSE row model (row `num` is a stable identity; removeRow never renumbers).
+ * Criteria cells can span N rows: a "向下合并" gesture on a Criteria cell bumps
+ * its rowspan and removes the cell on the next row (so the next row is
+ * "covered" — the backend rule builder walks up to find the owner). onCell
+ * returns {rowSpan:N} for the owner and {rowSpan:0} for covered rows (AntD's
+ * merge idiom). Right-click a Criteria cell for the "向下合并" / "拆分合并"
+ * context menu. Action columns (Score / Custom) are never merged. "Next row"
+ * is the row with the smallest num strictly greater than the current (not
+ * num+1), since rows are sparse.
+ *
  * ── TODO (jquery editor features NOT yet ported) ──────────────────────────
  *   - variable library browser for the Criteria cell + column (currently
  *     free-text category/var/datatype input)
- *   - rowspan editing (currently every cell is rowspan=1; the model supports
- *     rowspan but the UI doesn't expose a merge-cell gesture)
  *   - col width resize drag handles
  *
  * ── Row copy/paste ───────────────────────────────────────────────────────
@@ -237,11 +247,6 @@ export function ComplexScoreCardEditor({
   }, [file, onLoad]);
 
   // ---- cell accessors ----
-  const findCell = useCallback(
-    (row: number, col: number) => state.cells.find((c) => c.row === row && c.col === col),
-    [state.cells],
-  );
-
   /** Patch a single cell (creates it if missing). */
   const patchCell = useCallback((row: number, col: number, patch: Partial<ComplexCell>) => {
     setState((prev) => {
@@ -271,6 +276,102 @@ export function ComplexScoreCardEditor({
     });
   }, []);
 
+  // ---- merged-cell (rowspan) helpers ----
+  //
+  // Merge semantics mirror DecisionTableEditor V5.57 but adapted to the
+  // complex-scorecard's SPARSE row model: row `num` is a stable identity and
+  // removeRow never renumbers, so "the next row below" is the row with the
+  // smallest num strictly greater than the current — not num+1.
+  //   - the TOP cell holds the content + rowspan=N (covers N rows total);
+  //   - the N-1 rows BELOW it have NO <cell> at that column (covered — the
+  //     backend rule builder resolves them by walking up to the first row that
+  //     has a cell).
+  // So merge-down bumps the top rowspan and deletes the covered row's cell;
+  // unmerge resets rowspan to 1 and re-seeds empty cells on the covered rows.
+
+  /**
+   * Find the cell that OWNS (row, col) — i.e. the topmost cell at this column
+   * whose rowspan range covers `row`. Returns undefined when nothing covers it.
+   * Walks up the row num order (sorted ascending) so it works on sparse nums.
+   */
+  const findOwningCell = useCallback(
+    (row: number, col: number): ComplexCell | undefined => {
+      // Row nums sorted ascending (rows are sparse — we can't assume num-1).
+      const rowNums = state.rows.map((r) => r.num).sort((a, b) => a - b);
+      // Walk from the current row's index upward (smaller nums).
+      let idx = rowNums.indexOf(row);
+      if (idx < 0) return undefined;
+      for (let i = idx; i >= 0; i--) {
+        const r = rowNums[i];
+        const c = state.cells.find((cc) => cc.row === r && cc.col === col);
+        if (c) {
+          // Does this cell's rowspan reach down to `row`?
+          const ownerIdx = i;
+          const spanEndIdx = ownerIdx + (c.rowspan || 1) - 1;
+          if (spanEndIdx >= idx) return c;
+          return undefined; // a cell exists above but doesn't span to us
+        }
+      }
+      return undefined;
+    },
+    [state.cells, state.rows],
+  );
+
+  /**
+   * The row num immediately BELOW `row` in the sorted row-num order, or
+   * undefined if `row` is the last row. Used by merge-down to know which row
+   * gets covered.
+   */
+  const nextRowNum = useCallback(
+    (row: number): number | undefined => {
+      const nums = state.rows.map((r) => r.num).sort((a, b) => a - b);
+      const i = nums.indexOf(row);
+      if (i < 0 || i >= nums.length - 1) return undefined;
+      return nums[i + 1];
+    },
+    [state.rows],
+  );
+
+  /** Merge the cell at (row, col) DOWN into the next row. */
+  const mergeCellDown = useCallback((row: number, col: number) => {
+    setState((prev) => {
+      const nums = prev.rows.map((r) => r.num).sort((a, b) => a - b);
+      const i = nums.indexOf(row);
+      if (i < 0 || i >= nums.length - 1) return prev; // no next row
+      const top = prev.cells.find((c) => c.row === row && c.col === col);
+      if (!top) return prev;
+      const nextNum = nums[i + 1];
+      const cells = prev.cells.filter((c) => !(c.row === nextNum && c.col === col));
+      const topIdx = cells.findIndex((c) => c.row === row && c.col === col);
+      cells[topIdx] = { ...cells[topIdx], rowspan: (top.rowspan || 1) + 1 };
+      return { ...prev, cells };
+    });
+  }, []);
+
+  /** Unmerge the cell at (row, col): collapse rowspan back to 1. */
+  const unmergeCell = useCallback((row: number, col: number) => {
+    setState((prev) => {
+      const top = prev.cells.find((c) => c.row === row && c.col === col);
+      if (!top || (top.rowspan || 1) <= 1) return prev;
+      const nums = prev.rows.map((r) => r.num).sort((a, b) => a - b);
+      const startIdx = nums.indexOf(row);
+      const cells = prev.cells.slice();
+      const topIdx = cells.findIndex((c) => c.row === row && c.col === col);
+      cells[topIdx] = { ...cells[topIdx], rowspan: 1 };
+      // Re-seed empty cells on the rows that were covered so they become
+      // independently editable (parse/serialize treat absence as covered;
+      // seeding keeps them visible instead of inheriting the old owner).
+      for (let k = 1; k < (top.rowspan || 1); k++) {
+        const coveredRow = nums[startIdx + k];
+        if (coveredRow === undefined) break;
+        if (!cells.some((c) => c.row === coveredRow && c.col === col)) {
+          cells.push({ row: coveredRow, col, rowspan: 1, joint: { type: 'and', conditions: [] } });
+        }
+      }
+      return { ...prev, cells };
+    });
+  }, []);
+
   // ---- row management ----
   const addRow = useCallback(() => {
     setState((prev) => {
@@ -280,11 +381,42 @@ export function ComplexScoreCardEditor({
   }, []);
 
   const removeRow = useCallback((rowNumber: number) => {
-    setState((prev) => ({
-      ...prev,
-      rows: prev.rows.filter((r) => r.num !== rowNumber),
-      cells: prev.cells.filter((c) => c.row !== rowNumber),
-    }));
+    setState((prev) => {
+      // Fix merges before dropping the row:
+      //   - For each column, walk up to the cell OWNING this row.
+      //   - If the owning cell is ABOVE this row (covered by a merge) the
+      //     removed row was inside a merge → shrink that merge's rowspan by 1.
+      //   - If the owning cell IS this row and it had rowspan>1, the merge top
+      //     is gone: collapse (covered rows below become ownerless, treated as
+      //     empty by the renderer).
+      // Sparse rows: walk by sorted num order, not num±1.
+      const nums = prev.rows.map((r) => r.num).sort((a, b) => a - b);
+      const removedIdx = nums.indexOf(rowNumber);
+      if (removedIdx < 0) return prev;
+      const cells = prev.cells.map((c) => ({ ...c }));
+      for (const col of prev.cols) {
+        // walk up to the owner at this column (by sorted num index)
+        let owner: typeof cells[number] | undefined;
+        for (let i = removedIdx; i >= 0; i--) {
+          const found = cells.find((c) => c.row === nums[i] && c.col === col.num);
+          if (found) { owner = found; break; }
+        }
+        if (!owner) continue;
+        if (owner.row !== rowNumber && (owner.rowspan || 1) > 1) {
+          // Removed row was inside a merge → shrink.
+          const ownerIdx = nums.indexOf(owner.row);
+          const spanEnd = ownerIdx + (owner.rowspan || 1) - 1;
+          if (spanEnd >= removedIdx) owner.rowspan = (owner.rowspan || 1) - 1;
+        } else if (owner.row === rowNumber && (owner.rowspan || 1) > 1) {
+          owner.rowspan = 1;
+        }
+      }
+      return {
+        ...prev,
+        rows: prev.rows.filter((r) => r.num !== rowNumber),
+        cells: cells.filter((c) => c.row !== rowNumber),
+      };
+    });
   }, []);
 
   // ---- row copy / paste ----
@@ -343,7 +475,9 @@ export function ComplexScoreCardEditor({
   // the row clipboard.
   const copyCell = useCallback(
     (row: number, col: number) => {
-      const cell = findCell(row, col);
+      // Copy the OWNER's content (top of a merge when the cell is covered) so a
+      // right-click on a covered cell copies the merged content, not nothing.
+      const cell = findOwningCell(row, col);
       if (!cell) {
         message.warning('该单元格为空,无内容可复制');
         return;
@@ -351,7 +485,7 @@ export function ComplexScoreCardEditor({
       setClipboardCell(deepClone(cell));
       message.success('已复制单元格内容');
     },
-    [findCell],
+    [findOwningCell],
   );
 
   const pasteCell = useCallback(
@@ -371,12 +505,27 @@ export function ComplexScoreCardEditor({
       if (src.joint !== undefined) patch.joint = src.joint;
       if (src.value !== undefined) patch.value = src.value;
       setState((prev) => {
-        const cells = prev.cells.slice();
-        const idx = cells.findIndex((c) => c.row === row && c.col === col);
+        // Resolve the target OWNER (top of a merge when the cell is covered) so
+        // a paste onto a covered cell writes onto the merge owner, not into a
+        // phantom covered slot. Sparse rows: walk by sorted num index.
+        const nums = prev.rows.map((r) => r.num).sort((a, b) => a - b);
+        let ownerRow = row;
+        const idx = nums.indexOf(row);
         if (idx >= 0) {
-          cells[idx] = { ...cells[idx], ...patch };
+          for (let i = idx; i >= 0; i--) {
+            const c = prev.cells.find((cc) => cc.row === nums[i] && cc.col === col);
+            if (c) {
+              if (i + (c.rowspan || 1) - 1 >= idx) ownerRow = c.row;
+              break;
+            }
+          }
+        }
+        const cells = prev.cells.slice();
+        const targetIdx = cells.findIndex((c) => c.row === ownerRow && c.col === col);
+        if (targetIdx >= 0) {
+          cells[targetIdx] = { ...cells[targetIdx], ...patch };
         } else {
-          cells.push({ row, col, rowspan: 1, ...patch });
+          cells.push({ row: ownerRow, col, rowspan: 1, ...patch });
         }
         return { ...prev, cells };
       });
@@ -450,16 +599,41 @@ export function ComplexScoreCardEditor({
   // ---- AntD table columns (one per <col>) ----
   const antColumns: ColumnsType<DisplayRow> = useMemo(() => {
     /**
-     * Wrap a cell editor in a right-click Dropdown that exposes cell-level
-     * copy / paste (independent of the row clipboard). The menu's paste item
-     * is disabled when the cell clipboard is empty.
+     * Wrap a cell editor in a right-click Dropdown. Criteria columns get merge
+     * / unmerge items first (with a divider); every column gets copy / paste.
+     * Merge ops target the OWNER cell (top of a merge), so a right-click on a
+     * covered cell still operates on the merge owner. The paste item is
+     * disabled when the cell clipboard is empty.
      */
     const wrapCellContextMenu = (
       editor: React.ReactNode,
       row: number,
       col: number,
+      opts: {
+        mergeable: boolean;
+        ownerRow: number;
+        rowspan: number;
+        hasNextRow: boolean;
+      },
     ): React.ReactNode => {
       const items: MenuProps['items'] = [
+        ...(opts.mergeable
+          ? [
+              {
+                key: 'merge-down',
+                label: '向下合并',
+                disabled: !opts.hasNextRow,
+                onClick: () => mergeCellDown(opts.ownerRow, col),
+              },
+              {
+                key: 'unmerge',
+                label: '拆分合并',
+                disabled: opts.rowspan <= 1,
+                onClick: () => unmergeCell(opts.ownerRow, col),
+              },
+              { type: 'divider' as const },
+            ]
+          : []),
         {
           key: 'copy-cell',
           label: '复制单元格',
@@ -491,6 +665,8 @@ export function ComplexScoreCardEditor({
             : col.type === 'Score'
               ? '分值'
               : col.customLabel || '自定义列';
+        // Merge / unmerge only on Criteria columns (action columns never merge).
+        const mergeable = col.type === 'Criteria';
         return {
           title: (
             <Space direction="vertical" size={2} style={{ width: '100%' }}>
@@ -509,8 +685,24 @@ export function ComplexScoreCardEditor({
           ),
           key: 'col-' + col.num,
           width: col.width,
+          // AntD cell-merge idiom: the OWNING cell returns { rowSpan: N } and
+          // every covered row below returns { rowSpan: 0 } (AntD hides 0-span
+          // cells, fusing them into the owner's vertical span).
+          onCell: (dr) => {
+            const owner = findOwningCell(dr.rowNumber, col.num);
+            if (!owner) return {}; // genuinely empty — single cell
+            if (owner.row === dr.rowNumber) {
+              return { rowSpan: owner.rowspan || 1 };
+            }
+            return { rowSpan: 0 }; // covered by an owner above
+          },
           render: (_v, dr) => {
-            const cell = findCell(dr.rowNumber, col.num);
+            // Render the OWNING cell's content (covered rows inherit the top).
+            const owner = findOwningCell(dr.rowNumber, col.num);
+            const cell = owner;
+            const ownerRow = owner?.row ?? dr.rowNumber;
+            const rowspan = owner?.rowspan ?? 1;
+            const hasNextRow = nextRowNum(ownerRow) !== undefined;
             const editor =
               col.type === 'Criteria' ? (
                 <CriteriaCellEditor
@@ -518,7 +710,7 @@ export function ComplexScoreCardEditor({
                   libraries={variableLibraries}
                   constantLibraries={constantLibraries}
                   parameterLibraries={parameterLibraries}
-                  onChange={(next) => setCell(dr.rowNumber, col.num, next)}
+                  onChange={(next) => setCell(ownerRow, col.num, next)}
                 />
               ) : (
                 <ValueCellEditor
@@ -526,10 +718,15 @@ export function ComplexScoreCardEditor({
                   libraries={variableLibraries}
                   constantLibraries={constantLibraries}
                   parameterLibraries={parameterLibraries}
-                  onChange={(next) => setCell(dr.rowNumber, col.num, next)}
+                  onChange={(next) => setCell(ownerRow, col.num, next)}
                 />
               );
-            return wrapCellContextMenu(editor, dr.rowNumber, col.num);
+            return wrapCellContextMenu(editor, dr.rowNumber, col.num, {
+              mergeable,
+              ownerRow,
+              rowspan,
+              hasNextRow,
+            });
           },
         };
       });
@@ -573,7 +770,7 @@ export function ComplexScoreCardEditor({
     });
 
     return cols;
-  }, [state.cols, findCell, setCell, removeCol, removeRow, copyRow, pasteRow, clipboardRow, copyCell, pasteCell, clipboardCell, variableLibraries, constantLibraries, parameterLibraries]);
+  }, [state.cols, findOwningCell, nextRowNum, setCell, mergeCellDown, unmergeCell, removeCol, removeRow, copyRow, pasteRow, clipboardRow, copyCell, pasteCell, clipboardCell, variableLibraries, constantLibraries, parameterLibraries]);
 
   if (loading) {
     return (
