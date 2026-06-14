@@ -1,28 +1,53 @@
-import {useEffect} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {buildProjectNameFromFile} from '../../Utils';
 import DrlEditor from './index';
+import {DirtyApi, DirtyContext, ProjectContext} from '../../editor/EditorContexts';
 
 /**
  * DRL 编辑器 (DRL 4, .drl) React 编辑器的 SPA 路由入口。
  *
  * <p>URL: {@code /app/editor/drl?file=/project/<path>/foo.drl}。复现
- * {@code editor/drleditor/index.tsx} 的挂载逻辑(设置 {@code window._project} +
- * 渲染 {@code <DrlEditor file={file}/>}),只是去掉 {@code createRoot(#container)},
- * 直接 return JSX。
+ * {@code editor/drleditor/index.tsx} 的挂载逻辑(渲染 {@code <DrlEditor file={file}/>}),
+ * 只是去掉 {@code createRoot(#container)},直接 return JSX。
  *
- * <p>注意:文件加载({@link loadDrlFile})在 {@link DrlEditor} 组件内部 useEffect 触发,
- * 本路由不重复触发。{@code window._project} 仍在此处设置(frame dirty/保存逻辑依赖它)。
- *
- * <p>当前文件树无 .drl 节点入口(见 frame/action.ts buildData 无 {@code case "Drl"});
- * 本路由作为 SPA 路由就绪,待文件树/规则集 cross-navigation 接入后即可打开。
+ * <p>本路由提供 {@link ProjectContext}(当前编辑文件所属项目名)+ {@link DirtyContext}
+ * (dirty 通知接口),替代历史 {@code window._project} / {@code window._setDirty} / {@code window._dirty}。
  */
 export default function EditorRoute() {
     const [params] = useSearchParams();
     const file = params.get('file') || '';
+    const project = buildProjectNameFromFile(file);
+
+    // dirty tracking — 用 state 触发重新渲染(让 toolbar 反映脏态),用 ref 提供
+    // 给 DirtyApi.isDirty() 实时读最新值(避免 closure 拿到旧 state)。
+    const [, setDirtyState] = useState(false);
+    const dirtyRef = useRef(false);
+    const dirtyApi = useMemo<DirtyApi>(() => ({
+        setDirty: () => {
+            if (dirtyRef.current) return;
+            dirtyRef.current = true;
+            setDirtyState(true);
+        },
+        clearDirty: () => {
+            if (!dirtyRef.current) return;
+            dirtyRef.current = false;
+            setDirtyState(false);
+        },
+        isDirty: () => dirtyRef.current,
+    }), []);
+
+    // 文件路径变化时清零 dirty(新文件 = 未保存状态)。
     useEffect(() => {
-        (window as unknown as {_project?: string})._project = buildProjectNameFromFile(file);
+        dirtyRef.current = false;
+        setDirtyState(false);
     }, [file]);
 
-    return <DrlEditor file={file}/>;
+    return (
+        <ProjectContext.Provider value={project}>
+            <DirtyContext.Provider value={dirtyApi}>
+                <DrlEditor file={file}/>
+            </DirtyContext.Provider>
+        </ProjectContext.Provider>
+    );
 }

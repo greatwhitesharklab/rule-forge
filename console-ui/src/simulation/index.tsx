@@ -29,6 +29,8 @@ interface SimulationPanelState {
 interface SimulationPanelProps {
     dispatch: (action: any) => any;
     simulationTab: string;
+    /** 当前选中的项目名(来自 frame store ui.projectName)。 */
+    projectName?: string | null;
 }
 
 class SimulationPanel extends Component<SimulationPanelProps, SimulationPanelState> {
@@ -60,7 +62,7 @@ class SimulationPanel extends Component<SimulationPanelProps, SimulationPanelSta
         const tab = this.props.simulationTab || 'configure';
         switch (tab) {
             case 'configure':
-                return <SimulationConfigForm onStarted={this.handleSimulationStarted.bind(this)}/>;
+                return <SimulationConfigForm project={this.props.projectName || ''} onStarted={this.handleSimulationStarted.bind(this)}/>;
             case 'progress':
                 return <SimulationProgress runId={this.state.currentRunId}/>;
             case 'results':
@@ -68,7 +70,7 @@ class SimulationPanel extends Component<SimulationPanelProps, SimulationPanelSta
             case 'stats':
                 return <SimulationStatsPanel packagePath={this.state.currentPackagePath}/>;
             default:
-                return <SimulationConfigForm onStarted={this.handleSimulationStarted.bind(this)}/>;
+                return <SimulationConfigForm project={this.props.projectName || ''} onStarted={this.handleSimulationStarted.bind(this)}/>;
         }
     }
 
@@ -98,6 +100,9 @@ class SimulationPanel extends Component<SimulationPanelProps, SimulationPanelSta
 }
 
 const selector = function (state: any): SimulationPanelProps {
-    return {simulationTab: (state.ui && state.ui.simulationTab) || 'configure'} as SimulationPanelProps;
+    return {
+        simulationTab: (state.ui && state.ui.simulationTab) || 'configure',
+        projectName: (state.ui && state.ui.projectName) ?? null,
+    } as SimulationPanelProps;
 };
 export default connect(selector)(SimulationPanel);

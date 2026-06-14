@@ -13,6 +13,8 @@ interface SimulationConfigFormState {
 }
 
 interface SimulationConfigFormProps {
+    /** 当前选中项目名(由 SimulationPanel 从 frame store 注入,替代 window._projectName)。 */
+    project?: string;
     onStarted?: (data: SimulationStartResult) => void;
 }
 
@@ -24,7 +26,7 @@ class SimulationConfigForm extends Component<SimulationConfigFormProps, Simulati
     constructor(props: SimulationConfigFormProps) {
         super(props);
         this.state = {
-            project: window._projectName || '',
+            project: props.project || '',
             packageId: '',
             files: '',
             flowId: '',

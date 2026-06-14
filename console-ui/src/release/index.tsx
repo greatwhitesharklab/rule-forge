@@ -65,7 +65,8 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
     }
 
     getProjectName(): string {
-        if (window._projectName) return window._projectName;
+        // 优先用 frame store 注入的 projectName(connect selector),fallback 到 URL hash
+        if (this.props.projectName) return this.props.projectName;
         const hash = window.location.hash || '';
         const match = hash.match(/project=([^&]+)/);
         return match ? decodeURIComponent(match[1]) : '';
@@ -686,4 +687,8 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
 
 type MapStateToProps = ReleaseState;
 
-export default connect((state: { release: ReleaseState }): MapStateToProps => ({...state.release}))(ReleasePanel);
+export default connect((state: { release: ReleaseState; ui?: { projectName?: string | null } }): MapStateToProps => ({
+    ...state.release,
+    // 注入 frame store ui.projectName(替代 window._projectName)
+    projectName: (state.ui && state.ui.projectName) || undefined,
+}))(ReleasePanel);

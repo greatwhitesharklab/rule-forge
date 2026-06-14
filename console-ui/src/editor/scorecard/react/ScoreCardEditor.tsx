@@ -109,7 +109,7 @@ import { OPEN_CONFIG_LIBRARY_DIALOG } from '@/components/dialog/component/Config
 import ConfigLibraryDialog from '@/components/dialog/component/ConfigLibraryDialog';
 import QuickTestDialog from '@/components/dialog/component/QuickTestDialog';
 import KnowledgeTreeDialog from '@/components/dialog/component/KnowledgeTreeDialog';
-import { buildProjectNameFromFile } from '@/Utils';
+import { useProject, useDirty } from '@/editor/EditorContexts';
 
 // Lib-type discriminator used by the shared ConfigLibraryDialog (one of the
 // four kinds of `<import-*-library>` it manages). Matches the dialog's
@@ -225,6 +225,7 @@ const LIB_TYPE_TO_IMPORT_TYPE: Record<LibType, LibraryImport['type']> = {
 function installLibrariesBridge(
   state: ScoreCardData,
   setState: React.Dispatch<React.SetStateAction<ScoreCardData>>,
+  dirty: { setDirty: () => void },
 ): void {
   const w = window as unknown as Record<string, unknown>;
   const libsByType = (type: LibraryImport['type']) =>
@@ -253,7 +254,7 @@ function installLibrariesBridge(
           const rebuilt: LibraryImport[] = paths.map((path) => ({ type: importType, path }));
           return { ...prev, libraries: others.concat(rebuilt) };
         });
-        window._setDirty?.();
+        dirty.setDirty();
       };
     };
     w.refreshVariableLibraries = pushBack('variable', LIB_TYPE_TO_IMPORT_TYPE.variable);
@@ -315,13 +316,9 @@ export function ScoreCardEditor({
   const { libraries: constantLibraries } = useConstantLibraries(constantLibraryPaths);
   const { libraries: parameterLibraries } = useParameterLibraries(parameterLibraryPaths);
 
-  // ---- window._project (consumed by the reused dialogs' add/test flows) ----
-  // The shared ConfigLibraryDialog / QuickTestDialog / KnowledgeTreeDialog read
-  // `window._project` (set to the project derived from the file path), so set
-  // it once on mount and when the file changes. Mirrors flow-bpmn's EditorRoute.
-  useEffect(() => {
-    window._project = buildProjectNameFromFile(file);
-  }, [file]);
+  // ---- project + dirty api(由 EditorRoute 通过 Context 注入,替代 window._project / window._setDirty) ----
+  const project = useProject();
+  const dirty = useDirty();
 
   // ---- bridge React state ↔ jquery library globals ----
   // Keep the four `*Libraries` array globals + the four `refresh*Libraries`
@@ -330,7 +327,7 @@ export function ScoreCardEditor({
   // React state. Re-runs on every state change to keep the dialog's view fresh;
   // the refresh* install is idempotent (guarded on first install).
   useEffect(() => {
-    installLibrariesBridge(state, setState);
+    installLibrariesBridge(state, setState, dirty);
   }, [state, setState]);
 
   // ---- open reused dialogs ----
@@ -340,11 +337,11 @@ export function ScoreCardEditor({
 
   const openQuickTest = useCallback(() => {
     componentEvent.eventEmitter.emit(componentEvent.OPEN_QUICK_TEST_DIALOG, {
-      project: window._project,
+      project: project,
       file: decodeURIComponent(file),
       type: 'scorecard',
     });
-  }, [file]);
+  }, [file, project]);
 
   // ---- load on mount ----
   useEffect(() => {

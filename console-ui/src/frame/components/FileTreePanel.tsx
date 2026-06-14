@@ -4,10 +4,12 @@ import * as event from '@/frame/event.js';
 import Tree from '@/components/tree/component/Tree.jsx';
 import PackageNavigator from '@/package/components/PackageNavigator.tsx';
 import {SearchOutlined} from '@ant-design/icons';
+import {selectProjectName} from '@/frame/reducer.ts';
 
 interface FileTreePanelProps {
     store: {
         dispatch: (action: unknown) => void;
+        getState: () => { ui?: { projectName?: string | null } };
     };
 }
 
@@ -50,9 +52,10 @@ export default class FileTreePanel extends Component<FileTreePanelProps, FileTre
                                placeholder="搜索文件..."
                                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                                    if (e.key === 'Enter') {
-                                       window.searchFileName = (e.target as HTMLInputElement).value;
+                                       const value = (e.target as HTMLInputElement).value;
+                                       this.props.store.dispatch(ACTIONS.setSearchFileName(value));
                                        this.props.store.dispatch(
-                                           ACTIONS.loadData(true, window._projectName, null, (e.target as HTMLInputElement).value)
+                                           ACTIONS.loadData(true, selectProjectName(this.props.store.getState() as any), null, value)
                                        );
                                    }
                                }}/>
@@ -69,7 +72,7 @@ export default class FileTreePanel extends Component<FileTreePanelProps, FileTre
                         <Tree draggable={true}/>
                     ) : (
                         <PackageNavigator
-                            project={window._projectName || ''}
+                            project={selectProjectName(this.props.store.getState() as any) || ''}
                             onFileSelect={this.handlePackageFileSelect}
                             onVersionChange={this.handleVersionChange}
                         />

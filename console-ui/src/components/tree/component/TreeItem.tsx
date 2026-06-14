@@ -86,11 +86,13 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
         } else {
             this.setState({expanded: true});
             if (data._needLazyLoad && !data._childrenLoaded) {
+                // loadChildren thunk 从 frame store 读 classify/types,projectName 传节点名
+                // (与历史行为一致:子菜单加载按节点名查 project,不按过滤的当前项目)。
                 dispatch?.(ACTIONS.loadChildren(
                     data,
-                    window._classify,
+                    undefined,
                     data.name,
-                    window._types
+                    undefined
                 ) as unknown);
             }
         }

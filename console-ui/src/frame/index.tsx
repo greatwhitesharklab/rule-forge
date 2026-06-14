@@ -120,8 +120,6 @@ const AppBodyConnected = connect((state: { ui?: { activePanel?: string } }) => (
  */
 export default function FrameApp() {
     const store = useMemo(() => {
-        window._types = null;
-        window._projectName = null;
         const s = createStore(reducer, applyMiddleware(thunk));
         (s.dispatch as Function)(ACTIONS.loadData());
         return s;

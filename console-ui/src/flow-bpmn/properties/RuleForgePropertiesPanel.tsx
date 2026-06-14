@@ -4,6 +4,7 @@ import * as componentEvent from '../../components/componentEvent.js';
 import {formPost} from '../../api/client.js';
 import './ruleforge-properties.css';
 import {ArrowDownOutlined, ArrowUpOutlined, CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined} from '@ant-design/icons';
+import {ProjectContext} from '@/editor/EditorContexts';
 
 interface FlowItem {
     flowElement: any;
@@ -38,6 +39,14 @@ interface PropertiesPanelState {
 }
 
 export default class RuleForgePropertiesPanel extends Component<PropertiesPanelProps, PropertiesPanelState> {
+    /**
+     * 项目名由父 EditorRoute 通过 {@link ProjectContext} 提供(替代历史 {@code window._project}
+     * 全局变量)。事件回调(loadPackages / openKnowledgeTree / openRuleEditDialog)异步触发,
+     * 此处用 static contextType 在回调里同步读最新值。
+     */
+    static contextType = ProjectContext;
+    declare context: React.ContextType<typeof ProjectContext>;
+
     state: PropertiesPanelState = {
         element: null,
         packages: [],
@@ -90,7 +99,7 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
     loadPackagesIfNeeded() {
         const taskType = this.getTaskType();
         if (taskType === 'package') {
-            formPost('/packageeditor/loadPackages', {project: window._project || ''}, {silent: true}).then((data: any) => {
+            formPost('/packageeditor/loadPackages', {project: this.context || ''}, {silent: true}).then((data: any) => {
                 this.setState({packages: data || []});
             }).catch(() => this.setState({packages: []}));
         }
@@ -186,7 +195,7 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
 
     openKnowledgeTree(callback: (file: string, version: string) => void) {
         componentEvent.eventEmitter.emit(componentEvent.OPEN_KNOWLEDGE_TREE_DIALOG, {
-            project: window._project,
+            project: this.context,
             callback
         });
     }
@@ -536,7 +545,7 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
 
         (container.querySelector('.rf-rule-browse')! as HTMLElement).onclick = () => {
             componentEvent.eventEmitter.emit(componentEvent.OPEN_KNOWLEDGE_TREE_DIALOG, {
-                project: window._project,
+                project: this.context,
                 callback: (file: string, version: string) => {
                     let path = 'jcr:' + file;
                     if (version !== 'LATEST') path += ':' + version;

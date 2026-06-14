@@ -218,6 +218,13 @@ describe('Frame Module - buildType Pure Function', () => {
 describe('Frame Module - Thunks', () => {
     let mockServer: ReturnType<typeof setupMockServer>, dispatch: ReturnType<typeof vi.fn>;
 
+    // Default getState mock — 返回带默认 ui 过滤参数的 frame store。
+    // action.ts 内的 thunk 现在通过 getState() 读 projectName/classify/types/searchFileName
+    // (替代历史 window._projectName 等)。
+    const getState = () => ({
+        ui: {projectName: null, classify: true, types: null, searchFileName: null},
+    });
+
     beforeEach(() => {
         mockServer = setupMockServer();
                 clearModalMockState();
@@ -265,7 +272,7 @@ describe('Frame Module - Thunks', () => {
         });
 
         const thunk = ACTIONS.loadData(true, 'test', 'all', '');
-        thunk(dispatch);
+        thunk(dispatch, getState);
 
         await flushAsync();
 
@@ -281,7 +288,7 @@ describe('Frame Module - Thunks', () => {
         mockServer.mockError('/frame/loadProjects', 500);
 
         const thunk = ACTIONS.loadData(true, 'test', 'all', '');
-        thunk(dispatch);
+        thunk(dispatch, getState);
 
         await flushAsync();
 
@@ -302,7 +309,7 @@ describe('Frame Module - Thunks', () => {
 
         const parentNodeData = { fullPath: '/', name: 'root', type: 'root', _level: 0 };
         const thunk = ACTIONS.loadChildren(parentNodeData as any, true, 'test', 'all');
-        thunk(dispatch);
+        thunk(dispatch, getState);
 
         await flushAsync();
 
@@ -319,7 +326,7 @@ describe('Frame Module - Thunks', () => {
 
         const parentNodeData = { fullPath: '/test', name: 'test', type: 'folder' };
         const thunk = ACTIONS.createNewFile('newfile', 'rs.xml', parentNodeData as any);
-        thunk(dispatch);
+        thunk(dispatch, getState);
 
         await flushAsync();
 
@@ -347,7 +354,7 @@ describe('Frame Module - Thunks', () => {
 
         const parentNodeData = { fullPath: '/test', name: 'test', type: 'folder' };
         const thunk = ACTIONS.createNewFolder('newfolder', parentNodeData as any);
-        thunk(dispatch);
+        thunk(dispatch, getState);
 
         await flushAsync();
 
@@ -360,7 +367,7 @@ describe('Frame Module - Thunks', () => {
         mockServer.mockResponse('/frame/fileRename', { repo: { rootFile } });
 
         const thunk = ACTIONS.rename('/old/path', '/new/path');
-        thunk(dispatch);
+        thunk(dispatch, getState);
 
         await flushAsync();
 
@@ -377,7 +384,7 @@ describe('Frame Module - Thunks', () => {
 
         const itemData = { fullPath: '/old/path.xml', name: 'path.xml' };
         const thunk = ACTIONS.fileRename(itemData as any, 'new.xml');
-        thunk(dispatch);
+        thunk(dispatch, getState);
 
         await flushAsync();
 

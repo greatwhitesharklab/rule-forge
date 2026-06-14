@@ -9,6 +9,7 @@ import * as event from '../components/componentEvent';
 import * as componentEvent from '../components/componentEvent';
 import {alert} from '@/utils/modal';
 import {ThunderboltOutlined, UploadOutlined} from '@ant-design/icons';
+import {ProjectContext} from '@/editor/EditorContexts';
 
 /**
  * 决策流(bpmn-js)编辑器的 SPA 路由入口。
@@ -33,10 +34,8 @@ export default function EditorRoute() {
     const file = params.get('file') || '';
     const decodedFile = decodeURIComponent(file);
     const editorRef = useRef<any>(null);
-
-    useEffect(() => {
-        (window as unknown as {_project?: string})._project = buildProjectNameFromFile(file);
-    }, [file]);
+    // 当前文件所属项目(原 window._project)。一次计算,通过 ProjectContext 提供给复用对话框。
+    const project = buildProjectNameFromFile(file);
 
     useEffect(() => {
         if (!file || file.length < 1) {
@@ -62,7 +61,7 @@ export default function EditorRoute() {
 
     function openImportDialog(fileType: string) {
         componentEvent.eventEmitter.emit(componentEvent.OPEN_KNOWLEDGE_TREE_DIALOG, {
-            project: (window as unknown as {_project?: string})._project,
+            project: project,
             fileType: fileType,
             callback: function (f: string, version: string) {
                 let path = 'jcr:' + f;
@@ -99,7 +98,7 @@ export default function EditorRoute() {
     }
 
     return (
-        <>
+        <ProjectContext.Provider value={project}>
             {/* 工具栏 — 复现 index.tsx toolbarRoot.render 的内容 */}
             <div className="toolbar">
                 <button className="rf-btn rf-btn-ghost rf-btn-sm" onClick={function () { saveFlow(false); }}>
@@ -110,7 +109,7 @@ export default function EditorRoute() {
                 </button>{' '}
                 <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={function () {
                     event.eventEmitter.emit(event.OPEN_QUICK_TEST_DIALOG, {
-                        project: (window as unknown as {_project?: string})._project, file: decodedFile
+                        project: project, file: decodedFile
                     });
                 }}>
                     <ThunderboltOutlined /> 快速测试
@@ -152,6 +151,6 @@ export default function EditorRoute() {
             {/* 对话框 — 复现 index.tsx dialogContainer.render */}
             <KnowledgeTreeDialog/>
             <QuickTestDialog/>
-        </>
+        </ProjectContext.Provider>
     );
 }

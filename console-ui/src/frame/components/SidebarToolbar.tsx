@@ -1,10 +1,12 @@
 import {Component, ReactNode} from 'react';
+import {connect} from 'react-redux';
 import * as ACTIONS from '../action.js';
 import * as componentEvent from '../../components/componentEvent.js';
 import Tree from '../../components/tree/component/Tree.jsx';
 import {formPost} from '../../api/client.js';
 import {AppstoreOutlined, LogoutOutlined, SearchOutlined} from '@ant-design/icons';
 import {CurrentUserContext} from '@/router/RequireAuth';
+import {selectProjectName, selectClassify, selectTypes} from '../reducer.ts';
 
 interface FileTypeFilter {
     type: string;
@@ -37,6 +39,10 @@ interface SidebarToolbarProps {
         dispatch: (action: unknown) => void;
     };
     eventObj: EventModule;
+    // connect 注入(来自 frame store)
+    projectName: string | null;
+    classify: boolean;
+    types: string | null;
 }
 
 interface SidebarToolbarState {
@@ -47,7 +53,7 @@ interface SidebarToolbarState {
     selectedProject: string | null;
 }
 
-export default class SidebarToolbar extends Component<SidebarToolbarProps, SidebarToolbarState> {
+class SidebarToolbar extends Component<SidebarToolbarProps, SidebarToolbarState> {
     static contextType = CurrentUserContext;
     declare context: React.ContextType<typeof CurrentUserContext>;
 
@@ -66,7 +72,7 @@ export default class SidebarToolbar extends Component<SidebarToolbarProps, Sideb
         const {store, eventObj} = this.props;
 
         eventObj.eventEmitter.on(eventObj.CHANGE_CLASSIFY, (classify: boolean) => {
-            window._classify = classify;
+            store.dispatch(ACTIONS.setClassify(classify));
             if (classify) {
                 this.setState({
                     classifyText: '    分类展示',
@@ -107,40 +113,42 @@ export default class SidebarToolbar extends Component<SidebarToolbarProps, Sideb
 
     handleClassifyToggle = (classify: boolean) => {
         this.showLoadingThen(() => {
-            this.loadData(classify, window._projectName, window._types);
+            this.loadData(classify, this.props.projectName, this.props.types);
         });
     };
 
     handleShowAllProjects = (e: React.MouseEvent) => {
         e.preventDefault();
         this.showLoadingThen(() => {
-            this.loadData(window._classify);
+            this.loadData(this.props.classify);
         });
-        window._projectName = null;
+        this.props.store.dispatch(ACTIONS.setProjectName(null));
         this.setState({selectedProject: null});
     };
 
     handleSelectProject = (name: string) => {
-        window._projectName = name;
+        this.props.store.dispatch(ACTIONS.setProjectName(name));
         this.showLoadingThen(() => {
-            this.loadData(window._classify, window._projectName, window._types, window.searchFileName);
+            // loadData thunk 自己从 store 读 classify/projectName/types/searchFileName,
+            // 这里传 undefined 让 thunk 走 getState(保持单一数据源)。
+            this.loadData(this.props.classify, name, this.props.types);
             this.props.eventObj.eventEmitter.emit(this.props.eventObj.PROJECT_FILTER_CHANGE, name);
         });
     };
 
     handleTypeFilter = (type: string, e: React.MouseEvent) => {
         e.preventDefault();
-        window._types = type;
+        this.props.store.dispatch(ACTIONS.setTypes(type));
         this.showLoadingThen(() => {
-            this.loadData(window._classify, window._projectName, window._types);
+            this.loadData(this.props.classify, this.props.projectName, type);
         });
         this.setState({activeFilter: type});
     };
 
     handleSearch = () => {
         const input = document.querySelector('.fileSearchText') as HTMLInputElement;
-        window.searchFileName = input.value;
-        this.loadData(window._classify, window._projectName, window._types, window.searchFileName);
+        this.props.store.dispatch(ACTIONS.setSearchFileName(input.value));
+        this.loadData(this.props.classify, this.props.projectName, this.props.types, input.value);
     };
 
     handleAuthorityConfig = (e: React.MouseEvent) => {
@@ -256,3 +264,10 @@ export default class SidebarToolbar extends Component<SidebarToolbarProps, Sideb
         );
     }
 }
+
+// connect 到 frame store:把 projectName/classify/types 注入 props(替代 window._projectName 等)
+export default connect((state: { ui?: { projectName?: string | null; classify?: boolean; types?: string | null } }) => ({
+    projectName: selectProjectName(state as any),
+    classify: selectClassify(state as any),
+    types: selectTypes(state as any),
+}))(SidebarToolbar);
