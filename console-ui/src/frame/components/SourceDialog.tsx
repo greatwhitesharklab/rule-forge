@@ -1,12 +1,14 @@
 import CodeMirror from 'codemirror';
+// V5.74.5:静态 import xml mode 替换原先的 `await import(...xml.js)` + `window.CodeMirror = ...`。
+// Vite 把 UMD/CJS module 转 ESM,xml.js IIFE 通过 CJS 分支(require)拿到 CodeMirror 后
+// 调用 CodeMirror.defineMode('xml', ...) 注册,不再需要 window 全局。
+// 静态 import 仍按需执行(componentDidMount 走 React 生命周期后才 mount 编辑器),
+// 不会破坏 V5.8 系列对源码查看的延迟加载语义。
+import 'codemirror/mode/xml/xml.js';
 import {Component} from 'react';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
-
-// Expose CodeMirror globally so mode plugins (e.g. xml mode) can register themselves.
-// Must happen before the dynamic import below.
-window.CodeMirror = CodeMirror as any;
 
 interface SourceDialogProps {
     dispatch?: (action: unknown) => void;
@@ -27,11 +29,7 @@ export default class SourceDialog extends Component<SourceDialogProps, SourceDia
         this.state = {title: '', visible: false};
     }
 
-    async componentDidMount() {
-        // Dynamic import: xml mode needs window.CodeMirror at evaluation time.
-        // Static imports are hoisted above all code, so this must be dynamic.
-        await import('../../../node_modules/codemirror/mode/xml/xml.js');
-
+    componentDidMount() {
         const editorId = this.editorId;
         const codeMirror = CodeMirror.fromTextArea(document.getElementById(editorId) as HTMLTextAreaElement, {
             mode: 'xml',
