@@ -4,9 +4,6 @@ import com.ruleforge.debug.DebugWriter;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.function.FunctionDescriptor;
 import com.ruleforge.model.library.Datatype;
-import com.ruleforge.model.rule.Other;
-import com.ruleforge.model.rule.Rhs;
-import com.ruleforge.model.rule.Rule;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
@@ -180,34 +177,6 @@ public class Utils implements ApplicationContextAware {
 
     public static Map<String, FunctionDescriptor> getFunctionDescriptorMap() {
         return functionDescriptorMap;
-    }
-
-    public static Rule buildElseRule(Rule rule) {
-        if (rule.getElseRule() != null) {
-            return rule.getElseRule();
-        } else {
-            Other other = rule.getOther();
-            if (other != null && other.getActions().size() != 0) {
-                Rule elseRule = new Rule();
-                elseRule.setFile(rule.getFile());
-                elseRule.setName(rule.getName() + "else");
-                elseRule.setActivationGroup(rule.getActivationGroup());
-                elseRule.setAgendaGroup(rule.getAgendaGroup());
-                elseRule.setAutoFocus(rule.getAutoFocus());
-                elseRule.setEffectiveDate(rule.getEffectiveDate());
-                elseRule.setExpiresDate(rule.getExpiresDate());
-                elseRule.setEnabled(rule.getEnabled());
-                elseRule.setRuleflowGroup(rule.getRuleflowGroup());
-                elseRule.setSalience(rule.getSalience());
-                Rhs rhs = new Rhs();
-                elseRule.setRhs(rhs);
-                rhs.setActions(other.getActions());
-                rule.setElseRule(elseRule);
-                return elseRule;
-            } else {
-                return null;
-            }
-        }
     }
 
     public void setDebug(boolean debug) {
