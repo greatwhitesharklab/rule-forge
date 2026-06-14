@@ -34,11 +34,32 @@
  *   - rowspan editing (currently every cell is rowspan=1; the model supports
  *     rowspan but the UI doesn't expose a merge-cell gesture)
  *   - col width resize drag handles
+ *
+ * ── Row copy/paste ───────────────────────────────────────────────────────
+ * Mirrors DecisionTableEditor's V5.60 pattern. Copy grabs every cell OWNED by
+ * the source row (cell.row === row.num), deep-clones them, and clamps every
+ * rowspan to 1 so a later paste never extends a merge beyond the single pasted
+ * row. The stored cells carry a placeholder row (we keep the source's num; paste
+ * re-stamps it). Paste APPENDS a fresh row at the end with a brand-new dense
+ * `num = max(rows.num)+1` (matching addRow) and re-stamps every cell's `row` to
+ * that new num. We append rather than splice because row `num` is a sparse
+ * stable identity here (removeRow does NOT renumber), so splicing mid-table
+ * would need an offset cascade — appending avoids that and the wire format
+ * accepts non-contiguous row numbers (the backend walks rows by num). The whole
+ * cell set is deep-cloned again on paste so repeated pastes are independent.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Input, InputNumber, Select, Space, Spin, Table, Typography, message } from 'antd';
-import { DeleteOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
+import { Alert, Button, Dropdown, Input, InputNumber, Select, Space, Spin, Table, Typography, message } from 'antd';
+import {
+  CopyOutlined,
+  DeleteOutlined,
+  MoreOutlined,
+  PlusOutlined,
+  SaveOutlined,
+  SnippetsOutlined,
+} from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import type { MenuProps } from 'antd';
 import type { ValueExpr } from '../../ruleforge/model/types';
 import { OPERATOR_OPTIONS, opHasNoInput } from '../../ruleforge/react/constants';
 import { ValueEditor } from '../../ruleforge/react/ValueEditor';
@@ -54,6 +75,7 @@ import type {
   ComplexCell,
   ComplexCol,
   ComplexColType,
+  ComplexRow,
   ComplexScoreCardData,
   ScoringType,
 } from '../model/types';
@@ -84,6 +106,30 @@ function emptyCard(): ComplexScoreCardData {
     rows: [],
     cells: [],
   };
+}
+
+/**
+ * Deep-clone a value independent of the source. Prefer the platform
+ * `structuredClone` (Node ≥17, all evergreen browsers); fall back to a JSON
+ * round-trip for the older jsdom test environment. Used by row copy/paste so a
+ * pasted row never shares references with the row it was copied from.
+ */
+function deepClone<T>(value: T): T {
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+/**
+ * Component-local clipboard payload for row copy/paste. Stores the source row's
+ * CELLS (deep-cloned, rowspan clamped to 1). We store cells rather than the
+ * whole row because the row is just {num, height} and the cells are where the
+ * content lives; paste re-stamps every cell's `row` to the target num.
+ */
+interface ClipboardRow {
+  /** Deep-cloned, rowspan-clamped source cells (`.row` is the source's num). */
+  cells: ComplexCell[];
+  /** Source row height, copied onto the new row. */
+  height: number;
 }
 
 /** Default loader: GET /common/loadXml, read raw XML under editorData.xml/content. */
@@ -122,6 +168,8 @@ export function ComplexScoreCardEditor({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Row-copy clipboard. `null` = nothing copied yet (disables the paste button).
+  const [clipboardRow, setClipboardRow] = useState<ClipboardRow | null>(null);
 
   // Load the project's imported variable libraries once; passed down to the
   // cell editors so they can render the shared VariablePicker.
@@ -205,6 +253,50 @@ export function ComplexScoreCardEditor({
       cells: prev.cells.filter((c) => c.row !== rowNumber),
     }));
   }, []);
+
+  // ---- row copy / paste ----
+  //
+  // Copy grabs every cell owned by the source row (cell.row === rowNumber),
+  // deep-clones them, and clamps every rowspan to 1 so a later paste never
+  // extends a merge beyond the single pasted row. We snapshot from the LIVE
+  // render state (copy has no state transition of its own). Paste APPENDS a
+  // fresh row at the end with num = max(rows.num)+1 and re-stamps every cell's
+  // `row` to that new num (deep-cloned again so repeated pastes are
+  // independent). Append-at-end keeps existing row nums stable (no cascade);
+  // the wire format accepts non-contiguous row numbers.
+  const copyRow = useCallback(
+    (rowNumber: number) => {
+      const owned = state.cells
+        .filter((c) => c.row === rowNumber)
+        .map((c) => deepClone({ ...c, rowspan: 1 }));
+      const height = state.rows.find((r) => r.num === rowNumber)?.height ?? 40;
+      setClipboardRow({ cells: owned, height });
+      message.success('已复制行');
+    },
+    [state.cells, state.rows],
+  );
+
+  const pasteRow = useCallback(() => {
+    if (!clipboardRow) {
+      message.warning('剪贴板为空,请先复制一行');
+      return;
+    }
+    setState((prev) => {
+      const nextNum = prev.rows.reduce((m, r) => Math.max(m, r.num), -1) + 1;
+      const newRow: ComplexRow = { num: nextNum, height: clipboardRow.height };
+      // Re-stamp every clipboard cell to the new row num; deep-clone so
+      // repeated pastes are fully independent of each other and of the source.
+      const pasted = clipboardRow.cells.map((c) =>
+        deepClone({ ...c, row: nextNum }),
+      );
+      return {
+        ...prev,
+        rows: prev.rows.concat([newRow]),
+        cells: prev.cells.concat(pasted),
+      };
+    });
+    message.success('已粘贴行');
+  }, [clipboardRow]);
 
   // ---- col management ----
   const addCol = useCallback((type: ComplexColType, variableCategory?: string) => {
@@ -320,24 +412,46 @@ export function ComplexScoreCardEditor({
         };
       });
 
-    // Trailing action column: delete row.
+    // Trailing action column: per-row copy/paste/delete via a ⋯ dropdown.
+    // "粘贴行" is disabled when the clipboard is empty.
     cols.push({
       title: '',
       key: 'row-actions',
-      width: 50,
-      render: (_v, dr) => (
-        <Button
-          size="small"
-          type="text"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => removeRow(dr.rowNumber)}
-        />
-      ),
+      width: 60,
+      render: (_v, dr) => {
+        const rowMenuItems: MenuProps['items'] = [
+          {
+            key: 'copy-row',
+            label: '复制此行',
+            icon: <CopyOutlined />,
+            onClick: () => copyRow(dr.rowNumber),
+          },
+          {
+            key: 'paste-row',
+            label: '粘贴行',
+            icon: <SnippetsOutlined />,
+            disabled: !clipboardRow,
+            onClick: () => pasteRow(),
+          },
+          { type: 'divider' },
+          {
+            key: 'delete-row',
+            label: '删除此行',
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: () => removeRow(dr.rowNumber),
+          },
+        ];
+        return (
+          <Dropdown menu={{ items: rowMenuItems }} trigger={['click']}>
+            <Button size="small" type="text" icon={<MoreOutlined />} />
+          </Dropdown>
+        );
+      },
     });
 
     return cols;
-  }, [state.cols, findCell, setCell, removeCol, removeRow]);
+  }, [state.cols, findCell, setCell, removeCol, removeRow, copyRow, pasteRow, clipboardRow]);
 
   if (loading) {
     return (
@@ -356,6 +470,13 @@ export function ComplexScoreCardEditor({
           <Button icon={<PlusOutlined />} onClick={() => addCol('Criteria')}>添加条件列</Button>
           <Button icon={<PlusOutlined />} onClick={() => addCol('Score')}>添加分值列</Button>
           <Button icon={<PlusOutlined />} onClick={() => addCol('Custom')}>添加自定义列</Button>
+          <Button
+            icon={<SnippetsOutlined />}
+            disabled={!clipboardRow}
+            onClick={() => pasteRow()}
+          >
+            粘贴行
+          </Button>
           <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>保存</Button>
         </Space>
       </Space>
