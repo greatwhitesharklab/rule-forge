@@ -28,7 +28,7 @@ import type { DecisionTree } from '../model/types';
 import { parseDecisionTree } from '../model/parse';
 import { serializeDecisionTree } from '../model/serialize';
 import { formPost, save } from '@/api/client';
-import { useVariableLibraries } from '../../ruleforge/react';
+import { useVariableLibraries, useConstantLibraries, useParameterLibraries } from '../../ruleforge/react';
 import { DecisionTreeFlow } from './DecisionTreeEditor';
 
 const { Text } = Typography;
@@ -100,6 +100,12 @@ export function DecisionTreeApp({ file, onLoad = loadFromServer, onSave = saveTo
   // modal's LeftValueEditor / ValueEditor so the shared VariablePicker Cascader
   // replaces free-text variable binding.
   const { libraries: variableLibraries } = useVariableLibraries(state.variableLibraries);
+
+  // Same pattern for constant / parameter libraries — fed to the right-hand
+  // ValueEditor so `<value type="Constant">` / `<value type="Parameter">` can
+  // be picked from a Cascader instead of typed by hand.
+  const { libraries: constantLibraries } = useConstantLibraries(state.constantLibraries);
+  const { libraries: parameterLibraries } = useParameterLibraries(state.parameterLibraries);
 
   // ---- load on mount (and when file changes) ----
   useEffect(() => {
@@ -200,6 +206,8 @@ export function DecisionTreeApp({ file, onLoad = loadFromServer, onSave = saveTo
         onChange={updateRoot}
         height={560}
         libraries={variableLibraries}
+        constantLibraries={constantLibraries}
+        parameterLibraries={parameterLibraries}
       />
     </div>
   );

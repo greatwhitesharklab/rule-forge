@@ -35,6 +35,16 @@ import {
   type VariableBinding,
   type VariableCategoryGroup,
 } from './VariablePicker';
+import {
+  ConstantPicker,
+  type ConstantBinding,
+  type ConstantCategoryGroup,
+} from './ConstantPicker';
+import {
+  ParameterPicker,
+  type ParameterBinding,
+  type ParameterLibrary,
+} from './ParameterPicker';
 
 export interface ValueEditorProps {
   /** The current value expression (controlled). */
@@ -45,12 +55,26 @@ export interface ValueEditorProps {
   compact?: boolean;
   /**
    * Optional imported variable libraries. When provided AND non-empty, the
-   * `Variable` / `Parameter` value type renders a shared {@link VariablePicker}
+   * `Variable` value type renders a shared {@link VariablePicker}
    * (category→variable Cascader) instead of the four free-text binding inputs.
    * When omitted or empty, the original free-text inputs are shown (back-compat
    * for editors that have not wired the libraries prop yet).
    */
   libraries?: VariableCategoryGroup[];
+  /**
+   * Optional imported constant libraries (one ConstantCategoryGroup per
+   * `.cl.xml`). When provided AND non-empty, the `Constant` value type renders
+   * a {@link ConstantPicker} (category→constant Cascader) instead of the three
+   * free-text inputs. When omitted or empty, free-text inputs are shown.
+   */
+  constantLibraries?: ConstantCategoryGroup[];
+  /**
+   * Optional imported parameter libraries (one ParameterLibrary per `.pl.xml`).
+   * When provided AND non-empty, the `Parameter` value type renders a
+   * {@link ParameterPicker} instead of the three free-text inputs. When
+   * omitted or empty, free-text inputs are shown.
+   */
+  parameterLibraries?: ParameterLibrary[];
 }
 
 /**
@@ -90,7 +114,14 @@ function freshValueForType(type: ValueExpr['type']): ValueExpr {
   }
 }
 
-export function ValueEditor({ value, onChange, compact, libraries = [] }: ValueEditorProps) {
+export function ValueEditor({
+  value,
+  onChange,
+  compact,
+  libraries = [],
+  constantLibraries = [],
+  parameterLibraries = [],
+}: ValueEditorProps) {
   const onTypeChange = (next: string) => {
     onChange(freshValueForType(next as ValueExpr['type']));
   };
@@ -104,6 +135,29 @@ export function ValueEditor({ value, onChange, compact, libraries = [] }: ValueE
   const onPick = (b: VariableBinding): void => {
     onChange(patch(value, {
       varCategory: b.varCategory,
+      var: b.var,
+      varLabel: b.varLabel,
+      datatype: b.datatype,
+    }));
+  };
+
+  // Constant picker: when constant libraries are loaded, replace the three
+  // free-text inputs with the shared ConstantPicker.
+  const useConstantPicker = constantLibraries.some((lib) => (lib || []).length > 0);
+  const onPickConstant = (b: ConstantBinding): void => {
+    onChange(patch(value, {
+      constCategory: b.constCategory,
+      const: b.const,
+      constLabel: b.constLabel,
+      datatype: b.datatype,
+    }));
+  };
+
+  // Parameter picker: when parameter libraries are loaded, replace the three
+  // free-text inputs with the shared ParameterPicker.
+  const useParameterPicker = parameterLibraries.some((lib) => (lib || []).length > 0);
+  const onPickParameter = (b: ParameterBinding): void => {
+    onChange(patch(value, {
       var: b.var,
       varLabel: b.varLabel,
       datatype: b.datatype,
@@ -202,67 +256,94 @@ export function ValueEditor({ value, onChange, compact, libraries = [] }: ValueE
       )}
 
       {value.type === 'Parameter' && (
-        <>
-          <div style={rowStyle}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>参数名</FieldLabel>}
-              placeholder="如 amount"
-              value={value.var ?? ''}
-              onChange={(e) => onChange(patch(value, { var: e.target.value }))}
-            />
-          </div>
-          <div style={rowStyle}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>标签</FieldLabel>}
-              placeholder="参数标签"
-              value={value.varLabel ?? ''}
-              onChange={(e) => onChange(patch(value, { varLabel: e.target.value }))}
-            />
-          </div>
-          <div style={rowStyle}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>类型</FieldLabel>}
-              placeholder="如 BigDecimal"
-              value={value.datatype ?? ''}
-              onChange={(e) => onChange(patch(value, { datatype: e.target.value }))}
-            />
-          </div>
-        </>
+        useParameterPicker ? (
+          <ParameterPicker
+            value={{
+              var: value.var,
+              varLabel: value.varLabel,
+              datatype: value.datatype,
+            }}
+            onChange={onPickParameter}
+            libraries={parameterLibraries}
+            compact={compact}
+          />
+        ) : (
+          <>
+            <div style={rowStyle}>
+              <Input
+                size="small"
+                prefix={<FieldLabel>参数名</FieldLabel>}
+                placeholder="如 amount"
+                value={value.var ?? ''}
+                onChange={(e) => onChange(patch(value, { var: e.target.value }))}
+              />
+            </div>
+            <div style={rowStyle}>
+              <Input
+                size="small"
+                prefix={<FieldLabel>标签</FieldLabel>}
+                placeholder="参数标签"
+                value={value.varLabel ?? ''}
+                onChange={(e) => onChange(patch(value, { varLabel: e.target.value }))}
+              />
+            </div>
+            <div style={rowStyle}>
+              <Input
+                size="small"
+                prefix={<FieldLabel>类型</FieldLabel>}
+                placeholder="如 BigDecimal"
+                value={value.datatype ?? ''}
+                onChange={(e) => onChange(patch(value, { datatype: e.target.value }))}
+              />
+            </div>
+          </>
+        )
       )}
 
       {value.type === 'Constant' && (
-        <>
-          <div style={rowStyle}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>常量分类</FieldLabel>}
-              placeholder="常量分类名"
-              value={value.constCategory ?? ''}
-              onChange={(e) => onChange(patch(value, { constCategory: e.target.value }))}
-            />
-          </div>
-          <div style={rowStyle}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>常量名</FieldLabel>}
-              placeholder="如 ONE_HUNDRED"
-              value={value.const ?? ''}
-              onChange={(e) => onChange(patch(value, { const: e.target.value }))}
-            />
-          </div>
-          <div style={rowStyle}>
-            <Input
-              size="small"
-              prefix={<FieldLabel>标签</FieldLabel>}
-              placeholder="常量标签"
-              value={value.constLabel ?? ''}
-              onChange={(e) => onChange(patch(value, { constLabel: e.target.value }))}
-            />
-          </div>
-        </>
+        useConstantPicker ? (
+          <ConstantPicker
+            value={{
+              constCategory: value.constCategory,
+              const: value.const,
+              constLabel: value.constLabel,
+              datatype: value.datatype,
+            }}
+            onChange={onPickConstant}
+            libraries={constantLibraries}
+            compact={compact}
+          />
+        ) : (
+          <>
+            <div style={rowStyle}>
+              <Input
+                size="small"
+                prefix={<FieldLabel>常量分类</FieldLabel>}
+                placeholder="常量分类名"
+                value={value.constCategory ?? ''}
+                onChange={(e) => onChange(patch(value, { constCategory: e.target.value }))}
+              />
+            </div>
+            <div style={rowStyle}>
+              <Input
+                size="small"
+                prefix={<FieldLabel>常量名</FieldLabel>}
+                placeholder="如 ONE_HUNDRED"
+                value={value.const ?? ''}
+                onChange={(e) => onChange(patch(value, { const: e.target.value }))}
+              />
+            </div>
+            <div style={rowStyle}>
+              <Input
+                size="small"
+                prefix={<FieldLabel>标签</FieldLabel>}
+                placeholder="常量标签"
+                value={value.constLabel ?? ''}
+                onChange={(e) => onChange(patch(value, { constLabel: e.target.value }))}
+              />
+            </div>
+          </>
+        )
       )}
 
       {value.type === 'Method' && (

@@ -67,6 +67,7 @@ import type { Cell, CellContent, Column, DecisionTableData } from '../model/type
 import { parseDecisionTable } from '../model/parse';
 import { serializeDecisionTable } from '../model/serialize';
 import { formPost, save } from '@/api/client';
+import { useConstantLibraries, useParameterLibraries } from '../../ruleforge/react';
 import CellEditor from './CellEditor';
 import ColumnEditor, { type ColumnDraft } from './ColumnEditor';
 
@@ -142,6 +143,21 @@ export function DecisionTableEditor({
   const [colModal, setColModal] = useState<{ open: boolean; editIndex?: number }>({ open: false });
   // Row-copy clipboard. `null` = nothing copied yet (disables the paste button).
   const [clipboardRow, setClipboardRow] = useState<ClipboardRow | null>(null);
+
+  // Imported constant / parameter library paths. state.libraries is the parsed
+  // `<import-constant-library>` / `<import-parameter-library>` list (a path per
+  // entry). These feed the shared useConstantLibraries / useParameterLibraries
+  // hooks so the right-hand ValueEditor in a Criteria cell can render a
+  // ConstantPicker / ParameterPicker Cascader instead of free text. Parallel to
+  // the variableLibraryPaths derivation passed to <ColumnEditor> below.
+  const constantLibraryPaths = state.libraries
+    .filter((lib) => lib.type === 'Constant' && lib.path)
+    .map((lib) => lib.path);
+  const parameterLibraryPaths = state.libraries
+    .filter((lib) => lib.type === 'Parameter' && lib.path)
+    .map((lib) => lib.path);
+  const { libraries: constantLibraries } = useConstantLibraries(constantLibraryPaths);
+  const { libraries: parameterLibraries } = useParameterLibraries(parameterLibraryPaths);
 
   // ---- load on mount ----
   useEffect(() => {
@@ -473,6 +489,8 @@ export function DecisionTableEditor({
               columnType={col.type}
               value={content}
               onChange={(next) => setCellContent(ownerRow, wireCol, next)}
+              constantLibraries={constantLibraries}
+              parameterLibraries={parameterLibraries}
             />
           );
           if (!mergeable) return editor;
@@ -538,6 +556,8 @@ export function DecisionTableEditor({
     copyRow,
     pasteRow,
     clipboardRow,
+    constantLibraries,
+    parameterLibraries,
   ]);
 
   // Wire rows (1..n) — one table row per model row.

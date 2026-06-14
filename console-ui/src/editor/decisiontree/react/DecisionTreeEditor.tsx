@@ -42,6 +42,8 @@ import { LeftValueEditor } from '../../ruleforge/react/LeftValueEditor';
 import { ValueEditor } from '../../ruleforge/react/ValueEditor';
 import { ActionEditor } from '../../ruleforge/react/ActionEditor';
 import type { VariableCategoryGroup } from '../../ruleforge/react/VariablePicker';
+import type { ConstantCategoryGroup } from '../../ruleforge/react/ConstantPicker';
+import type { ParameterLibrary } from '../../ruleforge/react/ParameterPicker';
 import {
   FlowNode,
   allowedChildKinds,
@@ -69,20 +71,45 @@ export interface DecisionTreeFlowProps {
    * free-text variable binding. Optional for back-compat (free-text fallback).
    */
   libraries?: VariableCategoryGroup[];
+  /** Imported constant libraries — forwarded to the right-hand ValueEditor. */
+  constantLibraries?: ConstantCategoryGroup[];
+  /** Imported parameter libraries — forwarded to the right-hand ValueEditor. */
+  parameterLibraries?: ParameterLibrary[];
 }
 
 /** The react-flow nodeTypes map. Stable identity across renders. */
 const NODE_TYPES = { rfTree: TreeNodeBody };
 
-export function DecisionTreeFlow({ value, onChange, height = 480, libraries }: DecisionTreeFlowProps) {
+export function DecisionTreeFlow({
+  value,
+  onChange,
+  height = 480,
+  libraries,
+  constantLibraries,
+  parameterLibraries,
+}: DecisionTreeFlowProps) {
   return (
     <ReactFlowProvider>
-      <DecisionTreeFlowInner value={value} onChange={onChange} height={height} libraries={libraries} />
+      <DecisionTreeFlowInner
+        value={value}
+        onChange={onChange}
+        height={height}
+        libraries={libraries}
+        constantLibraries={constantLibraries}
+        parameterLibraries={parameterLibraries}
+      />
     </ReactFlowProvider>
   );
 }
 
-function DecisionTreeFlowInner({ value, onChange, height, libraries }: DecisionTreeFlowProps) {
+function DecisionTreeFlowInner({
+  value,
+  onChange,
+  height,
+  libraries,
+  constantLibraries,
+  parameterLibraries,
+}: DecisionTreeFlowProps) {
   // The path of the node currently being edited in the modal — null when closed.
   const [editingPath, setEditingPath] = useState<string | null>(null);
 
@@ -150,6 +177,8 @@ function DecisionTreeFlowInner({ value, onChange, height, libraries }: DecisionT
         path={editingPath}
         node={editingNode}
         libraries={libraries}
+        constantLibraries={constantLibraries}
+        parameterLibraries={parameterLibraries}
         onChange={(next) => {
           if (editingPath) onChange(replaceNode(value, editingPath, next));
         }}
@@ -168,11 +197,23 @@ interface NodeEditorModalProps {
   node: TreeNode | undefined;
   /** Imported variable libraries (turns free-text binding into VariablePicker). */
   libraries?: VariableCategoryGroup[];
+  /** Imported constant libraries forwarded to the right-hand ValueEditor. */
+  constantLibraries?: ConstantCategoryGroup[];
+  /** Imported parameter libraries forwarded to the right-hand ValueEditor. */
+  parameterLibraries?: ParameterLibrary[];
   onChange: (next: TreeNode) => void;
   onClose: () => void;
 }
 
-function NodeEditorModal({ path, node, libraries, onChange, onClose }: NodeEditorModalProps) {
+function NodeEditorModal({
+  path,
+  node,
+  libraries,
+  constantLibraries,
+  parameterLibraries,
+  onChange,
+  onClose,
+}: NodeEditorModalProps) {
   const open = path !== null && node !== undefined;
   const title = node ? nodeKindLabel(node.kind) + '节点' : '编辑';
   return (
@@ -188,6 +229,8 @@ function NodeEditorModal({ path, node, libraries, onChange, onClose }: NodeEdito
         <ConditionFieldsEditor
           node={node}
           libraries={libraries}
+          constantLibraries={constantLibraries}
+          parameterLibraries={parameterLibraries}
           onChange={(next) => onChange(next)}
         />
       )}
@@ -202,11 +245,17 @@ function NodeEditorModal({ path, node, libraries, onChange, onClose }: NodeEdito
 function ConditionFieldsEditor({
   node,
   libraries,
+  constantLibraries,
+  parameterLibraries,
   onChange,
 }: {
   node: Extract<TreeNode, { kind: 'condition' }>;
   /** Imported variable libraries forwarded to the right-hand ValueEditor. */
   libraries?: VariableCategoryGroup[];
+  /** Imported constant libraries forwarded to the right-hand ValueEditor. */
+  constantLibraries?: ConstantCategoryGroup[];
+  /** Imported parameter libraries forwarded to the right-hand ValueEditor. */
+  parameterLibraries?: ParameterLibrary[];
   onChange: (next: Extract<TreeNode, { kind: 'condition' }>) => void;
 }) {
   const noRight = opHasNoInput(node.op);
@@ -228,6 +277,8 @@ function ConditionFieldsEditor({
           value={node.right ?? { type: 'Input', content: '' }}
           onChange={(right) => onChange({ ...node, right })}
           libraries={libraries}
+          constantLibraries={constantLibraries}
+          parameterLibraries={parameterLibraries}
         />
       )}
     </div>

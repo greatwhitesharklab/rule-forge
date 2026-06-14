@@ -67,8 +67,12 @@ import { ValueEditor } from '../../ruleforge/react/ValueEditor';
 import {
   VariablePicker,
   useVariableLibraries,
+  useConstantLibraries,
+  useParameterLibraries,
   type VariableCategoryGroup,
 } from '../../ruleforge/react';
+import type { ConstantCategoryGroup } from '../../ruleforge/react/ConstantPicker';
+import type { ParameterLibrary } from '../../ruleforge/react/ParameterPicker';
 import type {
   AssignTarget,
   AssignTargetType,
@@ -191,6 +195,18 @@ export function ScoreCardEditor({
     .filter((lib) => lib.type === 'Variable' && lib.path)
     .map((lib) => lib.path);
   const { libraries: variableLibraries } = useVariableLibraries(variableLibraryPaths);
+
+  // Same pattern for constant / parameter libraries — fed to the right-hand
+  // ValueEditor so `<value type="Constant">` / `<value type="Parameter">` can
+  // be picked from a Cascader instead of typed by hand.
+  const constantLibraryPaths = state.libraries
+    .filter((lib) => lib.type === 'Constant' && lib.path)
+    .map((lib) => lib.path);
+  const parameterLibraryPaths = state.libraries
+    .filter((lib) => lib.type === 'Parameter' && lib.path)
+    .map((lib) => lib.path);
+  const { libraries: constantLibraries } = useConstantLibraries(constantLibraryPaths);
+  const { libraries: parameterLibraries } = useParameterLibraries(parameterLibraryPaths);
 
   // ---- load on mount ----
   useEffect(() => {
@@ -482,6 +498,9 @@ export function ScoreCardEditor({
         return (
           <ConditionCellEditor
             value={cell}
+            libraries={variableLibraries}
+            constantLibraries={constantLibraries}
+            parameterLibraries={parameterLibraries}
             onChange={(next) => setCell(dr.rowNumber, 2, 'condition', next)}
             onRemove={
               dr.kind === 'condition'
@@ -500,7 +519,15 @@ export function ScoreCardEditor({
       width: state.scoreCol.width,
       render: (_v, dr) => {
         const cell = findCell(dr.rowNumber, 3);
-        return <ScoreCellEditor value={cell} onChange={(next) => setCell(dr.rowNumber, 3, 'score', next)} />;
+        return (
+          <ScoreCellEditor
+            value={cell}
+            libraries={variableLibraries}
+            constantLibraries={constantLibraries}
+            parameterLibraries={parameterLibraries}
+            onChange={(next) => setCell(dr.rowNumber, 3, 'score', next)}
+          />
+        );
       },
     });
 
@@ -515,6 +542,9 @@ export function ScoreCardEditor({
           return (
             <CustomCellEditor
               value={cell}
+              libraries={variableLibraries}
+              constantLibraries={constantLibraries}
+              parameterLibraries={parameterLibraries}
               onChange={(next) => setCell(dr.rowNumber, cc.colNumber, 'custom', next)}
             />
           );
@@ -586,6 +616,9 @@ export function ScoreCardEditor({
     copyAttributeRow,
     pasteAttributeRow,
     clipboardGroup,
+    variableLibraries,
+    constantLibraries,
+    parameterLibraries,
   ]);
 
   if (loading) {
@@ -625,7 +658,13 @@ export function ScoreCardEditor({
         />
       )}
 
-      <ConfigArea state={state} setState={setState} libraries={variableLibraries} />
+      <ConfigArea
+        state={state}
+        setState={setState}
+        libraries={variableLibraries}
+        constantLibraries={constantLibraries}
+        parameterLibraries={parameterLibraries}
+      />
 
       <div style={{ marginBottom: 12 }}>
         <Input.TextArea
@@ -686,10 +725,16 @@ function ConfigArea({
   state,
   setState,
   libraries = [],
+  constantLibraries,
+  parameterLibraries,
 }: {
   state: ScoreCardData;
   setState: React.Dispatch<React.SetStateAction<ScoreCardData>>;
   libraries?: VariableCategoryGroup[];
+  /** Imported constant libraries forwarded to the assign-target ValueEditor. */
+  constantLibraries?: ConstantCategoryGroup[];
+  /** Imported parameter libraries forwarded to the assign-target ValueEditor. */
+  parameterLibraries?: ParameterLibrary[];
 }) {
   const patchName = (name: string) => setState((prev) => ({ ...prev, name }));
   const patchCol = (key: 'attributeCol' | 'conditionCol' | 'scoreCol') => (name: string) =>
@@ -817,6 +862,8 @@ function ConfigArea({
             <ValueEditor
               value={state.assignTarget.value}
               libraries={libraries}
+              constantLibraries={constantLibraries}
+              parameterLibraries={parameterLibraries}
               onChange={(value) => patchAssignTarget({ ...state.assignTarget, value })}
             />
           </div>
@@ -928,10 +975,19 @@ function AttributeCellEditor({
 /** Condition cell: op dropdown + optional right value (single condition). */
 function ConditionCellEditor({
   value,
+  libraries,
+  constantLibraries,
+  parameterLibraries,
   onChange,
   onRemove,
 }: {
   value: CardCell | undefined;
+  /** Imported variable libraries forwarded to the right-hand ValueEditor. */
+  libraries?: VariableCategoryGroup[];
+  /** Imported constant libraries forwarded to the right-hand ValueEditor. */
+  constantLibraries?: ConstantCategoryGroup[];
+  /** Imported parameter libraries forwarded to the right-hand ValueEditor. */
+  parameterLibraries?: ParameterLibrary[];
   onChange: (next: CardCell) => void;
   onRemove?: () => void;
 }) {
@@ -962,7 +1018,16 @@ function ConditionCellEditor({
           options={OPERATOR_OPTIONS}
         />
       </div>
-      {!noRight && <ValueEditor value={right} compact onChange={(v) => patchCondition({ right: v })} />}
+      {!noRight && (
+        <ValueEditor
+          value={right}
+          compact
+          libraries={libraries}
+          constantLibraries={constantLibraries}
+          parameterLibraries={parameterLibraries}
+          onChange={(v) => patchCondition({ right: v })}
+        />
+      )}
       {onRemove && (
         <Button size="small" type="link" danger icon={<DeleteOutlined />} onClick={onRemove} style={{ padding: 0 }}>
           删除条件行
@@ -975,27 +1040,63 @@ function ConditionCellEditor({
 /** Score cell: a single value expression. */
 function ScoreCellEditor({
   value,
+  libraries,
+  constantLibraries,
+  parameterLibraries,
   onChange,
 }: {
   value: CardCell | undefined;
+  /** Imported variable libraries forwarded to the score ValueEditor. */
+  libraries?: VariableCategoryGroup[];
+  /** Imported constant libraries forwarded to the score ValueEditor. */
+  constantLibraries?: ConstantCategoryGroup[];
+  /** Imported parameter libraries forwarded to the score ValueEditor. */
+  parameterLibraries?: ParameterLibrary[];
   onChange: (next: CardCell) => void;
 }) {
   const cell: CardCell = value ?? { type: 'score', row: 0, col: 3 };
   const v: ValueExpr = cell.value ?? { type: 'Input', content: '' };
-  return <ValueEditor value={v} compact onChange={(value) => onChange({ ...cell, value })} />;
+  return (
+    <ValueEditor
+      value={v}
+      compact
+      libraries={libraries}
+      constantLibraries={constantLibraries}
+      parameterLibraries={parameterLibraries}
+      onChange={(value) => onChange({ ...cell, value })}
+    />
+  );
 }
 
 /** Custom cell: a single value expression. */
 function CustomCellEditor({
   value,
+  libraries,
+  constantLibraries,
+  parameterLibraries,
   onChange,
 }: {
   value: CardCell | undefined;
+  /** Imported variable libraries forwarded to the custom-cell ValueEditor. */
+  libraries?: VariableCategoryGroup[];
+  /** Imported constant libraries forwarded to the custom-cell ValueEditor. */
+  constantLibraries?: ConstantCategoryGroup[];
+  /** Imported parameter libraries forwarded to the custom-cell ValueEditor. */
+  parameterLibraries?: ParameterLibrary[];
   onChange: (next: CardCell) => void;
 }) {
   const cell: CardCell = value ?? { type: 'custom', row: 0, col: 4 };
   const v: ValueExpr = cell.value ?? { type: 'Input', content: '' };
-  return <ValueEditor value={v} compact onChange={(value) => onChange({ ...cell, value })} />;
+  return (
+    <ValueEditor
+      value={v}
+      compact
+      libraries={libraries}
+      constantLibraries={constantLibraries}
+      parameterLibraries={parameterLibraries}
+      onChange={(value) => onChange({ ...cell, value })}
+    />
+  );
 }
 
 export default ScoreCardEditor;

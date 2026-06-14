@@ -43,6 +43,29 @@ export type {
 export { useVariableLibraries } from './useVariableLibraries';
 export type { UseVariableLibrariesResult } from './useVariableLibraries';
 
+// Shared constant-library browser (used by ValueEditor's Constant type).
+export { ConstantPicker } from './ConstantPicker';
+export type {
+  ConstantPickerProps,
+  ConstantBinding,
+  PickerConstantItem,
+  PickerConstantCategory,
+  ConstantCategoryGroup,
+} from './ConstantPicker';
+export { useConstantLibraries } from './useConstantLibraries';
+export type { UseConstantLibrariesResult } from './useConstantLibraries';
+
+// Shared parameter-library browser (used by ValueEditor's Parameter type).
+export { ParameterPicker } from './ParameterPicker';
+export type {
+  ParameterPickerProps,
+  ParameterBinding,
+  PickerParameterItem,
+  ParameterLibrary,
+} from './ParameterPicker';
+export { useParameterLibraries } from './useParameterLibraries';
+export type { UseParameterLibrariesResult } from './useParameterLibraries';
+
 export { default as RulePropertyEditor } from './RulePropertyEditor';
 export type { RulePropertyEditorProps } from './RulePropertyEditor';
 
