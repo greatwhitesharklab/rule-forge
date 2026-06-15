@@ -286,10 +286,14 @@ class DrlGrammarSmokeTest {
     class Negative {
 
         @Test
-        @DisplayName("import 段(lexer 缺失 → token error)")
+        @DisplayName("D5 V5.42.1 砍 java import — V5.77 反转,改锁定为正 corpus 形式")
         void rejectsImport() {
+            // V5.77 翻转:原 D5 决定砍 java import,V5.77 反转接受。
+            // 本测试改锁 D5 反转后仍非法的 import 形态(空 FQCN / 语法错位):
+            // `import ;`(grammar 不接受空 form) — 老测试用例改用真正的非法形态。
+            // 见 DrlImportGrammarTest V5.77 BDD 7 锁 java import 接受契约。
             String drl = "package com.ruleforge\n" +
-                "import com.ruleforge.model.Applicant\n" +
+                "import ;\n" +
                 "rule \"R1\" when Applicant() then end";
             assertParseFails(drl);
         }

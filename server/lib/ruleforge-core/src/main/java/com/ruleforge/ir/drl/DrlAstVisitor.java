@@ -49,6 +49,17 @@ public class DrlAstVisitor extends DrlParserBaseVisitor<Void> {
      */
     private final java.util.LinkedHashSet<String> imports = new java.util.LinkedHashSet<>();
     /**
+     * V5.77 — Java class import 段收集(反转 D5 决定)。grammar 现在接受
+     * {@code import com.foo.Bar;} 形式,跟 library form(STRING)分流:
+     * <ul>
+     *   <li>library form: {@link #getImports()} 返,加进 resolver.addImport(path)</li>
+     *   <li>java form: {@link #getJavaImports()} 返,加进 resolver.addJavaImport(fqcn)
+     *       (后者走 Class.forName 反射注册 fact type)</li>
+     * </ul>
+     * LinkedHashSet 保持插入顺序 + dedupe。
+     */
+    private final java.util.LinkedHashSet<String> javaImports = new java.util.LinkedHashSet<>();
+    /**
      * V5.45.1 — declare 段收集的 declared types。{@code Map<String, TypeInfo>}
      * 形式,key=type 名(顶层 + 嵌套都进 map),value=完整 TypeInfo(字段 +
      * extendsName + annotations)。DrlDeserializer / LibraryParser(V5.45.2)调
@@ -94,6 +105,11 @@ public class DrlAstVisitor extends DrlParserBaseVisitor<Void> {
         return new ArrayList<>(imports);
     }
 
+    /** V5.77 — 收集的 java class import FQCN 列表(顺序保持,去重)。 */
+    public List<String> getJavaImports() {
+        return new ArrayList<>(javaImports);
+    }
+
     /** V5.45.1 — 收集的 declare 段 declared types(嵌套 declare 也 flatten 到 map)。 */
     public java.util.Map<String, DatatypeResolver.TypeInfo> getDeclaredTypes() {
         return new java.util.LinkedHashMap<>(declaredTypes);
@@ -136,20 +152,25 @@ public class DrlAstVisitor extends DrlParserBaseVisitor<Void> {
 
     @Override
     public Void visitImportStatement(DrlParser.ImportStatementContext ctx) {
-        // V5.44.3 — 仅支持 library 文件路径(STRING 形式,`"libs/variables.drl"`),
-        // 不支持 Drools java 类 import(import com.foo.Bar; 形式 — grammar 没
-        // 单独 rule,会走 unitStatement → reject)。
-        if (ctx.STRING() == null) {
+        // V5.77 — grammar 现在接受两种 form:library(STRING) + java(dottedName)。
+        // visitor 按 token 形态分流到不同 collector + resolver API。
+        if (ctx.STRING() != null) {
+            // V5.44.3 library form: import "libs/variables.drl";
+            String path = stripQuotes(ctx.STRING().getText());
+            imports.add(path);
+            resolver.addImport(path);
+        } else if (ctx.javaQualifiedName() != null) {
+            // V5.77 — 反转 D5 决定,Java class form: import com.foo.Bar;
+            String fqcn = ctx.javaQualifiedName().getText();
+            javaImports.add(fqcn);
+            resolver.addJavaImport(fqcn);
+        } else {
+            // grammar 不会走到这(antlr 必有一个 alt 命中),但兜底防 DRL 扩展时
+            // 出现新 alt 不识别。
             throw new DrlParseException(
-                "V5.44.3 顶层 import 仅支持 library 路径(双引号字符串),实际:" + ctx.getText(),
-                ctx);
+                "DRL import 段必须为 STRING(library)或 dottedName(java class)之一,实际:"
+                + ctx.getText(), ctx);
         }
-        String path = stripQuotes(ctx.STRING().getText());
-        imports.add(path);
-        // V5.44.3 — 同步推到 resolver。这样后续 visitDrlPattern 调
-        // resolver.isKnown() 时拿得到 import 列表,error 消息能附 import 路径
-        // 提示 caller。
-        resolver.addImport(path);
         return null;
     }
 

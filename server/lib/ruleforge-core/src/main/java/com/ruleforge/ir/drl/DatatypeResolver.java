@@ -47,6 +47,13 @@ public class DatatypeResolver {
      * 重复 import 路径去重(LinkedHashSet 保留插入顺序)。
      */
     private final Set<String> imports = new LinkedHashSet<>();
+    /**
+     * V5.77 — Java class import 段收集的 FQCN 列表(反转 D5 决定)。
+     * addJavaImport 时用 Class.forName 反射注册 fact type(简单 POJO 的
+     * public 字段名当 DRL field 名),软 fail:ClassNotFoundException 不抛,
+     * 允许 caller classpath 还没准备好。
+     */
+    private final Set<String> javaImports = new LinkedHashSet<>();
 
     public DatatypeResolver() {
         this(new HashMap<>());
@@ -84,6 +91,40 @@ public class DatatypeResolver {
             throw new IllegalArgumentException("libraryPath must not be empty");
         }
         imports.add(libraryPath);
+    }
+
+    /**
+     * V5.77 — Java class import(FQCN)段。Class.forName 反射注册 fact type +
+     * public 字段列表。ClassNotFoundException 软 fail(caller 没把 class 放
+     * classpath 是合理场景,如 console-ui 编辑器开未保存 .drl 路径)。反射到
+     * 的话用 simple name 注册(跟现有 {@link #register(String, TypeInfo)} API
+     * 行为一致:resolve("Applicant") 命中)。
+     *
+     * <p>约束:仅 public 字段(DRL 字段访问语义);继承字段不展开(简单一致,
+     * 继承场景 caller 显式 register 即可)。
+     */
+    public void addJavaImport(String fqcn) {
+        if (fqcn == null || fqcn.isEmpty()) {
+            throw new IllegalArgumentException("fqcn must not be empty");
+        }
+        javaImports.add(fqcn);
+        try {
+            Class<?> clazz = Class.forName(fqcn);
+            List<String> fields = new ArrayList<>();
+            for (java.lang.reflect.Field f : clazz.getDeclaredFields()) {
+                if (java.lang.reflect.Modifier.isStatic(f.getModifiers())) continue;
+                fields.add(f.getName());
+            }
+            types.put(clazz.getSimpleName(), new TypeInfo(clazz.getSimpleName(), fields, true));
+        } catch (ClassNotFoundException e) {
+            // V5.77 软 fail:不抛,允许 caller 在 classpath 不到位时继续走。
+            // DrlImportGrammarTest V5.77 BDD 8 显式锁这条契约。
+        }
+    }
+
+    /** V5.77 — 收集的 java import FQCN 列表(顺序保持,去重)。 */
+    public List<String> getJavaImports() {
+        return Collections.unmodifiableList(new ArrayList<>(javaImports));
     }
 
     /**
