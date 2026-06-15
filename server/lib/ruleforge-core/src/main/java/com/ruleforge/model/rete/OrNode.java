@@ -1,37 +1,22 @@
 package com.ruleforge.model.rete;
 
-import java.util.Map;
-
-import com.ruleforge.runtime.rete.Activity;
-import com.ruleforge.runtime.rete.OrActivity;
-
-
 /**
- * @author Jacky.gao
- * @since 2015年1月6日
+ * RETE OR 节点:任一入边通过即触发下游。V5.76.6 后不再持有 {@code newActivity}(改由
+ * {@code NodeActivityFactory} 创建 OrActivity)。
  */
 public class OrNode extends JunctionNode {
-	private NodeType nodeType=NodeType.or;
-	public OrNode() {
-		super(0);
-	}
-	public OrNode(int id) {
-		super(id);
-	}
-	@Override
-	public NodeType getNodeType() {
-		return nodeType;
-	}
-	@Override
-	public Activity newActivity(Map<Object,Object> context) {
-		if(context.containsKey(this)){
-			return (OrActivity)context.get(this);
-		}
-		OrActivity or=new OrActivity();
-		for(Line line:lines){
-			or.addPath(line.newPath(context));
-		}
-		context.put(this, or);
-		return or;
-	}
+    private NodeType nodeType = NodeType.or;
+
+    public OrNode() {
+        super(0);
+    }
+
+    public OrNode(int id) {
+        super(id);
+    }
+
+    @Override
+    public NodeType getNodeType() {
+        return nodeType;
+    }
 }

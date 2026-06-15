@@ -1,10 +1,9 @@
 package com.ruleforge.model.rete;
 
-import com.ruleforge.runtime.rete.Activity;
-import com.ruleforge.runtime.rete.ObjectTypeActivity;
-
-import java.util.Map;
-
+/**
+ * RETE 对象类型节点:按类名/类匹配 fact。V5.76.6 后不再持有 {@code newActivity}(改由
+ * {@code NodeActivityFactory} 创建 ObjectTypeActivity)。
+ */
 public class ObjectTypeNode extends BaseReteNode {
     public static final String NON_CLASS = "*";
     private String objectTypeClass;
@@ -38,23 +37,5 @@ public class ObjectTypeNode extends BaseReteNode {
 
     public void setObjectTypeClass(String objectTypeClass) {
         this.objectTypeClass = objectTypeClass;
-    }
-
-    @Override
-    public Activity newActivity(Map<Object, Object> context) {
-        Class<?> targetClass = null;
-        ObjectTypeActivity activity = null;
-        try {
-            if (!objectTypeClass.equals(ObjectTypeNode.NON_CLASS)) {
-                targetClass = Class.forName(objectTypeClass);
-            }
-            activity = new ObjectTypeActivity(targetClass);
-        } catch (ClassNotFoundException e) {
-            activity = new ObjectTypeActivity(objectTypeClass);
-        }
-        for (Line line : lines) {
-            activity.addPath(line.newPath(context));
-        }
-        return activity;
     }
 }

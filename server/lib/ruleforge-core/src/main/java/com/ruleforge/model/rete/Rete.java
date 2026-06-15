@@ -2,6 +2,7 @@ package com.ruleforge.model.rete;
 
 import com.ruleforge.model.Node;
 import com.ruleforge.model.library.ResourceLibrary;
+import com.ruleforge.runtime.rete.NodeActivityFactory;
 import com.ruleforge.runtime.rete.ObjectTypeActivity;
 import com.ruleforge.runtime.rete.ReteInstance;
 import com.ruleforge.runtime.rete.ReteInstanceUnit;
@@ -39,8 +40,10 @@ public class Rete implements Node {
         List<ObjectTypeActivity> objectTypeActivities = new ArrayList<>();
         Map<Object, Object> contextMap = new HashMap<>();
 
+        // V5.76.6: 走 NodeActivityFactory(原 node.newActivity(contextMap))
         for (ObjectTypeNode node : this.objectTypeNodes) {
-            objectTypeActivities.add((ObjectTypeActivity) node.newActivity(contextMap));
+            ObjectTypeActivity activity = (ObjectTypeActivity) NodeActivityFactory.create(node, contextMap);
+            objectTypeActivities.add(activity);
         }
 
         Map<String, List<ReteInstanceUnit>> activationGroupReteInstancesMap = this.buildGroupRetesInstance(this.activationGroupRetesMap);

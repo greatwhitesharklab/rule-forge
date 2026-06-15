@@ -1,12 +1,12 @@
 package com.ruleforge.model.rete;
 
 import com.ruleforge.model.rule.lhs.Criteria;
-import com.ruleforge.runtime.rete.Activity;
-import com.ruleforge.runtime.rete.CriteriaActivity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import java.util.Map;
-
+/**
+ * RETE 条件节点:挂一个 {@link Criteria}。V5.76.6 后不再持有 {@code newActivity}(改由
+ * {@code NodeActivityFactory} 创建 CriteriaActivity)。
+ */
 public class CriteriaNode extends BaseReteNode implements ConditionNode {
     @JsonIgnore
     private String criteriaInfo;
@@ -53,19 +53,5 @@ public class CriteriaNode extends BaseReteNode implements ConditionNode {
 
     public void setDebug(boolean debug) {
         this.debug = debug;
-    }
-
-    public Activity newActivity(Map<Object, Object> context) {
-        if (context.containsKey(this)) {
-            return (CriteriaActivity) context.get(this);
-        } else {
-            CriteriaActivity activity = new CriteriaActivity(this.criteria, this.debug);
-            for (Line line : this.lines) {
-                activity.addPath(line.newPath(context));
-            }
-
-            context.put(this, activity);
-            return activity;
-        }
     }
 }

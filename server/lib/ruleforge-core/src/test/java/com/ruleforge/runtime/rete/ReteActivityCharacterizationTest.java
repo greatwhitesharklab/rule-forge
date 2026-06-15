@@ -133,11 +133,11 @@ class ReteActivityCharacterizationTest {
     }
 
     @Nested
-    @DisplayName("ObjectTypeNode.newActivity — 节点→Activity 工厂")
+    @DisplayName("NodeActivityFactory — 节点→Activity 工厂")
     class ObjectTypeNodeFactory {
 
         @Test
-        @DisplayName("newActivity 应返 ObjectTypeActivity + 包含 1 条 Path(对每条 Line)")
+        @DisplayName("factory.create 应返 ObjectTypeActivity + 包含 1 条 Path(对每条 Line)")
         void shouldCreateActivityWithPaths() {
             com.ruleforge.model.rete.ObjectTypeNode node =
                 new com.ruleforge.model.rete.ObjectTypeNode("User", 1);
@@ -146,25 +146,25 @@ class ReteActivityCharacterizationTest {
             node.addLine(terminal);
 
             java.util.Map<Object, Object> ctx = new java.util.HashMap<>();
-            Activity activity = node.newActivity(ctx);
+            Activity activity = NodeActivityFactory.create(node, ctx);
             assertThat(activity).isInstanceOf(ObjectTypeActivity.class);
             assertThat(((ObjectTypeActivity) activity).getPaths()).hasSize(1);
         }
     }
 
     @Nested
-    @DisplayName("TerminalNode.newActivity — 复用语义")
+    @DisplayName("NodeActivityFactory — 复用语义")
     class TerminalNodeFactory {
 
         @Test
-        @DisplayName("同一节点第二次 newActivity 应返同 instance(context 缓存)")
+        @DisplayName("同一节点第二次 factory.create 应返同 instance(context 缓存)")
         void shouldReuseFromContext() {
             com.ruleforge.model.rete.TerminalNode node =
                 new com.ruleforge.model.rete.TerminalNode(new com.ruleforge.model.rule.Rule(), 1);
 
             java.util.Map<Object, Object> ctx = new java.util.HashMap<>();
-            Activity a1 = node.newActivity(ctx);
-            Activity a2 = node.newActivity(ctx);
+            Activity a1 = NodeActivityFactory.create(node, ctx);
+            Activity a2 = NodeActivityFactory.create(node, ctx);
             assertThat(a1).isSameAs(a2);
         }
 
@@ -174,8 +174,8 @@ class ReteActivityCharacterizationTest {
             com.ruleforge.model.rete.TerminalNode node =
                 new com.ruleforge.model.rete.TerminalNode(new com.ruleforge.model.rule.Rule(), 1);
 
-            Activity a1 = node.newActivity(new java.util.HashMap<>());
-            Activity a2 = node.newActivity(new java.util.HashMap<>());
+            Activity a1 = NodeActivityFactory.create(node, new java.util.HashMap<>());
+            Activity a2 = NodeActivityFactory.create(node, new java.util.HashMap<>());
             assertThat(a1).isNotSameAs(a2);
         }
     }

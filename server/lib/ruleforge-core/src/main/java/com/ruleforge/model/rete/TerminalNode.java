@@ -1,12 +1,11 @@
 package com.ruleforge.model.rete;
 
 import com.ruleforge.model.rule.Rule;
-import com.ruleforge.runtime.rete.Activity;
-import com.ruleforge.runtime.rete.Context;
-import com.ruleforge.runtime.rete.TerminalActivity;
 
-import java.util.Map;
-
+/**
+ * RETE 终端节点:挂一条 {@link Rule}。V5.76.6 后不再持有 {@code newActivity}(改由
+ * {@code NodeActivityFactory} 创建 TerminalActivity)。
+ */
 public class TerminalNode extends ReteNode {
     private Rule rule;
     private NodeType nodeType = NodeType.terminal;
@@ -25,7 +24,7 @@ public class TerminalNode extends ReteNode {
         return nodeType;
     }
 
-    public Rule[] enter(Context context, Object object) {
+    public Rule[] enter(com.ruleforge.runtime.rete.Context context, Object object) {
         return new Rule[]{rule};
     }
 
@@ -35,15 +34,5 @@ public class TerminalNode extends ReteNode {
 
     public void setRule(Rule rule) {
         this.rule = rule;
-    }
-
-    @Override
-    public Activity newActivity(Map<Object, Object> context) {
-        if (context.containsKey(this)) {
-            return (TerminalActivity) context.get(this);
-        }
-        TerminalActivity activity = new TerminalActivity(rule);
-        context.put(this, activity);
-        return activity;
     }
 }
