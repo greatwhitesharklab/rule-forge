@@ -11,10 +11,10 @@
     },
     {
       "name": "EvalBenchmarkV579_drl_no_eval_3way_ms",
-      "p50": 1.14,
-      "p95": 3.2,
+      "p50": 1.03,
+      "p95": 3.0,
       "failMultiplier": 1.5,
-      "note": "V5.88 — CriteriaActivity.logMessage 加 1 行 if (!this.debug) return; 早返,JFR 揭示该方法 + String.format + StringBuilder 占 hot path 76%。3-pattern 链式 join 跑下来 -12%(3.0→1.14ms vs V5.83 1.3ms 是不同 scale,V5.88 在 50 iter 稳态),no_eval / eval / no_eval_5r 三场景 0-3% 改变(在 noise 内,不动 p50)。实测 logMessage leaf sample 289→0(100% 消失),String.format 291→35(-88%)。V5.79 锁值 0.10ms。"
+      "note": "V5.89 — Utils.getObjectProperty 反射 cache 替换 PropertyUtils 链,3-pattern 链式 join 跑下来 -10%(1.14→1.03ms)。JFR 揭示 PropertyUtilsBean.getSimpleProperty 131→0 + DefaultResolver.next 109→0(全消失),Method.invoke 38 替代。no_eval 2.91→2.70(-7%),eval 1.23→1.12(-9%),no_eval_5r 5.50→5.35(-3%)。V5.88 p50 1.14, V5.83 锁值 1.30, V5.79 锁值 0.10。"
     },
     {
       "name": "EvalBenchmarkV579_drl_no_eval_5r_ms",
