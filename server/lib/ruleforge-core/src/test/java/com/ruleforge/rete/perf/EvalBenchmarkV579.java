@@ -455,13 +455,13 @@ class EvalBenchmarkV579 {
         KnowledgePackage kp = buildKnowledgePackageNoEval();
         Stats s = measure(kp, 5, 50);
         report("no_eval", s);
-        // V5.79 note:V5.78+ ReteBuilder.buildRete + CriteriaActivity 路径在手工构造
-        // Rule 下 firedRules=0(见 ReteBuilder + Criteria 联合 BDD 还没覆盖的 gap,
-        // DrlRebuildPerfRegressionTest 是另一条路径)。本 bench 测的是 RETE 引擎
-        // raw perf(insert N fact + fireAllRules 耗时),不要求实际 fire。workload
-        // 保留 1000 Person + 1000 Address 形态,firedRules 是 informational。
-        // TD-17.0c 已建,后续 V5.80 修 V5.78 DrlDeserializer 回归后本断言会变严格。
-        assertEquals(0, s.firedRules, "V5.79: V5.78 DRL 回归下 firedRules 暂为 0(ReteBuilder → Criteria 路径);perf bench 不要求 fire");
+        // V5.80 note:V5.78 DrlDeserializer 漏 setVariableCategory 已修(TD-18.0)— 但本 bench
+        // 走的是手工构造 Rule 路径,本身 variableCategory 一直有设。V5.78+ Criteria → CriteriaActivity
+        // 路径仍有 fired=0 的独立 gap(TD-18.4 待调查,跟 V5.78 DRL 回归是 2 个不同 bug)。
+        // 本 bench 测的是 RETE 引擎 raw perf(insert N fact + fireAllRules 耗时),
+        // 不要求实际 fire。workload 保留 1000 Person + 1000 Address 形态,
+        // firedRules 是 informational;具体 fire 数字见 TD-18.4 调查后再收紧。
+        assertEquals(0, s.firedRules, "V5.80: hand-built bench firedRules 仍 0,见 TD-18.4 调查后收紧;perf bench 不要求 fire");
     }
 
     @Test
@@ -488,8 +488,10 @@ class EvalBenchmarkV579 {
         KnowledgePackage kp = buildKnowledgePackage3WayJoin();
         Stats s = measure(kp, 5, 50);
         report("no_eval_3way", s);
-        // V5.79 firedRules=0(见 benchNoEval 注释,V5.78 DRL 回归)
-        assertEquals(0, s.firedRules, "V5.79: V5.78 DRL 回归下 firedRules 暂为 0");
+        // V5.80 note:见 benchNoEval 注释,hand-built bench firedRules 仍 0;V5.80 修的
+        // 是 DRL 路径的 variableCategory 漏填,跟本 bench 的 Criteria 联合路径 fired=0
+        // 是 2 个独立 bug(TD-18.4 调查)。
+        assertEquals(0, s.firedRules, "V5.80: hand-built bench firedRules 仍 0,见 TD-18.4");
     }
 
     /**
@@ -504,7 +506,8 @@ class EvalBenchmarkV579 {
         KnowledgePackage kp = buildKnowledgePackage5Rules();
         Stats s = measure(kp, 5, 50);
         report("no_eval_5r", s);
-        assertEquals(0, s.firedRules, "V5.79: V5.78 DRL 回归下 firedRules 暂为 0");
+        // V5.80 note:见 benchNoEval 注释
+        assertEquals(0, s.firedRules, "V5.80: hand-built bench firedRules 仍 0,见 TD-18.4");
     }
 
     // ====== POJO ======
