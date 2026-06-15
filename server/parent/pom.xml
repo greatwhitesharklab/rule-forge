@@ -160,13 +160,15 @@
                             <groups>perf</groups>
                             <reportName>perf-bench</reportName>
                             <!--
-                                EvalBenchmark 命名不带 "Test" 后缀(它是 V5.46 手动
-                                bench,不是 surefire 自动发现的目标),需要显式 include。
+                                EvalBenchmark* 命名不带 "Test" 后缀(它是手动 bench,
+                                不是 surefire 自动发现的目标),需要显式 include。
                                 DrlRebuildPerfRegressionTest 走默认 **/*Test.java
-                                模式命中,这里只需额外 include EvalBenchmark。
+                                模式命中,这里只需额外 include EvalBenchmark*。
+                                V5.79 引入 EvalBenchmarkV579(V5.78+ API 适配版,V5.46
+                                原版已删,见 TD-17.0)。
                             -->
                             <includes>
-                                <include>**/EvalBenchmark.java</include>
+                                <include>**/EvalBenchmark*.java</include>
                                 <include>**/*Test.java</include>
                                 <include>**/*Tests.java</include>
                             </includes>
