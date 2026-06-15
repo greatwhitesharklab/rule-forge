@@ -9,7 +9,11 @@ import com.ruleforge.model.rete.builder.CriterionBuilder;
 import com.ruleforge.parse.ActionParser;
 import com.ruleforge.parse.CriterionParser;
 import com.ruleforge.plugin.EnginePluginRegistry;
+import com.ruleforge.runtime.EngineContext;
 import com.ruleforge.runtime.assertor.Assertor;
+import com.ruleforge.runtime.assertor.AssertorEvaluator;
+import com.ruleforge.runtime.rete.ValueCompute;
+import com.ruleforge.Splash;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -50,6 +54,9 @@ public class SpringEnginePluginRegistry implements ApplicationContextAware, Engi
         this.bsfVariableProviders = applicationContext.getBeansOfType(BsfVariableProvider.class).values();
         this.functionDescriptors = applicationContext.getBeansOfType(FunctionDescriptor.class).values();
         this.debugWriters = applicationContext.getBeansOfType(DebugWriter.class).values();
+        // 初始化静态桥(深调用点用),并打印启动 banner(原 Utils.setApplicationContext 职责)
+        EngineContext.init(this);
+        new Splash().print();
     }
 
     @Override public Collection<Assertor> getAssertors() { return assertors; }
@@ -61,6 +68,17 @@ public class SpringEnginePluginRegistry implements ApplicationContextAware, Engi
     @Override public Collection<BsfVariableProvider> getBsfVariableProviders() { return bsfVariableProviders; }
     @Override public Collection<FunctionDescriptor> getFunctionDescriptors() { return functionDescriptors; }
     @Override public Collection<DebugWriter> getDebugWriters() { return debugWriters; }
+
+    /** 懒查(单例);不在 setApplicationContext 里 eager getBean,避免与注入 registry 的 bean 形成初始化环。 */
+    @Override
+    public AssertorEvaluator getAssertorEvaluator() {
+        return applicationContext.getBean("ruleforge.assertorEvaluator", AssertorEvaluator.class);
+    }
+
+    @Override
+    public ValueCompute getValueCompute() {
+        return applicationContext.getBean("ruleforge.valueCompute", ValueCompute.class);
+    }
 
     @Override
     public Object getBean(String beanId) {

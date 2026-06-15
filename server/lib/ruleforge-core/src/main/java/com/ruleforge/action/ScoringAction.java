@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.ruleforge.model.rule.Value;
 import com.ruleforge.model.scorecard.runtime.ScoreRuntimeValue;
+import com.ruleforge.runtime.EngineContext;
 import com.ruleforge.runtime.rete.Context;
 import com.ruleforge.runtime.rete.ValueCompute;
 
@@ -27,7 +28,7 @@ public class ScoringAction extends AbstractAction {
 
     @Override
     public ActionValue execute(Context context, Object matchedObject, List<Object> allMatchedObjects) {
-        ValueCompute valueCompute = (ValueCompute) context.getApplicationContext().getBean(ValueCompute.BEAN_ID);
+        ValueCompute valueCompute = EngineContext.getValueCompute();
         Object content = valueCompute.complexValueCompute(value, matchedObject, context, allMatchedObjects);
         ScoreRuntimeValue scoreRuntimeValue = new ScoreRuntimeValue(this.rowNumber, this.name, this.weight, content);
         return new ActionValueImpl(scoreRuntimeValue.getName(), scoreRuntimeValue);

@@ -2,6 +2,7 @@ package com.ruleforge.action;
 
 import com.ruleforge.debug.MsgType;
 import com.ruleforge.model.rule.Value;
+import com.ruleforge.runtime.EngineContext;
 import com.ruleforge.runtime.rete.Context;
 import com.ruleforge.runtime.rete.ValueCompute;
 
@@ -13,7 +14,7 @@ public class ConsolePrintAction extends AbstractAction {
     private ActionType actionType = ActionType.ConsolePrint;
 
     public ActionValue execute(Context context, Object matchedObject, List<Object> allMatchedObjects) {
-        ValueCompute valueCompute = (ValueCompute) context.getApplicationContext().getBean(ValueCompute.BEAN_ID);
+        ValueCompute valueCompute = EngineContext.getValueCompute();
         Object content = valueCompute.complexValueCompute(value, matchedObject, context, allMatchedObjects);
         if (content instanceof BigDecimal) {
             BigDecimal b = (BigDecimal) content;

@@ -1,6 +1,5 @@
 package com.ruleforge.decision.service.impl;
 
-import com.ruleforge.Utils;
 import com.ruleforge.debug.MessageItem;
 import com.ruleforge.runtime.KnowledgePackage;
 import com.ruleforge.runtime.KnowledgeSession;
@@ -47,6 +46,7 @@ public class ShadowExecutionServiceImpl implements IShadowExecutionService {
     private final IShadowComparisonService shadowComparisonService;
     // V5.20+ 自建决策流执行器(V5.21 起为唯一执行路径)
     private final FlowEngine flowEngine;
+    private final KnowledgeService knowledgeService;
 
     @Override
     @Async("shadowExecutor")
@@ -91,9 +91,7 @@ public class ShadowExecutionServiceImpl implements IShadowExecutionService {
             Map<String, List<RuleVariableDef>> groupedByClazz = allVariableDefs.stream()
                     .collect(Collectors.groupingBy(RuleVariableDef::getClazz));
 
-            // 3. 获取 KnowledgeService
-            KnowledgeService knowledgeService = (KnowledgeService) Utils.getApplicationContext()
-                    .getBean(KnowledgeService.BEAN_ID);
+            // 3. KnowledgeService 注入
 
             // 4. 加载陪跑规则包
             long stepStartTime = System.currentTimeMillis();

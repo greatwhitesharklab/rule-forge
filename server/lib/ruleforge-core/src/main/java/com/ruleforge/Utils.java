@@ -1,32 +1,28 @@
 package com.ruleforge;
 
-import com.ruleforge.debug.DebugWriter;
 import com.ruleforge.exception.RuleException;
-import com.ruleforge.model.function.FunctionDescriptor;
 import com.ruleforge.model.library.Datatype;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-public class Utils implements ApplicationContextAware {
-    private static boolean debug;
-    private static boolean debugToFile;
-    private static ApplicationContext applicationContext;
-    private static Collection<DebugWriter> debugWriters;
-    private static Map<String, FunctionDescriptor> functionDescriptorMap = new HashMap<>();
-    private static Map<String, FunctionDescriptor> functionDescriptorLabelMap = new HashMap<>();
-
-    public static ApplicationContext getApplicationContext() {
-        return applicationContext;
+/**
+ * 纯函数工具类:URL/编解码、对象属性、类型推断。
+ * <p>
+ * 引擎运行期所需的 Spring 静态状态(bean/function/debug)已迁出:
+ * 见 {@link com.ruleforge.plugin.EnginePluginRegistry} + {@link com.ruleforge.runtime.EngineContext}。
+ */
+public final class Utils {
+    private Utils() {
     }
 
     public static String decodeURL(String str) {
@@ -101,39 +97,37 @@ public class Utils implements ApplicationContextAware {
     }
 
     public static Datatype getDatatype(Object obj) {
-        Datatype datatype = null;
+        Datatype datatype;
         if (obj == null) {
             datatype = Datatype.Object;
+        } else if (obj instanceof Integer) {
+            datatype = Datatype.Integer;
+        } else if (obj instanceof Long) {
+            datatype = Datatype.Long;
+        } else if (obj instanceof Double) {
+            datatype = Datatype.Double;
+        } else if (obj instanceof Float) {
+            datatype = Datatype.Float;
+        } else if (obj instanceof BigDecimal) {
+            datatype = Datatype.BigDecimal;
+        } else if (obj instanceof Boolean) {
+            datatype = Datatype.Boolean;
+        } else if (obj instanceof Date) {
+            datatype = Datatype.Date;
+        } else if (obj instanceof List) {
+            datatype = Datatype.List;
+        } else if (obj instanceof Set) {
+            datatype = Datatype.Set;
+        } else if (obj instanceof Enum) {
+            datatype = Datatype.Enum;
+        } else if (obj instanceof Map) {
+            datatype = Datatype.Map;
+        } else if (obj instanceof String) {
+            datatype = Datatype.String;
+        } else if (obj instanceof Character) {
+            datatype = Datatype.Char;
         } else {
-            if (obj instanceof Integer) {
-                datatype = Datatype.Integer;
-            } else if (obj instanceof Long) {
-                datatype = Datatype.Long;
-            } else if (obj instanceof Double) {
-                datatype = Datatype.Double;
-            } else if (obj instanceof Float) {
-                datatype = Datatype.Float;
-            } else if (obj instanceof BigDecimal) {
-                datatype = Datatype.BigDecimal;
-            } else if (obj instanceof Boolean) {
-                datatype = Datatype.Boolean;
-            } else if (obj instanceof Date) {
-                datatype = Datatype.Date;
-            } else if (obj instanceof List) {
-                datatype = Datatype.List;
-            } else if (obj instanceof Set) {
-                datatype = Datatype.Set;
-            } else if (obj instanceof Enum) {
-                datatype = Datatype.Enum;
-            } else if (obj instanceof Map) {
-                datatype = Datatype.Map;
-            } else if (obj instanceof String) {
-                datatype = Datatype.String;
-            } else if (obj instanceof Character) {
-                datatype = Datatype.Char;
-            } else {
-                datatype = Datatype.Object;
-            }
+            datatype = Datatype.Object;
         }
         return datatype;
     }
@@ -162,59 +156,5 @@ public class Utils implements ApplicationContextAware {
         }
 
         throw new IllegalArgumentException(val.getClass().getName() + " can not to BigDecimal.");
-    }
-
-    public static FunctionDescriptor findFunctionDescriptor(String functionName) {
-        if (!functionDescriptorMap.containsKey(functionName)) {
-            throw new RuleException("Function[" + functionName + "] not exist.");
-        }
-        return functionDescriptorMap.get(functionName);
-    }
-
-    public static Map<String, FunctionDescriptor> getFunctionDescriptorLabelMap() {
-        return functionDescriptorLabelMap;
-    }
-
-    public static Map<String, FunctionDescriptor> getFunctionDescriptorMap() {
-        return functionDescriptorMap;
-    }
-
-    public void setDebug(boolean debug) {
-        Utils.debug = debug;
-    }
-
-    public void setDebugToFile(boolean debugToFile) {
-        Utils.debugToFile = debugToFile;
-    }
-
-    public static boolean isDebugToFile() {
-        return debugToFile;
-    }
-
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    public static Collection<DebugWriter> getDebugWriters() {
-        return debugWriters;
-    }
-
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        functionDescriptorMap.clear();
-        functionDescriptorLabelMap.clear();
-        Collection<FunctionDescriptor> functionDescriptors = applicationContext.getBeansOfType(FunctionDescriptor.class).values();
-        for (FunctionDescriptor fun : functionDescriptors) {
-            if (fun.isDisabled()) {
-                continue;
-            }
-            if (functionDescriptorMap.containsKey(fun.getName())) {
-                throw new RuntimeException("Duplicate function [" + fun.getName() + "]");
-            }
-            functionDescriptorMap.put(fun.getName(), fun);
-            functionDescriptorLabelMap.put(fun.getLabel(), fun);
-        }
-        debugWriters = applicationContext.getBeansOfType(DebugWriter.class).values();
-        Utils.applicationContext = applicationContext;
-        new Splash().print();
     }
 }

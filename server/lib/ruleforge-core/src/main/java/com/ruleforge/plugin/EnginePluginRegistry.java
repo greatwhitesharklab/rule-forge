@@ -8,7 +8,9 @@ import com.ruleforge.model.function.FunctionDescriptor;
 import com.ruleforge.model.rete.builder.CriterionBuilder;
 import com.ruleforge.parse.ActionParser;
 import com.ruleforge.parse.CriterionParser;
+import com.ruleforge.runtime.assertor.AssertorEvaluator;
 import com.ruleforge.runtime.assertor.Assertor;
+import com.ruleforge.runtime.rete.ValueCompute;
 
 import java.util.Collection;
 
@@ -41,6 +43,12 @@ public interface EnginePluginRegistry {
     Collection<FunctionDescriptor> getFunctionDescriptors();
 
     Collection<DebugWriter> getDebugWriters();
+
+    /** 单例 bean,深调用点(ContextImpl 构造)按需取。 */
+    AssertorEvaluator getAssertorEvaluator();
+
+    /** 单例 bean,深调用点(ContextImpl 构造)按需取。 */
+    ValueCompute getValueCompute();
 
     /**
      * 按 bean id 动态查找(给 ExecuteMethodAction / ScoreRule 这类规则配置驱动的动态 bean 引用兜底)。

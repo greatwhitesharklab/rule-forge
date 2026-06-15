@@ -156,11 +156,6 @@
 
     <bean id="ruleforge.valueCompute" class="com.ruleforge.runtime.rete.ValueCompute"/>
 
-    <bean id="ruleforge.utils" class="com.ruleforge.Utils">
-        <property name="debug" value="${ruleforge.debug:true}"/>
-        <property name="debugToFile" value="${ruleforge.debugToFile:false}"/>
-    </bean>
-
 <bean class="com.ruleforge.builder.resource.DecisionTableResourceBuilder">
         <property name="decisionTableDeserializer" ref="ruleforge.decisionTableDeserializer"/>
     </bean>

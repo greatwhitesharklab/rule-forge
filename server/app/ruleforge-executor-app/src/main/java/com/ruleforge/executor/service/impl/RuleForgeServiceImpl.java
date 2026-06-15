@@ -13,6 +13,7 @@ import com.ruleforge.runtime.KnowledgeSessionFactory;
 import com.ruleforge.runtime.response.ExecutionResponse;
 import com.ruleforge.runtime.response.ExecutionResponseImpl;
 import com.ruleforge.runtime.service.KnowledgeService;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -26,6 +27,9 @@ import java.util.*;
 @Slf4j
 @Service
 public class RuleForgeServiceImpl implements RuleForgeService {
+
+    @Resource
+    private KnowledgeService knowledgeService;
 
     @Override
     public Map<String, Object> doTest(String project, String packageId, String flowId, List<Map<String, Object>> mapList) {
@@ -47,14 +51,13 @@ public class RuleForgeServiceImpl implements RuleForgeService {
 
         long start = System.currentTimeMillis();
 
-        // 从Spring中获取KnowledgeService接口实例
-        KnowledgeService service = (KnowledgeService) Utils.getApplicationContext().getBean(KnowledgeService.BEAN_ID);
+        // knowledgeService 注入(V5.76.4: 取代 Utils.getApplicationContext().getBean)
         KnowledgePackage knowledgePackage = null;
         try {
             // 通过KnowledgeService接口获取指定的资源包
-            knowledgePackage = service.getKnowledge(project + "/" + packageId);
+            knowledgePackage = knowledgeService.getKnowledge(project + "/" + packageId);
         } catch (Exception e) {
-            log.error("service.getKnowledge error", e);
+            log.error("knowledgeService.getKnowledge error", e);
         }
         if (knowledgePackage == null) {
             return null;

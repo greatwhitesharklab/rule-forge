@@ -2,7 +2,6 @@ package com.ruleforge.runtime.rete;
 
 import com.ruleforge.debug.MessageItem;
 import com.ruleforge.runtime.WorkingMemory;
-import org.springframework.context.ApplicationContext;
 
 import java.util.HashMap;
 import java.util.List;
@@ -14,9 +13,8 @@ public class EvaluationContextImpl extends ContextImpl implements EvaluationCont
     private Map<String, Object> partValueMap = new HashMap<>();
 
     public EvaluationContextImpl(WorkingMemory workingMemory,
-                                 ApplicationContext applicationContext,
                                  Map<String, String> variableCategoryMap, List<MessageItem> debugMessageItems) {
-        super(workingMemory, applicationContext, variableCategoryMap, debugMessageItems);
+        super(workingMemory, variableCategoryMap, debugMessageItems);
     }
 
     @Override

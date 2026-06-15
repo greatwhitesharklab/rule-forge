@@ -9,6 +9,7 @@ import com.ruleforge.model.rule.Library;
 import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.scorecard.AssignTargetType;
 import com.ruleforge.model.scorecard.ScoringType;
+import com.ruleforge.runtime.EngineContext;
 import com.ruleforge.runtime.KnowledgePackageWrapper;
 import com.ruleforge.runtime.KnowledgeSession;
 import com.ruleforge.runtime.KnowledgeSessionFactory;
@@ -91,7 +92,7 @@ public class ScoreRule extends Rule {
             msg = "--- 执行自定义评分卡得分计算Bean:" + this.scoringBean;
             context.logMsg(msg, MsgType.ScoreCard);
 
-            ScoringStrategy scoringStrategy = (ScoringStrategy) context.getApplicationContext().getBean(this.scoringBean);
+            ScoringStrategy scoringStrategy = (ScoringStrategy) EngineContext.getBean(this.scoringBean);
             actualScore = scoringStrategy.calculate(card, context);
         }
 

@@ -1,6 +1,5 @@
 package com.ruleforge.runtime;
 
-import com.ruleforge.Utils;
 import com.ruleforge.action.AbstractAction;
 import com.ruleforge.action.ActionValue;
 import com.ruleforge.action.ActionType;
@@ -13,6 +12,7 @@ import com.ruleforge.model.rete.Rete;
 import com.ruleforge.model.rete.TerminalNode;
 import com.ruleforge.model.rule.Rhs;
 import com.ruleforge.model.rule.Rule;
+import com.ruleforge.plugin.EnginePluginRegistry;
 import com.ruleforge.runtime.agenda.Agenda;
 import com.ruleforge.runtime.assertor.AssertorEvaluator;
 import com.ruleforge.runtime.response.RuleExecutionResponse;
@@ -24,7 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.context.ApplicationContext;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -40,29 +39,27 @@ import static org.mockito.Mockito.*;
 @DisplayName("KnowledgeSession - 知识会话")
 class KnowledgeSessionTest {
 
-    private ApplicationContext previousAppCtx;
+    private Object previousRegistry;
 
     @BeforeEach
     void setUpApplicationContext() throws Exception {
-        // Save the previous ApplicationContext so we can restore it
-        previousAppCtx = Utils.getApplicationContext();
-
-        // Create a mock ApplicationContext with the beans that ContextImpl requires
-        ApplicationContext mockCtx = mock(ApplicationContext.class);
-        when(mockCtx.getBean("ruleforge.assertorEvaluator")).thenReturn(new AssertorEvaluator());
-        when(mockCtx.getBean("ruleforge.valueCompute")).thenReturn(new ValueCompute());
-
-        // Set Utils.applicationContext via reflection
-        Field field = Utils.class.getDeclaredField("applicationContext");
+        // Save the previous registry so we can restore it (V5.76.3: 改走 EngineContext 静态桥)
+        Field field = EngineContext.class.getDeclaredField("registry");
         field.setAccessible(true);
-        field.set(null, mockCtx);
+        previousRegistry = field.get(null);
+
+        // Create a mock EnginePluginRegistry with the collaborators ContextImpl needs
+        EnginePluginRegistry registry = mock(EnginePluginRegistry.class);
+        when(registry.getAssertorEvaluator()).thenReturn(new AssertorEvaluator());
+        when(registry.getValueCompute()).thenReturn(new ValueCompute());
+        EngineContext.init(registry);
     }
 
     @AfterEach
     void restoreApplicationContext() throws Exception {
-        Field field = Utils.class.getDeclaredField("applicationContext");
+        Field field = EngineContext.class.getDeclaredField("registry");
         field.setAccessible(true);
-        field.set(null, previousAppCtx);
+        field.set(null, previousRegistry);
     }
 
     /**

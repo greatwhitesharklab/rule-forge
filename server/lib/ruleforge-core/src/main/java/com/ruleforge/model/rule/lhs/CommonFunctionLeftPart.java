@@ -4,10 +4,10 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import com.ruleforge.Utils;
 import com.ruleforge.model.function.Argument;
 import com.ruleforge.model.function.FunctionDescriptor;
 import com.ruleforge.model.rule.Value;
+import com.ruleforge.runtime.EngineContext;
 import com.ruleforge.runtime.rete.EvaluationContext;
 
 
@@ -23,7 +23,7 @@ public class CommonFunctionLeftPart implements LeftPart {
     private CommonFunctionParameter parameter;
 
     public Object evaluate(EvaluationContext context, Object obj, List<Object> allMatchedObjects) {
-        FunctionDescriptor function = Utils.findFunctionDescriptor(name);
+        FunctionDescriptor function = EngineContext.findFunctionDescriptor(name);
         Value value = parameter.getObjectParameter();
         Object object = context.getValueCompute().complexValueCompute(value, obj, context, allMatchedObjects);
         Argument arg = function.getArgument();
