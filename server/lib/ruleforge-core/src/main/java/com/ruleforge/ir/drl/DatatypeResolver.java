@@ -3,6 +3,7 @@ package com.ruleforge.ir.drl;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -172,6 +173,19 @@ public class DatatypeResolver {
     /** 已注册 type 数 */
     public int size() {
         return types.size();
+    }
+
+    /**
+     * V5.78.1 — 返全部已注册 type 列表(不可变 snapshot,按注册顺序)。
+     *
+     * <p>用途:IDE service (DrlIdeService) 走这个拿 declared + builtin
+     * types 喂 autocomplete / hover。跟 {@link #resolve} 区别:本方法
+     * 不抛,返空集合或 N 个;调用方拿全部。
+     *
+     * <p>无 javadoc 内嵌异常声明。
+     */
+    public Map<String, TypeInfo> getDeclaredTypes() {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(types));
     }
 
     /**
