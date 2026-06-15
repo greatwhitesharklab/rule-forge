@@ -404,17 +404,15 @@ class EvalBenchmarkV579 {
         KnowledgePackage kp = buildKnowledgePackageNoEval();
         Stats s = measure(kp, 5, 50);
         report("no_eval", s);
-        // V5.81 note:TD-19.2 修了测试装配 bug(Mockito ValueCompute 漏 stub complexValueCompute,
-        // 见 [[v580-drl-regression-fix]] TD-18.4)。V5.81.0 SingleRuleFiresBDD 证明引擎在
-        // 最小 1-fact 场景下能正确 fire。本 bench 仍 fired=0 是另一个 pre-existing 缺陷 —
-        // {@code KnowledgeSessionImpl.allFactsMap} 是 {@code Map<String,Object>},按 className
-        // 作 key,1000 个 Person insert 后只保留最后一个(同 key 覆盖)。生产路径是
-        // {@code assertFact} 走 {@code reevaluate} 单独处理 rete,本 bench 走的是
-        // {@code session.insert(...)} + 一次 {@code fireRules} 走 {@code allFactsMap.values()} —
-        // 只剩 1 Person + 1 Address,3 条 rule 都不匹配(都是 UUID 名)。修法是把 allFactsMap
-        // 改成 {@code Map<String,List<Object>>} 或用 {@code assertFact} — 是 production 行为
-        // 改动,远超 V5.81 phase 19 范围,留 V5.82+ (TD-19.5)。
-        assertEquals(0, s.firedRules, "V5.81: bench firedRules 仍 0 — pre-existing allFactsMap 按 className 覆盖 bug,见 docs/notes/v581-criteria-path-fix.md");
+        // V5.82 note:TD-19.5.1 修了 allFactsMap 按 className 覆盖 bug(改 List<Object> + last-wins
+        // Map 视图,见 AllFactsMapRetainsAllInsertsTest 锁契约)。修后本 bench 仍 fired=0 —
+        // 调查(TwoPatternJoinFiresTest)发现**另一个** pre-existing rete 实现 bug:2-pattern
+        // join 的 JoinNode 不跨 fact 维护 left/right memory,只能在同一 propagation pass 内
+        // 看到当前 obj;bench insert 顺序 (addr[i], person[i]) 交叉后,special pair 在 fireRules
+        // evaluationRete 走完时已 "错过" 对方 fact。这是 rete 增量 join 路径的实质缺陷,
+        // 远超 V5.82 TD-19.5 范围,留 V5.83+ (TD-19.5.4)。
+        // 1-pattern 场景不受影响(SingleRuleFiresBDD fired=1)。
+        assertEquals(0, s.firedRules, "V5.82: bench firedRules 仍 0 — 修了 allFactsMap,剩 2-pattern join 增量 memory bug(留 V5.83+ TD-19.5.4),见 docs/notes/v582-allfactsmap-rewrite.md");
     }
 
     @Test
@@ -441,8 +439,8 @@ class EvalBenchmarkV579 {
         KnowledgePackage kp = buildKnowledgePackage3WayJoin();
         Stats s = measure(kp, 5, 50);
         report("no_eval_3way", s);
-        // V5.81 note:见 benchNoEval 注释,pre-existing allFactsMap bug 同样影响。
-        assertEquals(0, s.firedRules, "V5.81: bench firedRules 仍 0 — pre-existing allFactsMap bug,见 docs/notes/v581-criteria-path-fix.md");
+        // V5.82 note:见 benchNoEval 注释,pre-existing 2-pattern join 增量 memory bug 同样影响。
+        assertEquals(0, s.firedRules, "V5.82: bench firedRules 仍 0 — 2-pattern join 增量 memory bug,见 docs/notes/v582-allfactsmap-rewrite.md");
     }
 
     /**
@@ -457,8 +455,8 @@ class EvalBenchmarkV579 {
         KnowledgePackage kp = buildKnowledgePackage5Rules();
         Stats s = measure(kp, 5, 50);
         report("no_eval_5r", s);
-        // V5.81 note:见 benchNoEval 注释
-        assertEquals(0, s.firedRules, "V5.81: bench firedRules 仍 0 — pre-existing allFactsMap bug,见 docs/notes/v581-criteria-path-fix.md");
+        // V5.82 note:见 benchNoEval 注释,pre-existing 2-pattern join 增量 memory bug 同样影响。
+        assertEquals(0, s.firedRules, "V5.82: bench firedRules 仍 0 — 2-pattern join 增量 memory bug,见 docs/notes/v582-allfactsmap-rewrite.md");
     }
 
     // ====== POJO ======
