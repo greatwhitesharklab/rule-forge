@@ -6,6 +6,7 @@ import com.ruleforge.model.function.FunctionDescriptor;
 import com.ruleforge.model.rule.Value;
 import com.ruleforge.model.rule.lhs.CommonFunctionParameter;
 import com.ruleforge.runtime.EngineContext;
+import com.ruleforge.runtime.function.WorkingMemoryFunctionContext;
 import com.ruleforge.runtime.rete.Context;
 
 import java.util.List;
@@ -41,7 +42,7 @@ public class ExecuteCommonFunctionAction extends AbstractAction {
         if (function.getArgument() != null && function.getArgument().isNeedProperty()) {
             property = parameter.getProperty();
         }
-        Object result = function.doFunction(object, property, context.getWorkingMemory());
+        Object result = function.doFunction(object, property, new WorkingMemoryFunctionContext(context.getWorkingMemory()));
         info = info + (object == null ? "" : object);
 
         // 执行信息

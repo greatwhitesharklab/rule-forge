@@ -2,8 +2,8 @@ package com.ruleforge.model.function.impl;
 
 import com.ruleforge.Utils;
 import com.ruleforge.model.function.Argument;
+import com.ruleforge.model.function.FunctionContext;
 import com.ruleforge.model.function.FunctionDescriptor;
-import com.ruleforge.runtime.WorkingMemory;
 
 
 /**
@@ -28,7 +28,7 @@ public class TrimFunctionDescriptor implements FunctionDescriptor{
 		return "Trim";
 	}
 	@Override
-	public Object doFunction(Object object, String property,WorkingMemory workingMemory) {
+	public Object doFunction(Object object, String property, FunctionContext ctx) {
 		Object value=Utils.getObjectProperty(object, property);
 		if(value==null){
 			return "null";

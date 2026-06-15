@@ -2,8 +2,8 @@ package com.ruleforge.model.function.impl;
 
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.function.Argument;
+import com.ruleforge.model.function.FunctionContext;
 import com.ruleforge.model.function.FunctionDescriptor;
-import com.ruleforge.runtime.WorkingMemory;
 
 /**
  * @author Jacky.gao
@@ -19,16 +19,16 @@ public class UpdateFactFunctionDescriptor implements FunctionDescriptor {
 	}
 
 	@Override
-	public Object doFunction(Object object, String property,WorkingMemory workingMemory) {
+	public Object doFunction(Object object, String property, FunctionContext ctx) {
 		if(object instanceof String){
 			String text=(String)object;
 			if(text.equals("参数") || text.equals("parameter")){
-				return workingMemory.update(workingMemory.getParameters());
+				return ctx.update(ctx.getParameters());
 			}else{
 				throw new RuleException("Unsupport parameter["+text+"].");
 			}
 		}else{
-			return workingMemory.update(object);
+			return ctx.update(object);
 		}
 	}
 

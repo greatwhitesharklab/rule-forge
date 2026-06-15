@@ -1,7 +1,6 @@
 package com.ruleforge.model.function;
 
 import com.ruleforge.model.rule.RuleInfo;
-import com.ruleforge.runtime.WorkingMemory;
 
 /**
  * @author fred
@@ -18,15 +17,15 @@ public class ActiveRuleFunctionDescriptor implements FunctionDescriptor {
         return p;
     }
 
-    public Object doFunction(Object object, String property, WorkingMemory workingMemory) {
-        RuleInfo rule = workingMemory.getContext().getCurrentRule();
+    public Object doFunction(Object object, String property, FunctionContext ctx) {
+        RuleInfo rule = ctx.getCurrentRule();
         if (rule == null) {
             return null;
         } else if (object == null) {
             return null;
         } else {
             String ruleName = object.toString();
-            workingMemory.activeRule(rule.getActivationGroup(), ruleName);
+            ctx.activeRule(rule.getActivationGroup(), ruleName);
             return null;
         }
     }
