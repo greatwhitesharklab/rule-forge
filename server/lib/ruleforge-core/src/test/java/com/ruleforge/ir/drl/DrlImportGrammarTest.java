@@ -14,7 +14,9 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -217,6 +219,119 @@ class DrlImportGrammarTest {
     }
 
     // ============================================================
+    // === V5.77 BDD 7 — Java class import 段(反转 D5 决定) ===
+    // ============================================================
+    //
+    // D5 决定 V5.42.1 砍掉 java import,V5.44.3 只补 library form。
+    // V5.77 反转:DRL 顶层支持 `import com.foo.Bar;` 形式,跟 Drools 6 兼容。
+    // visitor 区分 library(STRING)/java(dottedName),resolver addJavaImport(fqcn)
+    // 走 Class.forName 反射注册 fact type + 字段列表。
+    //
+    // 锁 4 件事:
+    //   1. `import com.foo.Bar;` 顶层语句合法,visitor 收 javaImports 列表
+    //   2. java import 跟 library import 共存,各自走不同 collector
+    //   3. 重复 java import 自动去重
+    //   4. resolver.addJavaImport 用 Class.forName 反射注册 type + 字段
+    //      (拿不到 class 时软 fail — caller 没把 class 放 classpath 是合理场景)
+
+    @Nested
+    @DisplayName("Given Java class import 段,When 走 visitor,Then javaImports 列表含 FQCN")
+    class JavaClassImport {
+
+        @Test
+        @DisplayName("import com.ruleforge.model.Applicant; 合法 + 收集 FQCN")
+        void singleJavaImport() {
+            List<String> javaImports = visitJavaImports(
+                "import com.ruleforge.model.Applicant;\n"
+                + "rule \"R1\" when Applicant(age > 18) then end");
+            assertEquals(1, javaImports.size());
+            assertEquals("com.ruleforge.model.Applicant", javaImports.get(0));
+        }
+
+        @Test
+        @DisplayName("import 段末尾可省略分号(java form)")
+        void noSemicolon() {
+            List<String> javaImports = visitJavaImports(
+                "import com.ruleforge.model.Applicant\n"
+                + "rule \"R1\" when Applicant(age > 18) then end");
+            assertEquals(1, javaImports.size());
+            assertEquals("com.ruleforge.model.Applicant", javaImports.get(0));
+        }
+
+        @Test
+        @DisplayName("library import 跟 java import 共存,互不串")
+        void javaAndLibraryCoexist() {
+            DrlAstVisitor visitor = visitFull(
+                "import \"libs/variables.drl\";\n"
+                + "import com.ruleforge.model.Applicant;\n"
+                + "import com.ruleforge.model.OrderModel;\n"
+                + "rule \"R1\" when Applicant(age > 18) then end");
+            assertEquals(1, visitor.getImports().size());
+            assertEquals("libs/variables.drl", visitor.getImports().get(0));
+            assertEquals(2, visitor.getJavaImports().size());
+            assertTrue(visitor.getJavaImports().contains("com.ruleforge.model.Applicant"));
+            assertTrue(visitor.getJavaImports().contains("com.ruleforge.model.OrderModel"));
+        }
+
+        @Test
+        @DisplayName("重复 java import 去重(LinkedHashSet)")
+        void duplicateJavaImportsDeduped() {
+            List<String> javaImports = visitJavaImports(
+                "import com.ruleforge.model.Applicant;\n"
+                + "import com.ruleforge.model.OrderModel;\n"
+                + "import com.ruleforge.model.Applicant;\n"
+                + "rule \"R1\" when Applicant(age > 18) then end");
+            assertEquals(2, javaImports.size(), "重复 java import 应去重");
+            assertTrue(javaImports.contains("com.ruleforge.model.Applicant"));
+            assertTrue(javaImports.contains("com.ruleforge.model.OrderModel"));
+        }
+    }
+
+    // ============================================================
+    // === V5.77 BDD 8 — DatatypeResolver.addJavaImport 反射注册 fact type ===
+    // ============================================================
+
+    @Nested
+    @DisplayName("Given DatatypeResolver,When addJavaImport,Then Class.forName 反射注册 fact type")
+    class AddJavaImportReflection {
+
+        @Test
+        @DisplayName("FQCN 对应 class 在 classpath → resolver 拿到 type + 字段")
+        void reflectivelyRegistersType() {
+            // ApplicantTestClass 是同包测试类,有 public 字段 a/b/c
+            resolver = new DatatypeResolver();
+            resolver.addJavaImport("com.ruleforge.ir.drl.ApplicantTestClass");
+            assertTrue(resolver.isKnown("ApplicantTestClass"),
+                "Class.forName 成功后,simple name 应在 known types");
+            DatatypeResolver.TypeInfo info = resolver.resolve("ApplicantTestClass");
+            assertNotNull(info);
+            assertEquals("ApplicantTestClass", info.getName());
+            // 字段列表非空就行(具体字段是 public Field[] 顺序,不锁)
+            assertTrue(info.getFields().size() >= 1,
+                "反射应至少拿到 1 个字段,实际:" + info.getFields());
+        }
+
+        @Test
+        @DisplayName("FQCN 对应 class 不在 classpath → 软 fail,resolver 不抛")
+        void missingClassDoesNotThrow() {
+            resolver = new DatatypeResolver();
+            // 不抛 IllegalArgumentException 也不抛 ClassNotFoundException
+            assertDoesNotThrow(() ->
+                resolver.addJavaImport("com.does.not.ExistClassForV5_77_Test"));
+            // 拿不到 class → 不注册 type
+            assertFalse(resolver.isKnown("ExistClassForV5_77_Test"));
+        }
+
+        @Test
+        @DisplayName("addJavaImport null/空 FQCN 抛 IllegalArgumentException")
+        void guardFails() {
+            resolver = new DatatypeResolver();
+            assertThrows(IllegalArgumentException.class, () -> resolver.addJavaImport(null));
+            assertThrows(IllegalArgumentException.class, () -> resolver.addJavaImport(""));
+        }
+    }
+
+    // ============================================================
     // === helpers ===
     // ============================================================
 
@@ -225,6 +340,22 @@ class DrlImportGrammarTest {
         DrlAstVisitor visitor = new DrlAstVisitor(makeResolver());
         visitor.visit(tree);
         return visitor.getImports();
+    }
+
+    /** V5.77 — 收集 javaImports 列表的 helper */
+    private List<String> visitJavaImports(String drl) {
+        DrlParser.CompilationUnitContext tree = parse(drl);
+        DrlAstVisitor visitor = new DrlAstVisitor(makeResolver());
+        visitor.visit(tree);
+        return visitor.getJavaImports();
+    }
+
+    /** V5.77 — 收集完整 visitor(java + library 都要) */
+    private DrlAstVisitor visitFull(String drl) {
+        DrlParser.CompilationUnitContext tree = parse(drl);
+        DrlAstVisitor visitor = new DrlAstVisitor(makeResolver());
+        visitor.visit(tree);
+        return visitor;
     }
 
     private static DrlParser.CompilationUnitContext parse(String drl) {

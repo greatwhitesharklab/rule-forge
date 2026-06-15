@@ -206,15 +206,18 @@ class DrlAstVisitorTest {
     class SyntaxError {
 
         @Test
-        @DisplayName("import 段(grammar 不支持)→ ANTLR 报 syntax error")
+        @DisplayName("V5.77 反转 D5 后 — 真非法的顶层 import 形态(空 FQCN)报 syntax error")
         void importFailsAtParse() {
+            // V5.77 之前 import 段(无论 library / java)都拒绝。本测试改锁 V5.77
+            // 反转后仍非法的形态:`import ;`(空 FQCN) — grammar 期望 STRING 或
+            // javaQualifiedName,空形式报 syntax error。
+            // java import 接受契约见 DrlImportGrammarTest V5.77 BDD 7。
             String drl = "package com.ruleforge\n" +
-                "import com.ruleforge.model.Applicant\n" +
+                "import ;\n" +
                 "rule \"R1\" when Applicant() then end";
-            // 直接走 parse → 期望至少 1 个 syntax error
             int errorCount = parseAndCountErrors(drl);
             assertTrue(errorCount > 0,
-                "import 段应该报 syntax error,实际 " + errorCount + " 个 error");
+                "空 import 段应报 syntax error,实际 " + errorCount + " 个 error");
         }
     }
 

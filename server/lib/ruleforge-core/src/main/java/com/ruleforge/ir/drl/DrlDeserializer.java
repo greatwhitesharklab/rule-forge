@@ -529,6 +529,12 @@ public class DrlDeserializer {
          *       property 留 null,runtime 走默认"未指定"路径(走 match 计数)— V5.53+ 再补
          *       property extraction(从 inner lhsPattern 第一条 PropertyCriteria 抓)</li>
          * </ul>
+         *
+         * <p><b>V5.77</b> 反转 D3:grammar 加可选 {@code accumulateReverse} 段(action
+         * 之后、result 之前)。V5.77 deserializer 端 <b>不</b>执行 reverse 段 — runtime
+         * 端 reverse 回调(fact retract 时跑 reverse body)deferred 到 V5.78+。本 sprint
+         * 只验 grammar/parser 接受契约,FromLeftPart 不新增 reverseCode 字段。
+         * 任何 caller 想用 reverse 段的语义(自定义 stats 双向)需等 V5.78+。
          */
         private void handleLhsAccumulate(DrlParser.LhsAccumulateContext ctx) {
             DrlParser.DrlPatternContext outer = ctx.drlPattern();

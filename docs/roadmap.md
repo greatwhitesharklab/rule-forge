@@ -446,13 +446,23 @@ MockRuleEngine;BoundaryEvent / SubProcess executor 补齐 BPMN 2.0
 > **纪律**:roadmap 只列 Phase 方向,版本号在 release 时回填(参考上文
 > "版本管理"段)。以下 Phase 编号是 `x.y` 占位,具体发版号跟 PR 走。
 
-### Phase 13:DRL 4 grammar 扩展 — P0
+### Phase 13:DRL 4 grammar 扩展 — P0 ✅ V5.77
 
 - 背景:V5.42 grammar 覆盖 95% 业务,缺 `accumulate reverse` / `import` / `function` /
   `declare` 4 段
-- 工作量:ANTLR4 grammar 扩 + AST visitor 扩 + DrlDeserializer 扩,4-6 周
-- 风险:实测业务样本,确认这 4 段是 "想要" 还是 "真必要"(部分语法可以走替代品)
-- 决策:开始前先盘点业务代码,看哪段真用过
+- **V5.77 收口(2026-06-15)**:盘点发现 function/declare V5.50.3/V5.50.4 已收,
+  实际剩 2 段:**Java class import**(反转 V5.42.1 D5)+ **accumulate reverse 段**
+  (反转 V5.42.1 D3)
+- **V5.77.1** Java class import:DrlParser 加 `javaQualifiedName` rule;
+  DrlAstVisitor 分流 library/java imports;DatatypeResolver.addJavaImport
+  Class.forName 反射注册 fact type;8 个新 BDD 测(DrlImportGrammarTest V5.77 BDD 7-8)
+- **V5.77.2** accumulate reverse:DRL_REVERSE 关键字 + accumulateReverse rule
+  在 action 后 result 前可选;DrlAstVisitor.visitAccumulateReverse 显式 walk;
+  删除 V5_50_1_AssertsAccumulateReverseStillRejected 反向 lock-in。
+  **runtime 端 reverse 段执行(fact retract 回调 reverse body)deferred 到 V5.78+**
+  — 本 sprint 只验 grammar/parser 接受契约。
+- 验收:602 测试全绿,597 → 602(+5 测试覆盖反转契约)
+- 风险:语法反转需向使用方(BA 团队)同步,文档/VitePress 改 DRL 6.x 子集描述
 
 ### Phase 14:完整 DRL 编辑器(console-ui)重写 — P0
 
@@ -498,7 +508,7 @@ MockRuleEngine;BoundaryEvent / SubProcess executor 补齐 BPMN 2.0
 
 | 方向 | 候选 Phase | 优先级 | 状态 |
 |---|---|:---:|:---:|
-| DRL grammar 扩展 | Phase 13 | P0 | 📋 候选(先盘点业务) |
+| DRL grammar 扩展 | Phase 13 | P0 | ✅ V5.77 收口(2 段反转,function/declare 已在 V5.50 收) |
 | 完整 DRL 编辑器 | Phase 14 | P0 | 📋 候选(8-12 周) |
 | Rust alpha index 优化 | Phase 15 | P2 | 📋 候选(2-3 周,继续 alpha) |
 | Drools 7.31 真 baseline | Phase 16 | P2 | 📋 候选(1-2 周) |

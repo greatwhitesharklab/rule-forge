@@ -14,7 +14,8 @@ lexer grammar DrlLexer;
  *       when-then-end / not / exists / from / collect / accumulate 5 内置 /
  *       extends(D2) / salience / timer / no-loop / lock-on-active 等)</li>
  *   <li><b>不</b>支持 import(lexer 缺失 → 报 token 错;DatatypeResolver 兜底再查)</li>
- *   <li><b>不</b>支持 accumulate reverse 段(D3 决定,grammar rule 缺失 → 报语法错)</li>
+ *   <li><b>不</b>支持 accumulate reverse 段 — <b>V5.77 反转 D3</b>,grammar 加 reverse 段,
+ *       runtime 执行 deferred 到 V5.78+(见 DrlDeserializer.handleLhsAccumulate 注释)</li>
  *   <li>占位符 {@code ${...}} 当 generic token(grammar 层放行,留 V5.42.3a 展开器替换)</li>
  * </ul>
  *
@@ -56,6 +57,9 @@ DRL_INIT           : 'init';
 DRL_ACTION         : 'action';
 DRL_RESULT         : 'result';
 // D3: reverse 段 grammar rule 缺失 → 不定义 DRL_REVERSE(grammar reject)
+// V5.77 反转 D3 — 定义 DRL_REVERSE,跟 DRL_ACTION 镜像,跟 accumulateAction 4 段结构(init/action/reverse/result)
+// 一致。runtime 端 reverse 段执行 deferred 到 V5.78+。
+DRL_REVERSE       : 'reverse';
 
 DRL_TRUE           : 'true';
 DRL_FALSE          : 'false';

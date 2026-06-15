@@ -286,24 +286,26 @@ class DrlGrammarSmokeTest {
     class Negative {
 
         @Test
-        @DisplayName("import 段(lexer 缺失 → token error)")
+        @DisplayName("D5 V5.42.1 砍 java import — V5.77 反转,改锁定为正 corpus 形式")
         void rejectsImport() {
+            // V5.77 翻转:原 D5 决定砍 java import,V5.77 反转接受。
+            // 本测试改锁 D5 反转后仍非法的 import 形态(空 FQCN / 语法错位):
+            // `import ;`(grammar 不接受空 form) — 老测试用例改用真正的非法形态。
+            // 见 DrlImportGrammarTest V5.77 BDD 7 锁 java import 接受契约。
             String drl = "package com.ruleforge\n" +
-                "import com.ruleforge.model.Applicant\n" +
+                "import ;\n" +
                 "rule \"R1\" when Applicant() then end";
             assertParseFails(drl);
         }
 
         @Test
-        @DisplayName("D3 决定:accumulate reverse 段(grammar rule 缺失 → syntax error)")
+        @DisplayName("D3 决定(V5.77 已反转)— 老 lock-in 仍记录原 D3 决定历史")
         void rejectsAccumulateReverse() {
-            String drl = "rule \"R1\" " +
-                "when $s : Integer() from accumulate(Loan(amount > 100), " +
-                "init(int t = 0), " +
-                "action($s.setValue(t + $loan.getAmount())), " +
-                "reverse($s.setValue(t - $loan.getAmount())), " +
-                "result(t)) " +
-                "then end";
+            // V5.77 反转 D3 — 本 case 从 negativeCorpus 移走,改保留为"历史 lock-in"
+            // 标记。reverse 段现在**接受**,见 V5_77_AcceptsAccumulateReverse。
+            // 本测试改测 D3 反转后仍非法的形态:`reverse` 单独出现在 unitStatement
+            // 顶层(不是 accumulate 内)— grammar 没这位置,报 syntax error。
+            String drl = "rule \"R1\" when Loan() then reverse(); end";
             assertParseFails(drl);
         }
 
@@ -383,28 +385,41 @@ class DrlGrammarSmokeTest {
     }
 
     // ============================================================
-    // === V5.50.1 不变量 lock-in:accumulate reverse 段继续被拒绝(D3 决定) ===
+    // === V5.77 — 反转 D3 决定:accumulate reverse 段 grammar 接受 ===
     // ============================================================
     //
-    // V5.42.1 plan D3 决定:accumulate reverse 段 grammar 砍掉,reverse 段继续被拒绝。
-    // V5.50.1 改 accumulateInit 时,本 nested 锁这个不变量 — 反向测试,确保改 grammar
-    // 时没"顺手"加 reverse alt。
+    // V5.42.1 D3 决定砍 reverse 段,V5.50.1 加反向 lock-in 测试。
+    // V5.77 反转 D3 — grammar 加 `DRL_REVERSE` 关键字 + `accumulateReverse` rule,
+    // 接受 reverse 段语法。本 nested 锁 grammar 层新契约。runtime 端 reverse 段执行
+    // deferred 到 V5.78+。
 
     @Nested
-    @DisplayName("V5.50.1 不变量 — accumulate reverse 段继续被拒绝(D3 决定不变)")
-    class V5_50_1_AssertsAccumulateReverseStillRejected {
+    @DisplayName("V5.77 — accumulate reverse 段 grammar 接受(D3 反转)")
+    class V5_77_AcceptsAccumulateReverse {
 
         @Test
-        @DisplayName("Given DRL accumulate 含 reverse($s.setValue(t - $loan.getAmount())),When 解析,Then 报 syntax error")
-        void rejectsAccumulateReverse() {
+        @DisplayName("Given DRL accumulate 含 reverse($s.setValue(t - $loan.getAmount())),When 解析,Then 无 syntax error")
+        void acceptsAccumulateReverse() {
             String drl = "rule \"R1\" " +
                 "when $s : Integer() from accumulate(Loan(amount > 100), " +
-                "init(int t = 0), " +
+                "init(int t := 0), " +
                 "action($s.setValue(t + $loan.getAmount())), " +
                 "reverse($s.setValue(t - $loan.getAmount())), " +
                 "result(t)) " +
                 "then end";
-            assertParseFails(drl);
+            assertParses(drl, 0, 1);
+        }
+
+        @Test
+        @DisplayName("DRL accumulate 不含 reverse 段(向后兼容)— 仍合法")
+        void noReverseStillAccepts() {
+            String drl = "rule \"R1\" " +
+                "when $n : Number() from accumulate(Applicant(age > 18), " +
+                "init(count := 0), " +
+                "action($n.setValue(count + 1)), " +
+                "result(count)) " +
+                "then end";
+            assertParses(drl, 0, 1);
         }
     }
 

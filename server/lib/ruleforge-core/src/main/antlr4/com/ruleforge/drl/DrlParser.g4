@@ -44,8 +44,26 @@ dialectStatement
 // STRING 形式(V5.44.3 仅支持 library 文件路径引用,不支持 java 类 import)。
 // DrlAstVisitor.visitImportStatement 收集到 import 列表,DrlDeserializer 端透传给
 // DatatypeResolver(后者查 import 列表再 builtin)。
+//
+// V5.77 — 反转 D5 决定,加 dottedName 形式(Java class import):
+//   import com.ruleforge.model.Applicant;
+// visitor 走 javaImports 集合跟 library 列表分流;resolver 端 addJavaImport
+// 走 Class.forName 反射注册 fact type(对应 DrlImportGrammarTest V5.77 BDD 7-8)。
 importStatement
     : DRL_IMPORT STRING SEMI?
+    | DRL_IMPORT javaQualifiedName SEMI?
+    ;
+
+// V5.77 — Java class import 的 FQCN:跟 `dottedName`(package 段)分开,允许
+// 段名大写开头(类名首字母大写 — Applicant / OrderModel)。`dottedName` 仍只
+// 接受小写,跟 Java package 命名约定一致,避免 LL(*) 决策冲突。
+javaQualifiedName
+    : javaNameSegment (DOT javaNameSegment)*
+    ;
+
+javaNameSegment
+    : UPPER_IDENTIFIER
+    | IDENTIFIER
     ;
 
 dottedName
@@ -177,10 +195,12 @@ lhsAccumulate
     : drlPattern DRL_FROM DRL_ACCUMULATE LPAREN lhsPattern (SEMI | COMMA)
                        accumulateInit (SEMI | COMMA)
                        accumulateAction (SEMI | COMMA)
+                       accumulateReverse? (SEMI | COMMA)?
                        accumulateResult RPAREN
     | DRL_ACCUMULATE LPAREN lhsPattern (SEMI | COMMA)
                        accumulateInit (SEMI | COMMA)
                        accumulateAction (SEMI | COMMA)
+                       accumulateReverse? (SEMI | COMMA)?
                        accumulateResult RPAREN
     ;
 
@@ -199,6 +219,13 @@ initBody
 
 accumulateAction
     : DRL_ACTION LPAREN statementBlock RPAREN
+    ;
+
+// V5.77 — 反转 D3 决定。accumulateReverse 跟 accumulateAction 镜像结构(关键字
+// + 括号 + statementBlock),在 action 之后、result 之前,可缺省。runtime 端
+// reverse 段执行 deferred 到 V5.78+ — grammar/parser 先收口让 .drl 写得出来。
+accumulateReverse
+    : DRL_REVERSE LPAREN statementBlock RPAREN
     ;
 
 accumulateResult
