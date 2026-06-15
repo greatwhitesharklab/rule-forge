@@ -34,11 +34,21 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ValueCompute {
     public static final String BEAN_ID = "ruleforge.valueCompute";
     private static final String EXPR_PRE = "${";
     private static final String EXPR_SUFF = "}";
+
+    /**
+     * V5.86 — className → Class&lt;?&gt; 缓存。{@link #findObject(String, Object, Context)}
+     * per-fact 字符串 compare 转 Class 引用比较。
+     * <p>ConcurrentHashMap 是因为 {@code ValueCompute} 是 Spring 单例,跨线程共享。null value
+     * 用 {@link #CLASS_NOT_FOUND} sentinel 表示 Class.forName 失败。
+     */
+    private final Map<String, Class<?>> classNameCache = new ConcurrentHashMap<>();
+    private static final Class<?> CLASS_NOT_FOUND = Class.class;  // sentinel: 不会跟任何真实 class 相等
 
     public ValueCompute() {
     }
@@ -217,39 +227,74 @@ public class ValueCompute {
     public Object findObject(String className, Object matchedFact, Context context) {
         if (className.equals(HashMap.class.getName())) {
             return context.getWorkingMemory().getParameters();
-        } else {
-            if (matchedFact instanceof Collection) {
-                Collection coll = (Collection) matchedFact;
-                Iterator var5 = coll.iterator();
+        }
 
-                while (var5.hasNext()) {
-                    Object obj = var5.next();
-                    if (obj.getClass().getName().equals(className)) {
+        // V5.86 — 优先用 cache 后的 Class 引用比较,避免 per-fact 字符串 equals 开销
+        Class<?> targetClass = classNameCache.get(className);
+        if (targetClass == null) {
+            targetClass = loadClass(className);
+            classNameCache.put(className, targetClass == null ? CLASS_NOT_FOUND : targetClass);
+        }
+        if (targetClass == CLASS_NOT_FOUND) {
+            targetClass = null;
+        }
+
+        if (matchedFact instanceof Collection) {
+            Collection coll = (Collection) matchedFact;
+            Iterator var5 = coll.iterator();
+
+            while (var5.hasNext()) {
+                Object obj = var5.next();
+                if (targetClass != null) {
+                    if (targetClass.isInstance(obj)) {
                         return obj;
                     }
+                } else if (obj.getClass().getName().equals(className)) {
+                    return obj;
+                }
 
-                    if (obj instanceof GeneralEntity) {
-                        GeneralEntity entity = (GeneralEntity) obj;
-                        if (entity.getTargetClass().equals(className)) {
+                if (obj instanceof GeneralEntity) {
+                    GeneralEntity entity = (GeneralEntity) obj;
+                    if (targetClass != null) {
+                        if (targetClass.isInstance(obj)) {
                             return obj;
                         }
-                    }
-                }
-            } else {
-                if (matchedFact.getClass().getName().equals(className)) {
-                    return matchedFact;
-                }
-
-                if (matchedFact instanceof GeneralEntity) {
-                    GeneralEntity entity = (GeneralEntity) matchedFact;
-                    if (entity.getTargetClass().equals(className)) {
-                        return matchedFact;
+                    } else if (entity.getTargetClass().equals(className)) {
+                        return obj;
                     }
                 }
             }
+        } else {
+            if (targetClass != null) {
+                if (targetClass.isInstance(matchedFact)) {
+                    return matchedFact;
+                }
+            } else if (matchedFact.getClass().getName().equals(className)) {
+                return matchedFact;
+            }
 
-            Map<String, Object> allFactsMap = context.getWorkingMemory().getAllFactsMap();
-            return allFactsMap.get(className);
+            if (matchedFact instanceof GeneralEntity) {
+                GeneralEntity entity = (GeneralEntity) matchedFact;
+                if (targetClass != null) {
+                    if (targetClass.isInstance(matchedFact)) {
+                        return matchedFact;
+                    }
+                } else if (entity.getTargetClass().equals(className)) {
+                    return matchedFact;
+                }
+            }
+        }
+
+        Map<String, Object> allFactsMap = context.getWorkingMemory().getAllFactsMap();
+        return allFactsMap.get(className);
+    }
+
+    /** V5.86 — Class.forName 一次性加载,失败返 null(fallback 字符串 compare)。 */
+    private static Class<?> loadClass(String className) {
+        try {
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            return null;
         }
     }
 }
