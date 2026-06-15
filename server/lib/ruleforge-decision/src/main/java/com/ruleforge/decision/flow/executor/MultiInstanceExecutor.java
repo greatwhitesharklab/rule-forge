@@ -1,10 +1,11 @@
 package com.ruleforge.decision.flow.executor;
 
-import com.ruleforge.Utils;
 import com.ruleforge.decision.exception.FlowExecutionException;
 import com.ruleforge.decision.flow.engine.FlowContext;
 import com.ruleforge.decision.flow.ir.FlowNode;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -38,21 +39,20 @@ import java.util.Set;
  * <p>Inner executor 通过 registry 拿 — 解决循环依赖(wrapper Bean 依赖 registry,
  * registry 收集所有 executors):wrapper 实例**不持** registry 引用,改为
  * <ol>
- *   <li>Spring 环境:`Utils.getApplicationContext().getBean(NodeExecutorRegistry.class)`</li>
+ *   <li>Spring 环境:构造注入 {@link BeanFactory},执行时 `beanFactory.getBean(NodeExecutorRegistry.class)`</li>
  *   <li>测试环境:`MultiInstanceExecutor.Holder.REGISTRY`(静态 fallback)</li>
  * </ol>
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class MultiInstanceExecutor implements NodeExecutor {
 
-    /** V5.33 A1 — 测试场景 fallback:静态 registry holder。Spring 环境优先走 ApplicationContext。 */
+    private final BeanFactory beanFactory;
+
+    /** V5.33 A1 — 测试场景 fallback:静态 registry holder。Spring 环境优先走 BeanFactory。 */
     public static class Holder {
         public static volatile NodeExecutorRegistry REGISTRY;
-    }
-
-    public MultiInstanceExecutor() {
-        // no-op 构造 — registry 延迟到 execute() 时拿
     }
 
     @Override
@@ -188,7 +188,7 @@ public class MultiInstanceExecutor implements NodeExecutor {
 
     private NodeExecutorRegistry resolveRegistry() {
         try {
-            return Utils.getApplicationContext().getBean(NodeExecutorRegistry.class);
+            return beanFactory.getBean(NodeExecutorRegistry.class);
         } catch (Exception e) {
             NodeExecutorRegistry holder = Holder.REGISTRY;
             if (holder == null) {

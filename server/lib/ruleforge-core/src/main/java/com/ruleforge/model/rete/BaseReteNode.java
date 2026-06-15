@@ -1,21 +1,19 @@
 package com.ruleforge.model.rete;
 
-import com.ruleforge.exception.RuleException;
-import com.ruleforge.model.rule.Value;
-import com.ruleforge.runtime.rete.Context;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.beanutils.BeanUtils;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
 
 /**
- * @author Jacky.gao
- * 2015年1月6日
+ * RETE 节点基类(带 children + lines)。V5.76.6 移除:
+ * <ul>
+ *   <li>{@code newActivity} 抽象(已迁 {@code NodeActivityFactory})</li>
+ *   <li>死代码 {@code buildVariables(Context, Value, Map)} / {@code fetchData(Object, String)}(全工程 0 caller)</li>
+ *   <li>{@code import com.ruleforge.runtime.rete.Context} import(model→runtime 耦合消除)</li>
+ * </ul>
  */
 @Setter
 @Getter
@@ -26,18 +24,6 @@ public abstract class BaseReteNode extends ReteNode {
 
     public BaseReteNode(int id) {
         super(id);
-    }
-
-    protected boolean buildVariables(Context context, Value value, Map<String, Object> variableMap) {
-        return true;
-    }
-
-    protected Object fetchData(Object object, String property) {
-        try {
-            return BeanUtils.getProperty(object, property);
-        } catch (Exception e) {
-            throw new RuleException(e);
-        }
     }
 
     public Line addLine(ReteNode toNode) {
@@ -56,5 +42,4 @@ public abstract class BaseReteNode extends ReteNode {
         }
         return line;
     }
-
 }

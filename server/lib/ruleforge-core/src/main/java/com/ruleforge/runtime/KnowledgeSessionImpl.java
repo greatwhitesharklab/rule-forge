@@ -1,6 +1,5 @@
 package com.ruleforge.runtime;
 
-import com.ruleforge.Utils;
 import com.ruleforge.debug.DebugWriter;
 import com.ruleforge.debug.MessageItem;
 import com.ruleforge.exception.RuleException;
@@ -460,7 +459,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
 
     public void writeLogFile() throws IOException {
         if (this.execMessageItems.size() != 0) {
-            for (DebugWriter writer : Utils.getDebugWriters()) {
+            for (DebugWriter writer : EngineContext.getDebugWriters()) {
                 writer.write(this.execMessageItems);
             }
 
@@ -534,8 +533,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
             }
         }
 
-        this.context = new ContextImpl(this, Utils.getApplicationContext(), allVariableCategoryMap, this.execMessageItems);
-        this.evaluationContext = new EvaluationContextImpl(this, Utils.getApplicationContext(), allVariableCategoryMap, this.execMessageItems);
+        this.context = new ContextImpl(this, allVariableCategoryMap, this.execMessageItems);
+        this.evaluationContext = new EvaluationContextImpl(this, allVariableCategoryMap, this.execMessageItems);
     }
 
     public Context getContext() {

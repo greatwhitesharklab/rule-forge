@@ -1,11 +1,12 @@
 package com.ruleforge.action;
 
-import com.ruleforge.Utils;
 import com.ruleforge.debug.MsgType;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.function.FunctionDescriptor;
 import com.ruleforge.model.rule.Value;
 import com.ruleforge.model.rule.lhs.CommonFunctionParameter;
+import com.ruleforge.runtime.EngineContext;
+import com.ruleforge.runtime.function.WorkingMemoryFunctionContext;
 import com.ruleforge.runtime.rete.Context;
 
 import java.util.List;
@@ -22,10 +23,10 @@ public class ExecuteCommonFunctionAction extends AbstractAction {
     @Override
     public ActionValue execute(Context context, Object matchedObject, List<Object> allMatchedObjects) {
         FunctionDescriptor function = null;
-        if (Utils.getFunctionDescriptorMap().containsKey(name)) {
-            function = Utils.findFunctionDescriptor(name);
-        } else if (Utils.getFunctionDescriptorLabelMap().containsKey(label)) {
-            function = Utils.getFunctionDescriptorLabelMap().get(label);
+        if (EngineContext.getFunctionDescriptorMap().containsKey(name)) {
+            function = EngineContext.findFunctionDescriptor(name);
+        } else if (EngineContext.getFunctionDescriptorLabelMap().containsKey(label)) {
+            function = EngineContext.getFunctionDescriptorLabelMap().get(label);
         }
         if (function == null) {
             throw new RuleException("Function[" + name + "] not exist.");
@@ -41,7 +42,7 @@ public class ExecuteCommonFunctionAction extends AbstractAction {
         if (function.getArgument() != null && function.getArgument().isNeedProperty()) {
             property = parameter.getProperty();
         }
-        Object result = function.doFunction(object, property, context.getWorkingMemory());
+        Object result = function.doFunction(object, property, new WorkingMemoryFunctionContext(context.getWorkingMemory()));
         info = info + (object == null ? "" : object);
 
         // 执行信息

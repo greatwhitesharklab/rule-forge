@@ -3,8 +3,8 @@ package com.ruleforge.model.function.impl;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.Utils;
 import com.ruleforge.model.function.Argument;
+import com.ruleforge.model.function.FunctionContext;
 import com.ruleforge.model.function.FunctionDescriptor;
-import com.ruleforge.runtime.WorkingMemory;
 
 /**
  * @author Jacky.gao
@@ -21,7 +21,7 @@ public class StringLengthFunctionDescriptor implements FunctionDescriptor {
 	}
 
 	@Override
-	public Object doFunction(Object object, String property,WorkingMemory workingMemory) {
+	public Object doFunction(Object object, String property, FunctionContext ctx) {
 		Object obj=Utils.getObjectProperty(object, property);
 		if(obj==null){
 			return 0;

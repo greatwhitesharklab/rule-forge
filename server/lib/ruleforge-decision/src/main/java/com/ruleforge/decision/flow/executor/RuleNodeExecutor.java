@@ -1,6 +1,5 @@
 package com.ruleforge.decision.flow.executor;
 
-import com.ruleforge.Utils;
 import com.ruleforge.builder.KnowledgeBase;
 import com.ruleforge.builder.KnowledgeBuilder;
 import com.ruleforge.builder.ResourceBase;
@@ -16,7 +15,6 @@ import com.ruleforge.runtime.response.ExecutionResponseImpl;
 import com.ruleforge.runtime.service.KnowledgeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -39,6 +37,7 @@ import java.util.Map;
 public class RuleNodeExecutor implements NodeExecutor {
 
     private final KnowledgeBuilder knowledgeBuilder;
+    private final KnowledgeService knowledgeService;
 
     @Override
     public String supportedType() {
@@ -103,11 +102,9 @@ public class RuleNodeExecutor implements NodeExecutor {
     private KnowledgePackage loadKnowledge(String file, String project, String version, String nodeId) {
         try {
             if (project != null && !project.isEmpty() && !file.startsWith("/")) {
-                KnowledgeService service = (KnowledgeService) Utils.getApplicationContext()
-                    .getBean(KnowledgeService.BEAN_ID);
                 String resourceKey = project + "/" + file;
                 try {
-                    return service.getKnowledge(resourceKey);
+                    return knowledgeService.getKnowledge(resourceKey);
                 } catch (Exception e) {
                     log.warn("Failed to load knowledge package: {}, building from file instead", resourceKey);
                 }

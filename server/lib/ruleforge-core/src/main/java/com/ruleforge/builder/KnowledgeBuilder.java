@@ -79,12 +79,12 @@ public class KnowledgeBuilder extends AbstractBuilder {
     public KnowledgeBase buildKnowledgeBase(ResourceBase resourceBase) throws RuleException {
         KnowledgePackageService knowledgePackageService = null;
         try {
-            knowledgePackageService = (KnowledgePackageService) this.applicationContext.getBean("ruleforgeKnowledgePackageService");
+            knowledgePackageService = (KnowledgePackageService) this.pluginRegistry.getBean("ruleforgeKnowledgePackageService");
         } catch (Exception ignored) {
         }
         if (knowledgePackageService == null) {
             try {
-                knowledgePackageService = (KnowledgePackageService) this.applicationContext.getBean("ruleforge.knowledgePackageService");
+                knowledgePackageService = (KnowledgePackageService) this.pluginRegistry.getBean("ruleforge.knowledgePackageService");
             } catch (Exception ignored) {
             }
         }

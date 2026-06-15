@@ -14,9 +14,7 @@ import com.ruleforge.model.rule.lhs.Lhs;
 import com.ruleforge.model.rule.loop.LoopRule;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import com.ruleforge.plugin.EnginePluginRegistry;
 
 import java.util.*;
 
@@ -24,7 +22,7 @@ import java.util.*;
  * @author fred
  */
 @NoArgsConstructor
-public class ReteBuilder implements ApplicationContextAware {
+public class ReteBuilder {
     public static final String BEAN_ID = "ruleforge.reteBuilder";
     private static Collection<CriterionBuilder> criterionBuilders;
 
@@ -178,7 +176,7 @@ public class ReteBuilder implements ApplicationContextAware {
         return criterionBuilder.buildCriterion((BaseCriterion) criterion, context);
     }
 
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        criterionBuilders = applicationContext.getBeansOfType(CriterionBuilder.class).values();
+    public void setPluginRegistry(EnginePluginRegistry pluginRegistry) {
+        criterionBuilders = pluginRegistry.getCriterionBuilders();
     }
 }

@@ -26,6 +26,8 @@ import com.ruleforge.model.rule.ValueType;
 import com.ruleforge.model.rule.VariableCategoryValue;
 import com.ruleforge.model.rule.VariableValue;
 import com.ruleforge.model.rule.lhs.CommonFunctionParameter;
+import com.ruleforge.runtime.EngineContext;
+import com.ruleforge.runtime.function.WorkingMemoryFunctionContext;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -166,14 +168,14 @@ public class ValueCompute {
                 CommonFunctionParameter functionParameter = v.getParameter();
                 Value propertyValue = functionParameter.getObjectParameter();
                 object = this.complexValueCompute(propertyValue, matchedFact, context, allMatchedObjects);
-                FunctionDescriptor fun = Utils.findFunctionDescriptor(v.getName());
+                FunctionDescriptor fun = EngineContext.findFunctionDescriptor(v.getName());
                 Argument arg = fun.getArgument();
                 property = null;
                 if (arg.isNeedProperty()) {
                     property = functionParameter.getProperty();
                 }
 
-                left = fun.doFunction(object, property, context.getWorkingMemory());
+                left = fun.doFunction(object, property, new WorkingMemoryFunctionContext(context.getWorkingMemory()));
             } else if (type.equals(ValueType.Paren)) {
                 ParenValue parenValue = (ParenValue) value;
                 left = this.compute(parenValue.getValue(), context, matchedFact, allMatchedObjects);

@@ -5,6 +5,7 @@ import com.ruleforge.decision.flow.EndEventKind;
 import com.ruleforge.decision.flow.engine.FlowContext;
 import com.ruleforge.decision.flow.ir.FlowNode;
 import com.ruleforge.decision.flow.ir.NodeType;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +28,10 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class EventNodeExecutor implements NodeExecutor {
+
+    private final NodeExecutorRegistry registry;
 
     @Override
     public String supportedType() {
@@ -108,20 +112,13 @@ public class EventNodeExecutor implements NodeExecutor {
     }
 
     /**
-     * V5.36 A6 — 拿 NodeExecutorRegistry(Spring:ApplicationContext 拿;测试:Holder fallback)。
+     * V5.36 A6 — 拿 NodeExecutorRegistry(Spring:构造注入;测试:Holder fallback)。
      * 跟 CompensationThrowExecutor / IntermediateEventExecutor 同套路。
      */
     private NodeExecutorRegistry resolveRegistry(FlowContext ctx) {
-        // 1. Holder(测试 fallback)
-        NodeExecutorRegistry reg = CompensationThrowExecutor.Holder.REGISTRY;
-        if (reg != null) return reg;
-        // 2. Spring ApplicationContext(Spring 环境)
-        try {
-            Object bean = com.ruleforge.Utils.getApplicationContext().getBean(NodeExecutorRegistry.class);
-            if (bean instanceof NodeExecutorRegistry r) return r;
-        } catch (Exception ignore) {
-            // ApplicationContext 没初始化(测试场景)
-        }
-        return null;
+        // 1. Spring 注入的 registry(生产环境)
+        if (registry != null) return registry;
+        // 2. Holder(测试 fallback)
+        return CompensationThrowExecutor.Holder.REGISTRY;
     }
 }

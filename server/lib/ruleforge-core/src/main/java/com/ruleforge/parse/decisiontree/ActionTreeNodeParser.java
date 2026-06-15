@@ -5,9 +5,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.dom4j.Element;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import com.ruleforge.plugin.EnginePluginRegistry;
 
 import com.ruleforge.action.Action;
 import com.ruleforge.model.decisiontree.ActionTreeNode;
@@ -19,7 +17,7 @@ import com.ruleforge.parse.Parser;
  * @author Jacky.gao
  * @since 2016年2月26日
  */
-public class ActionTreeNodeParser implements Parser<ActionTreeNode>,ApplicationContextAware {
+public class ActionTreeNodeParser implements Parser<ActionTreeNode> {
 	private Collection<ActionParser> actionParsers;
 	@Override
 	public ActionTreeNode parse(Element element) {
@@ -51,7 +49,7 @@ public class ActionTreeNodeParser implements Parser<ActionTreeNode>,ApplicationC
 	public boolean support(String name) {
 		return name.equals("action-tree-node");
 	}
-	public void setApplicationContext(ApplicationContext context) throws BeansException {
-		actionParsers=context.getBeansOfType(ActionParser.class).values();
+	public void setPluginRegistry(EnginePluginRegistry pluginRegistry) {
+		this.actionParsers=pluginRegistry.getActionParsers();
 	}
 }

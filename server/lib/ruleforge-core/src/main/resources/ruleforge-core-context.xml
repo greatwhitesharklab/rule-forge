@@ -11,6 +11,10 @@
         <property name="location" value="classpath:ruleforge-core-context.properties"/>
     </bean>
 
+    <!-- V5.76: ruleforge-core 内唯一 ApplicationContextAware 类,集中收集所有插件 bean。
+         引擎类注入 EnginePluginRegistry 接口取用,自身不接触 Spring。 -->
+    <bean id="ruleforge.pluginRegistry" class="com.ruleforge.config.SpringEnginePluginRegistry"/>
+
     <bean id="ruleforge.crosstableDeserializer" class="com.ruleforge.parse.deserializer.CrosstableDeserializer">
         <property name="crosstabParser" ref="ruleforge.crosstabParser"/>
     </bean>
@@ -53,6 +57,7 @@
         <property name="decisionTableRulesBuilder" ref="ruleforge.decisionTableRulesBuilder"/>
         <property name="decisionTreeRulesBuilder" ref="ruleforge.decisionTreeRulesBuilder"/>
         <property name="crosstabRulesBuilder" ref="ruleforge.crosstabRulesBuilder"/>
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
     </bean>
 
     <bean id="ruleforge.builtInActionLibraryBuilder" class="com.ruleforge.runtime.BuiltInActionLibraryBuilder"/>
@@ -133,6 +138,7 @@
 
     <bean id="ruleforge.resourceLibraryBuilder" class="com.ruleforge.builder.ResourceLibraryBuilder">
         <property name="builtInActionLibraryBuilder" ref="ruleforge.builtInActionLibraryBuilder"/>
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
     </bean>
 
     <bean id="ruleforge.knowledgeService" class="com.ruleforge.runtime.service.KnowledgeServiceImpl" autowire="constructor"/>
@@ -149,11 +155,6 @@
     <bean id="ruleforge.fileResourceProvider" class="com.ruleforge.builder.resource.FileResourceProvider"/>
 
     <bean id="ruleforge.valueCompute" class="com.ruleforge.runtime.rete.ValueCompute"/>
-
-    <bean id="ruleforge.utils" class="com.ruleforge.Utils">
-        <property name="debug" value="${ruleforge.debug:true}"/>
-        <property name="debugToFile" value="${ruleforge.debugToFile:false}"/>
-    </bean>
 
 <bean class="com.ruleforge.builder.resource.DecisionTableResourceBuilder">
         <property name="decisionTableDeserializer" ref="ruleforge.decisionTableDeserializer"/>
@@ -183,7 +184,9 @@
     <!-- V5.44.3 — 4 library deserializer bean (actionLibraryDeserializer / variableLibraryDeserializer /
          constantLibraryDeserializer / parameterLibraryDeserializer) 删。library 走 DRL import 段。 -->
 
-    <bean id="ruleforge.assertorEvaluator" class="com.ruleforge.runtime.assertor.AssertorEvaluator"/>
+    <bean id="ruleforge.assertorEvaluator" class="com.ruleforge.runtime.assertor.AssertorEvaluator">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
 
     <bean id="ruleforge.jointParser" class="com.ruleforge.parse.table.JointParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>
@@ -191,6 +194,7 @@
     <bean id="ruleforge.cellParser" class="com.ruleforge.parse.table.CellParser">
         <property name="jointParser" ref="ruleforge.jointParser"/>
         <property name="valueParser" ref="ruleforge.valueParser"/>
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
     </bean>
     <bean id="ruleforge.complexColumnParser" class="com.ruleforge.parse.scorecard.ComplexColumnParser"/>
     <bean id="ruleforge.scriptCellParser" class="com.ruleforge.parse.table.ScriptCellParser"/>
@@ -233,7 +237,9 @@
     <bean id="ruleforge.containAssertor" class="com.ruleforge.runtime.assertor.ContainAssertor"/>
     <bean id="ruleforge.notContainAssertor" class="com.ruleforge.runtime.assertor.NotContainAssertor"/>
 
-    <bean id="ruleforge.reteBuilder" class="com.ruleforge.model.rete.builder.ReteBuilder"/>
+    <bean id="ruleforge.reteBuilder" class="com.ruleforge.model.rete.builder.ReteBuilder">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
 
     <bean id="ruleforge.criteriaBuilder" class="com.ruleforge.model.rete.builder.CriteriaBuilder"/>
     <bean id="ruleforge.andBuilder" class="com.ruleforge.model.rete.builder.AndBuilder"/>
@@ -249,7 +255,9 @@
     <bean id="ruleforge.executeMethodActionParser" class="com.ruleforge.parse.ExecuteMethodActionParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>
     </bean>
-    <bean id="ruleforge.lhsParser" class="com.ruleforge.parse.LhsParser"/>
+    <bean id="ruleforge.lhsParser" class="com.ruleforge.parse.LhsParser">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
 
     <bean id="ruleforge.leftParser" class="com.ruleforge.parse.LeftParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>
@@ -260,10 +268,15 @@
     <bean id="ruleforge.criteriaParser" class="com.ruleforge.parse.CriteriaParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>
         <property name="leftParser" ref="ruleforge.leftParser"/>
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
     </bean>
-    <bean id="ruleforge.junctionParser" class="com.ruleforge.parse.JunctionParser"/>
+    <bean id="ruleforge.junctionParser" class="com.ruleforge.parse.JunctionParser">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
 
-    <bean id="ruleforge.rhsParser" class="com.ruleforge.parse.RhsParser"/>
+    <bean id="ruleforge.rhsParser" class="com.ruleforge.parse.RhsParser">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
     <bean id="ruleforge.ruleParser" class="com.ruleforge.parse.RuleParser">
         <property name="lhsParser" ref="ruleforge.lhsParser"/>
         <property name="rhsParser" ref="ruleforge.rhsParser"/>
@@ -275,7 +288,9 @@
         <property name="otherParser" ref="ruleforge.otherParser"/>
         <property name="valueParser" ref="ruleforge.valueParser"/>
     </bean>
-    <bean id="ruleforge.otherParser" class="com.ruleforge.parse.OtherParser"/>
+    <bean id="ruleforge.otherParser" class="com.ruleforge.parse.OtherParser">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
     <bean id="ruleforge.variableAssignActionParser" class="com.ruleforge.parse.VariableAssignActionParser">
         <property name="valueParser" ref="ruleforge.valueParser"/>
     </bean>
@@ -316,7 +331,9 @@
         <property name="complexScorecardParser" ref="ruleforge.complexScorecardParser"/>
     </bean>
 
-    <bean id="ruleforge.actionTreeNodeParser" class="com.ruleforge.parse.decisiontree.ActionTreeNodeParser"/>
+    <bean id="ruleforge.actionTreeNodeParser" class="com.ruleforge.parse.decisiontree.ActionTreeNodeParser">
+        <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
+    </bean>
     <bean id="ruleforge.variableTreeNodeParser" class="com.ruleforge.parse.decisiontree.VariableTreeNodeParser">
         <property name="leftParser" ref="ruleforge.leftParser"/>
         <property name="conditionTreeNodeParser" ref="ruleforge.conditionTreeNodeParser"/>

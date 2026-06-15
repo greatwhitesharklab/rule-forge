@@ -1,8 +1,11 @@
 package com.ruleforge.model.function;
 
-import com.ruleforge.runtime.WorkingMemory;
-
 /**
+ * 函数描述符 —— 引擎内置/用户扩展的"函数节点"运行时行为。
+ *
+ * <p>V5.76.7 TD-2.3:签名从 {@code WorkingMemory} 改为 {@link FunctionContext},
+ * 消除 model.function → runtime 的 import 耦合。
+ *
  * @author Jacky.gao
  * 2015年7月22日
  */
@@ -19,10 +22,10 @@ public interface FunctionDescriptor {
      *
      * @param object        第一个参数运行时的具体值对象
      * @param property      当Argument对象中needProperty属性为true时，在使用该函数时定义的具体的属性名，注意这里是属性name而非Label
-     * @param workingMemory 当前运行时的WorkingMemory对象
+     * @param ctx           函数执行所需最小上下文(运行时由 WorkingMemoryFunctionContext 适配)
      * @return 函数运行后的返回值，如没有返回值则返回null
      */
-    Object doFunction(Object object, String property, WorkingMemory workingMemory);
+    Object doFunction(Object object, String property, FunctionContext ctx);
 
     /**
      * 返回函数名，建议返回一个首字母大写的英文名，该名称不能与既有函数同名

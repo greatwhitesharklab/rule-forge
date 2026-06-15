@@ -7,6 +7,7 @@ import lombok.Setter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import com.ruleforge.model.Node;
+import com.ruleforge.runtime.rete.NodeActivityFactory;
 import com.ruleforge.runtime.rete.Path;
 
 /**
@@ -43,7 +44,8 @@ public class Line {
     }
 
     public Path newPath(Map<Object, Object> context) {
-        return new Path(to.newActivity(context));
+        // V5.76.6: 走 NodeActivityFactory(原 to.newActivity(context))
+        return new Path(NodeActivityFactory.create(to, context));
     }
 
 }

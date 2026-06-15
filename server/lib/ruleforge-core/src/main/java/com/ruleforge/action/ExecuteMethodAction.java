@@ -4,6 +4,7 @@ import com.ruleforge.debug.MsgType;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.library.Datatype;
 import com.ruleforge.model.rule.Parameter;
+import com.ruleforge.runtime.EngineContext;
 import com.ruleforge.runtime.rete.Context;
 import com.ruleforge.runtime.rete.ValueCompute;
 
@@ -27,7 +28,7 @@ public class ExecuteMethodAction extends AbstractAction {
         String info = (beanLabel == null ? beanId : beanLabel) + (methodLabel == null ? methodName : methodLabel);
         info = "$$$ 执行动作：" + info;
         try {
-            Object obj = context.getApplicationContext().getBean(beanId);
+            Object obj = EngineContext.getBean(beanId);
             java.lang.reflect.Method method = null;
             if (parameters != null && parameters.size() > 0) {
                 ParametersWrap wrap = buildParameterClasses(context, matchedObject, allMatchedObjects);

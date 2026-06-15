@@ -1,8 +1,8 @@
 package com.ruleforge.model.function.impl;
 
 import com.ruleforge.model.function.Argument;
+import com.ruleforge.model.function.FunctionContext;
 import com.ruleforge.model.function.FunctionDescriptor;
-import com.ruleforge.runtime.WorkingMemory;
 
 /**
  * @author Jacky.gao
@@ -15,8 +15,8 @@ public class UpdateParameterFunctionDescriptor implements FunctionDescriptor {
 	}
 
 	@Override
-	public Object doFunction(Object object, String property,WorkingMemory workingMemory) {
-		return workingMemory.update(workingMemory.getParameters());
+	public Object doFunction(Object object, String property, FunctionContext ctx) {
+		return ctx.update(ctx.getParameters());
 	}
 
 	@Override

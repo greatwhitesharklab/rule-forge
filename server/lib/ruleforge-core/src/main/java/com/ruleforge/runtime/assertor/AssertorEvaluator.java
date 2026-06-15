@@ -3,9 +3,7 @@ package com.ruleforge.runtime.assertor;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.library.Datatype;
 import com.ruleforge.model.rule.Op;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import com.ruleforge.plugin.EnginePluginRegistry;
 
 import java.util.Collection;
 
@@ -13,7 +11,7 @@ import java.util.Collection;
  * @author Jacky.gao
  * 2015年1月6日
  */
-public class AssertorEvaluator implements ApplicationContextAware {
+public class AssertorEvaluator {
     public static final String BEAN_ID = "ruleforge.assertorEvaluator";
     private Collection<Assertor> assertors;
 
@@ -31,7 +29,7 @@ public class AssertorEvaluator implements ApplicationContextAware {
         return targetAssertor.eval(left, right, datatype);
     }
 
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        assertors = applicationContext.getBeansOfType(Assertor.class).values();
+    public void setPluginRegistry(EnginePluginRegistry pluginRegistry) {
+        this.assertors = pluginRegistry.getAssertors();
     }
 }

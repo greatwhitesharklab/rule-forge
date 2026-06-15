@@ -5,9 +5,7 @@ import java.util.Collection;
 import com.ruleforge.model.library.Datatype;
 import org.apache.commons.lang.StringUtils;
 import org.dom4j.Element;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import com.ruleforge.plugin.EnginePluginRegistry;
 
 import com.ruleforge.model.table.Cell;
 import com.ruleforge.parse.ActionParser;
@@ -19,7 +17,7 @@ import com.ruleforge.parse.ValueParser;
  * @author fred
  * 2015年1月19日
  */
-public class CellParser implements Parser<Cell>, ApplicationContextAware {
+public class CellParser implements Parser<Cell> {
     private JointParser jointParser;
     private ValueParser valueParser;
     private Collection<ActionParser> actionParsers;
@@ -72,8 +70,7 @@ public class CellParser implements Parser<Cell>, ApplicationContextAware {
         this.valueParser = valueParser;
     }
 
-    public void setApplicationContext(ApplicationContext applicationContext)
-            throws BeansException {
-        actionParsers = applicationContext.getBeansOfType(ActionParser.class).values();
+    public void setPluginRegistry(EnginePluginRegistry pluginRegistry) {
+        this.actionParsers = pluginRegistry.getActionParsers();
     }
 }

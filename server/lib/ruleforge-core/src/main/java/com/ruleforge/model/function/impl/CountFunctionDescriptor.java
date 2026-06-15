@@ -4,8 +4,8 @@ import java.util.Collection;
 
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.function.Argument;
+import com.ruleforge.model.function.FunctionContext;
 import com.ruleforge.model.function.FunctionDescriptor;
-import com.ruleforge.runtime.WorkingMemory;
 
 /**
  * @author Jacky.gao
@@ -29,7 +29,7 @@ public class CountFunctionDescriptor implements FunctionDescriptor{
 		return "Count";
 	}
 	@Override
-	public Object doFunction(Object object, String property,WorkingMemory workingMemory) {
+	public Object doFunction(Object object, String property, FunctionContext ctx) {
 		Collection<?> list=null;
 		if(object instanceof Collection){
 			list=(Collection<?>)object;

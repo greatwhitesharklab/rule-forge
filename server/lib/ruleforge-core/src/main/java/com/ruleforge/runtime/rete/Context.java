@@ -5,7 +5,6 @@ import com.ruleforge.debug.MsgType;
 import com.ruleforge.model.rule.RuleInfo;
 import com.ruleforge.runtime.WorkingMemory;
 import com.ruleforge.runtime.assertor.AssertorEvaluator;
-import org.springframework.context.ApplicationContext;
 
 import java.util.List;
 
@@ -20,8 +19,6 @@ public interface Context {
     AssertorEvaluator getAssertorEvaluator();
 
     ValueCompute getValueCompute();
-
-    ApplicationContext getApplicationContext();
 
     String getVariableCategoryClass(String var1);
 

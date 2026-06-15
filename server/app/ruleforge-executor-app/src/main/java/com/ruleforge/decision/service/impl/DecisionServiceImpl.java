@@ -1,6 +1,5 @@
 package com.ruleforge.decision.service.impl;
 
-import com.ruleforge.Utils;
 import com.ruleforge.debug.MessageItem;
 import com.ruleforge.runtime.KnowledgePackage;
 import com.ruleforge.runtime.KnowledgeSession;
@@ -55,6 +54,7 @@ public class DecisionServiceImpl implements IDecisionService {
     private final IDecisionLogService decisionLogService;
     private final IShadowConfigService shadowConfigService;
     private final IShadowExecutionService shadowExecutionService;
+    private final KnowledgeService knowledgeService;
     private final IGrayStrategyService grayStrategyService;
     private final MeterRegistry meterRegistry;
     // V5.20+ 自建决策流执行器(V5.21 起为唯一执行路径)
@@ -162,9 +162,6 @@ public class DecisionServiceImpl implements IDecisionService {
     }
 
     private void prepareKnowledgeSession(ExecutionContext ctx) throws Exception {
-        KnowledgeService knowledgeService = (KnowledgeService) Utils.getApplicationContext()
-                .getBean(KnowledgeService.BEAN_ID);
-
         // 灰度版本解析
         GrayResolution grayResolution = grayStrategyService.resolveVersion(
                 ctx.request.getRulePackagePath(), ctx.request.getUserId());

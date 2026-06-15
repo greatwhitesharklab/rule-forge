@@ -4,9 +4,7 @@ import com.ruleforge.model.rule.lhs.Criterion;
 import com.ruleforge.model.rule.lhs.Lhs;
 import lombok.Getter;
 import org.dom4j.Element;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import com.ruleforge.plugin.EnginePluginRegistry;
 
 import java.util.Collection;
 
@@ -15,7 +13,7 @@ import java.util.Collection;
  * 2014年12月23日
  */
 @Getter
-public class LhsParser implements Parser<Lhs>, ApplicationContextAware {
+public class LhsParser implements Parser<Lhs> {
     private Collection<CriterionParser> criterionParsers;
 
     public Lhs parse(Element element) {
@@ -49,8 +47,7 @@ public class LhsParser implements Parser<Lhs>, ApplicationContextAware {
         return name.equals("if");
     }
 
-    public void setApplicationContext(ApplicationContext applicationContext)
-            throws BeansException {
-        criterionParsers = applicationContext.getBeansOfType(CriterionParser.class).values();
+    public void setPluginRegistry(EnginePluginRegistry pluginRegistry) {
+        this.criterionParsers = pluginRegistry.getCriterionParsers();
     }
 }

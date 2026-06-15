@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 
 import com.ruleforge.Utils;
 import com.ruleforge.model.function.Argument;
+import com.ruleforge.model.function.FunctionContext;
 import com.ruleforge.model.function.FunctionDescriptor;
-import com.ruleforge.runtime.WorkingMemory;
 
 /**
  * @author Jacky.gao
@@ -22,7 +22,7 @@ public class TanFunctionDescriptor implements FunctionDescriptor {
 	}
 
 	@Override
-	public Object doFunction(Object object, String property,WorkingMemory workingMemory) {
+	public Object doFunction(Object object, String property, FunctionContext ctx) {
 		Object obj=Utils.getObjectProperty(object, property);
 		BigDecimal bigobj=Utils.toBigDecimal(obj);
 		return Math.tan(bigobj.doubleValue());

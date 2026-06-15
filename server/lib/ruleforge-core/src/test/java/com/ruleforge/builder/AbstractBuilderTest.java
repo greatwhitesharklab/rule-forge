@@ -4,10 +4,10 @@ import com.ruleforge.builder.ResourceBase;
 import com.ruleforge.builder.resource.ResourceBuilder;
 import com.ruleforge.builder.resource.ResourceProvider;
 import com.ruleforge.exception.RuleException;
+import com.ruleforge.plugin.EnginePluginRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.context.ApplicationContext;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -21,12 +21,13 @@ import static org.mockito.Mockito.when;
  * <p>目标:锁定 3 件事
  * <ol>
  *   <li>{@code newResourceBase()} 返非 null {@link ResourceBase}</li>
- *   <li>{@code setApplicationContext(null)} 抛 NPE(getBeansOfType 解引用)</li>
+ *   <li>{@code setPluginRegistry(null)} 抛 NPE(getResourceBuilders 解引用)</li>
  *   <li>{@code parseResource(xml)} 错 XML 抛 {@link RuleException}</li>
  * </ol>
  * <p>V5.48: L43 dead-code {@code getBeansWithAnnotation(SuppressWarnings.class)} 已删
  * (P0 验证全 unused,Task 3 删 + 移 test 里 mock 桩)。
- * </ol>
+ * <p>V5.76.3: AbstractBuilder 改注入 EnginePluginRegistry(去 ApplicationContextAware)。
+ * </p>
  */
 @DisplayName("P0 — AbstractBuilder 公共契约")
 class AbstractBuilderTest {
@@ -43,7 +44,7 @@ class AbstractBuilderTest {
     class NewResourceBase {
 
         @Test
-        @DisplayName("无 ApplicationContext 时 newResourceBase 应返非 null")
+        @DisplayName("无 pluginRegistry 时 newResourceBase 应返非 null")
         void newResourceBaseNoContext() {
             TestBuilder b = new TestBuilder();
             ResourceBase rb = b.newResourceBase();
@@ -52,26 +53,25 @@ class AbstractBuilderTest {
     }
 
     @Nested
-    @DisplayName("setApplicationContext — Spring 注入契约")
-    class SetApplicationContext {
+    @DisplayName("setPluginRegistry — 注入契约")
+    class SetPluginRegistry {
 
         @Test
-        @DisplayName("setApplicationContext(null) 应抛 NPE(getBeansOfType 解引用)")
-        void nullContextThrows() {
+        @DisplayName("setPluginRegistry(null) 应抛 NPE(getResourceBuilders 解引用)")
+        void nullRegistryThrows() {
             TestBuilder b = new TestBuilder();
-            assertThrows(NullPointerException.class, () -> b.setApplicationContext(null));
+            assertThrows(NullPointerException.class, () -> b.setPluginRegistry(null));
         }
 
         @Test
-        @DisplayName("setApplicationContext(mock) 注入后 resourceBuilders/providers 都不为 null")
-        void mockContextInjects() {
+        @DisplayName("setPluginRegistry(mock) 注入后 resourceBuilders/providers 都不为 null")
+        void mockRegistryInjects() {
             TestBuilder b = new TestBuilder();
-            ApplicationContext ctx = mock(ApplicationContext.class);
-            when(ctx.getBeansOfType(ResourceBuilder.class)).thenReturn(java.util.Collections.emptyMap());
-            when(ctx.getBeansOfType(ResourceProvider.class)).thenReturn(java.util.Collections.emptyMap());
-            // V5.48: 删 L43 dead code 后不再需要 mock getBeansWithAnnotation
+            EnginePluginRegistry registry = mock(EnginePluginRegistry.class);
+            when(registry.getResourceBuilders()).thenReturn(java.util.Collections.emptyList());
+            when(registry.getResourceProviders()).thenReturn(java.util.Collections.emptyList());
 
-            assertDoesNotThrow(() -> b.setApplicationContext(ctx));
+            assertDoesNotThrow(() -> b.setPluginRegistry(registry));
             // 字段注入后可访问(同 package,Field 反射跳过)
             try {
                 java.lang.reflect.Field rb = AbstractBuilder.class.getDeclaredField("resourceBuilders");

@@ -1,7 +1,5 @@
 package com.ruleforge.model.function;
 
-import com.ruleforge.runtime.WorkingMemory;
-
 /**
  * @author fred
  * 2018-11-05 7:06 PM
@@ -17,12 +15,12 @@ public class ActiveAgendaFunctionDescriptor implements FunctionDescriptor {
         return p;
     }
 
-    public Object doFunction(Object object, String property, WorkingMemory workingMemory) {
+    public Object doFunction(Object object, String property, FunctionContext ctx) {
         if (object == null) {
             return null;
         } else {
             String groupName = object.toString();
-            workingMemory.activeAgendaGroup(groupName);
+            ctx.activeAgendaGroup(groupName);
             return null;
         }
     }

@@ -3,9 +3,7 @@ package com.ruleforge.parse;
 import com.ruleforge.action.Action;
 import com.ruleforge.model.rule.Rhs;
 import org.dom4j.Element;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import com.ruleforge.plugin.EnginePluginRegistry;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,7 +13,7 @@ import java.util.List;
  * @author Jacky.gao
  * 2014年12月23日
  */
-public class RhsParser implements Parser<Rhs>, ApplicationContextAware {
+public class RhsParser implements Parser<Rhs> {
     private Collection<ActionParser> actionParsers;
 
     public Rhs parse(Element element) {
@@ -50,7 +48,7 @@ public class RhsParser implements Parser<Rhs>, ApplicationContextAware {
         return actionParsers;
     }
 
-    public void setApplicationContext(ApplicationContext context) throws BeansException {
-        actionParsers = context.getBeansOfType(ActionParser.class).values();
+    public void setPluginRegistry(EnginePluginRegistry pluginRegistry) {
+        this.actionParsers = pluginRegistry.getActionParsers();
     }
 }
