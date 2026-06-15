@@ -195,10 +195,12 @@ lhsAccumulate
     : drlPattern DRL_FROM DRL_ACCUMULATE LPAREN lhsPattern (SEMI | COMMA)
                        accumulateInit (SEMI | COMMA)
                        accumulateAction (SEMI | COMMA)
+                       accumulateReverse? (SEMI | COMMA)?
                        accumulateResult RPAREN
     | DRL_ACCUMULATE LPAREN lhsPattern (SEMI | COMMA)
                        accumulateInit (SEMI | COMMA)
                        accumulateAction (SEMI | COMMA)
+                       accumulateReverse? (SEMI | COMMA)?
                        accumulateResult RPAREN
     ;
 
@@ -217,6 +219,13 @@ initBody
 
 accumulateAction
     : DRL_ACTION LPAREN statementBlock RPAREN
+    ;
+
+// V5.77 — 反转 D3 决定。accumulateReverse 跟 accumulateAction 镜像结构(关键字
+// + 括号 + statementBlock),在 action 之后、result 之前,可缺省。runtime 端
+// reverse 段执行 deferred 到 V5.78+ — grammar/parser 先收口让 .drl 写得出来。
+accumulateReverse
+    : DRL_REVERSE LPAREN statementBlock RPAREN
     ;
 
 accumulateResult

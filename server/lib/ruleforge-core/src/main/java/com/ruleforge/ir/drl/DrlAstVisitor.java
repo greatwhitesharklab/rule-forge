@@ -248,7 +248,22 @@ public class DrlAstVisitor extends DrlParserBaseVisitor<Void> {
         if (ctx.lhsPattern() != null) {
             visitChildren(ctx.lhsPattern());
         }
+        // V5.77 — 反转 D3,grammar 加 accumulateReverse 可选段。visitor 显式 walk
+        // reverse.statementBlock 触发 methodCall 等子校验 — runtime 端 reverse 段
+        // 执行 deferred 到 V5.78+,但 grammar/parser 收口让 .drl 写得出来。
+        if (ctx.accumulateReverse() != null) {
+            visit(ctx.accumulateReverse());
+        }
         return visitChildren(ctx);
+    }
+
+    @Override
+    public Void visitAccumulateReverse(DrlParser.AccumulateReverseContext ctx) {
+        // V5.77 — 显式 walk statementBlock 触发 methodCall 等子校验
+        for (DrlParser.StatementContext s : ctx.statementBlock().statement()) {
+            visit(s);
+        }
+        return null;
     }
 
     @Override
