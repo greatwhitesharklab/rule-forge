@@ -63,11 +63,11 @@ class MultiInstanceExecutorTest {
     }
 
     private NodeExecutorRegistry newRegistry(NodeExecutor innerAction) {
-        MultiInstanceExecutor wrapper = new MultiInstanceExecutor();
+        MultiInstanceExecutor wrapper = new MultiInstanceExecutor(null);
         List<NodeExecutor> executors = new ArrayList<>();
         executors.add(wrapper);
         executors.add(innerAction);
-        executors.add(new EventNodeExecutor());
+        executors.add(new EventNodeExecutor(null));
         executors.add(new GatewayNodeExecutor());
         executors.add(new UserTaskNodeExecutor());
         executors.add(new ScriptNodeExecutor());

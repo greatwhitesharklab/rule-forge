@@ -115,7 +115,7 @@ class FlowNodeRunnerForkJoinTest {
         List<NodeExecutor> list = new java.util.ArrayList<>();
         for (NodeExecutor e : executors) list.add(e);
         // 默认 stub
-        list.add(new EventNodeExecutor());
+        list.add(new EventNodeExecutor(null));
         list.add(new GatewayNodeExecutor());
         list.add(new ParallelGatewayExecutor());
         list.add(new UserTaskNodeExecutor());
@@ -349,7 +349,7 @@ class FlowNodeRunnerForkJoinTest {
                 """;
             FlowDefinition def = parser.parseSingleProcess(xml);
             List<NodeExecutor> list = new java.util.ArrayList<>(List.of(action, userTask));
-            list.add(new EventNodeExecutor());
+            list.add(new EventNodeExecutor(null));
             list.add(new GatewayNodeExecutor());
             list.add(new ParallelGatewayExecutor());
             NodeExecutorRegistry registry = new NodeExecutorRegistry(list);

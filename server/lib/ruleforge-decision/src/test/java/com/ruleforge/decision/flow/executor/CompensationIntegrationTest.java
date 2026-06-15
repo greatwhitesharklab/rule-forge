@@ -78,11 +78,11 @@ class CompensationIntegrationTest {
         List<NodeExecutor> list = new ArrayList<>();
         list.add(action);
         list.add(cstart); list.add(cend); list.add(cinter); list.add(cthrow);
-        list.add(new EventNodeExecutor());
+        list.add(new EventNodeExecutor(null));
         list.add(new GatewayNodeExecutor());
         list.add(new UserTaskNodeExecutor());
         list.add(new ScriptNodeExecutor());
-        list.add(new MultiInstanceExecutor());
+        list.add(new MultiInstanceExecutor(null));
         NodeExecutorRegistry reg = new NodeExecutorRegistry(list);
         CompensationThrowExecutor.Holder.REGISTRY = reg;
 

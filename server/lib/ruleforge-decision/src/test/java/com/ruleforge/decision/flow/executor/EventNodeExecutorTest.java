@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class EventNodeExecutorTest {
 
     private final BpmnXmlParser parser = new BpmnXmlParser();
-    private final EventNodeExecutor executor = new EventNodeExecutor();
+    private final EventNodeExecutor executor = new EventNodeExecutor(null);
 
     /** V5.33 A0:ctx.vars().getVars() 委托 currentToken;init token 让 put 走 token.vars。 */
     private FlowContext newCtx() {
