@@ -1,8 +1,17 @@
-# V5.46 — RETE 性能基线(Java + Rust 对比)
+# V5.79 — DRL perf regression baseline (Java RETE)
+
+> **V5.79 取代 V5.46 EvalBenchmark**:
+> V5.46 原版 `EvalBenchmark.java` 已删,改用 `EvalBenchmarkV579.java`
+> (V5.78+ API path:EngineContext.init + EnginePluginRegistry SPI +
+> AndBuilder + CriteriaBuilder + VariableCategory.ResourceLibrary)。
+>
+> 完整 V5.79 perf baseline 文档 + V5.78 DRL 回归说明:
+> `docs/notes/v579-perf-baseline.md`。
 
 镜像 `mariofusco/drools-benchmark` 的 `EvalBenchmark.run()` workload
-(2020, Mario Fusco, Drools core dev),用 RuleForge 自研 RETE 在 Java + Rust
-两端都跑出 baseline 数字,作为以后改 RETE 代码时的对照基线。
+(2020, Mario Fusco, Drools core dev),用 RuleForge 自研 RETE 在 Java 端
+跑出 V5.79 baseline 数字(Rust 端 V5.46 已停,V5.25 + V5.46.1 决定不升格
+production)。
 
 ---
 
