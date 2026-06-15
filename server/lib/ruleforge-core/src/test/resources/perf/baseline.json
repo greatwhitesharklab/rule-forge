@@ -11,10 +11,10 @@
     },
     {
       "name": "EvalBenchmarkV579_drl_no_eval_3way_ms",
-      "p50": 1.3,
+      "p50": 1.14,
       "p95": 3.2,
       "failMultiplier": 1.5,
-      "note": "V5.83 — 3-pattern 链式 join,模拟 V5.77 accumulate 多源场景。3 pattern 全字段过滤,2000 fact insert + 1 rule,3 way join cost 体现在 alpha + 2 beta。fired=0(无 Mario+Duncan+Main Street 三元组)。V5.79 锁值 0.10ms。"
+      "note": "V5.88 — CriteriaActivity.logMessage 加 1 行 if (!this.debug) return; 早返,JFR 揭示该方法 + String.format + StringBuilder 占 hot path 76%。3-pattern 链式 join 跑下来 -12%(3.0→1.14ms vs V5.83 1.3ms 是不同 scale,V5.88 在 50 iter 稳态),no_eval / eval / no_eval_5r 三场景 0-3% 改变(在 noise 内,不动 p50)。实测 logMessage leaf sample 289→0(100% 消失),String.format 291→35(-88%)。V5.79 锁值 0.10ms。"
     },
     {
       "name": "EvalBenchmarkV579_drl_no_eval_5r_ms",

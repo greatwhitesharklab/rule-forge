@@ -61,6 +61,12 @@ public class CriteriaActivity extends AbstractActivity {
     }
 
     private void logMessage(EvaluateResponse response, Context context) {
+        // V5.88 — 早返:debug=false 时不进 String.format / toString / MessageItem 分配。
+        // JFR 35s 抓 2053 sample,reveal logMessage + String.format + StringBuilder 占 1570 sample(76%)。
+        // production 通常 debug=false,这次早返预期 per-fact 节约 30-50%。
+        if (!this.debug) {
+            return;
+        }
         String id = this.criteria.getId();
         String leftVariable = null;
         if (this.criteria.getLeft().getLeftPart() instanceof VariableLeftPart) {
