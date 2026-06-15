@@ -34,7 +34,14 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     private Map<String, Object> sessionValueMap;
     private List<MessageItem> execMessageItems;
     private Map<String, Object> initParameters;
-    private Map<String, Object> allFactsMap;
+    /**
+     * V5.82 — 全部 fact 累加列表(同 className 多 fact 不覆盖,引擎 fireRules / activeRule
+     * / activeAgendaGroup / retract 走本字段)。
+     * <p>{@code allFactsMap} 仍是 {@code Map<String,Object>} last-wins 视图,通过
+     * {@link #getAllFactsMap()} 惰性构建,保留旧 API 契约 — {@code ValueCompute.findObject} /
+     * {@code LoopRule} / {@code KnowledgeSessionTest:265} 仍用。
+     */
+    private List<Object> allFactsList;
     private List<KnowledgePackage> knowledgePackageList;
     private List<ReteInstance> reteInstanceList;
     private Map<String, Object> parameterMap;
@@ -57,7 +64,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
         this.sessionValueMap = new HashMap<>();
         this.execMessageItems = new ArrayList<>();
         this.initParameters = new HashMap<>();
-        this.allFactsMap = new HashMap<>();
+        this.allFactsList = new ArrayList<>();
         this.knowledgePackageList = new ArrayList<>();
         this.reteInstanceList = new ArrayList<>();
         this.parameterMap = new HashMap<>();
@@ -89,7 +96,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
             this.knowledgeEventManager.getKnowledgeEventListeners().addAll(parentSession.getKnowledgeEventListeners());
             this.execMessageItems = parentSession.getExecMessageItems();
             this.knowledgeSessionMap = parentSession.getKnowledgeSessionMap();
-            this.allFactsMap.putAll(parentSession.getAllFactsMap());
+            this.allFactsList.addAll(parentSession.getAllFactsList());
             this.sessionValueMap.putAll(parentSession.getSessionValueMap());
         }
     }
@@ -141,7 +148,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
         addToFactsMap(this.parameterMap);
 
         long start = System.currentTimeMillis();
-        evaluationRete(this.allFactsMap.values());
+        evaluationRete(this.allFactsList);
         ExecutionResponseImpl resp = (ExecutionResponseImpl) this.agenda.execute(filter, max);
         resp.setDuration(System.currentTimeMillis() - start);
         reset();
@@ -253,7 +260,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
 
     public boolean retract(Object fact) {
         this.agenda.retract(fact);
-        this.allFactsMap.remove(this.getClassName(fact));
+        // V5.82:按 reference equality 移除首次出现的 fact(同 className 多 fact 不再误删)
+        this.allFactsList.remove(fact);
         return true;
     }
 
@@ -267,8 +275,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     private void addToFactsMap(Object fact) {
-        String className = this.getClassName(fact);
-        this.allFactsMap.put(className, fact);
+        // V5.82:累加到 List<Object> allFactsList,不再按 className 覆盖
+        this.allFactsList.add(fact);
     }
 
     private String getClassName(Object fact) {
@@ -287,7 +295,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
         this.activationReteInstancesMap.clear();
         this.agenda.clean();
         this.factMaps.clear();
-        this.allFactsMap.clear();
+        this.allFactsList.clear();
         this.activedActivationGroup.clear();
         this.agendaReteInstancesMap.clear();
     }
@@ -398,14 +406,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
                 ReteInstanceUnit insUnit = (ReteInstanceUnit) var4.next();
                 if (insUnit.getRuleName().equals(ruleName) && isWithinValidPeriod(insUnit)) {
                     ReteInstance reteIns = insUnit.getReteInstance();
-                    Iterator var10 = this.allFactsMap.values().iterator();
-
-                    while (true) {
-                        if (!var10.hasNext()) {
-                            break label42;
-                        }
-
-                        Object fact = var10.next();
+                    // V5.82:走 allFactsList(全 fact),不再走 allFactsMap 的 last-wins 视图
+                    for (Object fact : this.allFactsList) {
                         Collection<FactTracker> trackers = reteIns.enter(this.evaluationContext, fact);
                         if (trackers != null) {
                             this.agenda.addTrackers(trackers, false);
@@ -439,10 +441,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
 
                 ReteInstance reteIns = insUnit.getReteInstance();
                 Collection<FactTracker> trackers = null;
-                Iterator var9 = this.allFactsMap.values().iterator();
-
-                while (var9.hasNext()) {
-                    Object fact = var9.next();
+                // V5.82:走 allFactsList(全 fact)
+                for (Object fact : this.allFactsList) {
                     trackers = reteIns.enter(this.evaluationContext, fact);
                     if (trackers != null) {
                         this.agenda.addTrackers(trackers, false);
@@ -472,7 +472,21 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public Map<String, Object> getAllFactsMap() {
-        return this.allFactsMap;
+        // V5.82:返 last-wins Map 视图(保留旧 API 契约 — ValueCompute.findObject / LoopRule /
+        // KnowledgeSessionTest:265 都按"className 命中一个 fact"语义用)。
+        Map<String, Object> view = new HashMap<>();
+        for (Object fact : this.allFactsList) {
+            view.put(this.getClassName(fact), fact);
+        }
+        return view;
+    }
+
+    /**
+     * V5.82 — 返 session 持有的全部 fact(同 className 多 fact 累加,不覆盖)。
+     * 引擎 fireRules / activeRule / activeAgendaGroup 内部走本方法。
+     */
+    public List<Object> getAllFactsList() {
+        return this.allFactsList;
     }
 
     public void addEventListener(KnowledgeEventListener listener) {
