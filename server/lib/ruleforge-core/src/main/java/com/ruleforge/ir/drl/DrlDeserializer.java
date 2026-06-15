@@ -327,6 +327,16 @@ public class DrlDeserializer {
         VariableLeftPart part = new VariableLeftPart();
         part.setVariableName(pc.getProperty());
         part.setVariableLabel(pc.getProperty());
+        // V5.80 — setVariableCategory 从父 fact type 拿(V5.78 漏)。
+        // V5.78+ ReteBuilder → BuildContextImpl.getObjectType 用此字段作
+        // ResourceLibrary.getVariableCategory(name) key,null 抛
+        // "Variable category [null] not exist"(V5.79 perf bench 显式 surface)。
+        // 跟 RulesRebuilder NamedJunction 路径对齐
+        // (RulesRebuilder.java line 152-154)。
+        // factType 为空 → 走 V5.78 漏路径(backward compat,老 caller 不填)。
+        if (pc.getFactType() != null) {
+            part.setVariableCategory(pc.getFactType());
+        }
         left.setLeftPart(part);
         left.setType(LeftType.variable);
         c.setLeft(left);
@@ -657,6 +667,12 @@ public class DrlDeserializer {
             // left 必须是 IDENTIFIER(属性名)— V5.42.4 简化:不接 complex
             String leftText = leftAtom.getText();
             pc.setProperty(leftText);
+            // V5.80 — 把父 fact type (Type(field op value) 的 Type) 灌进 PropertyCriteria,
+            // 让 DrlDeserializer.toCriteria 转 VariableLeftPart 时能 setVariableCategory。
+            // V5.78 PR #142 漏(V5.79 perf bench 显式 surface,见 TD-17.0c)。
+            if (dp.UPPER_IDENTIFIER() != null) {
+                pc.setFactType(dp.UPPER_IDENTIFIER().getText());
+            }
             // op
             pc.setOp(mapOp(op));
             // right 走 Value

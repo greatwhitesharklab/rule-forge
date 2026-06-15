@@ -7,7 +7,7 @@
       "p50": 0.20,
       "p95": 0.40,
       "failMultiplier": 1.5,
-      "note": "V5.79 RETE bench — 2000 fact / 2-pattern / 字段过滤(alpha index) / per-fact median. V5.78+ API path(EngineContext.init + AndBuilder + CriteriaBuilder + VariableCategory.ResourceLibrary). 手工构造 Rule(DrlDeserializer 走 V5.78 PR #142 漏,见 TD-17.0c — firedRules=0 是 known gap,perf 数字仍 valid)。V5.46 锁值 0.16ms,V5.79 ~0.20ms(V5.78+ 0.04ms 回归 — 后续 PR 跟进)。"
+      "note": "V5.79 RETE bench — 2000 fact / 2-pattern / 字段过滤(alpha index) / per-fact median. V5.78+ API path(EngineContext.init + AndBuilder + CriteriaBuilder + VariableCategory.ResourceLibrary). 手工构造 Rule(DrlDeserializer 走 V5.78 PR #142 漏,V5.80 TD-18.0 修 DRL 路径;但 hand-built Rule 路径本身 variableCategory 一直有设,仍 fired=0,见 TD-18.4 — 跟 V5.78 DRL 回归是 2 个独立 bug;perf 数字仍 valid)。V5.46 锁值 0.16ms,V5.79 ~0.20ms(V5.78+ 0.04ms 回归 — 后续 PR 跟进)。"
     },
     {
       "name": "EvalBenchmarkV579_drl_no_eval_3way_ms",
