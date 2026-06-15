@@ -404,15 +404,11 @@ class EvalBenchmarkV579 {
         KnowledgePackage kp = buildKnowledgePackageNoEval();
         Stats s = measure(kp, 5, 50);
         report("no_eval", s);
-        // V5.82 note:TD-19.5.1 修了 allFactsMap 按 className 覆盖 bug(改 List<Object> + last-wins
-        // Map 视图,见 AllFactsMapRetainsAllInsertsTest 锁契约)。修后本 bench 仍 fired=0 —
-        // 调查(TwoPatternJoinFiresTest)发现**另一个** pre-existing rete 实现 bug:2-pattern
-        // join 的 JoinNode 不跨 fact 维护 left/right memory,只能在同一 propagation pass 内
-        // 看到当前 obj;bench insert 顺序 (addr[i], person[i]) 交叉后,special pair 在 fireRules
-        // evaluationRete 走完时已 "错过" 对方 fact。这是 rete 增量 join 路径的实质缺陷,
-        // 远超 V5.82 TD-19.5 范围,留 V5.83+ (TD-19.5.4)。
-        // 1-pattern 场景不受影响(SingleRuleFiresBDD fired=1)。
-        assertEquals(0, s.firedRules, "V5.82: bench firedRules 仍 0 — 修了 allFactsMap,剩 2-pattern join 增量 memory bug(留 V5.83+ TD-19.5.4),见 docs/notes/v582-allfactsmap-rewrite.md");
+        // V5.83 note:TD-19.5.4 修了 rete sticky state 缺陷(per-fact clean + resetStickyStateOnly,
+        // 保留 Path.passed 累积)— 见 [[v582-allfactsmap-rewrite]] TD-19.5.4。3 条 special pair
+        // rule(Mario+Main / Duncan+First / Toshiya+Second)在 1000 P/A noise + 3 special pair
+        // 场景下 3 条规则都应 fire(每条对应 1 个 special pair),期望 firedRules=3。
+        assertEquals(3, s.firedRules, "V5.83: 3 special pair rule 在 1000 noise + 3 special 场景下应 fire 3 次(每 rule 1 次),见 docs/notes/v583-rete-sticky-state-fix.md");
     }
 
     @Test
@@ -439,8 +435,10 @@ class EvalBenchmarkV579 {
         KnowledgePackage kp = buildKnowledgePackage3WayJoin();
         Stats s = measure(kp, 5, 50);
         report("no_eval_3way", s);
-        // V5.82 note:见 benchNoEval 注释,pre-existing 2-pattern join 增量 memory bug 同样影响。
-        assertEquals(0, s.firedRules, "V5.82: bench firedRules 仍 0 — 2-pattern join 增量 memory bug,见 docs/notes/v582-allfactsmap-rewrite.md");
+        // V5.83 note:3-pattern 链式 join,要求 Mario+Duncan+Main Street 三者共存。
+        // 1000 P/A noise 中无 Mario+Duncan 同事 + Main Street 的三元组(只有 special pair 不构成三元组),
+        // 期望 firedRules=0。perf 数字反映 V5.78+ 多源 join 路径成本。
+        assertEquals(0, s.firedRules, "V5.83: 3-pattern 链式 join 期望 firedRules=0(无 Mario+Duncan+Main Street 三元组)");
     }
 
     /**
@@ -455,8 +453,10 @@ class EvalBenchmarkV579 {
         KnowledgePackage kp = buildKnowledgePackage5Rules();
         Stats s = measure(kp, 5, 50);
         report("no_eval_5r", s);
-        // V5.82 note:见 benchNoEval 注释,pre-existing 2-pattern join 增量 memory bug 同样影响。
-        assertEquals(0, s.firedRules, "V5.82: bench firedRules 仍 0 — 2-pattern join 增量 memory bug,见 docs/notes/v582-allfactsmap-rewrite.md");
+        // V5.83 note:5 条 rule,每条 Person(name==X) + Address(street==Y)。
+        // 3 special pair rule(Mario+Main, Duncan+First, Toshiya+Second)+ 2 跨 special rule
+        // (Mario+First, Duncan+Second)— 跨 special 也匹配(Mario+First 都存在)→ 5 条都 fire。
+        assertEquals(5, s.firedRules, "V5.83: 5 条 rule 在 1000 noise + 3 special 场景下都匹配(每 rule 1 次),期望 firedRules=5");
     }
 
     // ====== POJO ======

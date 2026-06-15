@@ -45,6 +45,31 @@ public class ReteInstance {
         }
     }
 
+    /**
+     * V5.83 — 重置活动节点的 sticky state(passed flag + currentTracker),但保留 Path.passed
+     * 标记。这样新 fact 评估时,sticky 短路被清掉(避免 noise fact 污染后续匹配 fact),
+     * 同时跨 fact 的 join 状态(Path.passed 累积)被保留 — 实现"per-fact fresh eval +
+     * cross-fact join memory"。
+     * <p>原 {@link #reset()} 还会清 Path.passed,会破坏 2-pattern join 的累积状态。
+     */
+    public void resetStickyStateOnly() {
+        for (ObjectTypeActivity objectTypeActivity : objectTypeActivities) {
+            resetStickyActivities(objectTypeActivity.getPaths());
+        }
+    }
+
+    private void resetStickyActivities(List<Path> paths) {
+        if (paths == null) return;
+        for (Path path : paths) {
+            Activity activity = path.getTo();
+            if (activity instanceof AbstractActivity) {
+                AbstractActivity ac = (AbstractActivity) activity;
+                ac.reset();
+            }
+            resetStickyActivities(activity.getPaths());
+        }
+    }
+
     public void resetForReevaluate(Object valuateObj) {
         for (ObjectTypeActivity objectTypeActivity : objectTypeActivities) {
             if (objectTypeActivity.support(valuateObj)) {

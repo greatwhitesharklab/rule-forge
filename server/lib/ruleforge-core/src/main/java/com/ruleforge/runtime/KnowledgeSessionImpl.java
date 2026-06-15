@@ -326,6 +326,16 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
 
                 reteInstance = reteInstanceIterator.next();
                 for (Object fact : facts) {
+                    // V5.83 — 每个 fact 进入 rete 前清 EvaluationContext 缓存 + reset sticky state。
+                    // 原代码只在 reteInstance 列表跑完才 clean/reset,导致:
+                    // 1. criteria 结果跨 fact 复用(criteriaValueMap / partValueMap 缓存污染)
+                    // 2. passAndNode 短路跨 fact 粘滞(CriteriaActivity.passed / AndActivity.passed)
+                    // 这是修 pre-existing rete "sticky state" 缺陷的关键改动 — 见
+                    // [[v582-allfactsmap-rewrite]] TD-19.5.4。
+                    // 注意:用 resetStickyStateOnly() 而非 reset() — 保留 Path.passed 累积状态,
+                    // 让 2-pattern join 能跨 fact 累积左右 fact 匹配。
+                    this.evaluationContext.clean();
+                    reteInstance.resetStickyStateOnly();
                     this.doRete(reteInstance, fact, false);
                 }
 

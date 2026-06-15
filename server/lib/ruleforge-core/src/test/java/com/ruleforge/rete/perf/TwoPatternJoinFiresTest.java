@@ -123,15 +123,16 @@ class TwoPatternJoinFiresTest {
         KnowledgePackage kp = new KnowledgeBase(new ReteBuilder().buildRete(
             Collections.singletonList(buildJoinRule()), buildLibrary())).getKnowledgePackage();
         KnowledgeSessionImpl session = new KnowledgeSessionImpl(kp);
-        // 1 match pair first
-        session.insert(new Person("alice"));
-        session.insert(new Address("Main"));
-        // 2 noise
+        // noise first
         session.insert(new Person("bob"));
         session.insert(new Address("Side St"));
+        // match second
+        session.insert(new Person("alice"));
+        session.insert(new Address("Main"));
         RuleExecutionResponse resp = session.fireRules();
+        System.out.println("[V5.83 DEBUG] noise-first fired: " + (resp.getFiredRules()==null?0:resp.getFiredRules().size()));
         assertNotNull(resp.getFiredRules());
         assertEquals(1, resp.getFiredRules().size(),
-            "V5.82: match first + 2 noise after,期望 firedRules=1(insert 顺序锁 rete 增量)");
+            "V5.83: noise-first 顺序下也期望 firedRules=1(锁 beta-memory fix)");
     }
 }
