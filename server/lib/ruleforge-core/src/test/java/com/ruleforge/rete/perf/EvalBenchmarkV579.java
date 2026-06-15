@@ -1,5 +1,7 @@
 package com.ruleforge.rete.perf;
 
+import com.ruleforge.rete.test.EngineContextWirer;
+
 import com.ruleforge.action.BsfVariableProvider;
 import com.ruleforge.builder.KnowledgeBase;
 import com.ruleforge.builder.resource.ResourceBuilder;
@@ -118,64 +120,11 @@ class EvalBenchmarkV579 {
 
     @BeforeAll
     static void wireEngineContext() throws Exception {
-        // 1. criterionBuilders 静态字段:生产靠 ReteBuilder.setPluginRegistry 灌,
-        //    本测试无 Spring 反射直灌。V5.79 跟 V5.46 不同:多 pattern ANDed 需要 AndBuilder。
-        Field f = ReteBuilder.class.getDeclaredField("criterionBuilders");
-        f.setAccessible(true);
-        f.set(null, Arrays.asList(new CriteriaBuilder(), new AndBuilder()));
-
-        // 2. EngineContext.init(mockRegistry):深调用点(ContextImpl 构造 / DebugWriter 遍历)
-        //    都从 EngineContext 拿 AssertorEvaluator / ValueCompute / DebugWriters /
-        //    function table。本测试无 Spring,用 Mockito mock AssertorEvaluator + ValueCompute,
-        //    function table 空(没 eval 调用 BSF 函数)。
-        //    但 AssertorEvaluator 内部用 collection of Assertor;rule fire 要走 equals 比较,
-        //    所以需要真实 EqualsAssertor。
-        //    ValueCompute.findObject 走 mock:Criteria.evaluate 调 findObject(className, fact, ctx)
-        //    找当前 fact,简单返 fact 本身(本 bench 只跑字段过滤,fact 自己即对象)。
-        AssertorEvaluator realEvaluator = new AssertorEvaluator();
-        // AssertorEvaluator 内部 Collection<Assertor> 字段是 private,生产靠 setPluginRegistry。
-        // 本测试无 Spring,反射灌。
-        Field aef = AssertorEvaluator.class.getDeclaredField("assertors");
-        aef.setAccessible(true);
-        aef.set(realEvaluator, Collections.singletonList(new EqualsAssertor()));
-        ValueCompute mockValueCompute = org.mockito.Mockito.mock(ValueCompute.class);
-        org.mockito.Mockito.when(mockValueCompute.findObject(
-                org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.any(Object.class),
-                org.mockito.ArgumentMatchers.any()))
-            .thenAnswer(invocation -> {
-                // findObject(className, matchedFact, context) — 返 matchedFact 自身
-                // (跨 pattern 时返 null,V5.78+ Criteria 路径会另寻)。
-                Object matchedFact = invocation.getArgument(1);
-                String className = invocation.getArgument(0);
-                if (matchedFact == null) return null;
-                String actual = matchedFact.getClass().getName();
-                if (!actual.equals(className)) {
-                    return null;
-                }
-                return matchedFact;
-            });
-        Collection<Assertor> realAssertors = Collections.singletonList(new EqualsAssertor());
-        Collection<FunctionDescriptor> noFunctions = Collections.emptyList();
-        Collection<DebugWriter> noDebugWriters = Collections.emptyList();
-
-        EnginePluginRegistry mockRegistry = new EnginePluginRegistry() {
-            @Override public Collection<Assertor> getAssertors() { return realAssertors; }
-            @Override public Collection<CriterionParser> getCriterionParsers() { return Collections.emptyList(); }
-            @Override public Collection<ActionParser> getActionParsers() { return Collections.emptyList(); }
-            @Override public Collection<com.ruleforge.model.rete.builder.CriterionBuilder> getCriterionBuilders() {
-                return Arrays.asList(new CriteriaBuilder(), new AndBuilder());
-            }
-            @Override public Collection<ResourceBuilder> getResourceBuilders() { return Collections.emptyList(); }
-            @Override public Collection<ResourceProvider> getResourceProviders() { return Collections.emptyList(); }
-            @Override public Collection<BsfVariableProvider> getBsfVariableProviders() { return Collections.emptyList(); }
-            @Override public Collection<FunctionDescriptor> getFunctionDescriptors() { return noFunctions; }
-            @Override public Collection<DebugWriter> getDebugWriters() { return noDebugWriters; }
-            @Override public AssertorEvaluator getAssertorEvaluator() { return realEvaluator; }
-            @Override public ValueCompute getValueCompute() { return mockValueCompute; }
-            @Override public Object getBean(String beanId) { return null; }
-        };
-        EngineContext.init(mockRegistry);
+        // V5.81:走共享 EngineContextWirer(真实 ValueCompute,不再 Mockito mock)。
+        // 旧 V5.79/V5.46 套路 Mockito mock ValueCompute 没 stub complexValueCompute,
+        // 默认返 null → criteria.evaluate right side 永远是 null → equals(null) 永不命中
+        // → 所有 rule 都不 fire。V5.81 TD-19.2 修(见 SingleRuleFiresBDD 调查 trace + [[v580-drl-regression-fix]])。
+        EngineContextWirer.wire();
     }
 
     private void prepareData() {
@@ -455,13 +404,17 @@ class EvalBenchmarkV579 {
         KnowledgePackage kp = buildKnowledgePackageNoEval();
         Stats s = measure(kp, 5, 50);
         report("no_eval", s);
-        // V5.80 note:V5.78 DrlDeserializer 漏 setVariableCategory 已修(TD-18.0)— 但本 bench
-        // 走的是手工构造 Rule 路径,本身 variableCategory 一直有设。V5.78+ Criteria → CriteriaActivity
-        // 路径仍有 fired=0 的独立 gap(TD-18.4 待调查,跟 V5.78 DRL 回归是 2 个不同 bug)。
-        // 本 bench 测的是 RETE 引擎 raw perf(insert N fact + fireAllRules 耗时),
-        // 不要求实际 fire。workload 保留 1000 Person + 1000 Address 形态,
-        // firedRules 是 informational;具体 fire 数字见 TD-18.4 调查后再收紧。
-        assertEquals(0, s.firedRules, "V5.80: hand-built bench firedRules 仍 0,见 TD-18.4 调查后收紧;perf bench 不要求 fire");
+        // V5.81 note:TD-19.2 修了测试装配 bug(Mockito ValueCompute 漏 stub complexValueCompute,
+        // 见 [[v580-drl-regression-fix]] TD-18.4)。V5.81.0 SingleRuleFiresBDD 证明引擎在
+        // 最小 1-fact 场景下能正确 fire。本 bench 仍 fired=0 是另一个 pre-existing 缺陷 —
+        // {@code KnowledgeSessionImpl.allFactsMap} 是 {@code Map<String,Object>},按 className
+        // 作 key,1000 个 Person insert 后只保留最后一个(同 key 覆盖)。生产路径是
+        // {@code assertFact} 走 {@code reevaluate} 单独处理 rete,本 bench 走的是
+        // {@code session.insert(...)} + 一次 {@code fireRules} 走 {@code allFactsMap.values()} —
+        // 只剩 1 Person + 1 Address,3 条 rule 都不匹配(都是 UUID 名)。修法是把 allFactsMap
+        // 改成 {@code Map<String,List<Object>>} 或用 {@code assertFact} — 是 production 行为
+        // 改动,远超 V5.81 phase 19 范围,留 V5.82+ (TD-19.5)。
+        assertEquals(0, s.firedRules, "V5.81: bench firedRules 仍 0 — pre-existing allFactsMap 按 className 覆盖 bug,见 docs/notes/v581-criteria-path-fix.md");
     }
 
     @Test
@@ -488,10 +441,8 @@ class EvalBenchmarkV579 {
         KnowledgePackage kp = buildKnowledgePackage3WayJoin();
         Stats s = measure(kp, 5, 50);
         report("no_eval_3way", s);
-        // V5.80 note:见 benchNoEval 注释,hand-built bench firedRules 仍 0;V5.80 修的
-        // 是 DRL 路径的 variableCategory 漏填,跟本 bench 的 Criteria 联合路径 fired=0
-        // 是 2 个独立 bug(TD-18.4 调查)。
-        assertEquals(0, s.firedRules, "V5.80: hand-built bench firedRules 仍 0,见 TD-18.4");
+        // V5.81 note:见 benchNoEval 注释,pre-existing allFactsMap bug 同样影响。
+        assertEquals(0, s.firedRules, "V5.81: bench firedRules 仍 0 — pre-existing allFactsMap bug,见 docs/notes/v581-criteria-path-fix.md");
     }
 
     /**
@@ -506,8 +457,8 @@ class EvalBenchmarkV579 {
         KnowledgePackage kp = buildKnowledgePackage5Rules();
         Stats s = measure(kp, 5, 50);
         report("no_eval_5r", s);
-        // V5.80 note:见 benchNoEval 注释
-        assertEquals(0, s.firedRules, "V5.80: hand-built bench firedRules 仍 0,见 TD-18.4");
+        // V5.81 note:见 benchNoEval 注释
+        assertEquals(0, s.firedRules, "V5.81: bench firedRules 仍 0 — pre-existing allFactsMap bug,见 docs/notes/v581-criteria-path-fix.md");
     }
 
     // ====== POJO ======

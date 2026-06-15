@@ -1,11 +1,6 @@
 package com.ruleforge.ir.drl;
 
-import com.ruleforge.action.BsfVariableProvider;
 import com.ruleforge.builder.KnowledgeBase;
-import com.ruleforge.builder.resource.ResourceBuilder;
-import com.ruleforge.builder.resource.ResourceProvider;
-import com.ruleforge.debug.DebugWriter;
-import com.ruleforge.model.function.FunctionDescriptor;
 import com.ruleforge.model.library.Datatype;
 import com.ruleforge.model.library.ResourceLibrary;
 import com.ruleforge.model.library.variable.Act;
@@ -14,30 +9,18 @@ import com.ruleforge.model.library.variable.Variable;
 import com.ruleforge.model.library.variable.VariableCategory;
 import com.ruleforge.model.library.variable.VariableLibrary;
 import com.ruleforge.model.rete.Rete;
-import com.ruleforge.model.rete.builder.AndBuilder;
-import com.ruleforge.model.rete.builder.CriteriaBuilder;
 import com.ruleforge.model.rete.builder.ReteBuilder;
 import com.ruleforge.model.rule.Rule;
-import com.ruleforge.parse.ActionParser;
-import com.ruleforge.parse.CriterionParser;
-import com.ruleforge.plugin.EnginePluginRegistry;
-import com.ruleforge.runtime.EngineContext;
 import com.ruleforge.runtime.KnowledgePackage;
 import com.ruleforge.runtime.KnowledgeSessionImpl;
-import com.ruleforge.runtime.assertor.Assertor;
-import com.ruleforge.runtime.assertor.AssertorEvaluator;
-import com.ruleforge.runtime.assertor.EqualsAssertor;
-import com.ruleforge.runtime.rete.ValueCompute;
 import com.ruleforge.runtime.response.RuleExecutionResponse;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -72,50 +55,11 @@ class DrlReteIntegrationTest {
 
     @BeforeAll
     static void wireEngineContext() throws Exception {
-        // criterionBuilders 静态字段(同 EvalBenchmarkV579)
-        Field f = ReteBuilder.class.getDeclaredField("criterionBuilders");
-        f.setAccessible(true);
-        f.set(null, Arrays.asList(new CriteriaBuilder(), new AndBuilder()));
-
-        // EngineContext.init(mockRegistry) — 跟 EvalBenchmarkV579 一致套路
-        AssertorEvaluator realEvaluator = new AssertorEvaluator();
-        Field aef = AssertorEvaluator.class.getDeclaredField("assertors");
-        aef.setAccessible(true);
-        aef.set(realEvaluator, Collections.singletonList(new EqualsAssertor()));
-        ValueCompute mockValueCompute = org.mockito.Mockito.mock(ValueCompute.class);
-        org.mockito.Mockito.when(mockValueCompute.findObject(
-                org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.any(Object.class),
-                org.mockito.ArgumentMatchers.any()))
-            .thenAnswer(invocation -> {
-                Object matchedFact = invocation.getArgument(1);
-                String className = invocation.getArgument(0);
-                if (matchedFact == null) return null;
-                String actual = matchedFact.getClass().getName();
-                if (!actual.equals(className)) return null;
-                return matchedFact;
-            });
-        Collection<Assertor> realAssertors = Collections.singletonList(new EqualsAssertor());
-        Collection<FunctionDescriptor> noFunctions = Collections.emptyList();
-        Collection<DebugWriter> noDebugWriters = Collections.emptyList();
-
-        EnginePluginRegistry mockRegistry = new EnginePluginRegistry() {
-            @Override public Collection<Assertor> getAssertors() { return realAssertors; }
-            @Override public Collection<CriterionParser> getCriterionParsers() { return Collections.emptyList(); }
-            @Override public Collection<ActionParser> getActionParsers() { return Collections.emptyList(); }
-            @Override public Collection<com.ruleforge.model.rete.builder.CriterionBuilder> getCriterionBuilders() {
-                return Arrays.asList(new CriteriaBuilder(), new AndBuilder());
-            }
-            @Override public Collection<ResourceBuilder> getResourceBuilders() { return Collections.emptyList(); }
-            @Override public Collection<ResourceProvider> getResourceProviders() { return Collections.emptyList(); }
-            @Override public Collection<BsfVariableProvider> getBsfVariableProviders() { return Collections.emptyList(); }
-            @Override public Collection<FunctionDescriptor> getFunctionDescriptors() { return noFunctions; }
-            @Override public Collection<DebugWriter> getDebugWriters() { return noDebugWriters; }
-            @Override public AssertorEvaluator getAssertorEvaluator() { return realEvaluator; }
-            @Override public ValueCompute getValueCompute() { return mockValueCompute; }
-            @Override public Object getBean(String beanId) { return null; }
-        };
-        EngineContext.init(mockRegistry);
+        // V5.81:走共享 EngineContextWirer(真实 ValueCompute) — V5.80 老套路用 Mockito
+        // mock ValueCompute 漏 stub complexValueCompute,导致 criteria.evaluate right side
+        // 永远是 null,equals(null) 永不命中。本测试 2-pattern join DRL 走 == 字段过滤,
+        // 用真实 ValueCompute 后能正确 fire(详见 [[v580-drl-regression-fix]] TD-18.4 调查 trace)。
+        com.ruleforge.rete.test.EngineContextWirer.wire();
     }
 
     // ============================================================
