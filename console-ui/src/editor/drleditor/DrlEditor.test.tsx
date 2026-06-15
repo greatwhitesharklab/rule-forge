@@ -1,27 +1,25 @@
 /**
- * V5.45.3 — DRL 编辑器 vitest BDD。
+ * V5.78.3 — DRL 编辑器 vitest BDD。
  *
  * <p>锁 3 件事:
  * <ol>
- *   <li>挂载时调 loadDrlFile 拿 content,填进 CodeMirror</li>
+ *   <li>挂载时调 loadDrlFile 拿 content,传给 Monaco</li>
  *   <li>顶部 toolbar 显示 "Source format: DRL" badge(用 DEFAULT_DIALECT)</li>
  *   <li>侧栏显示 imports / ruleNames 列表(payload 来的)</li>
  * </ol>
  *
- * <p>本测试用 jsdom + @testing-library/react 渲染组件。CodeMirror 5 在 jsdom
- * 下行为有限(无真实布局),所以只测 React state + props,不测 CodeMirror 实例。
+ * <p>本测试用 jsdom + @testing-library/react 渲染组件。@monaco-editor/react
+ * 在 jsdom 下不真挂载(无 worker / WebGL),所以 mock 成无副作用 div。
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 
-// mock CodeMirror — 简化到能 getValue / setValue / onChange 三个 API
-vi.mock('./DrlCodeMirror', () => ({
-    DrlCodeMirror: class MockCm {
-        value = '';
-        getValue() { return this.value; }
-        setValue(v: string) { this.value = v; }
-        onChange(_cb: (v: string) => void) { /* noop */ }
-        refresh() { /* noop */ }
+// mock DrlMonaco — 简化到无副作用 div,记录 initialValue + onChange callback
+vi.mock('./DrlMonaco', () => ({
+    DrlMonaco: (props: { initialValue?: string; onChange?: (v: string) => void }) => {
+        // 触发 onChange 验证 dirty tracking(测试不依赖)
+        return React.createElement('div', { 'data-testid': 'mock-monaco' },
+            `monaco:${props.initialValue ?? ''}`);
     },
 }));
 
@@ -42,8 +40,9 @@ vi.mock('../../Utils', () => ({
 }));
 
 import DrlEditor from './index';
+import React from 'react';
 
-describe('V5.45.3 — DRL editor BDD', () => {
+describe('V5.78.3 — DRL editor BDD', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });

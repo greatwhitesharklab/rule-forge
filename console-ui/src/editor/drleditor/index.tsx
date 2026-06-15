@@ -1,28 +1,27 @@
 /**
- * V5.45.3 — DRL 4 编辑器 React 入口。
+ * V5.78.3 — DRL 4 编辑器 React 入口(Monaco 版)。
  *
- * <p>布局:
+ * <p>V5.45.3 CodeMirror 5 prototype → V5.78.3 Monaco + IDE providers
+ * (autocomplete / hover / diagnostics 红线)。布局不变:
  * <ul>
  *   <li>顶部 toolbar:文件路径 + "Source format: DRL 4" badge + 保存按钮 +
  *       "保存新版本" 按钮(走现有 save + saveNewVersion API)</li>
- *   <li>主区:CodeMirror 5 text editor,DRL 4 syntax highlight</li>
+ *   <li>主区:Monaco editor,DRL 4 Monarch syntax highlight + IDE features</li>
  *   <li>侧栏:`imports` 列表 + `ruleNames` 列表(从 {@link loadDrlFile} 返的
  *       payload 拿)</li>
  * </ul>
  *
- * <p>dirty tracking:CodeMirror `change` 事件 → {@link window._setDirty} 通知 frame。
+ * <p>dirty tracking:Monaco onChange 事件 → {@link useDirty} 通知 frame。
  *
- * <p>不做(显式 scope-out,留 V5.46+):
+ * <p>V5.78.3 新增(原 V5.45.3 deferred):
  * <ul>
- *   <li>live syntax-error reporting(grammar error offset 暂未序列化到响应)</li>
- *   <li>cross-navigation 钩子(ruleset-editor 切到 DRL mode 按钮)</li>
- *   <li>version selector UI(用现有 saveNewVersion)</li>
- *   <li>多人协作</li>
+ *   <li>live syntax-error diagnostics(走 /api/ide/parse,300ms debounce)</li>
+ *   <li>autocomplete(走 /api/ide/complete,keyword + declared field)</li>
+ *   <li>hover popup(走 /api/ide/hover,markdown)</li>
  * </ul>
  *
- * @since 5.45
+ * @since 5.78
  */
-import '../../../node_modules/codemirror/lib/codemirror.css';
 import '../../css/tailwind-base.css';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -32,16 +31,15 @@ import { loadDrlFile, type DrlFilePayload } from '../../api/drlEditor';
 import { DEFAULT_DIALECT } from '../../api/drlDialect';
 import { save, saveNewVersion } from '../../api/client';
 import { getParameter } from '../../Utils';
-import { DrlCodeMirror } from './DrlCodeMirror';
+import { DrlMonaco } from './DrlMonaco';
 import {useDirty} from '../../editor/EditorContexts';
 
 const DrlEditor: React.FC<{ file: string }> = ({ file }) => {
     const dirty = useDirty();
-    // 子组件需要项目名时 useProject() 获取(替代 window._project)。
-    const editorParentRef = useRef<HTMLDivElement>(null);
-    const cmRef = useRef<DrlCodeMirror | null>(null);
     const [payload, setPayload] = useState<DrlFilePayload | null>(null);
     const [error, setError] = useState<string | null>(null);
+    // 当前 Monaco 内容(给 save 用)
+    const currentContentRef = useRef<string>('');
 
     // 阶段 1:加载文件
     useEffect(() => {
@@ -50,8 +48,7 @@ const DrlEditor: React.FC<{ file: string }> = ({ file }) => {
             .then(p => {
                 if (cancelled) return;
                 setPayload(p);
-                cmRef.current?.setValue(p.content);
-                cmRef.current?.refresh();
+                currentContentRef.current = p.content;
             })
             .catch(e => {
                 if (cancelled) return;
@@ -62,22 +59,14 @@ const DrlEditor: React.FC<{ file: string }> = ({ file }) => {
         };
     }, [file]);
 
-    // 阶段 2:挂载 CodeMirror
-    useEffect(() => {
-        if (!editorParentRef.current) return;
-        const cm = new DrlCodeMirror(editorParentRef.current, '');
-        cmRef.current = cm;
-        cm.onChange(() => {
-            dirty.setDirty();
-        });
-        return () => {
-            cmRef.current = null;
-        };
-    }, []);
+    const handleContentChange = (value: string) => {
+        currentContentRef.current = value;
+        dirty.setDirty();
+    };
 
     const handleSave = async () => {
-        if (!cmRef.current || !file) return;
-        const content = cmRef.current.getValue();
+        if (!file) return;
+        const content = currentContentRef.current;
         try {
             await save(`/project${file}`, {
                 content: encodeURIComponent(content),
@@ -92,8 +81,8 @@ const DrlEditor: React.FC<{ file: string }> = ({ file }) => {
     };
 
     const handleSaveNewVersion = async () => {
-        if (!cmRef.current || !file) return;
-        const content = cmRef.current.getValue();
+        if (!file) return;
+        const content = currentContentRef.current;
         try {
             await saveNewVersion(`/project${file}`, {
                 content: encodeURIComponent(content),
@@ -135,7 +124,12 @@ const DrlEditor: React.FC<{ file: string }> = ({ file }) => {
 
             {/* 主区 + 侧栏 */}
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-                <div ref={editorParentRef} style={{ flex: 1, overflow: 'auto' }} />
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <DrlMonaco
+                        initialValue={payload.content}
+                        onChange={handleContentChange}
+                    />
+                </div>
                 <div style={{
                     width: 240,
                     borderLeft: '1px solid #d9d9d9',
