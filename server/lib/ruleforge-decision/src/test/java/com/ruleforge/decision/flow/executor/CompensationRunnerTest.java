@@ -70,11 +70,11 @@ class CompensationRunnerTest {
         list.add(cend);
         list.add(cinter);
         list.add(cthrow);
-        list.add(new EventNodeExecutor());
+        list.add(new EventNodeExecutor(null));
         list.add(new GatewayNodeExecutor());
         list.add(new UserTaskNodeExecutor());
         list.add(new ScriptNodeExecutor());
-        list.add(new MultiInstanceExecutor());
+        list.add(new MultiInstanceExecutor(null));
         NodeExecutorRegistry reg = new NodeExecutorRegistry(list);
         // A1 模式:Holder 注入 reg(走 traverse 时由 FlowNodeRunner 重置)
         CompensationThrowExecutor.Holder.REGISTRY = reg;

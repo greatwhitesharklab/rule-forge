@@ -45,11 +45,11 @@ class MultiInstanceIntegrationTest {
             }
         };
 
-        MultiInstanceExecutor wrapper = new MultiInstanceExecutor();
+        MultiInstanceExecutor wrapper = new MultiInstanceExecutor(null);
         List<NodeExecutor> list = new ArrayList<>();
         list.add(wrapper);
         list.add(action);
-        list.add(new EventNodeExecutor());
+        list.add(new EventNodeExecutor(null));
         list.add(new GatewayNodeExecutor());
         list.add(new UserTaskNodeExecutor());
         list.add(new ScriptNodeExecutor());

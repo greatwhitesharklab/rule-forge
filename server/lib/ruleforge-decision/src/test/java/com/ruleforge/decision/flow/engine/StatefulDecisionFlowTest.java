@@ -84,7 +84,7 @@ class StatefulDecisionFlowTest {
     private FlowEngine newEngine(DecisionFlowStateMapper mapper, NodeExecutor... executors) {
         List<NodeExecutor> list = new ArrayList<>();
         for (NodeExecutor e : executors) list.add(e);
-        list.add(new EventNodeExecutor());
+        list.add(new EventNodeExecutor(null));
         list.add(new GatewayNodeExecutor());
         list.add(new ParallelGatewayExecutor());
         list.add(new UserTaskNodeExecutor());
@@ -101,7 +101,7 @@ class StatefulDecisionFlowTest {
                                          NodeExecutor... executors) {
         List<NodeExecutor> list = new ArrayList<>();
         for (NodeExecutor e : executors) list.add(e);
-        list.add(new EventNodeExecutor());
+        list.add(new EventNodeExecutor(null));
         list.add(new GatewayNodeExecutor());
         list.add(new ParallelGatewayExecutor());
         list.add(new UserTaskNodeExecutor());

@@ -64,7 +64,7 @@ class FlowNodeRunnerLinkTest {
         List<NodeExecutor> list = new ArrayList<>();
         list.add(action);
         list.add(new IntermediateEventExecutor());
-        list.add(new EventNodeExecutor());
+        list.add(new EventNodeExecutor(null));
         list.add(new GatewayNodeExecutor());
         list.add(new ParallelGatewayExecutor());
         list.add(new UserTaskNodeExecutor());
