@@ -1,10 +1,11 @@
 package com.ruleforge.decision.flow.executor;
 
-import com.ruleforge.Utils;
 import com.ruleforge.decision.exception.FlowExecutionException;
 import com.ruleforge.decision.flow.engine.FlowContext;
 import com.ruleforge.decision.flow.ir.FlowNode;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
@@ -20,7 +21,10 @@ import java.util.Map;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class ActionNodeExecutor implements NodeExecutor {
+
+    private final BeanFactory beanFactory;
 
     @Override
     public String supportedType() {
@@ -39,7 +43,7 @@ public class ActionNodeExecutor implements NodeExecutor {
 
         Object bean;
         try {
-            bean = Utils.getApplicationContext().getBean(beanId);
+            bean = beanFactory.getBean(beanId);
         } catch (Exception e) {
             throw new FlowExecutionException("Action bean not found: " + beanId, e);
         }

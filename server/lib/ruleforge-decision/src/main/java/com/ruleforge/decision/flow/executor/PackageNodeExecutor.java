@@ -1,6 +1,5 @@
 package com.ruleforge.decision.flow.executor;
 
-import com.ruleforge.Utils;
 import com.ruleforge.builder.KnowledgeBase;
 import com.ruleforge.builder.KnowledgeBuilder;
 import com.ruleforge.builder.ResourceBase;
@@ -32,6 +31,7 @@ import java.util.Map;
 public class PackageNodeExecutor implements NodeExecutor {
 
     private final KnowledgeBuilder knowledgeBuilder;
+    private final KnowledgeService knowledgeService;
 
     @Override
     public String supportedType() {
@@ -54,9 +54,7 @@ public class PackageNodeExecutor implements NodeExecutor {
 
         KnowledgePackage knowledgePackage;
         try {
-            KnowledgeService service = (KnowledgeService) Utils.getApplicationContext()
-                .getBean(KnowledgeService.BEAN_ID);
-            knowledgePackage = service.getKnowledge(resourceKey);
+            knowledgePackage = knowledgeService.getKnowledge(resourceKey);
         } catch (Exception e) {
             throw new FlowExecutionException(
                 "Failed to load knowledge package: " + resourceKey, e);
