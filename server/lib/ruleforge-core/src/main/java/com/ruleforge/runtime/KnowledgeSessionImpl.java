@@ -157,11 +157,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
 
     private void clearInitParameters() {
         List<String> stringList = new ArrayList<>();
-        Iterator var2 = this.initParameters.keySet().iterator();
-
-        String key;
-        while (var2.hasNext()) {
-            key = (String) var2.next();
+        // V5.96 — Iterator var123 → enhanced for (keySet 是 read-only,for-each OK)
+        for (String key : this.initParameters.keySet()) {
             Object obj = this.initParameters.get(key);
             if (obj != null) {
                 if (obj instanceof List) {
@@ -180,10 +177,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
             }
         }
 
-        var2 = stringList.iterator();
-
-        while (var2.hasNext()) {
-            key = (String) var2.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (String key : stringList) {
             this.initParameters.remove(key);
         }
 

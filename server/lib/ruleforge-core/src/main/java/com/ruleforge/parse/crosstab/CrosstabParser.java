@@ -16,7 +16,6 @@ import org.dom4j.Element;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -84,10 +83,8 @@ public class CrosstabParser implements Parser<CrosstabDefinition> {
         table.setCells(cells);
         table.setRows(rows);
         table.setColumns(columns);
-        Iterator var13 = element.elements().iterator();
-
-        while (var13.hasNext()) {
-            Object obj = var13.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (Object obj : element.elements()) {
             if (obj != null && obj instanceof Element) {
                 Element ele = (Element) obj;
                 String name = ele.getName();

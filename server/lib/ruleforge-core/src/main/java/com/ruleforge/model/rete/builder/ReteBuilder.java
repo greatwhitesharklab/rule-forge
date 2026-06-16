@@ -129,9 +129,8 @@ public class ReteBuilder {
             Criterion criterion = lhs.getCriterion();
             List<BaseReteNode> prevNodes = buildCriterion(context, criterion);
 
-            BaseReteNode prevNode;
-            for (Iterator<BaseReteNode> var7 = prevNodes.iterator(); var7.hasNext(); prevNode.addLine(terminalNode)) {
-                prevNode = var7.next();
+            // V5.96 — for(Iterator var7;...;prevNode.addLine) → enhanced for + 把 addLine 放 body 末尾
+            for (BaseReteNode prevNode : prevNodes) {
                 if (prevNode instanceof JunctionNode) {
                     JunctionNode junctionNode = (JunctionNode) prevNode;
                     List<Line> toConnections = junctionNode.getToConnections();
@@ -145,6 +144,7 @@ public class ReteBuilder {
                         }
                     }
                 }
+                prevNode.addLine(terminalNode);
             }
 
             Other other = rule.getOther();
@@ -162,18 +162,13 @@ public class ReteBuilder {
     }
 
     public static List<BaseReteNode> buildCriterion(BuildContext context, Criterion criterion) {
-        Iterator<CriterionBuilder> var2 = criterionBuilders.iterator();
-
-        CriterionBuilder criterionBuilder;
-        do {
-            if (!var2.hasNext()) {
-                throw new RuleException("Unknow criterion : " + criterion);
+        // V5.96 — decompiled do-while find-first → enhanced for + 早返,语义等价
+        for (CriterionBuilder criterionBuilder : criterionBuilders) {
+            if (criterionBuilder.support(criterion)) {
+                return criterionBuilder.buildCriterion((BaseCriterion) criterion, context);
             }
-
-            criterionBuilder = var2.next();
-        } while (!criterionBuilder.support(criterion));
-
-        return criterionBuilder.buildCriterion((BaseCriterion) criterion, context);
+        }
+        throw new RuleException("Unknow criterion : " + criterion);
     }
 
     public void setPluginRegistry(EnginePluginRegistry pluginRegistry) {

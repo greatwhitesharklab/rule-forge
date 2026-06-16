@@ -28,7 +28,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public class BuildContextImpl implements BuildContext {
@@ -101,19 +100,15 @@ public class BuildContextImpl implements BuildContext {
                 Value value = parameter.getObjectParameter();
                 this.buildTypes(value, typeList);
             } else {
-                Parameter param;
                 Value value;
                 List params;
-                Iterator var19;
                 if (leftPart instanceof MethodLeftPart) {
                     MethodLeftPart methodLeftPart = (MethodLeftPart) leftPart;
                     params = methodLeftPart.getParameters();
                     if (params != null) {
-                        var19 = params.iterator();
-
-                        while (var19.hasNext()) {
-                            param = (Parameter) var19.next();
-                            value = param.getValue();
+                        // V5.96 — Iterator var123 → enhanced for (raw List,param 强转)
+                        for (Object o : params) {
+                            value = ((Parameter) o).getValue();
                             this.buildTypes(value, typeList);
                         }
                     }
@@ -121,11 +116,9 @@ public class BuildContextImpl implements BuildContext {
                     FunctionLeftPart funLeftPart = (FunctionLeftPart) leftPart;
                     params = funLeftPart.getParameters();
                     if (params != null) {
-                        var19 = params.iterator();
-
-                        while (var19.hasNext()) {
-                            param = (Parameter) var19.next();
-                            value = param.getValue();
+                        // V5.96 — Iterator var123 → enhanced for (raw List,param 强转)
+                        for (Object o : params) {
+                            value = ((Parameter) o).getValue();
                             this.buildTypes(value, typeList);
                         }
                     }

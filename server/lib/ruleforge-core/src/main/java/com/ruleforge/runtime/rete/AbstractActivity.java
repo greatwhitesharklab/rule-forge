@@ -7,7 +7,6 @@ package com.ruleforge.runtime.rete;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 public abstract class AbstractActivity implements Activity {
@@ -61,14 +60,11 @@ public abstract class AbstractActivity implements Activity {
     protected void doPassAndNode() {
         List<Path> paths = this.getPaths();
         if (paths != null) {
-            Iterator var2 = paths.iterator();
-
-            while (var2.hasNext()) {
-                Path path = (Path) var2.next();
+            // V5.96 — Iterator var123 → enhanced for
+            for (Path path : paths) {
                 AbstractActivity activity = (AbstractActivity) path.getTo();
                 activity.passAndNode();
             }
-
         }
     }
 

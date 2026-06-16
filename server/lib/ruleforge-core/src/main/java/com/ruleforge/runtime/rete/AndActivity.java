@@ -44,18 +44,13 @@ public class AndActivity extends JoinActivity {
     }
 
     private boolean isAllPassed() {
-        Iterator var1 = this.fromPaths.iterator();
-
-        Path path;
-        do {
-            if (!var1.hasNext()) {
-                return true;
+        // V5.96 — decompiled do-while → 早返 enhanced for,语义等价(任一 path 未 passed 返 false)
+        for (Path path : this.fromPaths) {
+            if (!path.isPassed()) {
+                return false;
             }
-
-            path = (Path) var1.next();
-        } while (path.isPassed());
-
-        return false;
+        }
+        return true;
     }
 
     public void addFromPath(Path fromPath) {

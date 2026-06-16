@@ -8,7 +8,6 @@ import com.ruleforge.runtime.rete.Context;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 public abstract class AbstractRuleBox implements RuleBox {
@@ -24,20 +23,16 @@ public abstract class AbstractRuleBox implements RuleBox {
 
     protected void retract(Object obj, List<Activation> activations) {
         List<Activation> needRemovedList = new ArrayList();
-        Iterator var4 = activations.iterator();
-
-        while (var4.hasNext()) {
-            Activation activation = (Activation) var4.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (Activation activation : activations) {
             if (activation.contain(obj)) {
                 needRemovedList.add(activation);
             }
         }
 
         KnowledgeSession session = (KnowledgeSession) this.context.getWorkingMemory();
-        Iterator var7 = needRemovedList.iterator();
-
-        while (var7.hasNext()) {
-            Activation ac = (Activation) var7.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (Activation ac : needRemovedList) {
             activations.remove(ac);
             session.fireEvent(new ActivationCancelledEventImpl(ac, session));
         }
@@ -52,16 +47,17 @@ public abstract class AbstractRuleBox implements RuleBox {
 
     protected boolean activationShouldAdd(Activation activation) {
         Rule rule = activation.getRule();
-        Iterator var3 = this.rules.iterator();
-
-        Rule r;
-        do {
-            if (!var3.hasNext()) {
-                return true;
+        // V5.96 — Iterator var123 → for-each with predicate
+        Rule r = null;
+        for (Rule candidate : this.rules) {
+            if (candidate.equals(rule)) {
+                r = candidate;
+                break;
             }
-
-            r = (Rule) var3.next();
-        } while (!r.equals(rule));
+        }
+        if (r == null) {
+            return true;
+        }
 
         if (r.getLoop() != null && r.getLoop()) {
             return true;

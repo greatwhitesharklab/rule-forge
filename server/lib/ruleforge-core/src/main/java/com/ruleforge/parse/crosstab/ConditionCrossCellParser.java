@@ -5,8 +5,6 @@ import com.ruleforge.parse.Parser;
 import com.ruleforge.parse.table.JointParser;
 import org.dom4j.Element;
 
-import java.util.Iterator;
-
 /**
  * @author fred
  * 2018-11-05 6:49 PM
@@ -20,10 +18,8 @@ public class ConditionCrossCellParser extends CrossCellParser implements Parser<
     public ConditionCrossCell parse(Element element) {
         ConditionCrossCell cell = new ConditionCrossCell();
         this.parseCrossCell(cell, element);
-        Iterator var3 = element.elements().iterator();
-
-        while (var3.hasNext()) {
-            Object obj = var3.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (Object obj : element.elements()) {
             if (obj != null && obj instanceof Element) {
                 Element ele = (Element) obj;
                 if (this.jointParser.support(ele.getName())) {

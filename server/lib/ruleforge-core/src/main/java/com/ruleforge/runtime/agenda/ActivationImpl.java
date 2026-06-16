@@ -73,9 +73,9 @@ public class ActivationImpl implements Activation {
                                 actions = rhs.getActions();
                                 if (actions != null) {
                                     int index = 1;
-
-                                    for (Iterator var13 = actions.iterator(); var13.hasNext(); ++index) {
-                                        Action action = (Action) var13.next();
+                                    // V5.96 — for(Iterator var123; ...) → enhanced for + 显式 ++index (raw List,强转)
+                                    for (Object o : actions) {
+                                        Action action = (Action) o;
                                         if (this.rule.getDebug() != null) {
                                             action.setDebug(this.rule.getDebug());
                                         }
@@ -85,6 +85,7 @@ public class ActivationImpl implements Activation {
                                         if (actionValue != null) {
                                             actionValues.add(actionValue);
                                         }
+                                        index++;
                                     }
                                 }
                             }
