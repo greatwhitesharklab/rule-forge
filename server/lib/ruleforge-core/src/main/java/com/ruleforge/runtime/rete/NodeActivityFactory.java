@@ -7,6 +7,7 @@ import com.ruleforge.model.rete.ObjectTypeNode;
 import com.ruleforge.model.rete.OrNode;
 import com.ruleforge.model.rete.ReteNode;
 import com.ruleforge.model.rete.TerminalNode;
+import com.ruleforge.model.rule.lhs.Criteria;
 
 import java.util.Map;
 
@@ -73,7 +74,12 @@ public final class NodeActivityFactory {
     }
 
     private static CriteriaActivity createCriteria(CriteriaNode node, Map<Object, Object> context) {
-        CriteriaActivity activity = new CriteriaActivity(node.getCriteria(), node.isDebug());
+        // V5.95 — 把 node.isDebug() 传播到 Criteria.debug 字段,让 Criteria.evaluate
+        // 4 个 addTipMsg + cleanTipMsg 走 if (this.debug) 门控。NodeActivityFactory
+        // 是唯一 production CriteriaActivity 构造点,所有 Rule.debug 状态从此流入。
+        Criteria criteria = node.getCriteria();
+        criteria.setDebug(node.isDebug());
+        CriteriaActivity activity = new CriteriaActivity(criteria, node.isDebug());
         for (Line line : node.getLines()) {
             activity.addPath(line.newPath(context));
         }

@@ -24,6 +24,11 @@ public class Criteria extends BaseCriterion implements BaseCriteria {
     private Op op;
     private Left left;
     private Value value;
+    // V5.95 — debug 门控 addTipMsg 字段。默认 false (production-safe),由 NodeActivityFactory
+    // 在构造 CriteriaActivity 时从 Rule.debug 传入。evaluate 走 if (this.debug) 门控
+    // 4 个 addTipMsg + cleanTipMsg — debug=false 时省 4 string concat + 4 StringBuilder.append。
+    @JsonIgnore
+    private boolean debug;
 
     public Criteria() {
     }
@@ -31,11 +36,19 @@ public class Criteria extends BaseCriterion implements BaseCriteria {
     public EvaluateResponse evaluate(EvaluationContext context, Object obj, List<Object> allMatchedObjects) {
         Datatype datatype = null;
         Object leftResult = null;
-        context.addTipMsg("计算条件：" + this.getId());
+        // V5.95 — debug 门控:debug=false 时跳过所有 4 个 addTipMsg + 1 个 cleanTipMsg。
+        // 4 个 addTipMsg 的结果在 evaluate 末尾被 cleanTipMsg 抹掉,debug=false 时
+        // 整个序列是纯浪费(string concat + StringBuilder.append 反复执行)。
+        // 跟 V5.88 CriteriaActivity.logMessage 早返同模式,同一个 debug flag 门控两处。
+        if (this.debug) {
+            context.addTipMsg("计算条件：" + this.getId());
+        }
         ValueCompute valueCompute = context.getValueCompute();
         LeftPart leftPart = this.left.getLeftPart();
         String leftId = this.left.getId();
-        context.addTipMsg("左值：" + leftId);
+        if (this.debug) {
+            context.addTipMsg("左值：" + leftId);
+        }
         String valueId;
         // V5.94 — 用 getPartValue 直接判断 cache hit,砍 partValueExist 双 lookup。
         // HashMap.get 对 "missing" / "null-stored" 都返 null,所以 cache-hit 判定
@@ -112,7 +125,9 @@ public class Criteria extends BaseCriterion implements BaseCriteria {
         Object right = null;
         if (this.value != null) {
             valueId = this.value.getId();
-            context.addTipMsg("右值：" + valueId);
+            if (this.debug) {
+                context.addTipMsg("右值：" + valueId);
+            }
             // V5.94 — 同 leftId 模式,getPartValue 直接判断 cache hit,砍双 lookup。
             Object cachedRight = context.getPartValue(valueId);
             if (cachedRight != null) {
@@ -129,9 +144,15 @@ public class Criteria extends BaseCriterion implements BaseCriteria {
             datatype = Utils.getDatatype(leftResult);
         }
 
-        context.addTipMsg("执行比较：" + this.op.toString());
+        if (this.debug) {
+            context.addTipMsg("执行比较：" + this.op.toString());
+        }
         boolean result = context.getAssertorEvaluator().evaluate(leftResult, right, datatype, this.op);
         response.setResult(result);
+        // V5.95 — cleanTipMsg 始终调用(无 debug 门控),保证 tipMsgBuilder 状态
+        // reset。debug=false 时 builder 已空(no addTipMsg called),cleanTipMsg 是
+        // no-op,但保留调用维持下游 ActivationImpl.execute addTipMsg 行为契约
+        // (append 不会错加 ">>" 前缀)。锁 [[v595-criteria-addtipmsg-debug-gate]] BDD。
         context.cleanTipMsg();
         return response;
     }
@@ -150,6 +171,16 @@ public class Criteria extends BaseCriterion implements BaseCriteria {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    // V5.95 — debug 门控 addTipMsg 字段访问器。NodeActivityFactory 在构造
+    // CriteriaActivity 时调 setDebug(node.isDebug()) 传播 debug flag。
+    public boolean isDebug() {
+        return this.debug;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
     }
 
     public Op getOp() {
