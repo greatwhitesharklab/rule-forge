@@ -1,34 +1,34 @@
 {
-  "version": "V5.83",
-  "capturedAt": "2026-06-15",
+  "version": "V5.90",
+  "capturedAt": "2026-06-16",
   "samples": [
     {
       "name": "EvalBenchmarkV579_drl_no_eval_ms",
-      "p50": 3.0,
-      "p95": 6.5,
+      "p50": 1.22,
+      "p95": 4.0,
       "failMultiplier": 1.5,
-      "note": "V5.83 RETE bench — 2000 fact / 2-pattern / 字段过滤(alpha index) / per-fact median。V5.83 TD-19.5.4 修 rete sticky state(per-fact clean + resetStickyStateOnly 保留 Path.passed 累积)— fired=3(3 special pair 都 match)。perf 数字比 V5.79 0.20ms 大幅上升(per-fact clean + 2-pattern join 工作),后续可优化 reset 路径。V5.46 锁值 0.16ms。"
+      "note": "V5.90 — Rule.debug 默认翻 false + bench 显式 setDebug(false),让 V5.88 logMessage 早返真正生效。2-pattern join -58%(V5.88 2.91→1.22ms p50),V5.87 预测 30-50% 兑现。JFR Formatter.format 215→0 sample。fired=3。V5.83 锁值 3.0, V5.79 锁值 0.20(bug-driven 便宜数据),V5.46 锁值 0.16。"
     },
     {
       "name": "EvalBenchmarkV579_drl_no_eval_3way_ms",
-      "p50": 1.03,
-      "p95": 3.0,
+      "p50": 0.92,
+      "p95": 2.5,
       "failMultiplier": 1.5,
-      "note": "V5.89 — Utils.getObjectProperty 反射 cache 替换 PropertyUtils 链,3-pattern 链式 join 跑下来 -10%(1.14→1.03ms)。JFR 揭示 PropertyUtilsBean.getSimpleProperty 131→0 + DefaultResolver.next 109→0(全消失),Method.invoke 38 替代。no_eval 2.91→2.70(-7%),eval 1.23→1.12(-9%),no_eval_5r 5.50→5.35(-3%)。V5.88 p50 1.14, V5.83 锁值 1.30, V5.79 锁值 0.10。"
+      "note": "V5.90 — 3-pattern 链式 join -19%(V5.88 1.14→0.92ms p50)。V5.87 预测 30-50% 在 3-pattern 部分兑现(setup 限制),full 30-50% 看 no_eval/no_eval_5r。fired=0。V5.88 1.14, V5.83 锁值 1.30, V5.79 锁值 0.10。"
     },
     {
       "name": "EvalBenchmarkV579_drl_no_eval_5r_ms",
-      "p50": 5.2,
-      "p95": 12.5,
+      "p50": 2.81,
+      "p95": 6.0,
       "failMultiplier": 1.5,
-      "note": "V5.83 — 5 条 rule 并列(模拟 V5.77 #141 Java class import 路径 reflection 注册放大效应)。每条 2-pattern,5 条全匹配(3 special pair + 2 跨 special)— fired=5。perf 数字反映 5 rule × 2-pattern join 累积 + per-fact clean 开销。V5.79 锁值 0.56ms。"
+      "note": "V5.90 — 5 rule × 2-pattern 并列 join -49%(V5.88 5.50→2.81ms p50),V5.87 预测 30-50% 完美兑现。fired=5。V5.88 5.50, V5.83 锁值 5.20, V5.79 锁值 0.56(bug-driven 便宜数据)。"
     },
     {
       "name": "EvalBenchmarkV579_drl_eval_ms",
-      "p50": 1.2,
-      "p95": 2.4,
+      "p50": 1.05,
+      "p95": 2.0,
       "failMultiplier": 1.5,
-      "note": "V5.83 RETE bench — 2000 fact / 2-pattern / 无字段过滤(value=__no_match_*) / per-fact median。fired=0(全 no-match)。V5.79 锁值 0.25ms;V5.83 上升来自 per-fact clean 开销。"
+      "note": "V5.90 — 无字段过滤 2-pattern -15%(V5.88 1.23→1.05ms p50)。fired=0。V5.88 1.23, V5.83 锁值 1.20, V5.79 锁值 0.25。"
     },
     {
       "name": "DrlRebuildPerfRegressionTest_drl_1000_rules_ms",
