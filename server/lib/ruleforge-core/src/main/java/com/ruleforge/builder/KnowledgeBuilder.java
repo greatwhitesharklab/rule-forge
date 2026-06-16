@@ -296,10 +296,15 @@ public class KnowledgeBuilder extends AbstractBuilder {
     }
 
     private void addToLibraryMap(Map<String, Library> map, List<Library> libraries) {
+        // V5.100 — 砍 containsKey + put 双 lookup。 跟 V5.93 EvaluationContext 原则:
+        // `map.get(key) == null` 已能区分 "key absent" 与 "key present with null value"。
+        // 本场景 `value` 永远是 Library 对象 (非 null, 反编译收尾, 无 put(key, null) 风险),
+        // 所以等价。 Library.first-wins 契约保留 (single-writer last-wins 反例: 后到
+        // duplicate path 跳过, 跟原 containsKey + put 行为 100% 一致)。
         if (libraries != null) {
             for (Library lib : libraries) {
                 String path = lib.getPath();
-                if (!map.containsKey(path)) {
+                if (map.get(path) == null) {
                     map.put(path, lib);
                 }
             }
