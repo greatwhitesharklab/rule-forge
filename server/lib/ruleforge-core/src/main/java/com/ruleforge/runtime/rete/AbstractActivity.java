@@ -30,17 +30,18 @@ public abstract class AbstractActivity implements Activity {
     protected List<FactTracker> visitPaths(EvaluationContext context, Object obj, FactTracker tracker) {
         if (this.paths != null && !this.paths.isEmpty()) {
             List<FactTracker> trackers = null;
-            int size = this.paths.size();
 
+            // V6.2 — 砍死代码 else + 删未用 size 变量 (Fernflower 反编译 artifact)。
+            // line 33 int size = this.paths.size() + line 39 if (size > 0) {...} else {...}
+            // 模式: else 不可达,因为 line 31 `!this.paths.isEmpty()` guard 已经保证
+            // size > 0。else 分支 (传原 tracker 而非 newSubFactTracker) 是死代码 —
+            // 永远是 size > 0 path,所以永远是 newSubFactTracker 路径。
+            // 行为 100% 等价:在 `!paths.isEmpty()` 前提下,size > 0 永真。
             for (Path path : this.paths) {
                 Collection<FactTracker> results = null;
                 Activity activity = path.getTo();
                 path.setPassed(true);
-                if (size > 0) {
-                    results = activity.enter(context, obj, tracker.newSubFactTracker());
-                } else {
-                    results = activity.enter(context, obj, tracker);
-                }
+                results = activity.enter(context, obj, tracker.newSubFactTracker());
 
                 if (results != null) {
                     if (trackers == null) {
