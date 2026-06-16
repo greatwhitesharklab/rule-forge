@@ -63,10 +63,13 @@ public class AndBuilder extends JunctionBuilder {
                     nodes = this.buildCriterion(criterion, context, prevNodes);
                 } while (nodes == null);
 
-                Iterator var11 = nodes.iterator();
-
-                while (var11.hasNext()) {
-                    BaseReteNode node = (BaseReteNode) var11.next();
+                // V6.0 — Iterator var11 → enhanced for (反编译 var123 收尾)。
+                // 内层 simple iteration (无 label/skip/early return), 跟外层
+                // do-while-find-first 状态机解耦, 可独立 for-each 化。
+                // nodes 是 raw List (decompiled 时代码), 用 Object 强转 BaseReteNode,
+                // 跟 V5.96 ActivationImpl.java 同模式。
+                for (Object obj : nodes) {
+                    BaseReteNode node = (BaseReteNode) obj;
                     if (node instanceof CriteriaNode) {
                         if (currentCriteriaNode != null) {
                             List<ReteNode> childrenNodes = currentCriteriaNode.getChildrenNodes();
