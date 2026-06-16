@@ -21,11 +21,18 @@ public class AndActivity extends JoinActivity {
             Map<Object, List<BaseCriteria>> map = tracker.getObjectCriteriaMap();
             Map<Object, List<BaseCriteria>> currentMap = this.currentTracker.getObjectCriteriaMap();
 
+            // V6.1 — 砍 containsKey + put 双 lookup,套 V5.93/V5.94/V5.97/V5.98
+            // getCriteriaValue / getPartValue / addObjectCriteria 同模式。
+            // HashMap.get 对 missing key 返 null,等价 containsKey==false,
+            // 1 call 砍 1 HashMap.containsKey + 1 String.hashCode per iter。
+            // 本方法在 rete hot path (JFR 666 sample),2-class rete 多次 join
+            // per-fact 多次 iter,锁定 [[v611-andactivity-double-lookup]]。
+            // 行为等价:本方法 put 的 value 永远非 null (FactTracker.addObjectCriteria
+            // 保证 list 非 null — V5.97 doc),所以 get==null ↔ containsKey 100% 等价。
             for (Object key : currentMap.keySet()) {
-                if (!map.containsKey(key)) {
+                if (map.get(key) == null) {
                     map.put(key, currentMap.get(key));
                 }
-
             }
         }
 
