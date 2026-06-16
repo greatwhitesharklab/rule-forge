@@ -19,8 +19,6 @@ import com.ruleforge.model.rule.lhs.LeftType;
 import com.ruleforge.model.rule.lhs.MethodLeftPart;
 import com.ruleforge.model.rule.lhs.VariableLeftPart;
 
-import java.util.Iterator;
-
 import org.apache.commons.lang.StringUtils;
 import org.dom4j.Element;
 
@@ -106,28 +104,26 @@ public class LeftParser extends AbstractParser<Left> {
         CommonFunctionLeftPart part = new CommonFunctionLeftPart();
         part.setName(element.attributeValue("function-name"));
         part.setLabel(element.attributeValue("function-label"));
-        Iterator var3 = element.elements().iterator();
 
-        while (true) {
-            Element ele;
-            do {
-                Object obj;
-                do {
-                    if (!var3.hasNext()) {
-                        return part;
-                    }
-
-                    obj = var3.next();
-                } while (!(obj instanceof Element));
-
-                ele = (Element) obj;
-            } while (!ele.getName().equals("function-parameter"));
-
+        // V6.4 — 2-level nested do-while find-first → enhanced for + 2 个 continue。
+        // 原来 2-level do-while: 内层 find-next Element, 外层 find-next function-parameter
+        // Element, 内嵌 for 收集 value 子 Element, setParameter 每次覆盖 (single-writer
+        // last-wins 契约)。 实际行为是 "process all matching function-parameter items" —
+        // 等价 enhanced for + 2 个 continue (skip non-Element + skip non-function-parameter
+        // Element)。 iterator 状态由 List iterator 决定, 两种写法一致 (锁定
+        // [[v644-leftparser-commonfunction-flatten]])。
+        for (Object obj : element.elements()) {
+            if (!(obj instanceof Element)) {
+                continue;
+            }
+            Element ele = (Element) obj;
+            if (!ele.getName().equals("function-parameter")) {
+                continue;
+            }
             CommonFunctionParameter p = new CommonFunctionParameter();
             p.setName(ele.attributeValue("name"));
             p.setProperty(ele.attributeValue("property-name"));
             p.setPropertyLabel(ele.attributeValue("property-label"));
-            // V5.96 — Iterator var123 → enhanced for
             for (Object object : ele.elements()) {
                 if (object instanceof Element) {
                     Element e = (Element) object;
@@ -136,9 +132,10 @@ public class LeftParser extends AbstractParser<Left> {
                     }
                 }
             }
-
             part.setParameter(p);
         }
+
+        return part;
     }
 
     private MethodLeftPart buildMethodLeftPart(Element element) {
