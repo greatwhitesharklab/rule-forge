@@ -51,7 +51,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -129,8 +128,9 @@ class EvalBenchmarkV579 {
 
     private void prepareData() {
         for (int i = 0; i < N; i++) {
-            addresses[i] = new Address(UUID.randomUUID().toString());
-            persons[i] = new Person(UUID.randomUUID().toString()).setAddress(addresses[i]);
+            // V5.91 — AtomicLong 计数器替代 UUID.randomUUID().toString()
+            addresses[i] = new Address(FactIds.next("a"));
+            persons[i] = new Person(FactIds.next("p")).setAddress(addresses[i]);
         }
         addresses[250] = new Address("Main Street");
         persons[250] = new Person("Mario").setAddress(addresses[250]);

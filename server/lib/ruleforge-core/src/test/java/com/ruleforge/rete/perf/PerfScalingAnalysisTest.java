@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -142,10 +141,11 @@ class PerfScalingAnalysisTest {
         KnowledgeSessionImpl session = new KnowledgeSessionImpl(kp);
         for (int i = 0; i < n; i++) {
             if (dualClass) {
-                session.insert(new Address(UUID.randomUUID().toString()));
-                session.insert(new Person(UUID.randomUUID().toString()));
+                // V5.91 — AtomicLong 计数器替代 UUID.randomUUID().toString()
+                session.insert(new Address(FactIds.next("a")));
+                session.insert(new Person(FactIds.next("p")));
             } else {
-                session.insert(new Person(UUID.randomUUID().toString()));
+                session.insert(new Person(FactIds.next("p")));
             }
         }
         RuleExecutionResponse resp = session.fireRules();
