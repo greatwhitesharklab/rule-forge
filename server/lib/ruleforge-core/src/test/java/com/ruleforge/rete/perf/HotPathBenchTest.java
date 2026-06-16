@@ -113,6 +113,11 @@ class HotPathBenchTest {
     private Rule buildDualClassRule(String personName, String street) {
         Rule r = new Rule();
         r.setName("R1"); r.setSalience(0);
+        // V5.90 — 显式 debug=false 让 V5.88 早返 (CriteriaActivity.logMessage) 生效。
+        // 跟 Rule.java:35 默认翻转一致;bench 之前 51M fact insert 全付了 logMessage
+        // String.format 的 cost,per-fact 0.68us 偏差。V5.88 doc 隐含 V5.88 后 bench
+        // 走了 fast path,实际 bench Rule.debug=true,V5.88 fix 在 bench 上未触发。
+        r.setDebug(false);
         And and = new And();
         and.addCriterion(buildCriteria("Person", "name", personName));
         and.addCriterion(buildCriteria("Address", "street", street));
