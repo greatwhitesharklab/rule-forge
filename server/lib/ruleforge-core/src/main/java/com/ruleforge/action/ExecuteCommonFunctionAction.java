@@ -23,9 +23,16 @@ public class ExecuteCommonFunctionAction extends AbstractAction {
     @Override
     public ActionValue execute(Context context, Object matchedObject, List<Object> allMatchedObjects) {
         FunctionDescriptor function = null;
-        if (EngineContext.getFunctionDescriptorMap().containsKey(name)) {
-            function = EngineContext.findFunctionDescriptor(name);
-        } else if (EngineContext.getFunctionDescriptorLabelMap().containsKey(label)) {
+        // V5.100.1 — 砍 containsKey + (findFunctionDescriptor | get) 双 lookup, 套 V5.93
+        // 原则: `map.get(key) == null` 已能区分 absent vs null-value. 本场景 value 永为
+        // FunctionDescriptor 对象 (非 null, EngineContext.init 唯一 put 是 put(name, fun)
+        // + put(label, fun), 无 put(key, null) 风险), 所以等价. byName first (跟原顺序
+        // 一致), byLabel fallback. findFunctionDescriptor 内部也是 `get(name) + throw
+        // if null`, 跟 V5.93 模式 100% 一致 (用本地 get 替 findFunctionDescriptor 以保留
+        // "not found 时 fallback 到 label" 行为, 不能直接用 findFunctionDescriptor 因为
+        // 它会 throw). 节省 2 个 containsKey hash lookup (line 26 + line 28).
+        function = EngineContext.getFunctionDescriptorMap().get(name);
+        if (function == null) {
             function = EngineContext.getFunctionDescriptorLabelMap().get(label);
         }
         if (function == null) {
