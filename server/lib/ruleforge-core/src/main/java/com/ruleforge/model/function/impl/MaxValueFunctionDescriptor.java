@@ -8,7 +8,6 @@ import com.ruleforge.model.function.FunctionDescriptor;
 
 import java.math.BigDecimal;
 import java.util.Collection;
-import java.util.Iterator;
 
 /**
  * @author fred
@@ -41,10 +40,8 @@ public class MaxValueFunctionDescriptor implements FunctionDescriptor {
         if (object instanceof Collection) {
             list = (Collection) object;
             BigDecimal max = null;
-            Iterator var6 = list.iterator();
-
-            while (var6.hasNext()) {
-                Object obj = var6.next();
+            // V5.96 — Iterator var123 → enhanced for
+            for (Object obj : list) {
                 Object pvalue = Utils.getObjectProperty(obj, property);
                 BigDecimal a = Utils.toBigDecimal(pvalue);
                 if (max == null) {

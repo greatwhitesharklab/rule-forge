@@ -24,7 +24,6 @@ import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -91,10 +90,8 @@ public class ComplexScorecardParser implements Parser<ComplexScorecardDefinition
             card.setDebug(Boolean.valueOf(debug));
         }
 
-        Iterator elementsIterator = element.elements().iterator();
-
-        while (elementsIterator.hasNext()) {
-            Object obj = elementsIterator.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (Object obj : element.elements()) {
             if (obj != null && obj instanceof Element) {
                 Element ele = (Element) obj;
                 String name = ele.getName();
@@ -128,43 +125,36 @@ public class ComplexScorecardParser implements Parser<ComplexScorecardDefinition
         List<Library> libraries = table.getLibraries();
         ResourceLibrary resLibraries = this.rulesRebuilder.getResourceLibraryBuilder().buildResourceLibrary(libraries);
         Map<String, String> namedMap = new HashMap<>();
-        Iterator var5 = table.getCellMap().values().iterator();
-
-        while (true) {
-            while (var5.hasNext()) {
-                Cell cell = (Cell) var5.next();
-                if (cell.getAction() != null) {
-                    this.rulesRebuilder.rebuildAction(cell.getAction(), resLibraries, namedMap, false);
-                } else if (cell.getValue() != null) {
-                    this.rulesRebuilder.rebuildValue(cell.getValue(), resLibraries, namedMap, false);
-                } else if (cell.getJoint() != null && cell.getJoint() != null && cell.getJoint().getJunction() != null) {
-                    List<Condition> conditions = cell.getJoint().getConditions();
-                    if (conditions != null) {
-                        Iterator var8 = conditions.iterator();
-
-                        while (var8.hasNext()) {
-                            Condition condition = (Condition) var8.next();
-                            Value value = condition.getValue();
-                            if (value != null) {
-                                this.rulesRebuilder.rebuildValue(value, resLibraries, namedMap, false);
-                            }
+        // V5.96 — 外层 decompiled `while(true) { ... return; }` 是 do-once pattern,展开成单层 for
+        for (Cell cell : table.getCellMap().values()) {
+            if (cell.getAction() != null) {
+                this.rulesRebuilder.rebuildAction(cell.getAction(), resLibraries, namedMap, false);
+            } else if (cell.getValue() != null) {
+                this.rulesRebuilder.rebuildValue(cell.getValue(), resLibraries, namedMap, false);
+            } else if (cell.getJoint() != null && cell.getJoint() != null && cell.getJoint().getJunction() != null) {
+                List<Condition> conditions = cell.getJoint().getConditions();
+                if (conditions != null) {
+                    // V5.96 — Iterator var123 → enhanced for
+                    for (Condition condition : conditions) {
+                        Value value = condition.getValue();
+                        if (value != null) {
+                            this.rulesRebuilder.rebuildValue(value, resLibraries, namedMap, false);
                         }
                     }
                 }
             }
-
-            Collections.sort(table.getColumns(), new Comparator<ComplexColumn>() {
-                public int compare(ComplexColumn o1, ComplexColumn o2) {
-                    return o1.getNum() - o2.getNum();
-                }
-            });
-            Collections.sort(table.getRows(), new Comparator<Row>() {
-                public int compare(Row o1, Row o2) {
-                    return o1.getNum() - o2.getNum();
-                }
-            });
-            return;
         }
+
+        Collections.sort(table.getColumns(), new Comparator<ComplexColumn>() {
+            public int compare(ComplexColumn o1, ComplexColumn o2) {
+                return o1.getNum() - o2.getNum();
+            }
+        });
+        Collections.sort(table.getRows(), new Comparator<Row>() {
+            public int compare(Row o1, Row o2) {
+                return o1.getNum() - o2.getNum();
+            }
+        });
     }
 
     public boolean support(String name) {

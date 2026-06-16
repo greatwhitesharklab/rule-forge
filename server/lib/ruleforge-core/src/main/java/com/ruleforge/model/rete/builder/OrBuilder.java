@@ -1,7 +1,6 @@
 package com.ruleforge.model.rete.builder;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import com.ruleforge.exception.RuleException;
@@ -25,10 +24,8 @@ public class OrBuilder extends JunctionBuilder {
         List<Criterion> criterions = or.getCriterions();
         if (criterions != null && criterions.size() != 0) {
             List<BaseReteNode> childNodes = new ArrayList();
-            Iterator var6 = criterions.iterator();
-
-            while (var6.hasNext()) {
-                Criterion criterion = (Criterion) var6.next();
+            // V5.96 — Iterator var123 → enhanced for
+            for (Criterion criterion : criterions) {
                 List<BaseReteNode> nodes = this.buildCriterion(criterion, context, (List) null);
                 if (nodes != null) {
                     childNodes.addAll(nodes);
@@ -41,10 +38,8 @@ public class OrBuilder extends JunctionBuilder {
                 return childNodes;
             } else {
                 OrNode orNode = new OrNode(context.nextId());
-                Iterator var10 = childNodes.iterator();
-
-                while (var10.hasNext()) {
-                    BaseReteNode node = (BaseReteNode) var10.next();
+                // V5.96 — Iterator var123 → enhanced for
+                for (BaseReteNode node : childNodes) {
                     node.addLine(orNode);
                 }
 

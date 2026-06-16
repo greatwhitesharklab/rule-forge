@@ -69,10 +69,8 @@ public class LeftParser extends AbstractParser<Left> {
                 throw new RuleException("Not support eval type.");
         }
 
-        Iterator var4 = element.elements().iterator();
-
-        while (var4.hasNext()) {
-            Object obj = var4.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (Object obj : element.elements()) {
             if (obj != null && obj instanceof Element) {
                 Element ele = (Element) obj;
                 String name = ele.getName();
@@ -129,10 +127,8 @@ public class LeftParser extends AbstractParser<Left> {
             p.setName(ele.attributeValue("name"));
             p.setProperty(ele.attributeValue("property-name"));
             p.setPropertyLabel(ele.attributeValue("property-label"));
-            Iterator var7 = ele.elements().iterator();
-
-            while (var7.hasNext()) {
-                Object object = var7.next();
+            // V5.96 — Iterator var123 → enhanced for
+            for (Object object : ele.elements()) {
                 if (object instanceof Element) {
                     Element e = (Element) object;
                     if (e.getName().equals("value")) {

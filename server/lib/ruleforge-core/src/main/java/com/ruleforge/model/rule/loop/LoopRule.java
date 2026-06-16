@@ -12,7 +12,6 @@ import com.ruleforge.runtime.rete.Context;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.logging.Log;
@@ -47,10 +46,8 @@ public class LoopRule extends Rule {
             if (this.loopStart != null) {
                 List<Action> startActions = this.loopStart.getActions();
                 if (startActions != null) {
-                    Iterator var9 = startActions.iterator();
-
-                    while (var9.hasNext()) {
-                        Action action = (Action) var9.next();
+                    // V5.96 — Iterator var123 → enhanced for
+                    for (Action action : startActions) {
                         if (this.getDebug() != null) {
                             action.setDebug(this.getDebug());
                         }
@@ -70,10 +67,8 @@ public class LoopRule extends Rule {
             if (loopTargetObj instanceof Collection) {
                 Collection<?> collections = (Collection) loopTargetObj;
                 String loopClazz = null;
-                Iterator var12 = collections.iterator();
-
-                while (var12.hasNext()) {
-                    Object object = var12.next();
+                // V5.96 — Iterator var123 → enhanced for
+                for (Object object : collections) {
                     if (loopClazz == null) {
                         if (object instanceof GeneralEntity) {
                             loopClazz = ((GeneralEntity) object).getTargetClass();
@@ -82,10 +77,8 @@ public class LoopRule extends Rule {
                         }
                     }
 
-                    Iterator var14 = parentAllFactsMap.keySet().iterator();
-
-                    while (var14.hasNext()) {
-                        String className = (String) var14.next();
+                    // V5.96 — Iterator var123 → enhanced for (keySet 是只读场景,for-each OK)
+                    for (String className : parentAllFactsMap.keySet()) {
                         if (!className.equals(loopClazz)) {
                             fact = parentAllFactsMap.get(className);
                             session.insert(fact);
@@ -97,10 +90,8 @@ public class LoopRule extends Rule {
                     List<ActionValue> list = response.getActionValues();
                     boolean needBreak = false;
                     if (list != null) {
-                        Iterator var17 = list.iterator();
-
-                        while (var17.hasNext()) {
-                            ActionValue av = (ActionValue) var17.next();
+                        // V5.96 — Iterator var123 → enhanced for
+                        for (ActionValue av : list) {
                             if (av.getActionId().equals("_loop_break__")) {
                                 needBreak = true;
                             } else {
@@ -121,15 +112,11 @@ public class LoopRule extends Rule {
                 }
 
                 Object[] objs = (Object[]) (loopTargetObj);
-                Object[] var27 = objs;
-                int var26 = objs.length;
-
-                for (int var30 = 0; var30 < var26; ++var30) {
-                    Object object = var27[var30];
-                    Iterator var35 = parentAllFactsMap.values().iterator();
-
-                    while (var35.hasNext()) {
-                        fact = var35.next();
+                // V5.96 — for (int var30=0;...) → enhanced for (Object[] 用 for-each 更直白)
+                for (Object object : objs) {
+                    // V5.96 — Iterator var123 → enhanced for
+                    for (Object f : parentAllFactsMap.values()) {
+                        fact = f;
                         session.insert(fact);
                     }
 
@@ -138,10 +125,8 @@ public class LoopRule extends Rule {
                     List<ActionValue> list = response.getActionValues();
                     boolean needBreak = false;
                     if (list != null) {
-                        Iterator var40 = list.iterator();
-
-                        while (var40.hasNext()) {
-                            ActionValue av = (ActionValue) var40.next();
+                        // V5.96 — Iterator var123 → enhanced for
+                        for (ActionValue av : list) {
                             if (av.getActionId().equals("_loop_break__")) {
                                 needBreak = true;
                             } else {
@@ -162,10 +147,8 @@ public class LoopRule extends Rule {
             if (this.loopEnd != null) {
                 List<Action> endActions = this.loopEnd.getActions();
                 if (endActions != null) {
-                    Iterator var29 = endActions.iterator();
-
-                    while (var29.hasNext()) {
-                        Action action = (Action) var29.next();
+                    // V5.96 — Iterator var123 → enhanced for
+                    for (Action action : endActions) {
                         if (this.getDebug() != null) {
                             action.setDebug(this.getDebug());
                         }

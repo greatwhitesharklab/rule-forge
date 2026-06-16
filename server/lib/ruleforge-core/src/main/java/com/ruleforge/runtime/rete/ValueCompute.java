@@ -31,7 +31,6 @@ import com.ruleforge.runtime.function.WorkingMemoryFunctionContext;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -241,10 +240,8 @@ public class ValueCompute {
 
         if (matchedFact instanceof Collection) {
             Collection coll = (Collection) matchedFact;
-            Iterator var5 = coll.iterator();
-
-            while (var5.hasNext()) {
-                Object obj = var5.next();
+            // V5.96 — Iterator var123 → enhanced for
+            for (Object obj : coll) {
                 if (targetClass != null) {
                     if (targetClass.isInstance(obj)) {
                         return obj;

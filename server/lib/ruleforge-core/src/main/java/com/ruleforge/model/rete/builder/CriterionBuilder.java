@@ -18,7 +18,6 @@ import com.ruleforge.model.rule.lhs.Criterion;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 
 public abstract class CriterionBuilder {
@@ -33,18 +32,13 @@ public abstract class CriterionBuilder {
         List<BaseReteNode> result = new ArrayList();
         List<String> objectTypes = context.getObjectType(criteria);
         if (prevNodes != null && prevNodes.size() > 0) {
-            Iterator var12 = prevNodes.iterator();
-
-            while (var12.hasNext()) {
-                ConditionNode prevNode = (ConditionNode) var12.next();
+            // V5.96 — Iterator var123 → enhanced for
+            for (ConditionNode prevNode : prevNodes) {
                 boolean match = true;
                 List<String> prevObjectTypes = context.getObjectType(prevNode.getCriteria());
-                Iterator targetNode;
                 if (prevObjectTypes.size() == objectTypes.size()) {
-                    targetNode = prevObjectTypes.iterator();
-
-                    while (targetNode.hasNext()) {
-                        String prevType = (String) targetNode.next();
+                    // V5.96 — Iterator var123 → enhanced for
+                    for (String prevType : prevObjectTypes) {
                         if (!objectTypes.contains(prevType)) {
                             match = false;
                             break;
@@ -54,7 +48,6 @@ public abstract class CriterionBuilder {
                     match = false;
                 }
 
-                targetNode = null;
                 CriteriaNode criteriaNode;
                 if (match) {
                     List<ReteNode> prevChildrenNodes = prevNode.getChildrenNodes();
@@ -81,11 +74,8 @@ public abstract class CriterionBuilder {
     private CriteriaNode buildCriteriaNode(BaseCriteria criteria, BuildContext context, List<String> objectTypes) {
         CriteriaNode targetNode = null;
         ObjectTypeNode targetObjectTypeNode = null;
-        Iterator var6 = objectTypes.iterator();
-
-        String objectType;
-        while (var6.hasNext()) {
-            objectType = (String) var6.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (String objectType : objectTypes) {
             if (objectType.equals("*")) {
                 objectType = HashMap.class.getName();
             }
@@ -100,10 +90,8 @@ public abstract class CriterionBuilder {
         }
 
         if (targetNode == null) {
-            var6 = objectTypes.iterator();
-
-            while (var6.hasNext()) {
-                objectType = (String) var6.next();
+            // V5.96 — Iterator var123 → enhanced for
+            for (String objectType : objectTypes) {
                 if (objectType.equals("*")) {
                     objectType = HashMap.class.getName();
                 }
@@ -124,10 +112,8 @@ public abstract class CriterionBuilder {
     private CriteriaNode fetchSameCriteriaNode(BaseCriteria criteria, List<ReteNode> childrenNodes) {
         String conditionId = criteria.getId();
         CriteriaNode targetNode = null;
-        Iterator var5 = childrenNodes.iterator();
-
-        while (var5.hasNext()) {
-            Node node = (Node) var5.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (Node node : childrenNodes) {
             if (node instanceof ConditionNode && (!(criteria instanceof Criteria) || node instanceof CriteriaNode)) {
                 ConditionNode baseNode = (ConditionNode) node;
                 String nodeId = baseNode.getCriteriaInfo();

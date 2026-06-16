@@ -7,7 +7,6 @@ import org.springframework.core.io.support.PropertiesLoaderSupport;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Properties;
 
 public class PropertyConfigurer implements ApplicationContextAware {
@@ -22,10 +21,8 @@ public class PropertyConfigurer implements ApplicationContextAware {
 
     public void setApplicationContext(ApplicationContext context) throws BeansException {
         Collection<PropertiesLoaderSupport> supports = context.getBeansOfType(PropertiesLoaderSupport.class).values();
-        Iterator var3 = supports.iterator();
-
-        while (var3.hasNext()) {
-            PropertiesLoaderSupport support = (PropertiesLoaderSupport) var3.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (PropertiesLoaderSupport support : supports) {
             this.doMethod(support);
         }
 

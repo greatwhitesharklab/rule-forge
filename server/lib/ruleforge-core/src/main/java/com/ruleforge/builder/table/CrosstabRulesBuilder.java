@@ -52,10 +52,8 @@ public class CrosstabRulesBuilder {
             }
         }
 
-        Iterator var20 = valueCellRanges.iterator();
-
-        while (var20.hasNext()) {
-            CellRange range = (CellRange) var20.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (CellRange range : valueCellRanges) {
             CrossCell cell = range.getCell();
             Rule rule = new Rule();
             rule.setDebug(crosstab.getDebug());
@@ -91,10 +89,8 @@ public class CrosstabRulesBuilder {
 
     private CellRange findTopRowParentRange(List<CellRange> topRanges, int colNumber) {
         CellRange targetRange = null;
-        Iterator var4 = topRanges.iterator();
-
-        while (var4.hasNext()) {
-            CellRange range = (CellRange) var4.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (CellRange range : topRanges) {
             if (range.getStart() == colNumber && range.getEnd() == colNumber) {
                 targetRange = range;
                 break;
@@ -152,10 +148,8 @@ public class CrosstabRulesBuilder {
 
     private void buildJointsCriterion(List<Joint> joints, Junction parentJunction, CellRange range) {
         if (joints != null && joints.size() != 0) {
-            Iterator var4 = joints.iterator();
-
-            while (var4.hasNext()) {
-                Joint joint = (Joint) var4.next();
+            // V5.96 — Iterator var123 → enhanced for
+            for (Joint joint : joints) {
                 Junction junction = joint.getJunction();
                 List<Condition> conditions = joint.getConditions();
                 this.buildConditionsCriterion(conditions, junction, range);
@@ -169,10 +163,8 @@ public class CrosstabRulesBuilder {
 
     private void buildConditionsCriterion(List<Condition> conditions, Junction junction, CellRange range) {
         if (conditions != null && conditions.size() != 0) {
-            Iterator var4 = conditions.iterator();
-
-            while (var4.hasNext()) {
-                Condition condition = (Condition) var4.next();
+            // V5.96 — Iterator var123 → enhanced for
+            for (Condition condition : conditions) {
                 Criteria criteria = this.newCriteria(condition, range);
                 junction.addCriterion(criteria);
             }
@@ -262,10 +254,8 @@ public class CrosstabRulesBuilder {
 
     private CellRange findParentRange(int start, int end, List<CellRange> ranges) {
         CellRange targetRange = null;
-        Iterator var5 = ranges.iterator();
-
-        while (var5.hasNext()) {
-            CellRange r = (CellRange) var5.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (CellRange r : ranges) {
             boolean contain = false;
             if (!r.isValueCell() && r.getStart() <= start && r.getEnd() >= end) {
                 contain = true;
@@ -289,10 +279,8 @@ public class CrosstabRulesBuilder {
 
     private Map<String, CrossCell> buildCellsMap(List<CrossCell> cells) {
         Map<String, CrossCell> map = new HashMap();
-        Iterator var3 = cells.iterator();
-
-        while (var3.hasNext()) {
-            CrossCell cell = (CrossCell) var3.next();
+        // V5.96 — Iterator var123 → enhanced for
+        for (CrossCell cell : cells) {
             String key = cell.getRow() + "," + cell.getCol();
             map.put(key, cell);
         }

@@ -1,6 +1,5 @@
 package com.ruleforge.builder.table;
 
-import java.util.Iterator;
 import java.util.List;
 
 import com.ruleforge.model.rule.lhs.And;
@@ -93,10 +92,8 @@ public class CellContentBuilder {
 
     private void buildJointsCriterion(Cell cell, List<Joint> joints, ComplexColumn col, Junction parentJunction) {
         if (joints != null && joints.size() != 0) {
-            Iterator var5 = joints.iterator();
-
-            while (var5.hasNext()) {
-                Joint joint = (Joint) var5.next();
+            // V5.96 — Iterator var123 → enhanced for
+            for (Joint joint : joints) {
                 Junction junction = joint.getJunction();
                 List<Condition> conditions = joint.getConditions();
                 this.buildConditionsCriterion(cell, conditions, junction, col);
@@ -104,7 +101,6 @@ public class CellContentBuilder {
                 this.buildJointsCriterion(cell, children, col, junction);
                 parentJunction.addCriterion(junction);
             }
-
         }
     }
 
@@ -120,10 +116,8 @@ public class CellContentBuilder {
 
     private void buildConditionsCriterion(Cell cell, List<Condition> conditions, Junction junction, ComplexColumn col) {
         if (conditions != null && conditions.size() != 0) {
-            Iterator var5 = conditions.iterator();
-
-            while (var5.hasNext()) {
-                Condition condition = (Condition) var5.next();
+            // V5.96 — Iterator var123 → enhanced for
+            for (Condition condition : conditions) {
                 Criteria criteria = this.newCriteria(cell, col, condition);
                 junction.addCriterion(criteria);
             }
