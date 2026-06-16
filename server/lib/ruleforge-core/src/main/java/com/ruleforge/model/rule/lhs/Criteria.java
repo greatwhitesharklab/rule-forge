@@ -37,8 +37,15 @@ public class Criteria extends BaseCriterion implements BaseCriteria {
         String leftId = this.left.getId();
         context.addTipMsg("左值：" + leftId);
         String valueId;
-        if (context.partValueExist(leftId)) {
-            leftResult = context.getPartValue(leftId);
+        // V5.94 — 用 getPartValue 直接判断 cache hit,砍 partValueExist 双 lookup。
+        // HashMap.get 对 "missing" / "null-stored" 都返 null,所以 cache-hit 判定
+        // 为 cached != null。副作用:null-stored 值会重算,对 VariableLeftPart 是
+        // 幂等的(getObjectProperty 纯函数),其他 LeftPart 类型 production 实践
+        // 中 null-stored 罕见(规则匹配非空值),且重算语义等价 — 见
+        // docs/notes/v594-partvalue-double-lookup.md。锁 V5.94 BDD 测试契约。
+        Object cachedLeft = context.getPartValue(leftId);
+        if (cachedLeft != null) {
+            leftResult = cachedLeft;
             if (leftPart instanceof VariableLeftPart) {
                 datatype = ((VariableLeftPart) leftPart).getDatatype();
             }
@@ -106,8 +113,10 @@ public class Criteria extends BaseCriterion implements BaseCriteria {
         if (this.value != null) {
             valueId = this.value.getId();
             context.addTipMsg("右值：" + valueId);
-            if (context.partValueExist(valueId)) {
-                right = context.getPartValue(valueId);
+            // V5.94 — 同 leftId 模式,getPartValue 直接判断 cache hit,砍双 lookup。
+            Object cachedRight = context.getPartValue(valueId);
+            if (cachedRight != null) {
+                right = cachedRight;
                 response.setRightResult(right);
             } else {
                 right = valueCompute.complexValueCompute(this.value, obj, context, allMatchedObjects);
