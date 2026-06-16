@@ -31,7 +31,6 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -88,8 +87,10 @@ class HotPathBenchTest {
             // 每次 run:insert BATCH fact + fireRules
             KnowledgeSessionImpl session = new KnowledgeSessionImpl(kp);
             for (int i = 0; i < BATCH; i++) {
-                session.insert(new Person(UUID.randomUUID().toString()));
-                session.insert(new Address(UUID.randomUUID().toString()));
+                // V5.91 — AtomicLong 计数器替代 UUID.randomUUID().toString(),
+                // 消除 V5.90 JFR 28% hot path(String.hashCode 313 + SecureRandom 链 230+ = 543 sample)。
+                session.insert(new Person(FactIds.next("p")));
+                session.insert(new Address(FactIds.next("a")));
             }
             // 1 个 alice + 1 个 main 混入,期望 fired=1
             session.insert(new Person("alice"));
