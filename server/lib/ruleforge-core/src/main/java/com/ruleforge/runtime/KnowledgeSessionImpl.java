@@ -400,10 +400,17 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public void activeRule(String activationGroupName, String ruleName) {
-        if (!this.activationReteInstancesMap.containsKey(activationGroupName)) {
+        // V5.100.6 — 砍 containsKey + get 双 lookup, 套 V5.93 原则. `map.get(key) == null`
+        // 已能区分 absent vs null-value. 本场景 value 永为 List<ReteInstanceUnit> (非 null,
+        // Rete.buildGroupRetesInstance 用 computeIfAbsent(k -> new ArrayList<>()) 装入, 无
+        // put(key, null) 风险), 所以 get == null ↔ !containsKey 100% 等价. 节省 1 个
+        // containsKey hash lookup per activeRule 调用 (低频: 用户显式激活 rule group).
+        // ⚠️ 内层 Iterator var4 + label42 labeled loop 不动 (V5.96 skip — runtime hot path
+        // + state machine, 需独立 characterization test 投资).
+        List<ReteInstanceUnit> unitList = this.activationReteInstancesMap.get(activationGroupName);
+        if (unitList == null) {
             throw new RuleException("Activation group [" + activationGroupName + "] not exist!");
         } else {
-            List<ReteInstanceUnit> unitList = this.activationReteInstancesMap.get(activationGroupName);
             Iterator var4 = unitList.iterator();
 
             label42:
@@ -426,10 +433,14 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public void activeAgendaGroup(String groupName) {
-        if (!this.agendaReteInstancesMap.containsKey(groupName)) {
+        // V5.100.6 — 砍 containsKey + get 双 lookup, 套 V5.93 原则 (跟 activeRule 同档).
+        // value 永为 List<ReteInstanceUnit> (非 null, Rete.buildGroupRetesInstance 用
+        // computeIfAbsent(k -> new ArrayList<>())). 内层 Iterator var3 + while(true) do-while
+        // labeled loop 不动 (V5.96 skip).
+        List<ReteInstanceUnit> unitList = this.agendaReteInstancesMap.get(groupName);
+        if (unitList == null) {
             throw new RuleException("Agenda group [" + groupName + "] not exist!");
         } else {
-            List<ReteInstanceUnit> unitList = this.agendaReteInstancesMap.get(groupName);
             Iterator var3 = unitList.iterator();
 
             while (true) {
