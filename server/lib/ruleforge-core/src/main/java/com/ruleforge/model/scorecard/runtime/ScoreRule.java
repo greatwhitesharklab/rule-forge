@@ -59,14 +59,7 @@ public class ScoreRule extends Rule {
                 rowItem = "--- 行" + rowNumber + ",得分：" + scoreValue.getValue();
                 context.logMsg(rowItem, MsgType.ScoreCard);
 
-                RowItemImpl rowItemImpl;
-                if (rowMap.containsKey(rowNumber)) {
-                    rowItemImpl = rowMap.get(rowNumber);
-                } else {
-                    rowItemImpl = new RowItemImpl();
-                    rowItemImpl.setRowNumber(rowNumber);
-                    rowMap.put(rowNumber, rowItemImpl);
-                }
+                RowItemImpl rowItemImpl = getOrCreateRow(rowMap, rowNumber);
 
                 if (scoreValue.getName().equals("scoring_value")) {
                     rowItemImpl.setScore(scoreValue.getValue());
@@ -118,6 +111,34 @@ public class ScoreRule extends Rule {
 
         parentSession.getParameters().putAll(session.getParameters());
         return null;
+    }
+
+    /**
+     * V5.100.4 — 从 {@code rowMap} 取 (cache hit) 或创建 (cache miss) 指定 rowNumber 的
+     * {@link RowItemImpl}, 保留到 map 中. computeIfAbsent-style cache-or-create.
+     *
+     * <p>砍 {@code containsKey + get} 双 lookup, 套 V5.93 原则: {@code map.get(key) == null}
+     * 已能区分 absent vs null-value. 本场景 rowMap 唯一 put 是 {@code put(rowNumber,
+     * new RowItemImpl())} (永不为 null, 无 {@code put(key, null)} 风险), 所以 {@code get == null}
+     * ↔ {@code !containsKey} 100% 等价. 节省 1 个 containsKey hash lookup per repeat-row
+     * ActionValue (runtime per-scorecard-eval, 比 build-time 频, JFR noise level 预期).
+     *
+     * <p>从 {@code execute()} 抽出为独立 static helper — 既是 cache-or-create 的纯函数封装
+     * (缩短 execute()), 又让 V5.100.4 逻辑可单测 (clean inputs: Map + int, 不依赖
+     * KnowledgeSessionFactory / Context 等重装配).
+     *
+     * @param rowMap     execute 局部 row-number → RowItemImpl 缓存 (非 null)
+     * @param rowNumber  评分卡行号
+     * @return 该 rowNumber 对应的 RowItemImpl (cache hit 复用 / cache miss 新建并装入 map)
+     */
+    private static RowItemImpl getOrCreateRow(Map<Integer, RowItemImpl> rowMap, int rowNumber) {
+        RowItemImpl rowItemImpl = rowMap.get(rowNumber);
+        if (rowItemImpl == null) {
+            rowItemImpl = new RowItemImpl();
+            rowItemImpl.setRowNumber(rowNumber);
+            rowMap.put(rowNumber, rowItemImpl);
+        }
+        return rowItemImpl;
     }
 
     public ScoringType getScoringType() {
