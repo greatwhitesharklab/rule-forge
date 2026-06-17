@@ -1,7 +1,6 @@
 package com.ruleforge.model.rete.builder;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import com.ruleforge.exception.RuleException;
@@ -27,41 +26,26 @@ public class AndBuilder extends JunctionBuilder {
         And and = (And) c;
         AndNode andNode = null;
         List<Criterion> criterions = and.getCriterions();
-        if (criterions != null && criterions.size() != 0) {
+        if (criterions != null && !criterions.isEmpty()) {
             ConditionNode currentCriteriaNode = null;
-            Iterator var7 = criterions.iterator();
+            // V5.100.5 — 外层 Iterator var7 + while(true){do{...}while(nodes==null)}
+            // find-non-null 状态机 → enhanced for + continue. 套 V6.3/V6.4 模式
+            // (do-while-find-non-null → for + null-check-continue). 行为: 遍历每个
+            // criterion, build 它; 若 build 返 null 则 skip (continue); 否则处理 nodes
+            // (V6.0 内层 for, 不动). 全部 criterion 跑完后走 terminal block (原 do-while
+            // 顶部 !hasNext() 分支, 移到 for 之后 — 两种写法都只在 iterator 耗尽时到达
+            // terminal, 等价). 砍 Fernflower 反编译的 while(true)+do-while+label 状态机
+            // artifact, 关 V5.96 立的 skip (最后一个 decompiled outer state machine).
+            for (Criterion criterion : criterions) {
+                List<ConditionNode> prevNodes = new ArrayList();
+                if (currentCriteriaNode != null) {
+                    prevNodes.add(currentCriteriaNode);
+                }
 
-            while (true) {
-                List nodes;
-                do {
-                    if (!var7.hasNext()) {
-                        List<BaseReteNode> result = new ArrayList();
-                        if (criterions.size() == 1 && currentCriteriaNode != null) {
-                            result.add((BaseReteNode) currentCriteriaNode);
-                            return result;
-                        }
-
-                        if (andNode == null) {
-                            result.add((BaseReteNode) currentCriteriaNode);
-                            return result;
-                        }
-
-                        if (andNode != null && currentCriteriaNode != null) {
-                            currentCriteriaNode.addLine(andNode);
-                        }
-
-                        result.add(andNode);
-                        return result;
-                    }
-
-                    Criterion criterion = (Criterion) var7.next();
-                    List<ConditionNode> prevNodes = new ArrayList();
-                    if (currentCriteriaNode != null) {
-                        prevNodes.add(currentCriteriaNode);
-                    }
-
-                    nodes = this.buildCriterion(criterion, context, prevNodes);
-                } while (nodes == null);
+                List nodes = this.buildCriterion(criterion, context, prevNodes);
+                if (nodes == null) {
+                    continue;
+                }
 
                 // V6.0 — Iterator var11 → enhanced for (反编译 var123 收尾)。
                 // 内层 simple iteration (无 label/skip/early return), 跟外层
@@ -92,6 +76,26 @@ public class AndBuilder extends JunctionBuilder {
                     }
                 }
             }
+
+            // terminal block (原 !var7.hasNext() 分支): 全部 criterion 跑完后, 根据
+            // currentCriteriaNode / andNode 累积状态构造 result.
+            List<BaseReteNode> result = new ArrayList();
+            if (criterions.size() == 1 && currentCriteriaNode != null) {
+                result.add((BaseReteNode) currentCriteriaNode);
+                return result;
+            }
+
+            if (andNode == null) {
+                result.add((BaseReteNode) currentCriteriaNode);
+                return result;
+            }
+
+            if (andNode != null && currentCriteriaNode != null) {
+                currentCriteriaNode.addLine(andNode);
+            }
+
+            result.add(andNode);
+            return result;
         } else {
             throw new RuleException("Condition join node[and] need one child at least.");
         }
