@@ -405,17 +405,14 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
         // Rete.buildGroupRetesInstance 用 computeIfAbsent(k -> new ArrayList<>()) 装入, 无
         // put(key, null) 风险), 所以 get == null ↔ !containsKey 100% 等价. 节省 1 个
         // containsKey hash lookup per activeRule 调用 (低频: 用户显式激活 rule group).
-        // ⚠️ 内层 Iterator var4 + label42 labeled loop 不动 (V5.96 skip — runtime hot path
-        // + state machine, 需独立 characterization test 投资).
         List<ReteInstanceUnit> unitList = this.activationReteInstancesMap.get(activationGroupName);
         if (unitList == null) {
             throw new RuleException("Activation group [" + activationGroupName + "] not exist!");
         } else {
-            Iterator var4 = unitList.iterator();
-
-            label42:
-            while (var4.hasNext()) {
-                ReteInstanceUnit insUnit = (ReteInstanceUnit) var4.next();
+            // V5.100.7 — Iterator var4 + label42 (未用 label, Fernflower artifact) plain while
+            // → enhanced for. 行为: 遍历 unitList, 只对 ruleName 匹配 + 有效期内的 unit 跑
+            // rete enter (V5.82 走 allFactsList 全 fact).
+            for (ReteInstanceUnit insUnit : unitList) {
                 if (insUnit.getRuleName().equals(ruleName) && isWithinValidPeriod(insUnit)) {
                     ReteInstance reteIns = insUnit.getReteInstance();
                     // V5.82:走 allFactsList(全 fact),不再走 allFactsMap 的 last-wins 视图
@@ -435,25 +432,24 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     public void activeAgendaGroup(String groupName) {
         // V5.100.6 — 砍 containsKey + get 双 lookup, 套 V5.93 原则 (跟 activeRule 同档).
         // value 永为 List<ReteInstanceUnit> (非 null, Rete.buildGroupRetesInstance 用
-        // computeIfAbsent(k -> new ArrayList<>())). 内层 Iterator var3 + while(true) do-while
-        // labeled loop 不动 (V5.96 skip).
+        // computeIfAbsent(k -> new ArrayList<>())).
         List<ReteInstanceUnit> unitList = this.agendaReteInstancesMap.get(groupName);
         if (unitList == null) {
             throw new RuleException("Agenda group [" + groupName + "] not exist!");
         } else {
-            Iterator var3 = unitList.iterator();
-
-            while (true) {
-                ReteInstanceUnit insUnit;
-                do {
-                    do {
-                        if (!var3.hasNext()) {
-                            return;
-                        }
-
-                        insUnit = (ReteInstanceUnit) var3.next();
-                    } while (isNotYetEffective(insUnit));
-                } while (isExpired(insUnit));
+            // V5.100.7 — while(true){do{do}while(isNotYetEffective)}while(isExpired)} find-valid
+            // 状态机 → enhanced for + 2 continue. 套 V6.3/V6.4 模式 (do-while-find-non-null
+            // → for + null-check-continue, 这里是 2 个 filter: skip not-yet-effective + skip
+            // expired). 行为: 遍历 unitList, skip 未生效/已过期的 unit, 对有效 unit 跑 rete
+            // enter (allFactsList + "__*__"). 原 while(true) 在 iterator 耗尽时 return,
+            // for 自然耗尽后方法结束 (无 trailing clean, 跟原代码一致).
+            for (ReteInstanceUnit insUnit : unitList) {
+                if (isNotYetEffective(insUnit)) {
+                    continue;
+                }
+                if (isExpired(insUnit)) {
+                    continue;
+                }
 
                 ReteInstance reteIns = insUnit.getReteInstance();
                 Collection<FactTracker> trackers = null;

@@ -20,6 +20,7 @@ import com.ruleforge.model.rule.lhs.Left;
 import com.ruleforge.model.rule.lhs.LeftType;
 import com.ruleforge.model.rule.lhs.Lhs;
 import com.ruleforge.model.rule.lhs.VariableLeftPart;
+import com.ruleforge.runtime.rete.ReteInstance;
 import com.ruleforge.runtime.rete.ReteInstanceUnit;
 import com.ruleforge.rete.test.EngineContextWirer;
 import org.junit.jupiter.api.BeforeAll;
@@ -72,6 +73,7 @@ class KnowledgeSessionImplActiveGroupTest {
     private KnowledgeSessionImpl session;
     private Map<String, List<ReteInstanceUnit>> activationMap;
     private Map<String, List<ReteInstanceUnit>> agendaMap;
+    private Rete rete;
 
     @BeforeAll
     static void wireEngineContext() throws Exception {
@@ -120,7 +122,7 @@ class KnowledgeSessionImplActiveGroupTest {
         lib.addVariableCategory(cat);
         ResourceLibrary rl = new ResourceLibrary(Collections.singletonList(lib), new ArrayList<>(), new ArrayList<>());
 
-        Rete rete = new ReteBuilder().buildRete(Collections.singletonList(r), rl);
+        rete = new ReteBuilder().buildRete(Collections.singletonList(r), rl);
         KnowledgePackage kp = new KnowledgeBase(rete).getKnowledgePackage();
         session = new KnowledgeSessionImpl(kp);
 
@@ -266,6 +268,91 @@ class KnowledgeSessionImplActiveGroupTest {
             assertThatThrownBy(() -> session.activeRule("shared", "R1"))
                     .isInstanceOf(RuleException.class)
                     .hasMessageContaining("Activation group [shared] not exist");
+        }
+    }
+
+    // ─── V5.100.7: 非空 list 真实 ReteInstanceUnit 锁 loop body 行为 ────────
+
+    @Nested
+    @DisplayName("V5.100.7: 非空 list 真实 ReteInstanceUnit → 锁 active* loop body 行为")
+    class NonEmptyLoopBody {
+
+        // Build a fresh ReteInstanceUnit from the Foo rete (valid: 无 effective/expires 日期
+        // → isWithinValidPeriod=true, isNotYetEffective=false, isExpired=false).
+        private ReteInstanceUnit unit(String ruleName) {
+            ReteInstance ins = rete.newReteInstance();
+            return new ReteInstanceUnit(ins, ruleName);
+        }
+
+        // Given: activationMap 装 "g1" → [unit(ruleName="R1")] (valid), allFactsList 空
+        // When:  activeRule("g1", "R1") — unit 匹配 + 有效
+        // Then:  不抛 (loop body 跑: rete enter over 空 allFactsList no-op + clean())
+        //   ⚠️ V5.100.7 flatten (Iterator var4 + label42 → enhanced for) 保留这个 loop body.
+        @Test
+        @DisplayName("activeRule 匹配 + 有效 unit → 跑 loop body, 不抛 (V5.100.7 flatten 保留)")
+        void activeRuleMatchingValidUnitRunsLoopBody() {
+            activationMap.put("g1", Collections.singletonList(unit("R1")));
+
+            assertThatCode(() -> session.activeRule("g1", "R1"))
+                    .doesNotThrowAnyException();
+        }
+
+        // Given: activationMap 装 "g1" → [unit(ruleName="R1")], allFactsList 空
+        // When:  activeRule("g1", "OTHER") — ruleName 不匹配
+        // Then:  不抛 (loop 跑遍 unit, 但 ruleName 不匹配 → 内层 block skip → clean())
+        @Test
+        @DisplayName("activeRule ruleName 不匹配 → loop 遍历但 skip 内层 block, 不抛")
+        void activeRuleNonMatchingRuleNameSkipsInnerBlock() {
+            activationMap.put("g1", Collections.singletonList(unit("R1")));
+
+            assertThatCode(() -> session.activeRule("g1", "OTHER"))
+                    .doesNotThrowAnyException();
+        }
+
+        // Given: activationMap 装 "g1" → 3 unit (R1 valid + R2 valid + R3 valid)
+        // When:  activeRule("g1", "R2") — 只有 R2 匹配
+        // Then:  不抛 (loop 遍历 3 unit, 只对 R2 跑 rete enter)
+        @Test
+        @DisplayName("activeRule 3 unit 只匹配 1 个 → loop 遍历全, 只跑匹配的, 不抛")
+        void activeRuleMultipleUnitsOnlyMatchingProcessed() {
+            List<ReteInstanceUnit> units = new ArrayList<>();
+            units.add(unit("R1"));
+            units.add(unit("R2"));
+            units.add(unit("R3"));
+            activationMap.put("g1", units);
+
+            assertThatCode(() -> session.activeRule("g1", "R2"))
+                    .doesNotThrowAnyException();
+        }
+
+        // Given: agendaMap 装 "ag1" → [unit(valid)], allFactsList 空
+        // When:  activeAgendaGroup("ag1")
+        // Then:  不抛 (loop body 跑: rete enter over 空 allFactsList + "__*__" no-op)
+        //   ⚠️ V5.100.7 flatten (while(true) do-while-find-valid → enhanced for + 2 continue)
+        //   保留: skip not-effective + skip expired + 跑有效 unit.
+        @Test
+        @DisplayName("activeAgendaGroup 有效 unit → 跑 loop body, 不抛 (V5.100.7 flatten 保留)")
+        void activeAgendaGroupValidUnitRunsLoopBody() {
+            agendaMap.put("ag1", Collections.singletonList(unit("R1")));
+
+            assertThatCode(() -> session.activeAgendaGroup("ag1"))
+                    .doesNotThrowAnyException();
+        }
+
+        // Given: agendaMap 装 "ag1" → 3 unit 全 valid (无日期), allFactsList 空
+        // When:  activeAgendaGroup("ag1")
+        // Then:  不抛 (loop 遍历 3 unit 全有效, 各跑 rete enter no-op)
+        @Test
+        @DisplayName("activeAgendaGroup 3 unit 全有效 → loop 全跑, 不抛")
+        void activeAgendaGroupMultipleValidUnitsAllProcessed() {
+            List<ReteInstanceUnit> units = new ArrayList<>();
+            units.add(unit("R1"));
+            units.add(unit("R2"));
+            units.add(unit("R3"));
+            agendaMap.put("ag1", units);
+
+            assertThatCode(() -> session.activeAgendaGroup("ag1"))
+                    .doesNotThrowAnyException();
         }
     }
 
