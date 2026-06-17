@@ -128,10 +128,17 @@ public class ComplexScorecardRulesBuilder implements ResourceBuilder<ScoreRule> 
         Map<String, Cell> cellMap = table.getCellMap();
         Cell cell = null;
 
+        // V5.100.3 — 砍 containsKey + get 双 lookup, 套 V5.93 原则. `map.get(key) == null`
+        // 已能区分 absent vs null-value. 本场景 value 永为 Cell 对象 (非 null,
+        // ComplexScorecardDefinition.java:173 唯一 put 是
+        // `cellMap.put(buildCellKey(cell.getRow(), cell.getCol()), cell)`, cell 是
+        // builder 内部的 Cell 实例, 无 put(key, null) 风险). 节省 1 个 containsKey hash
+        // lookup per iter (build-time per-scorecard-build, 频度低, 跟 V5.100.2
+        // DecisionTableRulesBuilder.getCell 同档 — 两个方法是 backward search 孪生).
         for (int i = row; i > -1; --i) {
             String key = table.buildCellKey(i, column);
-            if (cellMap.containsKey(key)) {
-                cell = cellMap.get(key);
+            cell = cellMap.get(key);
+            if (cell != null) {
                 break;
             }
         }
