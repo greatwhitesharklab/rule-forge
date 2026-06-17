@@ -306,73 +306,66 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     private void evaluationRete(Collection<Object> facts) {
-        Iterator<ReteInstance> reteInstanceIterator = this.reteInstanceList.iterator();
-
-        label84:
-        while (true) {
-            ReteInstance reteInstance;
+        // V5.100.8 — 3-level labeled loop (label84 outer / label82 middle / innermost
+        // unit-find-valid) → 3 enhanced for + continue. 套 V6.3/V6.4 + V5.100.5/V5.100.7 模式。
+        //   continue label84 (middle keys 耗尽) = 下一个 reteInstance = outer 下一次 iter
+        //   continue label82 (innermost units 耗尽) = 下一个 key = middle 下一次 iter
+        // 两处 cross-loop continue 在 enhanced for 里等价于 "自然走到下一层 iter"。 trackers
+        // 变量保持 reteInstance scope (跟原 label84 body 内 Collection trackers 一致)。
+        // 真 per-fact hot path — flatten 后必须跑 perf bench (HotPathBenchTest +
+        // EvalBenchmarkV579) 确认无 wall-time 回归。 回归覆盖: 全量 + EffectiveDateWindow
+        // 3 tests (activation-group + effective/expired 过滤, 锁 innermost find-valid)。
+        for (ReteInstance reteInstance : this.reteInstanceList) {
             Collection trackers = null;
-            Map reteInstanceMap;
-            do {
-                if (!reteInstanceIterator.hasNext()) {
-                    this.evaluationContext.clean();
-                    return;
-                }
 
-                reteInstance = reteInstanceIterator.next();
-                for (Object fact : facts) {
-                    // V5.83 — 每个 fact 进入 rete 前清 EvaluationContext 缓存 + reset sticky state。
-                    // 原代码只在 reteInstance 列表跑完才 clean/reset,导致:
-                    // 1. criteria 结果跨 fact 复用(criteriaValueMap / partValueMap 缓存污染)
-                    // 2. passAndNode 短路跨 fact 粘滞(CriteriaActivity.passed / AndActivity.passed)
-                    // 这是修 pre-existing rete "sticky state" 缺陷的关键改动 — 见
-                    // [[v582-allfactsmap-rewrite]] TD-19.5.4。
-                    // 注意:用 resetStickyStateOnly() 而非 reset() — 保留 Path.passed 累积状态,
-                    // 让 2-pattern join 能跨 fact 累积左右 fact 匹配。
-                    this.evaluationContext.clean();
-                    reteInstance.resetStickyStateOnly();
-                    this.doRete(reteInstance, fact, false);
-                }
+            // 外层 per-reteInstance: 每个 fact 进入 rete 前清 EvaluationContext 缓存 + reset
+            // sticky state。 V5.83 — 用 resetStickyStateOnly() 而非 reset(),保留 Path.passed
+            // 累积状态,让 2-pattern join 能跨 fact 累积左右 fact 匹配 (见
+            // [[v582-allfactsmap-rewrite]] TD-19.5.4)。
+            for (Object fact : facts) {
+                this.evaluationContext.clean();
+                reteInstance.resetStickyStateOnly();
+                this.doRete(reteInstance, fact, false);
+            }
 
-                this.doRete(reteInstance, "__*__", true);
-                Map<String, List<ReteInstanceUnit>> agendaReteInstanceMap = reteInstance.getAgendaGroupReteInstancesMap();
-                if (agendaReteInstanceMap != null) {
-                    this.agendaReteInstancesMap.putAll(agendaReteInstanceMap);
-                }
+            this.doRete(reteInstance, "__*__", true);
+            Map<String, List<ReteInstanceUnit>> agendaReteInstanceMap = reteInstance.getAgendaGroupReteInstancesMap();
+            if (agendaReteInstanceMap != null) {
+                this.agendaReteInstancesMap.putAll(agendaReteInstanceMap);
+            }
 
-                reteInstanceMap = reteInstance.getActivationGroupReteInstancesMap();
-            } while (reteInstanceMap == null);
+            // 原 do-while-find (reteInstanceMap == null 则 skip 到下一个 reteInstance) →
+            // null-check + continue. null activation group 的 reteInstance 仍跑上面 per-fact
+            // processing, 只是 skip 下面 activation-group 处理。
+            Map<String, List<ReteInstanceUnit>> reteInstanceMap = reteInstance.getActivationGroupReteInstancesMap();
+            if (reteInstanceMap == null) {
+                continue;
+            }
 
             this.activationReteInstancesMap.putAll(reteInstanceMap);
-            Iterator var7 = reteInstanceMap.keySet().iterator();
+            String reteInstanceId = reteInstance.getId();
 
-            label82:
-            while (true) {
-                String key;
-                String id;
-                do {
-                    if (!var7.hasNext()) {
-                        continue label84;
+            // 中层: 遍历 activation-group keys。 原 do-while-find (已 actived 的 skip) →
+            // contains-check + continue。
+            for (String key : reteInstanceMap.keySet()) {
+                String id = reteInstanceId + key;
+                if (this.activedActivationGroup.contains(id)) {
+                    continue;
+                }
+
+                List<ReteInstanceUnit> insList = reteInstanceMap.get(key);
+
+                // 内层: 遍历 group 内 units。 原 do-while-find-valid (skip not-effective +
+                // skip expired) → 2 continue。 对首个能产生 trackers 的 unit, mark actived +
+                // add + break 到下一个 key (trackers 非 empty 时 break); 全 units 不产生
+                // trackers 则自然走到下一个 key (原 continue label82)。
+                for (ReteInstanceUnit insUnit : insList) {
+                    if (isNotYetEffective(insUnit)) {
+                        continue;
                     }
-
-                    key = (String) var7.next();
-                    id = reteInstance.getId() + key;
-                } while (this.activedActivationGroup.contains(id));
-
-                List<ReteInstanceUnit> insList = (List<ReteInstanceUnit>) reteInstanceMap.get(key);
-                Iterator<ReteInstanceUnit> var11 = insList.iterator();
-
-                while (true) {
-                    ReteInstanceUnit insUnit;
-                    do {
-                        do {
-                            if (!var11.hasNext()) {
-                                continue label82;
-                            }
-
-                            insUnit = var11.next();
-                        } while (isNotYetEffective(insUnit));
-                    } while (isExpired(insUnit));
+                    if (isExpired(insUnit)) {
+                        continue;
+                    }
 
                     ReteInstance ri = insUnit.getReteInstance();
                     for (Object fact : facts) {
@@ -390,6 +383,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
                 }
             }
         }
+
+        this.evaluationContext.clean();
     }
 
     private void doRete(ReteInstance reteInstance, Object fact, boolean noneCondition) {
