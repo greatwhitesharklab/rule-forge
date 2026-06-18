@@ -152,9 +152,9 @@ class Grid extends Component<GridProps, GridState> {
         });
         const tableStyle: React.CSSProperties = { margin: 0, width: (this.props.width ? this.props.width : '100%') };
         return (
-            <table className="rf-table rf-table-bordered" style={tableStyle}>
+            <table className="grid-table" style={tableStyle}>
                 <thead>
-                    <tr className="rf-well">{headerContent}</tr>
+                    <tr>{headerContent}</tr>
                 </thead>
                 <tbody>{bodyContent}</tbody>
             </table>

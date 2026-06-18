@@ -1,3 +1,17 @@
 .content-tr:hover{
     background: var(--rf-primary-bg);
 }
+
+/* V5.101.3:Grid 可编辑表格自带样式(原靠 rf-table rf-table-bordered + rf-well,去 Bootstrap
+   后移植到此)。编辑器(决策表/动作/参数…)复用本组件,保持原外观。 */
+.grid-table { width: 100%; border-collapse: collapse; }
+.grid-table thead { display: table-row-group; } /* thead/tbody phantom gap fix(同 rf-table) */
+.grid-table th, .grid-table td {
+    border: 1px solid var(--rf-border-split);
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: middle;
+    font-size: 13px;
+}
+.grid-table thead tr { background: var(--rf-bg-base); } /* 原 rf-well 头行底 */
+.grid-table thead th { font-weight: 600; }
