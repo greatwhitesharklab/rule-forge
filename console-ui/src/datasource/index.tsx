@@ -1,6 +1,8 @@
 import React, {Component} from 'react';
 import {connect} from 'react-redux';
-import {Modal, Radio, Input, Form, Button, Space, Tag, Tooltip, Upload, message} from 'antd';
+import {Modal, Radio, Input, Form, Button, Space, Table, Tabs, Tag, Tooltip, Upload, message} from 'antd';
+import type {ColumnsType} from 'antd/es/table';
+import PageShell from '@/frame/components/PageShell';
 import {alert} from '@/utils/modal';
 import {
     loadDatasources, createDatasource, updateDatasource, deleteDatasource,
@@ -592,102 +594,79 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
         const {showForm, formDatasource, testResult} = this.state;
 
         return (
-            <div style={{padding: '15px', height: '100%', overflow: 'auto'}}>
-                <ul className="rf-nav rf-nav-tabs" style={{marginBottom: '15px'}}>
-                    <li className={activeTab === 'datasources' ? 'active' : ''}>
-                        <a href="#" onClick={(e) => { e.preventDefault(); this.props.dispatch(setTab('datasources')); }}>数据源</a>
-                    </li>
-                    <li className={activeTab === 'mappings' ? 'active' : ''}>
-                        <a href="#" onClick={(e) => { e.preventDefault(); this.props.dispatch(setTab('mappings')); }}>映射配置</a>
-                    </li>
-                </ul>
-
+            <PageShell
+                title="数据源"
+                description="管理决策流外部数据源连接与字段映射"
+                toolbar={
+                    <Tabs
+                        activeKey={activeTab}
+                        onChange={(key: string) => this.props.dispatch(setTab(key))}
+                        items={[
+                            {key: 'datasources', label: '数据源'},
+                            {key: 'mappings', label: '映射配置'},
+                        ]}
+                    />
+                }
+            >
                 {testResult && (
-                    <div className="rf-alert rf-alert-info" style={{padding: '8px 12px'}}>{testResult}</div>
+                    <div className="rf-alert rf-alert-info" style={{padding: '8px 12px', marginBottom: 12}}>{testResult}</div>
                 )}
 
                 {activeTab === 'datasources' && this.renderDatasources(datasources, showForm, formDatasource)}
                 {activeTab === 'mappings' && this.renderMappings(datasources, entityMappings, fieldMappings)}
-            </div>
+            </PageShell>
         );
     }
 
     renderDatasources(datasources: DatasourceItem[], showForm: boolean, formDatasource: DatasourceItem | null) {
+        // V5.101:Bootstrap rf-table 在 thead/tbody 间有 21px 渲染 gap(无空行,box model 干净,
+        // 是 collapse 渲染 bug)→ 换 antd Table,跟 auditLog/用户管理一致,渲染干净。
+        const columns: ColumnsType<DatasourceItem> = [
+            {title: '名称', dataIndex: 'name', key: 'name'},
+            {title: '类型', dataIndex: 'type', key: 'type', render: (v: string) => <Tag>{v}</Tag>},
+            {
+                title: '状态', dataIndex: 'enabled', key: 'enabled',
+                render: (v: boolean) => <Tag color={v ? 'success' : 'default'}>{v ? '启用' : '禁用'}</Tag>
+            },
+            {title: '描述', dataIndex: 'description', key: 'description', render: (v: string) => v || '-'},
+            {title: '超时(ms)', dataIndex: 'timeoutMs', key: 'timeoutMs', width: 100},
+            {
+                title: '缓存', key: 'cache', width: 80,
+                render: (_: unknown, ds: DatasourceItem) => ds.cacheEnabled ? `${ds.cacheTtlHours}h` : '关'
+            },
+            {
+                title: '操作', key: 'actions', width: 300,
+                render: (_: unknown, ds: DatasourceItem) => (
+                    <Space size="middle">
+                        <Tooltip title="编辑数据源">
+                            <Button size="small" icon={<EditOutlined />} onClick={() => this.handleEdit(ds)} />
+                        </Tooltip>
+                        <Tooltip title="测试连接(单条)">
+                            <Button size="small" type="primary" ghost icon={<ApiOutlined />}
+                                    onClick={() => this.handleTest(ds.id!)}>测试</Button>
+                        </Tooltip>
+                        <Tooltip title="批量测试 V5.8.0+:FLOW 测集成 / DATASOURCE 测数据源">
+                            <Button size="small" type="primary" icon={<ThunderboltOutlined />}
+                                    onClick={() => this.handleBatchTest(ds)}>批量测试</Button>
+                        </Tooltip>
+                        <Tooltip title="删除数据源">
+                            <Button size="small" danger icon={<DeleteOutlined />}
+                                    onClick={() => this.handleDelete(ds.id!)} />
+                        </Tooltip>
+                    </Space>
+                )
+            },
+        ];
         return (
             <div>
-                <div style={{marginBottom: '10px'}}>
-                    <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={this.handleCreate}>
-                        <PlusOutlined /> 新增数据源
-                    </button>
+                <div style={{marginBottom: 12}}>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={this.handleCreate}>新增数据源</Button>
                 </div>
 
                 {showForm && formDatasource && this.renderForm(formDatasource)}
 
-                <table className="rf-table rf-table-bordered rf-table-hover" style={{fontSize: '13px'}}>
-                    <thead>
-                        <tr>
-                            <th>名称</th>
-                            <th>类型</th>
-                            <th>状态</th>
-                            <th>描述</th>
-                            <th>超时(ms)</th>
-                            <th>缓存</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {datasources.map(ds => (
-                            <tr key={ds.id}>
-                                <td>{ds.name}</td>
-                                <td><span className="rf-label rf-label-info">{ds.type}</span></td>
-                                <td>{ds.enabled ? '✓ 启用' : '✗ 禁用'}</td>
-                                <td>{ds.description || '-'}</td>
-                                <td>{ds.timeoutMs}</td>
-                                <td>{ds.cacheEnabled ? `${ds.cacheTtlHours}h` : '关'}</td>
-                                <td>
-                                    <Space size="middle">
-                                        <Tooltip title="编辑数据源">
-                                            <Button
-                                                size="small"
-                                                icon={<EditOutlined />}
-                                                onClick={() => this.handleEdit(ds)}
-                                            />
-                                        </Tooltip>
-                                        <Tooltip title="测试连接(单条)">
-                                            <Button
-                                                size="small"
-                                                type="primary"
-                                                ghost
-                                                icon={<ApiOutlined />}
-                                                onClick={() => this.handleTest(ds.id!)}
-                                            >
-                                                测试
-                                            </Button>
-                                        </Tooltip>
-                                        <Tooltip title="批量测试 V5.8.0+:FLOW 测集成 / DATASOURCE 测数据源">
-                                            <Button
-                                                size="small"
-                                                type="primary"
-                                                icon={<ThunderboltOutlined />}
-                                                onClick={() => this.handleBatchTest(ds)}
-                                            >
-                                                批量测试
-                                            </Button>
-                                        </Tooltip>
-                                        <Tooltip title="删除数据源">
-                                            <Button
-                                                size="small"
-                                                danger
-                                                icon={<DeleteOutlined />}
-                                                onClick={() => this.handleDelete(ds.id!)}
-                                            />
-                                        </Tooltip>
-                                    </Space>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <Table rowKey="id" columns={columns} dataSource={datasources}
+                       pagination={false} size="middle" />
             </div>
         );
     }

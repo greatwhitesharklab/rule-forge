@@ -1,5 +1,6 @@
 import {Component} from 'react';
 import {RightOutlined} from '@ant-design/icons';
+import PageShell from '@/frame/components/PageShell';
 
 interface PlaceholderInfo {
     title: string;
@@ -23,8 +24,7 @@ export default class PlaceholderPanel extends Component<PlaceholderPanelProps> {
         const {panelId} = this.props;
         const info = DESCRIPTIONS[panelId] || {title: panelId, desc: '', items: []};
         return (
-            <div className="placeholder-panel" style={{height: '100%'}}>
-                <div className="side-panel-header">{info.title}</div>
+            <PageShell title={info.title}>
                 <div className="placeholder-content">
                     <div className="placeholder-badge">即将推出</div>
                     <p className="placeholder-desc">{info.desc}</p>
@@ -34,7 +34,7 @@ export default class PlaceholderPanel extends Component<PlaceholderPanelProps> {
                         ))}
                     </ul>
                 </div>
-            </div>
+            </PageShell>
         );
     }
 }

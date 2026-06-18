@@ -1,4 +1,6 @@
 import {useState, useEffect} from 'react';
+import {Select, Tag, Empty} from 'antd';
+import {BranchesOutlined, FileOutlined} from '@ant-design/icons';
 import {formPost} from '../../api/client.js';
 
 interface PackageItem {
@@ -29,9 +31,10 @@ interface PackageNavigatorProps {
 }
 
 /**
- * PackageNavigator: package-centric navigation component.
- * Displays a dropdown of packages, version selector, and branch indicator.
- * Calls /packageeditor/loadPackageTree to get package file tree.
+ * V5.101 重设计:知识包视图。原版全内联 Bootstrap 色 + 原生 select + 文件列表 hover bug,
+ * 改为 antd Select + Tag(审计状态)+ 精简 branch chip + token 化样式(tailwind-base.css)。
+ *
+ * <p>数据契约不变:/packageeditor/loadPackages | listBranches | loadPackageTree。
  */
 export default function PackageNavigator({project, onFileSelect, onVersionChange}: PackageNavigatorProps) {
     const [packages, setPackages] = useState<PackageItem[]>([]);
@@ -86,8 +89,7 @@ export default function PackageNavigator({project, onFileSelect, onVersionChange
         });
     }
 
-    function handlePackageSelect(e: React.ChangeEvent<HTMLSelectElement>) {
-        const packageId = e.target.value;
+    function handlePackageSelect(packageId: string) {
         const pkg = packages.find(p => p.id === packageId) || null;
         setSelectedPackage(pkg);
         if (packageId) {
@@ -99,8 +101,7 @@ export default function PackageNavigator({project, onFileSelect, onVersionChange
         }
     }
 
-    function handleVersionSelect(e: React.ChangeEvent<HTMLSelectElement>) {
-        const version = e.target.value;
+    function handleVersionSelect(version: string) {
         if (selectedPackage) {
             loadPackageTree(selectedPackage.id, version);
         }
@@ -119,93 +120,94 @@ export default function PackageNavigator({project, onFileSelect, onVersionChange
 
     const currentBranch = branches.find(b => b.startsWith('user/'));
     const branchName = currentBranch ? currentBranch : 'main';
+    const isUserBranch = branchName !== 'main';
+
+    // 审计状态 → Tag 配色(已审批 green / 审批中 blue / 待审批 default)
+    function versionTag(status: number) {
+        if (status === 90) return <Tag color="success">已审批</Tag>;
+        if (status === 20) return <Tag color="processing">审批中</Tag>;
+        return <Tag>待审批</Tag>;
+    }
 
     return (
         <div className="package-navigator">
-            {/* Branch indicator */}
-            <div className="branch-indicator" style={{
-                padding: '4px 8px',
-                background: branchName !== 'main' ? '#fff3cd' : '#d4edda',
-                borderBottom: '1px solid #dee2e6',
-                fontSize: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-            }}>
-                <i className="rf rf-branch" style={{fontSize: '14px'}}/>
-                <span>当前分支: <strong>{branchName}</strong></span>
-                {branchName !== 'main' && (
-                    <span style={{color: '#856404', marginLeft: '8px'}}>(与 main 的修改将标黄)</span>
-                )}
+            {/* Branch chip:main 中性 / user 分支暖色提示(原版 loud 绿/黄 banner) */}
+            <div className={'pkg-branch' + (isUserBranch ? ' is-user' : '')} title={isUserBranch ? '与 main 的修改将标黄' : undefined}>
+                <BranchesOutlined/>
+                <span className="pkg-branch-label">当前分支</span>
+                <strong>{branchName}</strong>
+                {isUserBranch && <span className="pkg-branch-note">修改将标黄</span>}
             </div>
 
             {/* Package selector */}
-            <div style={{padding: '8px', borderBottom: '1px solid #dee2e6'}}>
-                <label style={{fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '4px'}}>
-                    知识包
-                </label>
-                <select className="rf-form-control" value={selectedPackage?.id || ''} onChange={handlePackageSelect}>
-                    <option value="">选择知识包...</option>
-                    {packages.map(pkg => (
-                        <option key={pkg.id} value={pkg.id}>{pkg.name || pkg.id}</option>
-                    ))}
-                </select>
+            <div className="pkg-section">
+                <span className="pkg-label">知识包</span>
+                <Select
+                    value={selectedPackage?.id || undefined}
+                    placeholder="选择知识包…"
+                    onChange={handlePackageSelect}
+                    allowClear
+                    size="middle"
+                    style={{width: '100%'}}
+                    notFoundContent={loading ? '加载中…' : '暂无知识包'}
+                    options={packages.map(pkg => ({value: pkg.id, label: pkg.name || pkg.id}))}
+                />
             </div>
 
             {/* Version selector */}
             {selectedPackage && versions.length > 0 && (
-                <div style={{padding: '8px', borderBottom: '1px solid #dee2e6'}}>
-                    <label style={{fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '4px'}}>
-                        版本
-                    </label>
-                    <select className="rf-form-control" value={currentVersion || ''} onChange={handleVersionSelect}>
-                        {versions.map(v => (
-                            <option key={v.version} value={v.version}>
-                                {v.version} ({v.auditStatus === 90 ? '已审批' : v.auditStatus === 20 ? '审批中' : '待审批'})
-                                {' - ' + (v.createUser || '')}
-                            </option>
-                        ))}
-                    </select>
+                <div className="pkg-section">
+                    <span className="pkg-label">版本</span>
+                    <Select
+                        value={currentVersion || undefined}
+                        onChange={handleVersionSelect}
+                        size="middle"
+                        style={{width: '100%'}}
+                        optionLabelProp="label"
+                        options={versions.map(v => ({
+                            value: v.version,
+                            label: v.version,
+                            status: v.auditStatus,
+                            createUser: v.createUser
+                        }))}
+                        optionRender={(option) => {
+                            const data = option.data as unknown as { status?: number; createUser?: string };
+                            return (
+                                <div className="pkg-version-option">
+                                    <span className="pkg-version-name">{String(option.value)}</span>
+                                    {versionTag(data.status ?? 0)}
+                                    {data.createUser && <span className="pkg-version-user">{data.createUser}</span>}
+                                </div>
+                            );
+                        }}
+                    />
                 </div>
             )}
 
             {/* File list */}
-            {selectedPackage && resourceItems.length > 0 && (
-                <div style={{padding: '8px'}}>
-                    <label style={{fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '4px'}}>
-                        决策文件
-                    </label>
-                    <ul style={{listStyle: 'none', padding: 0, margin: 0}}>
-                        {resourceItems.map((item, idx) => (
-                            <li key={idx}
-                                style={{
-                                    padding: '4px 8px',
-                                    cursor: 'pointer',
-                                    borderBottom: '1px solid #f0f0f0',
-                                    fontSize: '13px'
-                                }}
-                                onClick={() => handleFileClick(item)}
-                                onMouseEnter={e => (e.target as HTMLElement).style.background = '#f5f5f5'}
-                                onMouseLeave={e => (e.target as HTMLElement).style.background = ''}
-                            >
-                                <i className="rf rf-file" style={{marginRight: '6px'}}/>
-                                {item.name || item.path.split('/').pop()}
-                                {item.version && (
-                                    <span style={{color: '#999', marginLeft: '8px', fontSize: '11px'}}>
-                                        v{item.version}
-                                    </span>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-
-            {loading && (
-                <div style={{padding: '20px', textAlign: 'center', color: '#999'}}>
-                    加载中...
-                </div>
-            )}
+            <div className="pkg-files">
+                {selectedPackage && resourceItems.length > 0 ? (
+                    <>
+                        <span className="pkg-label">决策文件</span>
+                        <ul className="pkg-file-list">
+                            {resourceItems.map((item, idx) => {
+                                const name = item.name || item.path.split('/').pop();
+                                return (
+                                    <li key={idx} className="pkg-file" onClick={() => handleFileClick(item)}>
+                                        <FileOutlined/>
+                                        <span className="pkg-file-name">{name}</span>
+                                        {item.version && <span className="pkg-file-version">v{item.version}</span>}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </>
+                ) : selectedPackage ? (
+                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无决策文件" style={{margin: '24px 0'}}/>
+                ) : (
+                    <div className="pkg-hint">选择一个知识包以查看其版本与决策文件</div>
+                )}
+            </div>
         </div>
     );
 }

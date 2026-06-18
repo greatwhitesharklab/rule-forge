@@ -5,6 +5,8 @@ import type {EnvironmentInfo, ApprovalTask, DeploymentRecord, ExecutorNode, Gray
 import type {ReleaseState} from './reducer';
 
 import {alert, confirm, prompt} from '@/utils/modal';
+import {Tabs} from 'antd';
+import PageShell from '@/frame/components/PageShell';
 import {CheckOutlined, ClockCircleOutlined, CopyOutlined, GlobalOutlined, HddOutlined, InfoCircleOutlined, PlusOutlined, RetweetOutlined, UploadOutlined} from '@ant-design/icons';
 interface ReleasePanelState {
     projectName: string;
@@ -106,55 +108,36 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
         ];
 
         return (
-            <div style={{height: '100%', display: 'flex', flexDirection: 'column', background: '#fff'}}>
-                {/* Header */}
-                <div style={{padding: '10px 15px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                    <h5 style={{margin: 0, fontWeight: 600}}>版本发布</h5>
-                    <span style={{fontSize: 12, color: '#999'}}>{projectName}</span>
-                </div>
-
-                {/* Tab Bar — V5.9.0: icon-text gap 4→8,字体 13→12 让 7 个 tab 不挤 */}
-                <div style={{display: 'flex', borderBottom: '1px solid #e0e0e0', background: '#fafafa'}}>
-                    {tabs.map(tab => (
-                        <button key={tab.id}
-                                onClick={() => this.handleTabChange(tab.id)}
-                                style={{
-                                    flex: 1, padding: '8px 4px', border: 'none', cursor: 'pointer',
-                                    background: activeTab === tab.id ? '#fff' : '#fafafa',
-                                    borderBottom: activeTab === tab.id ? '2px solid #1677ff' : '2px solid transparent',
-                                    fontWeight: activeTab === tab.id ? 600 : 400,
-                                    fontSize: 12,
-                                    color: activeTab === tab.id ? '#1677ff' : 'rgba(0,0,0,0.65)',
-                                    transition: 'all 0.2s'
-                                }}>
-                            <span style={{marginRight: 6, fontSize: 12}}>{tab.icon}</span>
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Tab Content */}
-                <div style={{flex: 1, overflow: 'auto', padding: 15}}>
-                    {!projectName ? (
-                        <div style={{textAlign: 'center', padding: 40, color: '#999'}}>
-                            <InfoCircleOutlined style={{fontSize: 24, display: 'block', marginBottom: 10}} />
-                            请先选择一个项目
-                        </div>
-                    ) : activeTab === 'environments' ? (
-                        this.renderEnvironments(environments, environmentsLoading)
-                    ) : activeTab === 'approvals' ? (
-                        this.renderApprovals(approvals)
-                    ) : activeTab === 'nodes' ? (
-                        this.renderNodes(this.props.nodes)
-                    ) : activeTab === 'gray' ? (
-                        this.renderGrayStrategies(grayStrategies, grayStrategiesLoading)
-                    ) : activeTab === 'shadow' ? (
-                        this.renderShadowPanel(shadowConfigs, shadowConfigsLoading, shadowComparisons, shadowComparisonsLoading, shadowStats)
-                    ) : (
-                        this.renderHistory(deploymentHistory)
-                    )}
-                </div>
-            </div>
+            <PageShell
+                title="版本发布"
+                description={projectName ? `项目:${projectName}` : '请先在左侧选择一个项目'}
+                toolbar={
+                    <Tabs
+                        activeKey={activeTab}
+                        onChange={(key: string) => this.handleTabChange(key)}
+                        items={tabs.map(t => ({key: t.id, label: (<><span style={{marginRight: 6}}>{t.icon}</span>{t.label}</>)}))}
+                    />
+                }
+            >
+                {!projectName ? (
+                    <div style={{textAlign: 'center', padding: 40, color: 'var(--rf-text-tertiary)'}}>
+                        <InfoCircleOutlined style={{fontSize: 24, display: 'block', marginBottom: 10}} />
+                        请先选择一个项目
+                    </div>
+                ) : activeTab === 'environments' ? (
+                    this.renderEnvironments(environments, environmentsLoading)
+                ) : activeTab === 'approvals' ? (
+                    this.renderApprovals(approvals)
+                ) : activeTab === 'nodes' ? (
+                    this.renderNodes(this.props.nodes)
+                ) : activeTab === 'gray' ? (
+                    this.renderGrayStrategies(grayStrategies, grayStrategiesLoading)
+                ) : activeTab === 'shadow' ? (
+                    this.renderShadowPanel(shadowConfigs, shadowConfigsLoading, shadowComparisons, shadowComparisonsLoading, shadowStats)
+                ) : (
+                    this.renderHistory(deploymentHistory)
+                )}
+            </PageShell>
         );
     }
 

@@ -3,7 +3,6 @@ import * as ACTIONS from '@/frame/action.js';
 import * as event from '@/frame/event.js';
 import Tree from '@/components/tree/component/Tree.jsx';
 import PackageNavigator from '@/package/components/PackageNavigator.tsx';
-import {SearchOutlined} from '@ant-design/icons';
 import {selectProjectName} from '@/frame/reducer.ts';
 
 interface FileTreePanelProps {
@@ -17,6 +16,10 @@ interface FileTreePanelState {
     viewMode: 'tree' | 'package';
 }
 
+/**
+ * V5.101:文件搜索已迁入顶栏(TopBar),这里只剩文件树 / 知识包视图切换 + 列表。
+ * 搜索逻辑(setSearchFileName + loadData)在 TopBar._handleSearch。
+ */
 export default class FileTreePanel extends Component<FileTreePanelProps, FileTreePanelState> {
     constructor(props: FileTreePanelProps) {
         super(props);
@@ -45,32 +48,19 @@ export default class FileTreePanel extends Component<FileTreePanelProps, FileTre
 
     render() {
         const {viewMode} = this.state;
+        const isTree = viewMode === 'tree';
         return (
             <div className="file-tree-panel">
-                <div className="file-tree-search">
-                    <div className="file-tree-search-wrapper">
-                        <SearchOutlined />
-                        <input type="text" className="rf-form-control fileSearchText file-tree-search-input"
-                               placeholder="搜索文件..."
-                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                                   if (e.key === 'Enter') {
-                                       const value = (e.target as HTMLInputElement).value;
-                                       this.props.store.dispatch(ACTIONS.setSearchFileName(value));
-                                       this.props.store.dispatch(
-                                           ACTIONS.loadData(true, selectProjectName(this.props.store.getState() as any), null, value)
-                                       );
-                                   }
-                               }}/>
-                    </div>
-                    <button className="rf-btn rf-btn-default rf-btn-xs"
-                            style={{marginLeft: '4px', padding: '2px 8px'}}
+                <div className="file-tree-toolbar">
+                    <button className="file-tree-view-toggle"
                             onClick={this.toggleViewMode}
-                            title={viewMode === 'tree' ? '切换到知识包视图' : '切换到文件树视图'}>
-                        <i className={viewMode === 'tree' ? 'rf rf-package' : 'rf rf-tree'}/>
+                            title={isTree ? '切换到知识包视图' : '切换到文件树视图'}>
+                        <i className={isTree ? 'rf rf-package' : 'rf rf-tree'}/>
+                        <span>{isTree ? '知识包视图' : '文件树视图'}</span>
                     </button>
                 </div>
                 <div className="file-tree-content">
-                    {viewMode === 'tree' ? (
+                    {isTree ? (
                         <Tree draggable={true}/>
                     ) : (
                         <PackageNavigator

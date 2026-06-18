@@ -6,6 +6,8 @@ import SimulationProgress from './components/SimulationProgress.jsx';
 import SimulationResultsTable from './components/SimulationResultsTable.jsx';
 import SimulationStatsPanel from './components/SimulationStatsPanel.jsx';
 import type {SimulationStartResult} from './action';
+import {Tabs} from 'antd';
+import PageShell from '@/frame/components/PageShell';
 import {BarChartOutlined, DatabaseOutlined, ProfileOutlined, SettingOutlined} from '@ant-design/icons';
 
 interface TabDef {
@@ -77,24 +79,18 @@ class SimulationPanel extends Component<SimulationPanelProps, SimulationPanelSta
     render(): ReactNode {
         const simulationTab = this.props.simulationTab || 'configure';
         return (
-            <div className="simulation-panel" style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
-                <div className="side-panel-header">规则仿真</div>
-                <div className="side-panel-nav">
-                    {TABS.map((tab) => {
-                        return (
-                            <div key={tab.id}
-                                 className={'side-panel-nav-item' + (simulationTab === tab.id ? ' active' : '')}
-                                 onClick={this.handleTabClick.bind(this, tab.id)}>
-                                <span style={{marginRight: 8, fontSize: 12}}>{tab.icon}</span>
-                                {tab.label}
-                            </div>
-                        );
-                    })}
-                </div>
-                <div style={{flex: 1, overflow: 'auto', padding: 8}}>
-                    {this.renderContent()}
-                </div>
-            </div>
+            <PageShell
+                title="规则仿真"
+                toolbar={
+                    <Tabs
+                        activeKey={simulationTab}
+                        onChange={(key: string) => this.handleTabClick(key)}
+                        items={TABS.map(t => ({key: t.id, label: (<><span style={{marginRight: 6}}>{t.icon}</span>{t.label}</>)}))}
+                    />
+                }
+            >
+                {this.renderContent()}
+            </PageShell>
         );
     }
 }

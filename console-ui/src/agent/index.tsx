@@ -11,6 +11,7 @@ import RuleHealthView from './components/RuleHealthView.tsx';
 import AgentAuditView from './components/AgentAuditView.tsx';  // V5.22.3
 import type {AgentSession, AgentMessage} from './action';
 import type {AgentState} from './reducer';
+import PageShell from '@/frame/components/PageShell';
 import {BarChartOutlined, MessageOutlined, PlusOutlined, ProfileOutlined, ReadOutlined, SettingOutlined} from '@ant-design/icons';
 
 interface AgentPanelProps {
@@ -125,29 +126,22 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
         const safeSessions = Array.isArray(sessions) ? sessions : [];
 
         return (
-            <div style={{display: 'flex', flexDirection: 'column', height: '100%', background: '#fff'}}>
-                {/* Header */}
-                <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '8px 12px', borderBottom: '1px solid #e8e8e8'
-                }}>
-                    <span style={{fontWeight: 600, fontSize: 14}}>
-                        <ReadOutlined style={{marginRight: 6}} />
-                        AI 助手
-                    </span>
-                    <div>
-                        <button className="rf-btn rf-btn-xs rf-btn-default" onClick={this.handleNewChat}
-                                title="新对话" style={{marginRight: 4}}>
-                            <PlusOutlined />
+            <PageShell
+                title="智能分析"
+                description="AI 助手 · 规则健康 / 草稿审批 / 对话"
+                fill
+                actions={
+                    <>
+                        <button className="rf-btn rf-btn-xs rf-btn-default" onClick={this.handleNewChat} title="新对话">
+                            <PlusOutlined /> 新对话
                         </button>
                         <button className="rf-btn rf-btn-xs rf-btn-default"
-                                onClick={() => this.setState({showConfig: !showConfig})}
-                                title="配置" style={{marginRight: 4}}>
+                                onClick={() => this.setState({showConfig: !showConfig})} title="配置">
                             <SettingOutlined />
                         </button>
-                    </div>
-                </div>
-
+                    </>
+                }
+            >
                 {/* Tabs */}
                 {this.renderTabs()}
 
@@ -157,10 +151,10 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                 {/* Status bar */}
                 {status && (
                     <div style={{
-                        padding: '4px 12px', fontSize: 11,
+                        padding: '4px 12px', fontSize: 11, flexShrink: 0,
                         background: status.available ? '#f6ffed' : '#fff2f0',
-                        color: status.available ? '#52c41a' : '#ff4d4f',
-                        borderBottom: '1px solid #e8e8e8'
+                        color: status.available ? 'var(--rf-success)' : 'var(--rf-danger)',
+                        borderBottom: '1px solid var(--rf-border-split)'
                     }}>
                         {status.available
                             ? `已连接 · ${status.model}`
@@ -169,7 +163,7 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                 )}
 
                 {/* Main content — V5.22 多 tab 切换 */}
-                <div style={{flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column'}}>
+                <div style={{flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0}}>
                     {activeTab === 'health' ? (
                         <RuleHealthView project={this.props.project} />
                     ) : activeTab === 'drafts' ? (
@@ -190,7 +184,7 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                         <div style={{flex: 1, overflow: 'auto'}}>
                             <div style={{padding: 8}}>
                                 {safeSessions.length === 0 && (
-                                    <div style={{textAlign: 'center', padding: '40px 20px', color: '#999'}}>
+                                    <div style={{textAlign: 'center', padding: '40px 20px', color: 'var(--rf-text-tertiary)'}}>
                                         <ReadOutlined style={{fontSize: 32, display: 'block', marginBottom: 8}} />
                                         点击 + 开始与 AI 对话
                                     </div>
@@ -199,14 +193,14 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                                     <div key={s.id}
                                          style={{
                                              padding: '8px 12px', cursor: 'pointer',
-                                             borderBottom: '1px solid #f0f0f0',
-                                             background: s.id === activeSessionId ? '#e6f7ff' : 'transparent'
+                                             borderBottom: '1px solid var(--rf-border-split)',
+                                             background: s.id === activeSessionId ? 'var(--rf-primary-bg)' : 'transparent'
                                          }}
                                          onClick={() => this.handleSelectSession(s.id)}>
                                         <div style={{fontSize: 13, fontWeight: 500}}>
                                             {s.title || '新对话'}
                                         </div>
-                                        <div style={{fontSize: 11, color: '#999', marginTop: 2}}>
+                                        <div style={{fontSize: 11, color: 'var(--rf-text-tertiary)', marginTop: 2}}>
                                             {s.updateTime?.substring(0, 16).replace('T', ' ')}
                                         </div>
                                     </div>
@@ -215,7 +209,7 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                         </div>
                     )}
                 </div>
-            </div>
+            </PageShell>
         );
     }
 }

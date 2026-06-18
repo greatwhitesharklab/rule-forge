@@ -1,18 +1,28 @@
 import {Component} from 'react';
+import {connect} from 'react-redux';
 import {formPost} from '@/api/client.js';
 import AlertBell from '@/frame/AlertBell';
-import {LogoutOutlined} from '@ant-design/icons';
+import {LogoutOutlined, SearchOutlined} from '@ant-design/icons';
 import {CurrentUserContext} from '@/router/RequireAuth';
+import * as ACTIONS from '@/frame/action.js';
+import {selectProjectName} from '@/frame/reducer.ts';
 
 interface TopBarProps {
     dispatch?: (action: unknown) => void;
+    // connect 注入(frame store)
+    activePanel?: string;
+    projectName?: string | null;
 }
 
 interface TopBarState {
     userDropdownOpen: boolean;
 }
 
-export default class TopBar extends Component<TopBarProps, TopBarState> {
+interface FrameUiState {
+    ui?: {activePanel?: string};
+}
+
+class TopBar extends Component<TopBarProps, TopBarState> {
     static contextType = CurrentUserContext;
     declare context: React.ContextType<typeof CurrentUserContext>;
 
@@ -48,8 +58,21 @@ export default class TopBar extends Component<TopBarProps, TopBarState> {
         });
     }
 
+    /**
+     * V5.101:顶栏文件搜索(从侧栏 FileTreePanel 迁入)。回车触发:写 searchFileName +
+     * loadData(沿用 FileTreePanel 语义:classify=true、types=null、当前 projectName)。
+     */
+    _handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key !== 'Enter') return;
+        const value = (e.target as HTMLInputElement).value;
+        const projectName = this.props.projectName ?? null;
+        this.props.dispatch!(ACTIONS.setSearchFileName(value));
+        this.props.dispatch!(ACTIONS.loadData(true, projectName, null, value));
+    };
+
     render() {
         const {userDropdownOpen} = this.state;
+        const {activePanel} = this.props;
         const currentUser = this.context as UserInfo | null;
         const username = (currentUser && currentUser.username) || 'admin';
 
@@ -59,9 +82,25 @@ export default class TopBar extends Component<TopBarProps, TopBarState> {
                     <span className="topbar-brand-logo">R</span>
                     <span className="topbar-brand-name">RuleForge</span>
                 </div>
-                <div style={{flex: 1}}/>
+
+                {/* V5.101:文件搜索进顶栏 — 仅在规则编辑面板显示(文件树只在这里) */}
+                {activePanel === 'rules' && (
+                    <>
+                        <div className="topbar-divider"/>
+                        <div className="topbar-search">
+                            <SearchOutlined/>
+                            <input type="text"
+                                   className="topbar-search-input fileSearchText"
+                                   placeholder="搜索文件…"
+                                   onKeyDown={this._handleSearch}/>
+                        </div>
+                    </>
+                )}
+
+                <div className="topbar-spacer"/>
+
                 <div className="topbar-right">
-                    {/* V5.45.5 — Frame 顶部 AlertBell:待审 draft 通知(铃铛 + 红点 badge) */}
+                    {/* V5.45.5 — Frame 顶部 AlertBell:待审 draft 通知(V5.101:🔔 emoji → BellOutlined) */}
                     <AlertBell username={username}/>
                     <div className="topbar-user">
                         <button className="topbar-user-btn" onClick={(e) => {
@@ -99,3 +138,9 @@ export default class TopBar extends Component<TopBarProps, TopBarState> {
         );
     }
 }
+
+// connect 到 frame store:读 activePanel / projectName(搜索 gated + loadData 用)
+export default connect((state: FrameUiState) => ({
+    activePanel: (state.ui && state.ui.activePanel) || 'rules',
+    projectName: selectProjectName(state as any),
+}))(TopBar);
