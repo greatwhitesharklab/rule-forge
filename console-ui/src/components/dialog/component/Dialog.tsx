@@ -1,4 +1,5 @@
 import { Component, ReactNode } from 'react';
+import {Modal} from 'antd';
 import * as event from '../../../frame/event.js';
 
 interface DialogButton {
@@ -101,23 +102,9 @@ export default class Dialog extends Component<DialogProps, DialogState> {
             </button>
         ));
         return (
-            <div>
-                {visible && <div className="rf-modal-backdrop rf-fade in" onClick={() => this._close()}></div>}
-                <div className={`modal fade ${visible ? 'in' : ''}`}
-                     style={{ display: visible ? 'block' : 'none' }}
-                     tabIndex={-1} role="dialog" aria-hidden={!visible}>
-                    <div className="rf-modal-dialog">
-                        <div className="rf-modal-content">
-                            <div className="rf-modal-header" style={{ borderBottom: '1px solid var(--rf-border-split)' }}>
-                                <button type="button" className="rf-close" aria-hidden="true" onClick={() => this._close()}>&times;</button>
-                                <h4 className="rf-modal-title" style={{ fontWeight: 'var(--rf-font-weight-semibold)', color: 'var(--rf-text-primary)' }}>{title}</h4>
-                            </div>
-                            <div className="rf-modal-body" style={{ padding: 'var(--rf-space-6)', color: 'var(--rf-text-primary)' }}>{body}</div>
-                            <div className="rf-modal-footer">{buttonElements}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <Modal open={visible} title={title} footer={buttonElements} onCancel={() => this._close()}>
+                {body}
+            </Modal>
         );
     }
 }

@@ -1,4 +1,5 @@
-import { Component, ReactNode, RefObject } from 'react';
+import {Component, ReactNode} from 'react';
+import {Modal} from 'antd';
 
 interface DialogButton {
     name: string;
@@ -18,51 +19,33 @@ interface CommonDialogProps {
     info?: string;
     htmlContent?: ReactNode;
     onClose?: () => void;
-    forwardedRef?: RefObject<HTMLDivElement | null>;
 }
 
+/**
+ * V5.101.2:rf-modal 手写 modal → antd Modal。props API 不变(visible/title/body/buttons/
+ * large/dialogStyle/dispatch/info/htmlContent/onClose),22 个消费方零改动。footer 仍渲染
+ * 调用方传入的 buttons(className 为 rf-btn,阶段3 再统一换 antd Button)。
+ */
 export default class CommonDialog extends Component<CommonDialogProps> {
-    _close(): void {
-        if (this.props.onClose) {
-            this.props.onClose();
-        }
-    }
-
     render() {
-        const { visible, title, body, buttons, large, dialogStyle, dispatch, info, htmlContent } = this.props;
-        const largeClass = large ? ' modal-lg' : '';
-        const dialogStyleObj = dialogStyle || {};
+        const {visible, title, body, buttons, large, dialogStyle, dispatch, info, htmlContent, onClose} = this.props;
         const buttonElements = (buttons || []).map((btn, index) => (
             <button type="button" key={index} className={btn.className} onClick={() => btn.click(dispatch)}>
-                {btn.icon && (typeof btn.icon === 'string' ? <i className={btn.icon} /> : btn.icon)} {btn.name}
+                {btn.icon && (typeof btn.icon === 'string' ? <i className={btn.icon}/> : btn.icon)} {btn.name}
             </button>
         ));
+        const titleNode = (info || htmlContent) ? (
+            <>
+                {title}
+                {info && <div style={{fontSize: '12pt', color: 'var(--rf-danger)'}}>{info}</div>}
+                {htmlContent && <div style={{display: 'inline-block', marginLeft: 'var(--rf-space-3)'}}>{htmlContent}</div>}
+            </>
+        ) : title;
         return (
-            <div ref={this.props.forwardedRef}>
-                {visible && <div className="rf-modal-backdrop rf-fade in" onClick={() => this._close()}></div>}
-                <div className={`modal fade ${visible ? 'in' : ''}`}
-                     style={{ display: visible ? 'block' : 'none', overflow: 'auto' }}
-                     tabIndex={-1} role="dialog" aria-hidden={!visible}>
-                    <div className={`modal-dialog${largeClass}`} style={dialogStyleObj}>
-                        <div className="rf-modal-content">
-                            <div className="rf-modal-header">
-                                <button type="button" className="rf-close" aria-hidden="true" onClick={() => this._close()}>&times;</button>
-                                <h3 className="rf-modal-title" style={{ wordWrap: 'break-word', display: 'flex', alignItems: 'center', fontWeight: 'var(--rf-font-weight-semibold)' }}>
-                                    {title}
-                                    {info && <div className="rf-text-danger" style={{ fontSize: '12pt', color: 'var(--rf-error)' }}>{info}</div>}
-                                    {htmlContent && <div style={{ display: 'inline-block', marginLeft: 'var(--rf-space-3)' }}>{htmlContent}</div>}
-                                </h3>
-                            </div>
-                            <div className="rf-modal-body" style={{ padding: 'var(--rf-space-6)' }}>
-                                {body}
-                            </div>
-                            <div className="rf-modal-footer">
-                                {buttonElements}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <Modal open={visible} title={titleNode} footer={buttonElements} onCancel={onClose}
+                   width={large ? 960 : 520} style={dialogStyle}>
+                {body}
+            </Modal>
         );
     }
 }

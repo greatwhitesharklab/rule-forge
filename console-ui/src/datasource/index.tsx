@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import {connect} from 'react-redux';
-import {Modal, Radio, Input, Form, Button, Space, Table, Tabs, Tag, Tooltip, Upload, message} from 'antd';
+import {Alert, Card, Modal, Radio, Input, Form, Button, Space, Table, Tabs, Tag, Tooltip, Upload, message} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import PageShell from '@/frame/components/PageShell';
 import {alert} from '@/utils/modal';
@@ -609,7 +609,7 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
                 }
             >
                 {testResult && (
-                    <div className="rf-alert rf-alert-info" style={{padding: '8px 12px', marginBottom: 12}}>{testResult}</div>
+                    <Alert type="info" showIcon message={testResult} style={{marginBottom: 12}}/>
                 )}
 
                 {activeTab === 'datasources' && this.renderDatasources(datasources, showForm, formDatasource)}
@@ -680,12 +680,8 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
         try { configJson = JSON.parse(formDatasource.configJson || '{}'); } catch (_e) { /* ignore */ }
 
         return (
-            <div className="rf-panel rf-panel-default" style={{marginBottom: '15px'}}>
-                <div className="rf-panel-heading">
-                    <strong>{formDatasource.id ? '编辑数据源' : '新增数据源'}</strong>
-                </div>
-                <div className="rf-panel-body" style={{padding: '10px'}}>
-                    <div className="form-horizontal">
+            <Card size="small" title={formDatasource.id ? '编辑数据源' : '新增数据源'} style={{marginBottom: 15}}>
+                <div className="form-horizontal">
                         <div className="rf-form-group">
                             <label className="rf-col-sm-2 rf-control-label">名称</label>
                             <div className="rf-col-sm-6">
@@ -726,8 +722,7 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
+            </Card>
         );
     }
 
