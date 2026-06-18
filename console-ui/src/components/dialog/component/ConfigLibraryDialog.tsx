@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import {Button, Table} from 'antd';
 import * as componentEvent from '../../componentEvent.js';
 
 import {alert} from '@/utils/modal';
@@ -146,26 +147,15 @@ export default function ConfigLibraryDialog() {
                             <h4 className="rf-modal-title" style={{ fontWeight: 'var(--rf-font-weight-semibold)', color: 'var(--rf-text-primary)' }}>{config.title}</h4>
                         </div>
                         <div className="rf-modal-body" style={{ padding: 'var(--rf-space-6)' }}>
-                            <table className="rf-table rf-table-bordered">
-                                <thead>
-                                    <tr>
-                                        <td>{config.title.replace('配置', '文件')}</td>
-                                        <td style={{ width: '70px' }}>操作</td>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {libraries.map((lib, index) => (
-                                        <tr key={index}>
-                                            <td>{lib}</td>
-                                            <td>
-                                                <button type="button" className="rf-btn rf-btn-link"
-                                                    onClick={() => handleDelete(lib)}>删除
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                            <Table rowKey={(r: {name: string}) => r.name}
+                                dataSource={libraries.map((lib: string) => ({name: lib}))} pagination={false} size="small"
+                                columns={[
+                                    {title: config.title.replace('配置', '文件'), dataIndex: 'name', key: 'name'},
+                                    {title: '操作', key: 'op', width: 70,
+                                        render: (_: unknown, r: {name: string}) => (
+                                            <Button type="link" onClick={() => handleDelete(r.name)}>删除</Button>
+                                        )},
+                                ]}/>
                         </div>
                         <div className="rf-modal-footer">
                             <button type="button" className="rf-btn rf-btn-primary" onClick={handleAdd}>添加

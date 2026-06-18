@@ -3,6 +3,7 @@ import CommonDialog from '../components/dialog/component/CommonDialog.jsx';
 import * as event from './event.js';
 import * as frameEvent from '../frame/event.js';
 import {formPost} from '../api/client.js';
+import {Button, Table} from 'antd';
 import {buildEditorUrl, filePathToSpaSegment} from '../Utils.ts';
 
 interface ReferenceFile {
@@ -296,50 +297,30 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
                         </div>
                     </div>
                 )}
-                <table className="rf-table rf-table-bordered">
-                    <thead>
-                        <tr><td>文件路径</td><td style={{width:'100px'}}>类型</td><td style={{width:'80px'}}>操作</td></tr>
-                    </thead>
-                    <tbody>
-                    {
-                        files.map(function (file: ReferenceFile, index: number) {
-                            return (
-                                <tr key={index}>
-                                    <td>{file.path}</td>
-                                    <td>{file.type}</td>
-                                    <td><button type="button" className="rf-btn rf-btn-link" style={{padding:'5px 5px'}} onClick={function() {
-                                        // SPA 化:按 file.path 扩展名映射到 /app/editor/<type> 新标签打开。
-                                        // 后端 file.editor 是旧版单页 HTML(/ruleset-editor.html 等),不含 type=,
-                                        // 用 filePathToSpaSegment 按扩展名映射。
-                                        // 无 SPA 路由的文件(如 .ul.xml 脚本决策集)回退到原 iframe + TREE_NODE_CLICK。
-                                        const spaSegment = filePathToSpaSegment(file.path);
-                                        if (spaSegment) {
-                                            window.open('/app/editor/' + spaSegment + '?file=' + encodeURIComponent(file.path), '_blank');
-                                            return;
-                                        }
-
-                                        // fallback:无 SPA 路由的 type,保留原 iframe 逻辑
-                                        const editorPath = '/html' + file.editor;
-                                        const url = buildEditorUrl(editorPath, file.path);
-                                        const config = {
-                                            id: file.path,
-                                            name: file.name,
-                                            fullPath: file.path,
-                                            path: url,
-                                            active: true
-                                        };
-                                        // Trigger TREE_NODE_CLICK event to open file in the right iframe
-                                        (window.parent as unknown as { componentEvent: { eventEmitter: { emit: (event: string, data: unknown) => void }; TREE_NODE_CLICK: string } }).componentEvent.eventEmitter.emit(
-                                            (window.parent as unknown as { componentEvent: { TREE_NODE_CLICK: string } }).componentEvent.TREE_NODE_CLICK,
-                                            config
-                                        );
-                                    }}>设计器中打开</button></td>
-                                </tr>
-                            );
-                        })
-                    }
-                    </tbody>
-                </table>
+                <Table<ReferenceFile> rowKey="path" dataSource={files} pagination={false} size="small"
+                    columns={[
+                        {title: '文件路径', dataIndex: 'path', key: 'path'},
+                        {title: '类型', dataIndex: 'type', key: 'type', width: 100},
+                        {title: '操作', key: 'op',
+                            render: (_: unknown, file: ReferenceFile) => (
+                                <Button type="link" style={{padding: '5px 5px'}} onClick={() => {
+                                    // SPA 化:按 file.path 扩展名映射到 /app/editor/<type> 新标签打开。
+                                    const spaSegment = filePathToSpaSegment(file.path);
+                                    if (spaSegment) {
+                                        window.open('/app/editor/' + spaSegment + '?file=' + encodeURIComponent(file.path), '_blank');
+                                        return;
+                                    }
+                                    // fallback:无 SPA 路由的 type,保留原 iframe 逻辑
+                                    const editorPath = '/html' + file.editor;
+                                    const url = buildEditorUrl(editorPath, file.path);
+                                    const config = {id: file.path, name: file.name, fullPath: file.path, path: url, active: true};
+                                    (window.parent as unknown as { componentEvent: { eventEmitter: { emit: (event: string, data: unknown) => void }; TREE_NODE_CLICK: string } }).componentEvent.eventEmitter.emit(
+                                        (window.parent as unknown as { componentEvent: { TREE_NODE_CLICK: string } }).componentEvent.TREE_NODE_CLICK,
+                                        config
+                                    );
+                                }}>设计器中打开</Button>
+                            )},
+                    ]}/>
             </div>
         );
         return (<CommonDialog buttons={[]} body={body} title={this.state.title} visible={this.state.visible} onClose={() => this.setState({visible: false})}/>);

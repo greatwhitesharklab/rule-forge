@@ -103,33 +103,25 @@ class SimulationProgress extends Component<SimulationProgressProps, SimulationPr
     }
 
     renderStats(progress: SimulationProgressData): ReactNode {
+        // V5.101:rf-table KV 统计表 → div 列表(原是 key-value 统计,非记录表)
+        const rows: Array<[string, ReactNode, string]> = [
+            ['总偏差', <strong>{progress.totalDivergent || 0}</strong>, 'var(--rf-text-primary)'],
+            ['偏差率', <strong>{(progress.divergenceRate || 0).toFixed(2)}%</strong>, 'var(--rf-text-primary)'],
+            ['HIGH', <>{progress.highSeverityCount || 0}</>, 'var(--rf-danger)'],
+            ['MEDIUM', <>{progress.mediumSeverityCount || 0}</>, 'var(--rf-warning)'],
+            ['LOW', <>{progress.lowSeverityCount || 0}</>, 'var(--rf-primary)'],
+        ];
         return (
             <div style={{marginTop: 12}}>
-                <div style={{fontSize: 12, color: '#333', fontWeight: 'bold', marginBottom: 4}}>偏差统计</div>
-                <table className="rf-table rf-table-condensed" style={{fontSize: 11, marginBottom: 0}}>
-                    <tbody>
-                    <tr>
-                        <td>总偏差</td>
-                        <td><strong>{progress.totalDivergent || 0}</strong></td>
-                    </tr>
-                    <tr>
-                        <td>偏差率</td>
-                        <td><strong>{(progress.divergenceRate || 0).toFixed(2)}%</strong></td>
-                    </tr>
-                    <tr style={{color: '#F44336'}}>
-                        <td>HIGH</td>
-                        <td>{progress.highSeverityCount || 0}</td>
-                    </tr>
-                    <tr style={{color: '#FF9800'}}>
-                        <td>MEDIUM</td>
-                        <td>{progress.mediumSeverityCount || 0}</td>
-                    </tr>
-                    <tr style={{color: '#2196F3'}}>
-                        <td>LOW</td>
-                        <td>{progress.lowSeverityCount || 0}</td>
-                    </tr>
-                    </tbody>
-                </table>
+                <div style={{fontSize: 12, fontWeight: 600, marginBottom: 4}}>偏差统计</div>
+                <div style={{display: 'flex', flexDirection: 'column', fontSize: 11}}>
+                    {rows.map(([label, val, color]) => (
+                        <div key={label} style={{display: 'flex', justifyContent: 'space-between', padding: '2px 0', color}}>
+                            <span>{label}</span>
+                            <span>{val}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }

@@ -909,52 +909,38 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
                     <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={this.handleSaveMapping}>保存映射</button>
                 </div>
 
-                <table className="rf-table rf-table-bordered rf-table-hover" style={{fontSize: '13px'}}>
-                    <thead>
-                        <tr><th>实体类 (clazz)</th><th>数据源</th><th>操作</th></tr>
-                    </thead>
-                    <tbody>
-                        {entityMappings.map(m => {
-                            const ds = datasources.find(d => d.id === m.datasourceId);
-                            return (
-                                <tr key={m.id}>
-                                    <td>{m.clazz}</td>
-                                    <td>{ds ? ds.name : '(未知)'}</td>
-                                    <td>
-                                        <button className="rf-btn rf-btn-xs rf-btn-info"
-                                                onClick={() => this.handleLoadFieldMappings(m.datasourceId, m.clazz)}>
-                                            字段映射
-                                        </button>
+                <Table<EntityMapping> rowKey="id" dataSource={entityMappings} pagination={false} size="small"
+                    columns={[
+                        {title: '实体类 (clazz)', dataIndex: 'clazz', key: 'clazz'},
+                        {title: '数据源', key: 'ds',
+                            render: (_: unknown, m: EntityMapping) => {
+                                const ds = datasources.find(d => d.id === m.datasourceId);
+                                return ds ? ds.name : '(未知)';
+                            }},
+                        {title: '操作', key: 'op',
+                            render: (_: unknown, m: EntityMapping) => {
+                                const ds = datasources.find(d => d.id === m.datasourceId);
+                                return (
+                                    <>
+                                        <Button size="small"
+                                                onClick={() => this.handleLoadFieldMappings(m.datasourceId, m.clazz)}>字段映射</Button>
                                         {ds && ds.type === 'PKL' && (
-                                            <>
-                                                {' '}
-                                                <button className="rf-btn rf-btn-xs rf-btn-warning"
-                                                        onClick={() => this.handleFetchModelFields(m.datasourceId, m.clazz, ds)}>
-                                                    获取模型字段
-                                                </button>
-                                            </>
+                                            <Button size="small" style={{marginLeft: 4}}
+                                                    onClick={() => this.handleFetchModelFields(m.datasourceId, m.clazz, ds)}>获取模型字段</Button>
                                         )}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+                                    </>
+                                );
+                            }},
+                    ]}/>
 
                 {fieldMappings.length > 0 && (
                     <div>
                         <h5 style={{marginTop: '15px'}}>字段映射: {this.state.mappingFieldClazz}</h5>
-                        <table className="rf-table rf-table-bordered rf-table-hover" style={{fontSize: '13px'}}>
-                            <thead><tr><th>规则变量名</th><th>外部字段名</th></tr></thead>
-                            <tbody>
-                                {fieldMappings.map(fm => (
-                                    <tr key={fm.id}>
-                                        <td>{fm.variableName}</td>
-                                        <td>{fm.remoteField}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        <Table<FieldMapping> rowKey="id" dataSource={fieldMappings} pagination={false} size="small"
+                            columns={[
+                                {title: '规则变量名', dataIndex: 'variableName', key: 'v'},
+                                {title: '外部字段名', dataIndex: 'remoteField', key: 'r'},
+                            ]}/>
                     </div>
                 )}
             </div>
