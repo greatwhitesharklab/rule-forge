@@ -1,5 +1,5 @@
 import { Component, ReactNode } from 'react';
-import {Button} from 'antd';
+import {Button, Input, Select} from 'antd';
 import CommonDialog from './CommonDialog.tsx';
 import * as event from '../../componentEvent.js';
 import * as action from '../../componentAction.js';
@@ -122,16 +122,13 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <div className="rf-form-group" style={{ display: 'flex', alignItems: 'center' }}>
                         <label style={{ fontSize: '15px', width: '120px', color: 'var(--rf-text-primary)' }}>输入数据</label>
-                        <select value={this.state.type} className="rf-form-control" onChange={(e) => {
-                            this.setState({ type: e.target.value as 'form' | 'json' });
-                        }}>
-                            <option value="form">表单</option>
-                            <option value="json">json</option>
-                        </select>
+                        <Select value={this.state.type} onChange={(v: string) => {
+                            this.setState({ type: v as 'form' | 'json' });
+                        }} options={[{value: 'form', label: '表单'}, {value: 'json', label: 'json'}]}/>
                     </div>
                     <div className="rf-form-group" style={{ display: 'flex', alignItems: 'center' }}>
-                        <input type="text"
-                            className="rf-form-control"
+                        <Input type="text"
+                            
                             name="packageName"
                             style={{ display: this.state.type === 'form' ? 'block' : 'none' }}
                             value={this.state.orderNo} placeholder='订单号'
@@ -169,7 +166,7 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                             {((item.variables || []).map((ele, i) => (
                                 <div key={i} className="rf-form-group" style={{ marginLeft: 'var(--rf-space-3)', display: 'flex', alignItems: 'center' }}>
                                     <label style={{ minWidth: '80px', textAlign: 'right', color: 'var(--rf-text-secondary)' }}>{ele.label}</label>
-                                    <input type="text" className="rf-form-control" style={{ marginLeft: 'var(--rf-space-3)' }} value={ele.defaultValue || ''} onChange={e => this.setState({
+                                    <Input type="text"  style={{ marginLeft: 'var(--rf-space-3)' }} value={ele.defaultValue || ''} onChange={e => this.setState({
                                         variableData: this.state.variableData.map((vd, key2) => {
                                             if (key === key2) {
                                                 vd.variables[i].defaultValue = e.target.value;
@@ -207,7 +204,7 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                             {(item.variables || []).map((ele, ei) => (
                                 <div key={ei} className="rf-form-group" style={{ marginLeft: 'var(--rf-space-3)', display: 'flex', alignItems: 'center' }}>
                                     <label style={{ minWidth: '80px', textAlign: 'right', color: 'var(--rf-text-secondary)' }}>{ele.label}</label>
-                                    <input type="text" className="rf-form-control" style={{ marginLeft: 'var(--rf-space-3)' }} readOnly value={ele.defaultValue || ''} />
+                                    <Input type="text"  style={{ marginLeft: 'var(--rf-space-3)' }} readOnly value={ele.defaultValue || ''} />
                                 </div>
                             ))}
                         </div>
@@ -218,12 +215,12 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
         const htmlContent: ReactNode = (
             <div style={{ display: 'flex', alignItems: 'center' }}>
                 <div className="">
-                    <select className="rf-form-control" value={this.state.selectedVersion} onChange={(e) => {
-                        this.setState({ selectedVersion: e.target.value });
+                    <Select value={this.state.selectedVersion} onChange={(v: string) => {
+                        this.setState({ selectedVersion: v });
                         const params = {
                             projectId: this.state.project,
                             appId: this.state.orderNo,
-                            filePath: `jcr:${this.state.file},${e.target.value}`,
+                            filePath: `jcr:${this.state.file},${v}`,
                             ruleName: ''
                         };
                         action.loadVariableCategories(params, (data: VariableCategory[]) => {
@@ -234,17 +231,8 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                             this.editor!.setValue(JSON.stringify(data, null, 2));
                             this.editor!.refresh();
                         });
-                    }}>
-                        <option value="">版本号</option>
-                        {(this.state.versionsList || []).map(version => (
-                            <option
-                                key={version.createDate}
-                                value={version.name}
-                            >
-                                {version.name}
-                            </option>
-                        ))}
-                    </select>
+                    }} placeholder="版本号"
+                        options={(this.state.versionsList || []).map(version => ({value: version.name, label: version.name}))}/>
                 </div>
                 <div className="" style={{ marginLeft: 'var(--rf-space-3)' }}>
                     <Button id="testButton" htmlType="button" color="green" className="rf-navbar-btn" onClick={() => {

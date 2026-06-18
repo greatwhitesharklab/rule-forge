@@ -1,5 +1,5 @@
 import {Component} from 'react';
-import {Button} from 'antd';
+import {Button, Input} from 'antd';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
@@ -70,7 +70,7 @@ export default class ItemDialog extends Component<ItemDialogProps, ItemDialogSta
             <div>
                 <div className="rf-form-group">
                     <label>名称:</label>
-                    <input type="text" className="rf-form-control" name="itemName"
+                    <Input type="text"  name="itemName"
                         value={this.state.itemName}
                         onChange={(e) => this.setState({itemName: e.target.value, errors: {...this.state.errors, itemName: undefined}})}/>
                     {this.state.errors.itemName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemName}</div>}
@@ -78,7 +78,7 @@ export default class ItemDialog extends Component<ItemDialogProps, ItemDialogSta
                 <div className="rf-form-group">
                     <label>资源文件路径:</label>
                     <div className="rf-input-group">
-                        <input type="text" className="rf-form-control" name="itemPath" disabled
+                        <Input type="text"  name="itemPath" disabled
                             value={this.state.itemPath}/>
                         <span className="rf-input-group-btn">
                             <Button htmlType="button"  onClick={() => {
@@ -92,7 +92,7 @@ export default class ItemDialog extends Component<ItemDialogProps, ItemDialogSta
                 </div>
                 <div className="rf-form-group">
                     <label>版本号:</label>
-                    <input type="text" className="rf-form-control" name="itemVersion" disabled
+                    <Input type="text"  name="itemVersion" disabled
                         value={this.state.itemVersion}/>
                     {this.state.errors.itemVersion && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemVersion}</div>}
                 </div>

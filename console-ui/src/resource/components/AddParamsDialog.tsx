@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import {Input, Select} from 'antd';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
@@ -120,14 +121,14 @@ export default class AddParamsDialog extends Component<AddParamsDialogProps, Add
                 <div className="rf-row">
                     <div className="rf-form-group rf-col-xs-6">
                         <label>字段名称：</label>
-                        <input type="text" name="name" className="rf-form-control"
+                        <Input type="text" name="name" 
                             value={this.state.name}
                             onChange={(e) => this.setState({name: e.target.value, errors: {...this.state.errors, name: undefined}})}/>
                         {this.state.errors.name && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.name}</div>}
                     </div>
                     <div className="rf-form-group rf-col-xs-6">
                         <label>标题：</label>
-                        <input type="text" name="label" className="rf-form-control"
+                        <Input type="text" name="label" 
                             value={this.state.label}
                             onChange={(e) => this.setState({label: e.target.value, errors: {...this.state.errors, label: undefined}})}/>
                         {this.state.errors.label && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.label}</div>}
@@ -136,39 +137,34 @@ export default class AddParamsDialog extends Component<AddParamsDialogProps, Add
                 <div className="rf-row">
                     <div className="rf-form-group rf-col-xs-6">
                         <label>默认值:</label>
-                        <input type="text" name="defaultValue" className="rf-form-control"
+                        <Input type="text" name="defaultValue" 
                             value={this.state.defaultValue}
                             onChange={(e) => this.setState({defaultValue: e.target.value, errors: {...this.state.errors, defaultValue: undefined}})}/>
                         {this.state.errors.defaultValue && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.defaultValue}</div>}
                     </div>
                     <div className="rf-form-group rf-col-xs-6">
                         <label>数据类型:</label>
-                        <select name="type" className="rf-form-control"
+                        <Select
                             value={this.state.type}
-                            onChange={(e) => this.setState({type: e.target.value, errors: {...this.state.errors, type: undefined}})}>
-                            {['String', 'Integer', 'Char', 'Double', 'Long', 'Float', 'BigDecimal', 'Boolean', 'Date', 'List', 'Set', 'Map', 'Enum', 'Object']
-                                .map(option =>
-                                    <option value={option} key={option}>{option}</option>
-                                )}
-                        </select>
+                            onChange={(v: string) => this.setState({type: v, errors: {...this.state.errors, type: undefined}})}
+                            options={['String', 'Integer', 'Char', 'Double', 'Long', 'Float', 'BigDecimal', 'Boolean', 'Date', 'List', 'Set', 'Map', 'Enum', 'Object']
+                                .map(o => ({value: o, label: o}))}/>
                         {this.state.errors.type && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.type}</div>}
                     </div>
                 </div>
                 <div className="rf-form-group">
                     <label>实现逻辑:</label>
-                    <textarea name="logicComment" className="rf-form-control" rows={3} maxLength={300}
+                    <Input.TextArea rows={3} maxLength={300}
                         value={this.state.logicComment}
                         onChange={(e) => this.setState({logicComment: e.target.value})}/>
                 </div>
                 <div className="rf-row">
                     <div className="rf-form-group rf-col-xs-6">
                         <label>状态:</label>
-                        <select name="dsStatus" className="rf-form-control"
+                        <Select
                             value={this.state.dsStatus}
-                            onChange={(e) => this.setState({dsStatus: Number(e.target.value)})}>
-                            <option value="0">待开发</option>
-                            <option value="1">已上线</option>
-                        </select>
+                            onChange={(v: number) => this.setState({dsStatus: v})}
+                            options={[{value: 0, label: '待开发'}, {value: 1, label: '已上线'}]}/>
                     </div>
                 </div>
 

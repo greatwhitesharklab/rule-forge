@@ -1,4 +1,5 @@
 import React, {Component, createRef} from 'react';
+import {Input} from 'antd';
 
 const TIP = '请输入值';
 
@@ -79,10 +80,10 @@ export default class SimpleValueWidget extends Component<SimpleValueWidgetProps,
                         {display}
                     </span>
                 ) : (
-                    <input
+                    <Input
                         ref={this.inputRef}
                         type="text"
-                        className="rf-form-control rule-text-editor"
+                        className="rule-text-editor"
                         style={{height: 22, width: inputWidth}}
                         value={text}
                         onChange={e => this.setState({text: e.target.value})}

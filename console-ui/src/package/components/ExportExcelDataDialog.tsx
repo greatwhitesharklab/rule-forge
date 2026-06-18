@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Input} from 'antd';
 import {apiBase} from '@/api/client';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
@@ -39,20 +40,20 @@ export default class ExportExcelDataDialog extends Component<ExportExcelDataDial
                     <div>
                         <div className="rf-form-group">
                             <label>开始时间:</label>
-                            <input type="date" className="rf-form-control" name="startTime" autoComplete="off"/>
+                            <Input type="date"  name="startTime" autoComplete="off"/>
                         </div>
                         <div className="rf-form-group">
                             <label>结束时间:</label>
-                            <input type="date" className="rf-form-control" name="endTime" autoComplete="off"/>
+                            <Input type="date"  name="endTime" autoComplete="off"/>
                         </div>
                         <div className="rf-form-group">
                             <label>项目名:</label>
-                            <input type="text" className="rf-form-control" name="projectName"
+                            <Input type="text"  name="projectName"
                                    autoComplete="off"/>
                         </div>
                         <div className="rf-form-group">
                             <label>包名:</label>
-                            <input type="text" className="rf-form-control" name="packageName"
+                            <Input type="text"  name="packageName"
                                    autoComplete="off"/>
                         </div>
                     </div>

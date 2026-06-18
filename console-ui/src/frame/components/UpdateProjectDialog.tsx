@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Input} from 'antd';
 import Dialog from '../../components/dialog/component/Dialog.jsx';
 import * as componentEvent from '../../components/componentEvent.js';
 import * as event from '../event.js';
@@ -56,8 +57,8 @@ export default class UpdateProjectDialog extends Component<UpdateProjectDialogPr
         const body = (
             <div className="rf-form-group">
                 <label>项目名称</label>
-                <input type="text" className="rf-form-control" name="projectName" value={this.state.projectName}
-                       onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({projectName: e.target.value, errors: {}}) }.bind(this)}></input>
+                <Input name="projectName" value={this.state.projectName}
+                       onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({projectName: e.target.value, errors: {}}) }.bind(this)}/>
                 {this.state.errors.projectName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.projectName}</div>}
             </div>
         );

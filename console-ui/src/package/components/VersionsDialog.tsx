@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Input} from 'antd';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
@@ -97,7 +98,7 @@ export default class VersionsDialog extends Component<VersionsDialogProps, Versi
                 </div>
                 <div className="rf-form-group" style={{display: 'flex'}}>
                     <label style={{textAlign: 'right', width: '100px'}}>版本说明：</label>
-                    <input style={{flex: 1}} type="text" className="rf-form-control" name="packageName"
+                    <Input style={{flex: 1}} type="text"  name="packageName"
                         value={this.state.versionComment}
                         onChange={e => this.setState({ versionComment: e.target.value })}/>
 

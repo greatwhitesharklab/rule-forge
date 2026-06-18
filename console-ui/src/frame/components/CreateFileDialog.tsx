@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Input} from 'antd';
 import Dialog from '../../components/dialog/component/Dialog.jsx';
 import * as componentEvent from '../../components/componentEvent.js';
 import * as event from '../event.js';
@@ -69,7 +70,7 @@ export default class CreateFileDialog extends Component<CreateFileDialogProps, C
         const body = (
             <div className="rf-form-group">
                 <label>文件名称</label>
-                <input className="rf-form-control" name="newFileName" value={this.state.newFileName}
+                <Input  name="newFileName" value={this.state.newFileName}
                        onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({newFileName: e.target.value, errors: {}}) }.bind(this)}/>
                 {this.state.errors.newFileName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.newFileName}</div>}
             </div>
