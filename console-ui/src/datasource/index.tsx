@@ -716,9 +716,9 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
 
                         <div className="rf-form-group">
                             <div className="rf-col-sm-offset-2 rf-col-sm-6">
-                                <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={this.handleSave}>保存</button>
+                                <Button type="primary" size="small" onClick={this.handleSave}>保存</Button>
                                 {' '}
-                                <button className="rf-btn rf-btn-default rf-btn-sm" onClick={() => this.setState({showForm: false})}>取消</button>
+                                <Button size="small" onClick={() => this.setState({showForm: false})}>取消</Button>
                             </div>
                         </div>
                     </div>
@@ -833,9 +833,9 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
                                onChange={e => this.updateConfigJson('modelId', e.target.value)} />
                     </div>
                     <div className="rf-col-sm-2">
-                        <button className="rf-btn rf-btn-sm rf-btn-default" onClick={() => this.fetchModelList()}>
+                        <Button size="small" onClick={() => this.fetchModelList()}>
                             <ReloadOutlined /> 加载模型
-                        </button>
+                        </Button>
                     </div>
                 </div>
                 {this.state.availableModels.length > 0 && (
@@ -901,7 +901,7 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
                         {datasources.map(ds => <option key={ds.id} value={ds.id}>{ds.name}</option>)}
                     </select>
                     {' '}
-                    <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={this.handleSaveMapping}>保存映射</button>
+                    <Button type="primary" size="small" onClick={this.handleSaveMapping}>保存映射</Button>
                 </div>
 
                 <Table<EntityMapping> rowKey="id" dataSource={entityMappings} pagination={false} size="small"

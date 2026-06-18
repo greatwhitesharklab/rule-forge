@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Button} from 'antd';
 import {connect} from 'react-redux';
 import {
     loadSessions, createSession, loadMessages, sendMessage,
@@ -132,13 +133,13 @@ class AgentPanel extends Component<AgentPanelProps, AgentPanelState> {
                 fill
                 actions={
                     <>
-                        <button className="rf-btn rf-btn-xs rf-btn-default" onClick={this.handleNewChat} title="新对话">
+                        <Button size="small" onClick={this.handleNewChat} title="新对话">
                             <PlusOutlined /> 新对话
-                        </button>
-                        <button className="rf-btn rf-btn-xs rf-btn-default"
+                        </Button>
+                        <Button size="small"
                                 onClick={() => this.setState({showConfig: !showConfig})} title="配置">
                             <SettingOutlined />
-                        </button>
+                        </Button>
                     </>
                 }
             >

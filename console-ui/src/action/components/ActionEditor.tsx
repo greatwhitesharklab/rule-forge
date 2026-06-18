@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import {Button, Space} from 'antd';
 import {connect} from 'react-redux';
 import Splitter from '../../components/splitter/component/Splitter.tsx';
 import Grid from '../../components/grid/component/Grid.tsx';
@@ -115,24 +116,24 @@ class ActionEditor extends Component<ActionEditorProps> {
                 <Splitter orientation='vertical' position='35%'>
                     <div>
                         <div style={{margin: '2px'}}>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-primary" type="button" onClick={(e) => {
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button type="primary" htmlType="button" onClick={(e) => {
                                     dispatch(action.addMaster())
                                 }}><PlusCircleOutlined /> 添加Bean
-                                </button>
-                            </div>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
+                                </Button>
+                            </Space>
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button color="danger" htmlType="button" onClick={() => {
                                     dispatch(action.save(false, file))
                                 }}><i className="rf rf-save"/> 保存
-                                </button>
-                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
+                                </Button>
+                                <Button color="danger" htmlType="button" onClick={() => {
                                     dispatch(action.save(true, file))
                                 }} style={{display: 'none'}}><i className="rf rf-savenewversion"/> 保存为新版本
-                                </button>
-                            </div>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-info" type="button" onClick={(e) => {
+                                </Button>
+                            </Space>
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button color="blue" htmlType="button" onClick={(e) => {
                                     if (!this.currentData) {
                                         alert('请先选择一条具体的动作方法');
                                         return;
@@ -147,8 +148,8 @@ class ActionEditor extends Component<ActionEditorProps> {
                                     };
                                     refEvent.eventEmitter.emit(refEvent.OPEN_REFERENCE_DIALOG, data, title);
                                 }}><i className="rf rf-link"/> 查看引用
-                                </button>
-                            </div>
+                                </Button>
+                            </Space>
                         </div>
                         <Grid headers={masterGridHeaders} rows={masterData} operationConfig={masterGridOperationCol}
                               rowClick={(rowData: SpringBean, rowIndex: number) => {
@@ -162,12 +163,12 @@ class ActionEditor extends Component<ActionEditorProps> {
                         <div className="rf-row" style={{margin: '0px'}}>
                             <div className="rf-col-md-6 rf-col-xs-6" style={{padding: '0px 4px 0px 2px'}}>
                                 <div>
-                                    <div className="rf-btn-group rf-btn-group-sm">
-                                        <button className="rf-btn rf-btn-primary" type="button" onClick={e => {
+                                    <Space size="small">
+                                        <Button type="primary" htmlType="button" onClick={e => {
                                             dispatch(action.addSlave())
                                         }}><PlusOutlined /> 添加方法
-                                        </button>
-                                    </div>
+                                        </Button>
+                                    </Space>
                                 </div>
                                 <Grid headers={slaveGridHeaders} rows={masterRowData.methods}
                                       operationConfig={slaveGridOperationCol} rowClick={(rowData: ActionMethod, rowIndex: number) => {
@@ -177,12 +178,12 @@ class ActionEditor extends Component<ActionEditorProps> {
                             </div>
                             <div className="rf-col-md-6 rf-col-xs-6" style={{padding: '0px 2px 0px 1px'}}>
                                 <div>
-                                    <div className="rf-btn-group rf-btn-group-sm">
-                                        <button className="rf-btn rf-btn-primary" type="button" onClick={e => {
+                                    <Space size="small">
+                                        <Button type="primary" htmlType="button" onClick={e => {
                                             dispatch(action.addParameter())
                                         }}><PlusCircleOutlined /> 添加参数
-                                        </button>
-                                    </div>
+                                        </Button>
+                                    </Space>
                                 </div>
                                 <Grid headers={parametersHeaders} rows={slaveRowData.parameters}
                                       operationConfig={methodGridOperationCol}/>

@@ -1,4 +1,5 @@
 import { Component, ReactNode } from 'react';
+import {Button} from 'antd';
 import CommonDialog from './CommonDialog.tsx';
 import * as event from '../../componentEvent.js';
 import * as action from '../../componentAction.js';
@@ -135,7 +136,7 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                             style={{ display: this.state.type === 'form' ? 'block' : 'none' }}
                             value={this.state.orderNo} placeholder='订单号'
                             onChange={(e) => this.setState({ orderNo: e.target.value })} />
-                        <button id="search" type="button" className="rf-btn rf-navbar-btn" style={{ marginLeft: 'var(--rf-space-3)', display: this.state.type === 'form' ? 'block' : 'none' }} onClick={() => {
+                        <Button id="search" htmlType="button" className="rf-navbar-btn" style={{ marginLeft: 'var(--rf-space-3)', display: this.state.type === 'form' ? 'block' : 'none' }} onClick={() => {
                             console.log('订单号', this.state);
                             if (this.state.type === 'json') {
                                 return;
@@ -158,7 +159,7 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                                 this.editor!.setValue(JSON.stringify(data, null, 2));
                                 this.editor!.refresh();
                             });
-                        }}>查询</button>
+                        }}>查询</Button>
                     </div>
                 </div>
                 {this.state.type === 'form' && (this.state.variableData || []).map((item, key) => (
@@ -246,7 +247,7 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                     </select>
                 </div>
                 <div className="" style={{ marginLeft: 'var(--rf-space-3)' }}>
-                    <button id="testButton" type="button" className="rf-btn rf-btn-success rf-navbar-btn" onClick={() => {
+                    <Button id="testButton" htmlType="button" color="green" className="rf-navbar-btn" onClick={() => {
                         if (!this.state.selectedVersion) {
                             alert('请选择版本号');
                             return;
@@ -279,7 +280,7 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                                 logData
                             });
                         });
-                    }}>开始测试</button>
+                    }}>开始测试</Button>
                 </div>
             </div>
         );

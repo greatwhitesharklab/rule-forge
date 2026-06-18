@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Button} from 'antd';
 import ScriptEditorPopup from './ScriptEditorPopup.jsx';
 import * as componentEvent from '../../components/componentEvent.js';
 import {formPost} from '../../api/client.js';
@@ -252,14 +253,14 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                 <label>{label}</label>
                 <div className="rf-prop-file-row">
                     <input type="text" value={value || ''} onChange={onValueChange} placeholder={placeholder || ''}/>
-                    <button className="rf-btn rf-btn-sm rf-btn-default" title="选择文件"
+                    <Button size="small" title="选择文件"
                             onClick={() => this.openKnowledgeTree((file, version) => {
                                 let path = 'jcr:' + file;
                                 if (version !== 'LATEST') path += ':' + version;
                                 onValueChange({target: {value: path}});
                             })}>
                         <SearchOutlined />
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -317,7 +318,7 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                         }
                     )}>{preview}</pre>
                 ) : null}
-                <button className="rf-btn rf-btn-sm rf-btn-primary rf-script-edit-btn" onClick={() => this.openScriptEditor(
+                <Button type="primary" size="small" className="rf-script-edit-btn" onClick={() => this.openScriptEditor(
                     script, '编辑脚本', 'Script',
                     (val) => {
                         const {modeling} = this.props;
@@ -327,7 +328,7 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                     }
                 )}>
                     <EditOutlined /> {preview ? '编辑脚本' : '编写脚本'}
-                </button>
+                </Button>
             </div>
         );
     }
@@ -365,14 +366,14 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                                                     <span className="rf-branch-condition-text">
                                                         {(this.getFlowExtensionAttr(flow.flowBo, 'conditionScript') || '').substring(0, 30)}
                                                     </span>
-                                                    <button className="rf-btn rf-btn-xs rf-btn-default" onClick={() => {
+                                                    <Button size="small" onClick={() => {
                                                         const current = this.getFlowExtensionAttr(flow.flowBo, 'conditionScript') || '';
                                                         this.openScriptEditor(current, '编辑条件脚本', 'Script', (val) => {
                                                             this.setFlowExtensionAttr(flow.flowElement, 'conditionScript', val);
                                                         });
                                                     }}>
                                                         <EditOutlined />
-                                                    </button>
+                                                    </Button>
                                                 </div>
                                             </td>
                                         ) : (
@@ -442,18 +443,18 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                                     <td className="rf-text-center">{idx + 1}</td>
                                     <td>{rule.name || '(未命名)'}</td>
                                     <td>
-                                        <button className="rf-btn rf-btn-xs rf-btn-default" title="编辑"
+                                        <Button size="small" title="编辑"
                                                 onClick={() => this.openRuleEditDialog(rulesList, idx, updateRules)}>
                                             <EditOutlined />
-                                        </button>
-                                        <button className="rf-btn rf-btn-xs rf-btn-default" title="删除"
+                                        </Button>
+                                        <Button size="small" title="删除"
                                                 onClick={() => {
                                                     const newList = rulesList.filter((_, i) => i !== idx);
                                                     updateRules(newList);
                                                 }}>
                                             <DeleteOutlined />
-                                        </button>
-                                        <button className="rf-btn rf-btn-xs rf-btn-default" title="上移" disabled={idx === 0}
+                                        </Button>
+                                        <Button size="small" title="上移" disabled={idx === 0}
                                                 onClick={() => {
                                                     if (idx === 0) return;
                                                     const newList = [...rulesList];
@@ -461,8 +462,8 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                                                     updateRules(newList);
                                                 }}>
                                             <ArrowUpOutlined />
-                                        </button>
-                                        <button className="rf-btn rf-btn-xs rf-btn-default" title="下移" disabled={idx === rulesList.length - 1}
+                                        </Button>
+                                        <Button size="small" title="下移" disabled={idx === rulesList.length - 1}
                                                 onClick={() => {
                                                     if (idx === rulesList.length - 1) return;
                                                     const newList = [...rulesList];
@@ -470,7 +471,7 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                                                     updateRules(newList);
                                                 }}>
                                             <ArrowDownOutlined />
-                                        </button>
+                                        </Button>
                                     </td>
                                 </tr>
                             ))}
@@ -479,13 +480,13 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                 ) : (
                     <div className="rf-prop-hint">暂无规则，点击下方按钮添加</div>
                 )}
-                <button className="rf-btn rf-btn-sm rf-btn-primary" style={{marginTop: 8, width: '100%'}}
+                <Button type="primary" size="small" style={{marginTop: 8, width: '100%'}}
                         onClick={() => {
                             const newList = [...rulesList, {name: '', file: '', version: '', eventBean: ''}];
                             this.openRuleEditDialog(newList, newList.length - 1, updateRules);
                         }}>
                     <PlusOutlined /> 添加规则
-                </button>
+                </Button>
             </div>
         );
     }
@@ -626,10 +627,10 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                                             {imp.path}
                                         </td>
                                         <td>
-                                            <button className="rf-btn rf-btn-xs rf-btn-default" title="移除"
+                                            <Button size="small" title="移除"
                                                     onClick={() => this.removeImport(imports, idx)}>
                                                 <CloseOutlined />
-                                            </button>
+                                            </Button>
                                         </td>
                                     </tr>
                                 ))}

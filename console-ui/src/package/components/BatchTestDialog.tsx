@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Button} from 'antd';
 import {apiBase} from '@/api/client';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
@@ -175,9 +176,9 @@ export default class BatchTestDialog extends Component<BatchTestDialogProps, Bat
                         <input name="prefix" type="hidden" value={this._buildExportPrefix()}/>
                         <input name="sessionId" type="hidden" value={sessionId || ''}/>
                     </form>
-                    <button className="rf-btn rf-btn-success" onClick={() => (document.getElementById(exportFormId) as HTMLFormElement).submit()}>
+                    <Button color="green" onClick={() => (document.getElementById(exportFormId) as HTMLFormElement).submit()}>
                         <DownloadOutlined /> 导出测试结果
-                    </button>
+                    </Button>
                 </div>
             );
         } else {

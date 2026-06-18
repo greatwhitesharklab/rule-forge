@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import {Button, Space} from 'antd';
 import {connect} from 'react-redux';
 import Grid from '../../components/grid/component/Grid.tsx';
 import Splitter from '../../components/splitter/component/Splitter.tsx';
@@ -81,12 +82,12 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                 <Splitter orientation='vertical' position='20%'>
                     <div>
                         <div style={{margin: '2px'}}>
-                            <div className="rf-btn-group" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button color="danger" htmlType="button" onClick={() => {
                                     action.save(masterData)
                                 }}><i className="rf rf-save"/> 保存
-                                </button>
-                            </div>
+                                </Button>
+                            </Space>
                         </div>
                         <Grid headers={masterHeaders} dispatch={dispatch} rows={masterData} rowClick={(rowData: UserPermission) => {
                             (document.querySelector('.detailPart') as HTMLElement)!.style.display = 'none';

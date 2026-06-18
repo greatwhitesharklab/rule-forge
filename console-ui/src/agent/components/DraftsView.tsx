@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Button} from 'antd';
 import {jsonPost} from '@/api/client';
 import {ArrowLeftOutlined, CheckOutlined, ClockCircleOutlined, CloseOutlined, DatabaseOutlined, DeleteOutlined, FileOutlined, InboxOutlined, PlayCircleOutlined, PlusOutlined, ReloadOutlined, SaveOutlined, SendOutlined, ThunderboltOutlined} from '@ant-design/icons';
 
@@ -368,14 +369,14 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                         </option>
                     ))}
                 </select>
-                <button
-                    className="rf-btn rf-btn-xs rf-btn-default"
+                <Button
+                    size="small"
                     onClick={this.loadDrafts}
                     disabled={this.state.loading}
                     style={{marginLeft: 'auto'}}
                 >
                     <ReloadOutlined /> 刷新
-                </button>
+                </Button>
             </div>
         );
     }
@@ -509,19 +510,19 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
         return (
             <div style={{flex: 1, overflow: 'auto', padding: 12, background: '#fafafa'}}>
                 <div style={{marginBottom: 12, display: 'flex', gap: 6, flexWrap: 'wrap'}}>
-                    <button className="rf-btn rf-btn-xs rf-btn-primary" disabled={actionLoading}
+                    <Button type="primary" size="small" disabled={actionLoading}
                             onClick={() => this.handleAddTestCase(detail)}>
                         <PlusOutlined /> 加测试用例
-                    </button>
-                    <button className="rf-btn rf-btn-xs rf-btn-default" disabled={actionLoading}
+                    </Button>
+                    <Button size="small" disabled={actionLoading}
                             onClick={() => this.handleGenerateAndSave(detail)}
                             title="根据 cellMap 反推测试用例并落库">
                         <ThunderboltOutlined /> LLM 自动生成 + 落库
-                    </button>
-                    <button className="rf-btn rf-btn-xs rf-btn-success" disabled={testRunLoading || testCases.length === 0}
+                    </Button>
+                    <Button color="green" size="small" disabled={testRunLoading || testCases.length === 0}
                             onClick={() => this.handleRunSavedTests(detail)}>
                         <PlayCircleOutlined /> 跑全部 saved tests
-                    </button>
+                    </Button>
                 </div>
 
                 {testsLoading && (
@@ -557,11 +558,11 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                                     </span>
                                 )}
                             </div>
-                            <button className="rf-btn rf-btn-xs rf-btn-link" disabled={actionLoading}
+                            <Button type="link" size="small" disabled={actionLoading}
                                     onClick={() => this.handleDeleteTestCase(detail, tc.testCaseId)}
                                     style={{color: '#cf1322', padding: '0 4px'}}>
                                 <DeleteOutlined />
-                            </button>
+                            </Button>
                         </div>
                         {tc.description && (
                             <div style={{fontSize: 11, color: '#666', marginBottom: 4, fontStyle: 'italic'}}>
@@ -610,9 +611,9 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                             {detail.createdAt?.substring(0, 16).replace('T', ' ')}
                         </div>
                     </div>
-                    <button className="rf-btn rf-btn-xs rf-btn-default" onClick={() => this.setState({detail: null, detailTab: 'content', testCases: [], testRunResult: null, history: []})}>
+                    <Button size="small" onClick={() => this.setState({detail: null, detailTab: 'content', testCases: [], testRunResult: null, history: []})}>
                         <ArrowLeftOutlined /> 返回列表
-                    </button>
+                    </Button>
                 </div>
 
                 {/* 元信息 */}
@@ -642,32 +643,32 @@ export default class DraftsView extends Component<DraftsViewProps, DraftsViewSta
                 {/* 操作按钮 */}
                 <div style={{padding: '0 12px 12px', display: 'flex', gap: 6, flexWrap: 'wrap'}}>
                     {detail.status === 'DRAFT' && (
-                        <button className="rf-btn rf-btn-xs rf-btn-primary" disabled={this.state.actionLoading}
+                        <Button type="primary" size="small" disabled={this.state.actionLoading}
                                 onClick={() => this.handleAction('submit', detail.draftId)}>
                             <SendOutlined /> 提交审批
-                        </button>
+                        </Button>
                     )}
                     {detail.status === 'PENDING_REVIEW' && (<>
-                        <button className="rf-btn rf-btn-xs rf-btn-success" disabled={this.state.actionLoading}
+                        <Button color="green" size="small" disabled={this.state.actionLoading}
                                 onClick={() => this.handleApproveClick(detail)}>
                             <CheckOutlined /> 审批通过
-                        </button>
-                        <button className="rf-btn rf-btn-xs rf-btn-danger" disabled={this.state.actionLoading}
+                        </Button>
+                        <Button color="danger" size="small" disabled={this.state.actionLoading}
                                 onClick={() => this.handleRejectClick(detail)}>
                             <CloseOutlined /> 拒绝
-                        </button>
+                        </Button>
                     </>)}
                     {detail.status === 'APPROVED' && (
-                        <button className="rf-btn rf-btn-xs rf-btn-primary" disabled={this.state.actionLoading}
+                        <Button type="primary" size="small" disabled={this.state.actionLoading}
                                 onClick={() => this.handleApplyClick(detail)}>
                             <SaveOutlined /> 应用到包
-                        </button>
+                        </Button>
                     )}
-                    <button className="rf-btn rf-btn-xs rf-btn-default" disabled={this.state.actionLoading}
+                    <Button size="small" disabled={this.state.actionLoading}
                             onClick={() => this.handleTestRun(detail)}
                             title="生成模板 + 跑一次(不落库)">
                         <PlayCircleOutlined /> 生成 + 跑测试
-                    </button>
+                    </Button>
                 </div>
 
                 {this.renderDetailTabs(detail)}

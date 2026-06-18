@@ -1,4 +1,5 @@
 import React, {Component, ChangeEvent, ReactNode} from 'react';
+import {Button} from 'antd';
 import {startSimulation, SimulationStartResult} from '../action.js';
 
 import {alert} from '@/utils/modal';
@@ -112,11 +113,11 @@ class SimulationConfigForm extends Component<SimulationConfigFormProps, Simulati
                            value={state.endTime}
                            onChange={this.handleChange.bind(this, 'endTime')}/>
                 </div>
-                <button className="rf-btn rf-btn-primary rf-btn-sm rf-btn-block"
+                <Button type="primary" size="small" block
                         disabled={state.submitting}
                         onClick={this.handleSubmit.bind(this)}>
                     {state.submitting ? '启动中...' : '启动仿真'}
-                </button>
+                </Button>
             </div>
         );
     }

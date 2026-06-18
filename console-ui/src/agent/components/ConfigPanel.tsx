@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Button} from 'antd';
 import {httpGet, formPost, jsonPut} from '../../api/client.js';
 
 import {alert} from '@/utils/modal';
@@ -170,12 +171,12 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
 
                 {/* Actions */}
                 <div style={{display: 'flex', gap: 8}}>
-                    <button className="rf-btn rf-btn-sm rf-btn-primary" onClick={this.handleSave}>
+                    <Button type="primary" size="small" onClick={this.handleSave}>
                         <SaveOutlined style={{marginRight: 4}} />保存
-                    </button>
-                    <button className="rf-btn rf-btn-sm rf-btn-default" onClick={this.handleTest} disabled={testing}>
+                    </Button>
+                    <Button size="small" onClick={this.handleTest} disabled={testing}>
                         {testing ? '测试中...' : '测试连接'}
-                    </button>
+                    </Button>
                     {testResult && (
                         <span style={{fontSize: 12, lineHeight: '30px'}}>{testResult}</span>
                     )}

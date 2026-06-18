@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Button, Space} from 'antd';
 import Grid from '../../components/grid/component/Grid.jsx';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
@@ -113,8 +114,8 @@ export default class SimulatorPage extends Component<SimulatorPageProps, Simulat
                             border: 'solid 1px rgb(219, 215, 215)',
                             borderRadius: '5px'
                         }}>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-primary" type="button" onClick={() => {
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button type="primary" htmlType="button" onClick={() => {
                                     const ce = window.parent.componentEvent;
                                     ce.eventEmitter.emit(ce.SHOW_LOADING);
                                     action.doTest({
@@ -135,10 +136,10 @@ export default class SimulatorPage extends Component<SimulatorPageProps, Simulat
                                         ce.eventEmitter.emit(ce.HIDE_LOADING);
                                     }.bind(this));
                                 }}><ThunderboltOutlined /> 测试决策包
-                                </button>
-                            </div>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-info" type="button" onClick={() => {
+                                </Button>
+                            </Space>
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button color="blue" htmlType="button" onClick={() => {
                                     const ce = window.parent.componentEvent;
                                     ce.eventEmitter.emit(ce.SHOW_LOADING);
                                     event.eventEmitter.emit(event.OPEN_FLOW_DIALOG, {
@@ -148,24 +149,24 @@ export default class SimulatorPage extends Component<SimulatorPageProps, Simulat
                                         data: this.state.simulatorCategoryData
                                     });
                                 }}><RetweetOutlined /> 测试决策流
-                                </button>
-                            </div>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-success" type="button" onClick={() => {
+                                </Button>
+                            </Space>
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button color="green" htmlType="button" onClick={() => {
                                     event.eventEmitter.emit(event.OPEN_RETE_DIAGRAM_DIALOG, this.state.files);
                                 }}><ClusterOutlined /> 查看Rete树
-                                </button>
-                            </div>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-warning" type="button" onClick={() => {
+                                </Button>
+                            </Space>
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button color="gold" htmlType="button" onClick={() => {
                                     action.exportExcelTemplate(this.state.files);
                                 }}><DownloadOutlined /> 下载Excel测试数据模版
-                                </button>
-                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
+                                </Button>
+                                <Button color="danger" htmlType="button" onClick={() => {
                                     event.eventEmitter.emit(event.OPEN_IMPORT_EXCEL_DIALOG, this.state.files);
                                 }}><UploadOutlined /> 上传Excel测试数据
-                                </button>
-                            </div>
+                                </Button>
+                            </Space>
                         </div>
                         <div className="rf-row" style={{margin: 0}}>
                             <div className="rf-col-xs-3 rf-col-md-3" style={{paddingLeft: 0, paddingRight: '5px'}}>

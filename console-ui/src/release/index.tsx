@@ -171,7 +171,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                 </span>
                             </div>
                             {env.execEnv === 'prod' && env.projectVersion && (
-                                <button className="rf-btn rf-btn-default rf-btn-xs"
+                                <Button size="small"
                                         onClick={() => {
                                             confirm('确认回滚到上一版本？', (ok) => {
                                                 if (ok) {
@@ -181,7 +181,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                             });
                                         }}>
                                     回滚
-                                </button>
+                                </Button>
                             )}
                         </div>
                         {env.packageId && (
@@ -223,18 +223,18 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             </div>
                             {task.status === 'pending' && (
                                 <div>
-                                    <button className="rf-btn rf-btn-success rf-btn-xs" style={{marginRight: 4}}
+                                    <Button color="green" size="small" style={{marginRight: 4}}
                                             onClick={() => {
                                                 confirm('确认通过该审批？', (ok) => {
                                                     if (ok) this.props.dispatch(action.approveTask(task.id, ''));
                                                 });
-                                            }}>通过</button>
-                                    <button className="rf-btn rf-btn-danger rf-btn-xs"
+                                            }}>通过</Button>
+                                    <Button color="danger" size="small"
                                             onClick={() => {
                                                 prompt('驳回原因', (remark: string | null) => {
                                                     if (remark !== null) this.props.dispatch(action.rejectTask(task.id, remark));
                                                 });
-                                            }}>驳回</button>
+                                            }}>驳回</Button>
                                 </div>
                             )}
                         </div>
@@ -338,7 +338,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             <option value="vip">VIP节点</option>
                             <option value="default">默认节点</option>
                         </select>
-                        <button className="rf-btn rf-btn-warning rf-btn-sm" onClick={() => {
+                        <Button color="gold" size="small" icon={<UploadOutlined/>} onClick={() => {
                             const packageId = (document.getElementById('canary-package') as HTMLInputElement).value;
                             const version = (document.getElementById('canary-version') as HTMLInputElement).value;
                             const execEnv = (document.getElementById('canary-env') as HTMLSelectElement).value;
@@ -354,9 +354,8 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                 }
                             });
                         }}>
-                            <UploadOutlined style={{marginRight: 4}} />
                             灰度部署
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -429,7 +428,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             <input id="gray-target" placeholder="目标版本 git tag" style={{flex: 1, padding: '4px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 3}}/>
                             <input id="gray-baseline" placeholder="基准版本 git tag" style={{flex: 1, padding: '4px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 3}}/>
                         </div>
-                        <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={() => {
+                        <Button type="primary" size="small" onClick={() => {
                             const name = (document.getElementById('gray-name') as HTMLInputElement).value;
                             const type = (document.getElementById('gray-type') as HTMLSelectElement).value;
                             const packageId = (document.getElementById('gray-package') as HTMLInputElement).value;
@@ -455,7 +454,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                         }}>
                             <PlusOutlined style={{marginRight: 4}} />
                             创建策略
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -512,7 +511,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                         <input id="shadow-flow-id" placeholder="陪跑流程ID(可选)" style={{width: 120, padding: '4px 8px', fontSize: 12, border: '1px solid #ddd', borderRadius: 3}}/>
                         <input id="shadow-sample-rate" placeholder="采样率(%)" type="number" min="0" max="100" style={{width: 80, padding: '4px 8px', fontSize: 12, border: '1px solid #ddd', borderRadius: 3}}/>
                     </div>
-                    <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={() => {
+                    <Button type="primary" size="small" onClick={() => {
                         const mainPath = (document.getElementById('shadow-main-path') as HTMLInputElement).value;
                         const shadowPath = (document.getElementById('shadow-shadow-path') as HTMLInputElement).value;
                         const flowId = (document.getElementById('shadow-flow-id') as HTMLInputElement).value;
@@ -530,7 +529,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                     }}>
                         <PlusOutlined style={{marginRight: 4}} />
                         创建配置
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

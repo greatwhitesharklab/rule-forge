@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import {Button, Space} from 'antd';
 import Grid from '../../components/grid/component/Grid.jsx';
 import * as action from '../action.js';
 import * as refEvent from '../../reference/event.js';
@@ -112,8 +113,8 @@ class VariableEditor extends Component<VariableEditorProps> {
                 <Splitter orientation='vertical' position='50%'>
                     <div style={{padding: '0px'}}>
                         <div style={{margin: '2px'}}>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-primary" type="button" onClick={(e) => {
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button type="primary" htmlType="button" onClick={(e) => {
                                     prompt("请输入类名称", function (masterName) {
                                         if (!masterName) {
                                             return;
@@ -121,20 +122,20 @@ class VariableEditor extends Component<VariableEditorProps> {
                                         dispatch(action.addMaster(masterName))
                                     });
                                 }}><PlusCircleOutlined /> 添加
-                                </button>
-                            </div>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
+                                </Button>
+                            </Space>
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button color="danger" htmlType="button" onClick={() => {
                                     dispatch(action.save(false, file))
                                 }}><i className="rf rf-save"/> 保存
-                                </button>
-                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
+                                </Button>
+                                <Button color="danger" htmlType="button" onClick={() => {
                                     dispatch(action.save(true, file))
                                 }} style={{display: 'none'}}><i className="rf rf-savenewversion"/> 保存为新版本
-                                </button>
-                            </div>
-                            {/* <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-info" type="button" onClick={(e) => {
+                                </Button>
+                            </Space>
+                            {/* <Space size="small" style={{margin: '2px'}}>
+                                <Button color="blue" htmlType="button" onClick={(e) => {
                                     if (!this.currentData) {
                                         alert('请先选择一条具体的变量');
                                         return;
@@ -149,8 +150,8 @@ class VariableEditor extends Component<VariableEditorProps> {
                                     };
                                     refEvent.eventEmitter.emit(refEvent.OPEN_REFERENCE_DIALOG, data, title);
                                 }}><i className="rf rf-link"/> 查看引用
-                                </button>
-                            </div> */}
+                                </Button>
+                            </Space> */}
                         </div>
 
                         <Grid headers={masterGridHeaders} dispatch={dispatch} rows={masterData}
@@ -165,12 +166,12 @@ class VariableEditor extends Component<VariableEditorProps> {
                     </div>
                     <div style={{padding: '0px'}}>
                         <div style={{margin: '2px'}}>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-primary" type="button" onClick={(e) => {
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button type="primary" htmlType="button" onClick={(e) => {
                                     dispatch(action.addSlave())
                                 }}><PlusCircleOutlined /> 添加字段
-                                </button>
-                            </div>
+                                </Button>
+                            </Space>
                         </div>
                         <Grid headers={slaveGridHeaders} dispatch={dispatch} operationConfig={slaveGridOperationCol}
                               rows={masterRowData.variables || []} rowClick={(rowData: VariableItem) => {

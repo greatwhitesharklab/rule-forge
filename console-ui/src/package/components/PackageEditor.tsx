@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Button, Space} from 'antd';
 import {connect} from 'react-redux';
 import {Dispatch} from 'redux';
 import Grid from '../../components/grid/component/Grid.tsx';
@@ -137,57 +138,57 @@ class PackageEditor extends Component<PackageEditorProps> {
                 <Splitter orientation='vertical' position='50%' limit='300'>
                     <div>
                         <div style={{margin: '2px'}}>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-primary" type="button" onClick={() => {
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button type="primary" htmlType="button" onClick={() => {
                                     event.eventEmitter.emit(event.OPEN_CREATE_PACKAGE_DIALOG, {
                                         create: true,
                                         title: '添加知识包'
                                     });
                                 }}><PlusCircleOutlined /> 添加包
-                                </button>
-                            </div>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-success" type="button" onClick={() => {
+                                </Button>
+                            </Space>
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button color="green" htmlType="button" onClick={() => {
                                     dispatch(action.save(false, project))
                                 }}><SaveOutlined /> 保存
-                                </button>
-                                <button className="rf-btn rf-btn-success" type="button" onClick={() => {
+                                </Button>
+                                <Button color="green" htmlType="button" onClick={() => {
                                     if (this.currentPackage) {
                                         event.eventEmitter.emit(event.OPEN_VERSION_DIALOG, this.currentPackage);
                                     } else {
                                         alert('请先选择一个知识包！');
                                     }
                                 }}><SaveOutlined /> 生成版本
-                                </button>
-                            </div>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-info" type="button" onClick={() => {
+                                </Button>
+                            </Space>
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button color="blue" htmlType="button" onClick={() => {
                                     if (this.currentPackage) {
                                         dispatch(action.apply(project, packageConfig, this.currentPackage))
                                     } else {
                                         alert('请先选择一个知识包！');
                                     }
                                 }}><SendOutlined /> 发起审批
-                                </button>
-                            </div>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-warning" type="button" onClick={() => {
+                                </Button>
+                            </Space>
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button color="gold" htmlType="button" onClick={() => {
                                     if (this.currentPackage) {
                                         action.refreshKnowledgeCache(project, packageConfig, this.currentPackage);
                                     } else {
                                         alert('请先选择一个知识包！');
                                     }
                                 }}><CloudUploadOutlined /> 发布测试
-                                </button>
-                                <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
+                                </Button>
+                                <Button color="danger" htmlType="button" onClick={() => {
                                     if (this.currentPackage) {
                                         event.eventEmitter.emit(event.OPEN_SIMULATOR_DIALOG, this.currentPackage);
                                     } else {
                                         alert('请先选择一个知识包！');
                                     }
                                 }}><ThunderboltOutlined /> 仿真测试
-                                </button>
-                            </div>
+                                </Button>
+                            </Space>
                         </div>
 
                         <Grid headers={masterGridHeaders} dispatch={dispatch} rows={masterData}
@@ -200,8 +201,8 @@ class PackageEditor extends Component<PackageEditorProps> {
                     </div>
                     <div>
                         <div style={{margin: '2px'}}>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-primary" type="button" onClick={() => {
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button type="primary" htmlType="button" onClick={() => {
                                     if (masterRowData.resourceItems) {
                                         event.eventEmitter.emit(event.OPEN_CREATE_PACKAGE_ITEM_DIALOG, {
                                             create: true,
@@ -211,8 +212,8 @@ class PackageEditor extends Component<PackageEditorProps> {
                                         alert('请先选择一个知识包！');
                                     }
                                 }}><i className="fa fa-plus-square"/> 添加文件
-                                </button>
-                            </div>
+                                </Button>
+                            </Space>
                         </div>
                         <Grid headers={slaveGridHeaders} dispatch={dispatch} operationConfig={slaveGridOperationCol}
                               rows={masterRowData.resourceItems || []}/>

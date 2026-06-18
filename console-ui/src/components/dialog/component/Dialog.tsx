@@ -1,5 +1,5 @@
 import { Component, ReactNode } from 'react';
-import {Modal} from 'antd';
+import {Button, Modal} from 'antd';
 import * as event from '../../../frame/event.js';
 
 interface DialogButton {
@@ -96,13 +96,20 @@ export default class Dialog extends Component<DialogProps, DialogState> {
 
     render() {
         const { visible, title, body, buttons } = this.state;
-        const buttonElements = (buttons || []).map((btn, index) => (
-            <button type="button" key={index} className={btn.className} onClick={() => btn.click(this.props.dispatch)}>
-                {typeof btn.icon === 'string' ? <i className={btn.icon} /> : btn.icon} {btn.name}
-            </button>
-        ));
+        const buttonElements = (buttons || []).map((btn, index) => {
+            const cls = btn.className || '';
+            const btnProps: {type?: 'primary' | 'link'; danger?: boolean} = {};
+            if (cls.includes('rf-btn-primary')) btnProps.type = 'primary';
+            else if (cls.includes('rf-btn-danger')) btnProps.danger = true;
+            else if (cls.includes('rf-btn-link')) btnProps.type = 'link';
+            return (
+                <Button key={index} {...btnProps} onClick={() => btn.click(this.props.dispatch)}>
+                    {typeof btn.icon === 'string' ? <i className={btn.icon} /> : btn.icon} {btn.name}
+                </Button>
+            );
+        });
         return (
-            <Modal open={visible} title={title} footer={buttonElements} onCancel={() => this._close()}>
+            <Modal open={visible} title={title} footer={buttonElements} onCancel={() => this._close()} forceRender>
                 {body}
             </Modal>
         );

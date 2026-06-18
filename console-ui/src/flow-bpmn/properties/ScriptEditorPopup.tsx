@@ -1,4 +1,5 @@
 import {Component, createRef} from 'react';
+import {Button} from 'antd';
 import {EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter} from '@codemirror/view';
 import {EditorState} from '@codemirror/state';
 import {javascript} from '@codemirror/lang-javascript';
@@ -143,8 +144,8 @@ export default class ScriptEditorPopup extends Component<ScriptEditorPopupProps,
                     </div>
                     <div className="rf-script-popup-body" ref={this.containerRef}></div>
                     <div className="rf-script-popup-footer">
-                        <button className="rf-btn rf-btn-sm rf-btn-default" onClick={this.handleCancel}>取消</button>
-                        <button className="rf-btn rf-btn-sm rf-btn-primary" onClick={this.handleOk} style={{marginLeft: 8}}>确定</button>
+                        <Button size="small" onClick={this.handleCancel}>取消</Button>
+                        <Button type="primary" size="small" onClick={this.handleOk} style={{marginLeft: 8}}>确定</Button>
                     </div>
                 </div>
             </div>

@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Button} from 'antd';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
@@ -80,11 +81,11 @@ export default class ItemDialog extends Component<ItemDialogProps, ItemDialogSta
                         <input type="text" className="rf-form-control" name="itemPath" disabled
                             value={this.state.itemPath}/>
                         <span className="rf-input-group-btn">
-                            <button type="button" className="rf-btn rf-btn-default" onClick={() => {
+                            <Button htmlType="button"  onClick={() => {
                                 componentEvent.eventEmitter.emit(componentEvent.OPEN_KNOWLEDGE_TREE_DIALOG, {project: this.props.project, callback: function (this: ItemDialog, file: string, version: string) {
                                      this.setState({itemPath: 'jcr:' + file, itemVersion: version});
                                 }.bind(this)});
-                            }}>选择文件</button>
+                            }}>选择文件</Button>
                         </span>
                     </div>
                     {this.state.errors.itemPath && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemPath}</div>}

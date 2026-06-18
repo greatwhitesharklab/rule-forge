@@ -31,18 +31,29 @@ export default class SourceDialog extends Component<SourceDialogProps, SourceDia
 
     componentDidMount() {
         const editorId = this.editorId;
-        const codeMirror = CodeMirror.fromTextArea(document.getElementById(editorId) as HTMLTextAreaElement, {
-            mode: 'xml',
-            lineNumbers: true
-        });
+        // V5.101.4:CodeMirror 改懒初始化 —— CommonDialog 换 antd Modal 后,body 在 portal 里,
+        // componentDidMount 时 textarea 还没挂到 DOM(原手写 modal 是 display:none 始终在 DOM)。
+        // 改成对话框真正打开(OPEN 事件 + setState visible 后)才 init。
+        const ensureEditor = (): CodeMirror.Editor => {
+            let cm = this.state.codeMirror;
+            if (!cm) {
+                cm = CodeMirror.fromTextArea(document.getElementById(editorId) as HTMLTextAreaElement, {
+                    mode: 'xml',
+                    lineNumbers: true
+                });
+                this.setState({codeMirror: cm});
+            }
+            return cm;
+        };
         event.eventEmitter.on(event.OPEN_SOURCE_DIALOG, (file: string, content: string) => {
-            this.setState({file, codeMirror, title: `[${file}]源码`, visible: true});
+            this.setState({file, title: `[${file}]源码`, visible: true});
             setTimeout(function () {
+                const cm = ensureEditor();
                 const winHeight = window.innerHeight;
                 const height = winHeight > 800 ? winHeight - 160 : winHeight;
-                codeMirror.setSize('100%', height + 'px');
-                codeMirror.setValue(content);
-                codeMirror.refresh();
+                cm.setSize('100%', height + 'px');
+                cm.setValue(content);
+                cm.refresh();
             }, 400);
         });
         event.eventEmitter.on(event.CLOSE_SOURCE_DIALOG, () => {

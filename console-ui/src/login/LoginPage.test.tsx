@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {Button} from 'antd';
 const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
     const alerts: { message: unknown; cb?: () => void }[] = [];
     const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
@@ -147,9 +148,9 @@ describe('LoginPage Component', () => {
                                     onChange={(e) => this.setState({ password: e.target.value })} />
                             </div>
                             {error && <div className="rf-alert rf-alert-danger">{error}</div>}
-                            <button type="submit" className="rf-btn rf-btn-primary rf-btn-block" disabled={loading}>
+                            <Button htmlType="submit" type="primary" block disabled={loading}>
                                 {loading ? '登录中...' : '登 录'}
-                            </button>
+                            </Button>
                         </form>
                     </div>
                 );

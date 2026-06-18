@@ -12,7 +12,7 @@
  *   prompt('请输入名称', (name) => name && doCreate(name));
  */
 import React, {useState} from 'react';
-import {Modal, Input, message as antdMessage, App} from 'antd';
+import {Button, Modal, Input, message as antdMessage, App} from 'antd';
 import {createRoot} from 'react-dom/client';
 
 let appMessageApi: ReturnType<typeof App.useApp>['message'] | null = null;
@@ -110,18 +110,25 @@ export function dialog(options: DialogOptions): {close: () => void} {
             <Modal
                 title={options.title}
                 open={open}
-                footer={buttonEntries.length > 0 ? buttonEntries.map(([key, btn]) => (
-                    <button
-                        key={key}
-                        className={`rf-btn ${btn.className || 'rf-btn-default'}`}
-                        onClick={() => {
-                            if (btn.callback) btn.callback();
-                            close();
-                        }}
-                    >
-                        {btn.label || key}
-                    </button>
-                )) : undefined}
+                footer={buttonEntries.length > 0 ? buttonEntries.map(([key, btn]) => {
+                    const cls = btn.className || 'rf-btn-default';
+                    const btnProps: {type?: 'primary' | 'link'; color?: 'danger'} = {};
+                    if (cls.includes('rf-btn-primary')) btnProps.type = 'primary';
+                    else if (cls.includes('rf-btn-danger')) btnProps.color = 'danger';
+                    else if (cls.includes('rf-btn-link')) btnProps.type = 'link';
+                    return (
+                        <Button
+                            key={key}
+                            {...btnProps}
+                            onClick={() => {
+                                if (btn.callback) btn.callback();
+                                close();
+                            }}
+                        >
+                            {btn.label || key}
+                        </Button>
+                    );
+                }) : undefined}
                 onCancel={close}
             >
                 <div dangerouslySetInnerHTML={{__html: options.message}}/>
