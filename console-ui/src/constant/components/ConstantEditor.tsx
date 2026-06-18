@@ -93,7 +93,7 @@ class ConstantEditor extends React.Component<ConstantEditorProps> {
             ]
         };
         return (
-            <div className="rf-row" style={{margin: '0px'}}>
+            <div className="ff-row" style={{margin: '0px'}}>
                 <ReferenceDialog/>
                 <Splitter orientation='vertical' position='40%'>
                     <div>

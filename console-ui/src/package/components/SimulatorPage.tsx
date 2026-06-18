@@ -168,8 +168,8 @@ export default class SimulatorPage extends Component<SimulatorPageProps, Simulat
                                 </Button>
                             </Space>
                         </div>
-                        <div className="rf-row" style={{margin: 0}}>
-                            <div className="rf-col-xs-3 rf-col-md-3" style={{paddingLeft: 0, paddingRight: '5px'}}>
+                        <div className="ff-row" style={{margin: 0}}>
+                            <div className="ff-col-3 ff-col-3" style={{paddingLeft: 0, paddingRight: '5px'}}>
                                 <Grid selectFirst={true} headers={masterHeaders} rows={this.state.simulatorCategoryData}
                                       rowClick={(rowData: SimulatorCategory, rowIndex: number) => {
                                           const data = this.state.simulatorCategoryData;
@@ -178,7 +178,7 @@ export default class SimulatorPage extends Component<SimulatorPageProps, Simulat
                                           }.bind(this), 10);
                                       }}/>
                             </div>
-                            <div className="rf-col-xs-9 rf-col-md-9" style={{padding: 0}}>
+                            <div className="ff-col-9 ff-col-9" style={{padding: 0}}>
                                 <Grid headers={slaveHeaders} rows={(this.state.simulatorCategoryRow as SimulatorCategory).variables || []}
                                       uniqueKey={true}/>
                             </div>

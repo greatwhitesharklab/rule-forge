@@ -120,13 +120,13 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
         const body = (
             <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <div className="rf-form-group" style={{ display: 'flex', alignItems: 'center' }}>
+                    <div className="ff-group" style={{ display: 'flex', alignItems: 'center' }}>
                         <label style={{ fontSize: '15px', width: '120px', color: 'var(--rf-text-primary)' }}>输入数据</label>
                         <Select value={this.state.type} onChange={(v: string) => {
                             this.setState({ type: v as 'form' | 'json' });
                         }} options={[{value: 'form', label: '表单'}, {value: 'json', label: 'json'}]}/>
                     </div>
-                    <div className="rf-form-group" style={{ display: 'flex', alignItems: 'center' }}>
+                    <div className="ff-group" style={{ display: 'flex', alignItems: 'center' }}>
                         <Input type="text"
                             
                             name="packageName"
@@ -164,7 +164,7 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                         <label>{item.name}</label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', paddingLeft: 'var(--rf-space-3)' }}>
                             {((item.variables || []).map((ele, i) => (
-                                <div key={i} className="rf-form-group" style={{ marginLeft: 'var(--rf-space-3)', display: 'flex', alignItems: 'center' }}>
+                                <div key={i} className="ff-group" style={{ marginLeft: 'var(--rf-space-3)', display: 'flex', alignItems: 'center' }}>
                                     <label style={{ minWidth: '80px', textAlign: 'right', color: 'var(--rf-text-secondary)' }}>{ele.label}</label>
                                     <Input type="text"  style={{ marginLeft: 'var(--rf-space-3)' }} value={ele.defaultValue || ''} onChange={e => this.setState({
                                         variableData: this.state.variableData.map((vd, key2) => {
@@ -179,7 +179,7 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                         </div>
                     </div>
                 ))}
-                <div className="rf-form-group" style={{ height: '300px', marginTop: 'var(--rf-space-3)', display: this.state.type === 'json' ? 'block' : 'none' }}>
+                <div className="ff-group" style={{ height: '300px', marginTop: 'var(--rf-space-3)', display: this.state.type === 'json' ? 'block' : 'none' }}>
                     <textarea id='json-editor'></textarea>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -202,7 +202,7 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                         <label>{item.name}</label>
                         <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                             {(item.variables || []).map((ele, ei) => (
-                                <div key={ei} className="rf-form-group" style={{ marginLeft: 'var(--rf-space-3)', display: 'flex', alignItems: 'center' }}>
+                                <div key={ei} className="ff-group" style={{ marginLeft: 'var(--rf-space-3)', display: 'flex', alignItems: 'center' }}>
                                     <label style={{ minWidth: '80px', textAlign: 'right', color: 'var(--rf-text-secondary)' }}>{ele.label}</label>
                                     <Input type="text"  style={{ marginLeft: 'var(--rf-space-3)' }} readOnly value={ele.defaultValue || ''} />
                                 </div>

@@ -81,7 +81,7 @@ export default class RenameDialog extends Component<RenameDialogProps, RenameDia
             }.bind(this)
         }];
         const body = (
-            <div className="rf-form-group">
+            <div className="ff-group">
                 <label>名称</label>
                 <Input name="newFileNameForRename" value={this.state.fileName}
                        onChange={function (e: React.ChangeEvent<HTMLInputElement>) {

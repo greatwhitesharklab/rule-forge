@@ -137,12 +137,12 @@ describe('LoginPage Component', () => {
                     <div>
                         <h2>RuleForge</h2>
                         <form onSubmit={this.handleSubmit}>
-                            <div className="rf-form-group">
+                            <div className="ff-group">
                                 <Input type="text"  placeholder="用户名"
                                     value={username}
                                     onChange={(e) => this.setState({ username: e.target.value })} />
                             </div>
-                            <div className="rf-form-group">
+                            <div className="ff-group">
                                 <Input type="password"  placeholder="密码"
                                     value={password}
                                     onChange={(e) => this.setState({ password: e.target.value })} />

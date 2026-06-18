@@ -154,10 +154,10 @@ export default class BatchTestDialog extends Component<BatchTestDialogProps, Bat
                             {progress}%
                         </div>
                     </div>
-                    <div className="rf-row">
-                        <div className="rf-col-xs-4">总行数: {totalRows}</div>
-                        <div className="rf-col-xs-4 rf-text-success">成功: {successCount}</div>
-                        <div className="rf-col-xs-4 rf-text-danger">失败: {errorCount}</div>
+                    <div className="ff-row">
+                        <div className="ff-col-4">总行数: {totalRows}</div>
+                        <div className="ff-col-4 rf-text-success">成功: {successCount}</div>
+                        <div className="ff-col-4 rf-text-danger">失败: {errorCount}</div>
                     </div>
                 </div>
             );
@@ -166,10 +166,10 @@ export default class BatchTestDialog extends Component<BatchTestDialogProps, Bat
             body = (
                 <div style={{padding: '15px'}}>
                     <h4 className="rf-text-success">批量测试完成</h4>
-                    <div className="rf-row" style={{marginBottom: '10px'}}>
-                        <div className="rf-col-xs-4">总行数: {totalRows}</div>
-                        <div className="rf-col-xs-4 rf-text-success">成功: {successCount}</div>
-                        <div className="rf-col-xs-4 rf-text-danger">失败: {errorCount}</div>
+                    <div className="ff-row" style={{marginBottom: '10px'}}>
+                        <div className="ff-col-4">总行数: {totalRows}</div>
+                        <div className="ff-col-4 rf-text-success">成功: {successCount}</div>
+                        <div className="ff-col-4 rf-text-danger">失败: {errorCount}</div>
                     </div>
                     <form id={exportFormId} method="post"
                           action={apiBase() + '/packageeditor/exportBatchTestExcel'}>

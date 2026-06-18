@@ -38,20 +38,20 @@ export default class ExportExcelDataDialog extends Component<ExportExcelDataDial
             <div>
                 <form id={formId} method="post" action={apiBase() + '/packageeditor/exportExcelData'}>
                     <div>
-                        <div className="rf-form-group">
+                        <div className="ff-group">
                             <label>开始时间:</label>
                             <Input type="date"  name="startTime" autoComplete="off"/>
                         </div>
-                        <div className="rf-form-group">
+                        <div className="ff-group">
                             <label>结束时间:</label>
                             <Input type="date"  name="endTime" autoComplete="off"/>
                         </div>
-                        <div className="rf-form-group">
+                        <div className="ff-group">
                             <label>项目名:</label>
                             <Input type="text"  name="projectName"
                                    autoComplete="off"/>
                         </div>
-                        <div className="rf-form-group">
+                        <div className="ff-group">
                             <label>包名:</label>
                             <Input type="text"  name="packageName"
                                    autoComplete="off"/>

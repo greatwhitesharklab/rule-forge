@@ -68,7 +68,7 @@ export default class CreateFileDialog extends Component<CreateFileDialogProps, C
     render() {
         const {dispatch} = this.props;
         const body = (
-            <div className="rf-form-group">
+            <div className="ff-group">
                 <label>文件名称</label>
                 <Input  name="newFileName" value={this.state.newFileName}
                        onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({newFileName: e.target.value, errors: {}}) }.bind(this)}/>

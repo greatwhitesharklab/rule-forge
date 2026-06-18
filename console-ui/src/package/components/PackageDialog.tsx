@@ -65,7 +65,7 @@ export default class PackageDialog extends Component<PackageDialogProps, Package
         const {dispatch} = this.props;
         const body = (
             <div>
-                <div className="rf-form-group">
+                <div className="ff-group">
                     <label>包ID:</label>
                     <Input type="text"  name="packageId"
                         value={this.state.packageId}
@@ -73,7 +73,7 @@ export default class PackageDialog extends Component<PackageDialogProps, Package
                         onChange={(e) => this.setState({packageId: e.target.value, errors: {...this.state.errors, packageId: undefined}})}/>
                     {this.state.errors.packageId && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.packageId}</div>}
                 </div>
-                <div className="rf-form-group">
+                <div className="ff-group">
                     <label>包名称:</label>
                     <Input type="text"  name="packageName"
                         value={this.state.packageName}

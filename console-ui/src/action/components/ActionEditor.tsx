@@ -160,8 +160,8 @@ class ActionEditor extends Component<ActionEditorProps> {
                         <SelectMethodDialog/>
                     </div>
                     <div>
-                        <div className="rf-row" style={{margin: '0px'}}>
-                            <div className="rf-col-md-6 rf-col-xs-6" style={{padding: '0px 4px 0px 2px'}}>
+                        <div className="ff-row" style={{margin: '0px'}}>
+                            <div className="ff-col-6 ff-col-6" style={{padding: '0px 4px 0px 2px'}}>
                                 <div>
                                     <Space size="small">
                                         <Button type="primary" htmlType="button" onClick={e => {
@@ -176,7 +176,7 @@ class ActionEditor extends Component<ActionEditorProps> {
                                     dispatch(action.loadMethodData(rowData));
                                 }}/>
                             </div>
-                            <div className="rf-col-md-6 rf-col-xs-6" style={{padding: '0px 2px 0px 1px'}}>
+                            <div className="ff-col-6 ff-col-6" style={{padding: '0px 2px 0px 1px'}}>
                                 <div>
                                     <Space size="small">
                                         <Button type="primary" htmlType="button" onClick={e => {

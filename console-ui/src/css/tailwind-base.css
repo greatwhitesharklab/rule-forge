@@ -182,6 +182,25 @@ a:hover { color: var(--rf-primary-hover); }
 .rf-form-control::placeholder { color: var(--rf-text-disabled); }
 .rf-form-group { margin-bottom: 16px; }
 
+/* V5.101.6 ff-* 表单栅格(替代 bootstrap rf-col 与 rf-form-group)。
+   原 rf-col 各断点(xs/sm/md/lg)CSS 都一样(非响应式,纯 N/12 宽度 + 12px gutter),
+   ff-col-N 复刻同值;ff-group 复刻 rf-form-group 行间距。布局零变化,仅去 bootstrap 类名。 */
+.ff-group { margin-bottom: 16px; }
+.ff-row { display: flex; flex-wrap: wrap; margin-left: -12px; margin-right: -12px; }
+.ff-col-1 { width: 8.333%; padding: 0 12px; }
+.ff-col-2 { width: 16.666%; padding: 0 12px; }
+.ff-col-3 { width: 25%; padding: 0 12px; }
+.ff-col-4 { width: 33.333%; padding: 0 12px; }
+.ff-col-5 { width: 41.666%; padding: 0 12px; }
+.ff-col-6 { width: 50%; padding: 0 12px; }
+.ff-col-7 { width: 58.333%; padding: 0 12px; }
+.ff-col-8 { width: 66.666%; padding: 0 12px; }
+.ff-col-9 { width: 75%; padding: 0 12px; }
+.ff-col-10 { width: 83.333%; padding: 0 12px; }
+.ff-col-11 { width: 91.666%; padding: 0 12px; }
+.ff-col-12 { width: 100%; padding: 0 12px; }
+.ff-col-offset-2 { margin-left: 16.666%; }
+
 /* ========== Grid ========== */
 .rf-row { display: flex; flex-wrap: wrap; margin-left: -12px; margin-right: -12px; }
 .rf-col-xs-1, .rf-col-sm-1, .rf-col-md-1, .rf-col-lg-1 { width: 8.333%; padding: 0 12px; }

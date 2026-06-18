@@ -55,7 +55,7 @@ export default class UpdateProjectDialog extends Component<UpdateProjectDialogPr
     render() {
         const {dispatch} = this.props;
         const body = (
-            <div className="rf-form-group">
+            <div className="ff-group">
                 <label>项目名称</label>
                 <Input name="projectName" value={this.state.projectName}
                        onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({projectName: e.target.value, errors: {}}) }.bind(this)}/>

@@ -118,15 +118,15 @@ export default class AddParamsDialog extends Component<AddParamsDialogProps, Add
         const {dispatch, file} = this.props;
         const body = (
             <div style={{maxHeight: '60vh', overflow: 'auto', padding: '0 15px'}}>
-                <div className="rf-row">
-                    <div className="rf-form-group rf-col-xs-6">
+                <div className="ff-row">
+                    <div className="ff-group ff-col-6">
                         <label>字段名称：</label>
                         <Input type="text" name="name" 
                             value={this.state.name}
                             onChange={(e) => this.setState({name: e.target.value, errors: {...this.state.errors, name: undefined}})}/>
                         {this.state.errors.name && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.name}</div>}
                     </div>
-                    <div className="rf-form-group rf-col-xs-6">
+                    <div className="ff-group ff-col-6">
                         <label>标题：</label>
                         <Input type="text" name="label" 
                             value={this.state.label}
@@ -134,15 +134,15 @@ export default class AddParamsDialog extends Component<AddParamsDialogProps, Add
                         {this.state.errors.label && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.label}</div>}
                     </div>
                 </div>
-                <div className="rf-row">
-                    <div className="rf-form-group rf-col-xs-6">
+                <div className="ff-row">
+                    <div className="ff-group ff-col-6">
                         <label>默认值:</label>
                         <Input type="text" name="defaultValue" 
                             value={this.state.defaultValue}
                             onChange={(e) => this.setState({defaultValue: e.target.value, errors: {...this.state.errors, defaultValue: undefined}})}/>
                         {this.state.errors.defaultValue && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.defaultValue}</div>}
                     </div>
-                    <div className="rf-form-group rf-col-xs-6">
+                    <div className="ff-group ff-col-6">
                         <label>数据类型:</label>
                         <Select
                             value={this.state.type}
@@ -152,14 +152,14 @@ export default class AddParamsDialog extends Component<AddParamsDialogProps, Add
                         {this.state.errors.type && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.type}</div>}
                     </div>
                 </div>
-                <div className="rf-form-group">
+                <div className="ff-group">
                     <label>实现逻辑:</label>
                     <Input.TextArea rows={3} maxLength={300}
                         value={this.state.logicComment}
                         onChange={(e) => this.setState({logicComment: e.target.value})}/>
                 </div>
-                <div className="rf-row">
-                    <div className="rf-form-group rf-col-xs-6">
+                <div className="ff-row">
+                    <div className="ff-group ff-col-6">
                         <label>状态:</label>
                         <Select
                             value={this.state.dsStatus}
