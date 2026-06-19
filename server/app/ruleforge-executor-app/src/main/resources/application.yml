@@ -28,6 +28,12 @@ spring:
         pool-name: ExecutorCloudSqlCP
 
 ruleforge:
+  # V5.101 — @RequestMapping("/${ruleforge.root.path}/flow") 等控制器要这个占位符。
+  # console-app 走 ruleforge-console-context.properties (@PropertySource) 提供 ruleforge,
+  # executor-app 缺等价配置 → 占位符 unresolved 启动失败。 这里显式提供 (值跟 console 一致,
+  # 保证 /ruleforge/flow 跨服务路径对齐)。 env-overridable.
+  root:
+    path: ${RULEFORGE_ROOT_PATH:ruleforge}
   knowledgeUpdateCycleV2: 300
   isKnowledgeUpdateRemoteV2: true
   console:
