@@ -91,60 +91,14 @@ a { color: var(--rf-primary); transition: color 0.2s; }
 a:hover { color: var(--rf-primary-hover); }
 
 /* ========== Buttons ========== */
-.rf-btn {
-    display: inline-block;
-    padding: 5px 16px;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.5;
-    text-align: center;
-    white-space: nowrap;
-    cursor: pointer;
-    border: 1px solid var(--rf-border);
-    border-radius: 6px;
-    background: #fff;
-    color: var(--rf-text-primary);
-    transition: all 0.2s ease;
-    outline: none;
-    vertical-align: middle;
-}
-.rf-btn:hover, .rf-btn:focus { border-color: var(--rf-primary); color: var(--rf-primary); }
-.rf-btn:active { border-color: var(--rf-primary-active); color: var(--rf-primary-active); }
-
-.rf-btn-primary { background: var(--rf-primary); border-color: var(--rf-primary); color: #fff; }
-.rf-btn-primary:hover, .rf-btn-primary:focus { background: var(--rf-primary-hover); border-color: var(--rf-primary-hover); color: #fff; }
-.rf-btn-primary:active { background: var(--rf-primary-active); border-color: var(--rf-primary-active); color: #fff; }
-
-.rf-btn-danger { background: #ff4d4f; border-color: #ff4d4f; color: #fff; }
-.rf-btn-danger:hover, .rf-btn-danger:focus { background: #ff7875; border-color: #ff7875; color: #fff; }
 
 /* V5.9.0 a11y: #52c41a (2.26:1) → #237b00 (5.38:1) */
-.rf-btn-success { background: #237b00; border-color: #237b00; color: #fff; }
-.rf-btn-success:hover, .rf-btn-success:focus { background: #73d13d; border-color: #73d13d; color: #fff; }
 
 /* V5.9.0 a11y: #faad14 (2.0:1) → #874d00 (6.79:1) */
-.rf-btn-warning { background: #874d00; border-color: #874d00; color: #fff; }
 /* V5.9.0 a11y: hover #ffc53d (2.4:1) → #ad4e00 (5.43:1) */
-.rf-btn-warning:hover, .rf-btn-warning:focus { background: #ad4e00; border-color: #ad4e00; color: #fff; }
 
 /* V5.9.0 a11y: #06b6d4 (2.42:1) → #0891b2 (4.74:1) */
 /* V5.9.0 a11y: #06b6d4 (2.42:1) → #003eb3 (8.97:1) — 之前 #0891b2 (3.68:1) 仍不达标 */
-.rf-btn-info { background: #003eb3; border-color: #003eb3; color: #fff; }
-.rf-btn-info:hover, .rf-btn-info:focus { background: #06b6d4; border-color: #06b6d4; color: #fff; }
-
-.rf-btn-default { background: #fff; border-color: var(--rf-border); color: var(--rf-text-secondary); }
-.rf-btn-default:hover { border-color: var(--rf-primary); color: var(--rf-primary); background: var(--rf-primary-bg); }
-
-.rf-btn-link { border: none; background: transparent; color: var(--rf-primary); cursor: pointer; }
-.rf-btn-link:hover { color: var(--rf-primary-hover); background: var(--rf-primary-bg); }
-
-.rf-btn-sm, .rf-btn-group-sm > .rf-btn { font-size: 13px; padding: 4px 14px; border-radius: 6px; }
-.rf-btn-xs { font-size: 11px; padding: 2px 8px; border-radius: 4px; }
-
-.rf-btn-group { display: inline-flex; gap: 6px; align-items: center; }
-.rf-btn-group .rf-btn { border-radius: 6px; }
-.rf-btn-group .rf-btn + .rf-btn { margin-left: 0; }
-.rf-btn-group-vertical { display: inline-flex; flex-direction: column; gap: 4px; }
 
 /* V5.9.0: btn-toolbar (editor toolbar) — 让 button group 之间有 8px gap,不再挤在一起
    (决策表 13 按钮场景:每个 group 4 按钮,组与组之间要明显留白) — V5.71 删除,
@@ -152,35 +106,13 @@ a:hover { color: var(--rf-primary-hover); }
 
 /* V5.9.0: navbar-btn (scriptdecisiontable 用) — Bootstrap 默认 transparent,这里统一背景
    让 7 个按钮不跟页面背景混在一起,跟其他 editor toolbar 视觉一致 */
-.rf-navbar.navbar-default { background: var(--rf-bg-container); border: 1px solid var(--rf-border-split); border-radius: var(--rf-radius-base); }
-.rf-navbar-btn { background: var(--rf-bg-container) !important; border: 1px solid var(--rf-border-split) !important; }
 
 /* ========== Tables ========== */
-.rf-table { width: 100%; border-collapse: collapse; }
 /* V5.101:<thead> 默认 display:table-header-group,在 rf-table(border-collapse)下会和 <tbody>
    之间产生 ~22px phantom gap(实测:表头与首行数据间透出 table 背景)。改 table-row-group
    让 thead/tbody 同流,gap=0。一处修好所有 rf-table(版本发布/规则仿真/…)。 */
-.rf-table thead { display: table-row-group; }
-.rf-table th, .rf-table td { padding: 10px 12px; text-align: left; font-size: 13px; line-height: 1.5; }
-.rf-table-bordered { border: 1px solid #e5e7eb; }
-.rf-table-bordered th, .rf-table-bordered td { border: 1px solid #e5e7eb; }
-.rf-table-condensed th, .rf-table-condensed td { padding: 4px 8px; }
-.rf-table thead tr { background: #fafafa; }
-.rf-table th { font-weight: 600; color: var(--rf-text-secondary); font-size: 12px; border-bottom: 1px solid var(--rf-border-split); }
-.rf-table tbody tr { transition: background 0.15s; }
-.rf-table tbody tr:hover { background: var(--rf-bg-base); }
-.rf-table tbody tr td { border-bottom: 1px solid var(--rf-bg-base); }
 
 /* ========== Forms ========== */
-.rf-form-control {
-    display: block; width: 100%; padding: 5px 11px;
-    font-size: 13px; line-height: 1.5; color: var(--rf-text-primary);
-    background: #fff; border: 1px solid var(--rf-border); border-radius: 6px;
-    outline: none; transition: all 0.2s ease;
-}
-.rf-form-control:focus { border-color: var(--rf-primary); box-shadow: 0 0 0 2px rgba(84,105,212,0.1); }
-.rf-form-control::placeholder { color: var(--rf-text-disabled); }
-.rf-form-group { margin-bottom: 16px; }
 
 /* V5.101.6 ff-* 表单栅格(替代 bootstrap rf-col 与 rf-form-group)。
    原 rf-col 各断点(xs/sm/md/lg)CSS 都一样(非响应式,纯 N/12 宽度 + 12px gutter),
@@ -203,79 +135,28 @@ a:hover { color: var(--rf-primary-hover); }
 .ff-well { background: var(--rf-bg-base); border: 1px solid var(--rf-border-split); border-radius: var(--rf-radius-lg); padding: 12px 16px; min-height: 20px; }
 
 /* ========== Grid ========== */
-.rf-row { display: flex; flex-wrap: wrap; margin-left: -12px; margin-right: -12px; }
-.rf-col-xs-1, .rf-col-sm-1, .rf-col-md-1, .rf-col-lg-1 { width: 8.333%; padding: 0 12px; }
-.rf-col-xs-2, .rf-col-sm-2, .rf-col-md-2, .rf-col-lg-2 { width: 16.666%; padding: 0 12px; }
-.rf-col-xs-3, .rf-col-sm-3, .rf-col-md-3, .rf-col-lg-3 { width: 25%; padding: 0 12px; }
-.rf-col-xs-4, .rf-col-sm-4, .rf-col-md-4, .rf-col-lg-4 { width: 33.333%; padding: 0 12px; }
-.rf-col-xs-5, .rf-col-sm-5, .rf-col-md-5, .rf-col-lg-5 { width: 41.666%; padding: 0 12px; }
-.rf-col-xs-6, .rf-col-sm-6, .rf-col-md-6, .rf-col-lg-6 { width: 50%; padding: 0 12px; }
-.rf-col-xs-7, .rf-col-sm-7, .rf-col-md-7, .rf-col-lg-7 { width: 58.333%; padding: 0 12px; }
-.rf-col-xs-8, .rf-col-sm-8, .rf-col-md-8, .rf-col-lg-8 { width: 66.666%; padding: 0 12px; }
-.rf-col-xs-9, .rf-col-sm-9, .rf-col-md-9, .rf-col-lg-9 { width: 75%; padding: 0 12px; }
-.rf-col-xs-10, .rf-col-sm-10, .rf-col-md-10, .rf-col-lg-10 { width: 83.333%; padding: 0 12px; }
-.rf-col-xs-11, .rf-col-sm-11, .rf-col-md-11, .rf-col-lg-11 { width: 91.666%; padding: 0 12px; }
-.rf-col-xs-12, .rf-col-sm-12, .rf-col-md-12, .rf-col-lg-12 { width: 100%; padding: 0 12px; }
 
 /* ========== Modal (bootbox) ========== */
-.rf-modal { display: none; position: fixed; inset: 0; z-index: 1050; overflow: auto; -webkit-overflow-scrolling: touch; outline: 0; }
-.rf-modal.in { display: block; }
-.rf-modal-backdrop { position: fixed; inset: 0; z-index: 1040; background: rgba(0,0,0,0.65); }
-.rf-modal-backdrop.in { opacity: 1; }
-.rf-modal-dialog { position: relative; width: auto; max-width: 500px; margin: 30px auto; background: #fff; border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.08), 0 9px 28px rgba(0,0,0,0.05); }
 .modal-lg { max-width: 700px; }
 .modal-sm { max-width: 300px; }
-.rf-modal-content { background: #fff; border-radius: 8px; overflow: hidden; border: 0; box-shadow: none; }
-.rf-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--rf-border-split); }
-.rf-modal-title { font-size: 15px; font-weight: 600; color: var(--rf-text-primary); margin: 0; }
-.rf-modal-body { padding: 16px 20px; font-size: 13px; color: var(--rf-text-secondary); position: relative; word-break: break-word; overflow-wrap: anywhere; }
 /* V5.9.0: package 错误信息超长(4 行 JSON),Bootstrap modal-body 默认 word-break:break-all 会
    把 "Error" 拆成 "Er ror" 难看。!important 覆盖 bootstrap.css,优先 anywhere */
-.rf-modal-body { word-break: normal !important; }
-.rf-modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 20px; border-top: 1px solid var(--rf-border-split); }
-.rf-modal-footer .rf-btn { min-width: 72px; }
-.rf-close { font-size: 18px; font-weight: 400; color: var(--rf-text-tertiary); background: none; border: none; cursor: pointer; opacity: 1; }
-.rf-close:hover { color: var(--rf-text-primary); }
 
 /* V5.9.0: Bootstrap modal 也垂直居中 (跟 Antd modal 一致) */
-.rf-modal.in .rf-modal-dialog { margin-top: 0; margin-bottom: 0; }
-.rf-modal.in { display: flex !important; align-items: center; justify-content: center; }
-.rf-modal.fade .rf-modal-dialog { transition: transform 0.2s ease-out; }
 
 /* ========== Well ========== */
-.rf-well { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; min-height: 20px; }
 
 /* ========== Backgrounds ========== */
-.rf-bg-warning { background: #fffbe6; }
-.rf-bg-danger { background: #fff2f0; }
-.rf-bg-success { background: #f6ffed; }
-.rf-bg-info { background: #e6fffb; }
-.rf-bg-primary { background: var(--rf-primary-bg); }
 
 /* ========== Labels ========== */
-.rf-label { display: inline-block; padding: 2px 8px; font-size: 11px; font-weight: 500; border-radius: 4px; line-height: 1.5; }
-.rf-label-default { background: var(--rf-border-split); color: var(--rf-text-secondary); }
-.rf-label-primary { background: var(--rf-primary); color: #fff; }
 /* V5.9.0 a11y: #52c41a → #237b00 */
-.rf-label-success { background: #237b00; color: #fff; }
-.rf-label-danger { background: #ff4d4f; color: #fff; }
-.rf-label-warning { background: #faad14; color: #fff; }
 /* V5.9.0 a11y: #06b6d4 → #0891b2 */
-.rf-label-info { background: #0891b2; color: #fff; }
 
 /* ========== Dropdown ========== */
-.rf-dropdown-menu { position: absolute; z-index: 1000; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.08); padding: 4px 0; min-width: 160px; list-style: none; }
-.rf-dropdown-menu > li > a { display: block; padding: 6px 16px; font-size: 13px; color: var(--rf-text-secondary); text-decoration: none; }
-.rf-dropdown-menu > li > a:hover { background: var(--rf-bg-base); color: var(--rf-primary); }
 
 /* ========== Input Group ========== */
-.rf-input-group { display: flex; }
-.rf-input-group .rf-form-control { border-radius: 6px 0 0 6px; flex: 1 1 auto; }
-.rf-input-group-btn { display: flex; }
-.rf-input-group-btn .rf-btn { border-radius: 0 6px 6px 0; }
 
 /* ========== Checkbox ========== */
-.rf-checkbox-inline { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 400; }
 
 /* ===== Text utilities ===== */
 .rf-text-center { text-align: center; }
@@ -290,45 +171,22 @@ a:hover { color: var(--rf-primary-hover); }
 .rf-text-left { text-align: left; }
 
 /* ===== Pull ===== */
-.rf-pull-right { float: right; }
-.rf-pull-left { float: left; }
 
 /* ===== Visibility ===== */
-.rf-hidden { display: none !important; }
-.rf-show { display: block !important; }
 
 /* ===== Toolbar ===== */
 .toolbar { display: flex; align-items: center; gap: 8px; padding: 4px 12px; min-height: 40px; }
-.toolbar .rf-btn { font-size: 12px; padding: 4px 12px; height: 28px; border-radius: 6px; }
 
 /* ========== Panel ========== */
 /* V5.9.0: 改用 --rf-shadow-sm token 统一阴影 */
-.rf-panel { border-radius: 8px; border: 1px solid var(--rf-border-split); box-shadow: var(--rf-shadow-sm); }
-.rf-panel-heading { border-radius: 8px 8px 0 0; background: #fff; border-bottom: 1px solid var(--rf-border-split); font-weight: 500; color: var(--rf-text-primary); padding: 10px 16px; }
-.rf-panel-body { padding: 16px; }
 
 /* ========== Alert ========== */
-.rf-alert { border-radius: 6px; border: none; padding: 12px 16px; font-size: 14px; }
 /* V5.9.0 a11y: text #52c41a → #237b00 */
-.rf-alert-success { background: #f6ffed; color: #237b00; }
-.rf-alert-danger { background: #fff2f0; color: #ff4d4f; }
-.rf-alert-warning { background: #fffbe6; color: #faad14; }
-.rf-alert-info { background: var(--rf-primary-bg); color: var(--rf-primary); }
 
 /* ========== Nav Tabs ========== */
-.rf-nav-tabs { border-bottom: 1px solid var(--rf-border-split); }
-.rf-nav-tabs > li > a { border-radius: 4px 4px 0 0; color: var(--rf-text-secondary); border: 1px solid transparent; padding: 8px 16px; transition: color 0.2s; }
 /* V5.9.0 a11y: var(--rf-primary) (3.1:1) → var(--rf-primary-active) (5.16:1) */
-.rf-nav-tabs > li > a:hover { color: var(--rf-primary-active); border-color: transparent; background: transparent; }
-.rf-nav-tabs > li.active > a,
-.rf-nav-tabs > li.active > a:hover,
-.rf-nav-tabs > li.active > a:focus { color: var(--rf-primary-active); border-color: var(--rf-border-split) var(--rf-border-split) #fff; background: #fff; font-weight: 500; }
 
 /* ========== Pagination ========== */
-.rf-pagination > li > a { color: var(--rf-text-primary); border-color: var(--rf-border-split); }
-.rf-pagination > li > a:hover { background: var(--rf-primary-bg); color: var(--rf-primary); border-color: var(--rf-primary); }
-.rf-pagination > .rf-active > a,
-.rf-pagination > .rf-active > a:hover { background: var(--rf-primary); border-color: var(--rf-primary); color: #fff; }
 
 /* ========== Splitter ========== */
 .splitter-divider { background: var(--rf-border-split); transition: background 0.2s; }
@@ -349,33 +207,9 @@ html { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.15) transparent; }
 
 /* ========== V5.9.0 工具类 ========== */
 /* 间距 token 短写 — 跟 --rf-space-* 对应,让 panel/页面统一用同一组值 */
-.rf-p-xs { padding: var(--rf-space-xs); }
-.rf-p-sm { padding: var(--rf-space-sm); }
-.rf-p-md { padding: var(--rf-space-md); }
-.rf-p-lg { padding: var(--rf-space-lg); }
-.rf-px-md { padding-left: var(--rf-space-md); padding-right: var(--rf-space-md); }
-.rf-py-sm { padding-top: var(--rf-space-sm); padding-bottom: var(--rf-space-sm); }
-.rf-mt-sm { margin-top: var(--rf-space-sm); }
-.rf-mt-md { margin-top: var(--rf-space-md); }
-.rf-mb-sm { margin-bottom: var(--rf-space-sm); }
-.rf-mb-md { margin-bottom: var(--rf-space-md); }
 /* 卡片 — 跟 .rf-panel 类似但更轻,给 Antd Card / 自定义 card 用 */
-.rf-card {
-    background: var(--rf-bg-container);
-    border: 1px solid var(--rf-border-split);
-    border-radius: var(--rf-radius-base);
-    box-shadow: var(--rf-shadow-sm);
-    transition: var(--rf-transition);
-}
-.rf-card:hover { box-shadow: var(--rf-shadow-md); }
 /* 文本截断 */
-.rf-ellipsis {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
 /* 通用过渡(hover/active 用) */
-.rf-trans { transition: var(--rf-transition); }
 
 /* ========== V5.9.0 Antd 5 Modal 全局统一 ========== */
 /* Modal 垂直居中 (Antd 默认 top:100px,这里覆盖) */
@@ -402,34 +236,9 @@ body .ant-modal-mask.ant-modal-mask {
 /* ========== RF Utility Classes ========== */
 .rf { color: var(--rf-text-secondary); transition: color 0.2s; }
 .rf:hover { color: var(--rf-primary); }
-.rf-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.02); border: 1px solid var(--rf-border-split); padding: 16px; transition: box-shadow 0.2s; }
-.rf-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
 .rf-text-primary { color: var(--rf-text-primary); }
 .rf-text-secondary { color: var(--rf-text-secondary); }
 .rf-text-tertiary { color: var(--rf-text-tertiary); }
-.rf-flex { display: flex; }
-.rf-flex-center { display: flex; align-items: center; justify-content: center; }
-.rf-flex-between { display: flex; align-items: center; justify-content: space-between; }
-.rf-gap-2 { gap: 8px; }
-.rf-gap-3 { gap: 12px; }
-.rf-gap-4 { gap: 16px; }
-.rf-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rf-mb-0 { margin-bottom: 0; }
-.rf-mb-1 { margin-bottom: 4px; }
-.rf-mb-2 { margin-bottom: 8px; }
-.rf-mb-3 { margin-bottom: 12px; }
-.rf-mb-4 { margin-bottom: 16px; }
-.rf-mb-6 { margin-bottom: 24px; }
-.rf-mt-2 { margin-top: 8px; }
-.rf-mt-3 { margin-top: 12px; }
-.rf-mt-4 { margin-top: 16px; }
-.rf-ml-2 { margin-left: 8px; }
-.rf-mr-2 { margin-right: 8px; }
-.rf-p-0 { padding: 0; }
-.rf-p-2 { padding: 8px; }
-.rf-p-3 { padding: 12px; }
-.rf-p-4 { padding: 16px; }
-.rf-p-6 { padding: 24px; }
 
 /* ========== Login Page ========== */
 .login-container { display: flex; min-height: 100vh; overflow: hidden; }
