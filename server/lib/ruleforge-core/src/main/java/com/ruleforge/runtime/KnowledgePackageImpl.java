@@ -122,7 +122,7 @@ public class KnowledgePackageImpl implements KnowledgePackage {
 
 
     public ReteInstance newReteInstance() {
-        return rete.newReteInstance();
+        return (ReteInstance) rete.newReteInstance();
     }
 
     @Override

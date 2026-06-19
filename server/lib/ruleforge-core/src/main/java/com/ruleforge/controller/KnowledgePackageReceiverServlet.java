@@ -2,7 +2,7 @@ package com.ruleforge.controller;
 
 import com.ruleforge.Configure;
 import com.ruleforge.runtime.KnowledgePackage;
-import com.ruleforge.runtime.KnowledgePackageWrapper;
+import com.ruleforge.engine.KnowledgePackageWrapper;
 import com.ruleforge.config.CacheUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;

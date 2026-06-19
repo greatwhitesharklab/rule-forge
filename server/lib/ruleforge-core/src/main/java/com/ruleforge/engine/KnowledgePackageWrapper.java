@@ -1,4 +1,6 @@
-package com.ruleforge.runtime;
+package com.ruleforge.engine;
+import com.ruleforge.runtime.KnowledgePackage;
+import com.ruleforge.runtime.KnowledgePackageImpl;
 
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.rete.*;

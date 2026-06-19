@@ -1,4 +1,5 @@
 package com.ruleforge.model.rete;
+import com.ruleforge.engine.NodeActivityFactory;
 
 /**
  * RETE 对象类型节点:按类名/类匹配 fact。V5.76.6 后不再持有 {@code newActivity}(改由

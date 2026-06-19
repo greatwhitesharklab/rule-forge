@@ -1,4 +1,5 @@
 package com.ruleforge.rete.perf;
+import com.ruleforge.engine.ValueCompute;
 
 import com.ruleforge.rete.test.EngineContextWirer;
 
@@ -23,7 +24,7 @@ import com.ruleforge.model.rule.lhs.Lhs;
 import com.ruleforge.model.rule.lhs.VariableLeftPart;
 import com.ruleforge.runtime.KnowledgePackage;
 import com.ruleforge.runtime.KnowledgeSessionImpl;
-import com.ruleforge.runtime.response.RuleExecutionResponse;
+import com.ruleforge.engine.RuleExecutionResponse;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

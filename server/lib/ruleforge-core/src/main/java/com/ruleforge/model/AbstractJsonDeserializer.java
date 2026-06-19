@@ -17,7 +17,7 @@ import com.ruleforge.model.rule.loop.LoopTarget;
 import com.ruleforge.model.scorecard.AssignTargetType;
 import com.ruleforge.model.scorecard.ScoringType;
 import com.ruleforge.model.scorecard.runtime.ScoreRule;
-import com.ruleforge.runtime.KnowledgePackageWrapper;
+import com.ruleforge.engine.KnowledgePackageWrapper;
 import org.apache.commons.lang.StringUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.core.JsonParser;

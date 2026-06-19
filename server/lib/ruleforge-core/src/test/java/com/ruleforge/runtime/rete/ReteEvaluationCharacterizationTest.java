@@ -1,4 +1,6 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.AssertorEvaluator;
+import com.ruleforge.engine.ValueCompute;
 import com.ruleforge.engine.WorkingMemory;
 
 import com.ruleforge.action.AbstractAction;
@@ -14,8 +16,8 @@ import com.ruleforge.model.library.ResourceLibrary;
 import com.ruleforge.runtime.KnowledgePackage;
 import com.ruleforge.runtime.KnowledgePackageImpl;
 import com.ruleforge.engine.KnowledgeSession;
-import com.ruleforge.runtime.KnowledgeSessionFactory;
-import com.ruleforge.runtime.response.RuleExecutionResponse;
+import com.ruleforge.engine.KnowledgeSessionFactory;
+import com.ruleforge.engine.RuleExecutionResponse;
 import com.ruleforge.rete.test.EngineContextWirer;
 import com.ruleforge.engine.Context;
 import org.junit.jupiter.api.BeforeAll;

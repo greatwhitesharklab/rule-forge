@@ -22,7 +22,7 @@ import com.ruleforge.model.scorecard.runtime.ScoreRule;
 import com.ruleforge.model.table.Cell;
 import com.ruleforge.model.table.Row;
 import com.ruleforge.parse.deserializer.ComplexScorecardDeserializer;
-import com.ruleforge.runtime.KnowledgePackageWrapper;
+import com.ruleforge.engine.KnowledgePackageWrapper;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.dom4j.Element;

@@ -11,11 +11,11 @@ import com.ruleforge.model.rete.builder.ReteBuilder;
 import com.ruleforge.parse.ActionParser;
 import com.ruleforge.parse.CriterionParser;
 import com.ruleforge.plugin.EnginePluginRegistry;
-import com.ruleforge.runtime.EngineContext;
+import com.ruleforge.engine.EngineContext;
 import com.ruleforge.runtime.assertor.Assertor;
-import com.ruleforge.runtime.assertor.AssertorEvaluator;
+import com.ruleforge.engine.AssertorEvaluator;
 import com.ruleforge.runtime.assertor.EqualsAssertor;
-import com.ruleforge.runtime.rete.ValueCompute;
+import com.ruleforge.engine.ValueCompute;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;

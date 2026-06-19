@@ -3,7 +3,7 @@
 // (powered by Fernflower decompiler)
 //
 
-package com.ruleforge.runtime.rete;
+package com.ruleforge.engine;
 import com.ruleforge.engine.Context;
 
 import com.ruleforge.config.PropertyConfigurer;
@@ -27,8 +27,8 @@ import com.ruleforge.model.rule.ValueType;
 import com.ruleforge.model.rule.VariableCategoryValue;
 import com.ruleforge.model.rule.VariableValue;
 import com.ruleforge.model.rule.lhs.CommonFunctionParameter;
-import com.ruleforge.runtime.EngineContext;
-import com.ruleforge.runtime.function.WorkingMemoryFunctionContext;
+import com.ruleforge.engine.EngineContext;
+import com.ruleforge.engine.WorkingMemoryFunctionContext;
 
 import java.util.Collection;
 import java.util.HashMap;

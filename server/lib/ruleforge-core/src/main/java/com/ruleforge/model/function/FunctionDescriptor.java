@@ -1,4 +1,5 @@
 package com.ruleforge.model.function;
+import com.ruleforge.engine.WorkingMemoryFunctionContext;
 import com.ruleforge.engine.WorkingMemory;
 
 /**

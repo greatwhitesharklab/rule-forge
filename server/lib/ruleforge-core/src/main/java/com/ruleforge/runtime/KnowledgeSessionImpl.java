@@ -1,4 +1,6 @@
 package com.ruleforge.runtime;
+import com.ruleforge.engine.EngineContext;
+import com.ruleforge.engine.ValueCompute;
 import com.ruleforge.engine.Path;
 import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.engine.EvaluationContext;
@@ -14,7 +16,7 @@ import com.ruleforge.runtime.agenda.AgendaFilter;
 import com.ruleforge.runtime.event.KnowledgeEvent;
 import com.ruleforge.runtime.event.KnowledgeEventListener;
 import com.ruleforge.runtime.response.ExecutionResponseImpl;
-import com.ruleforge.runtime.response.RuleExecutionResponse;
+import com.ruleforge.engine.RuleExecutionResponse;
 import com.ruleforge.runtime.rete.*;
 
 import java.io.IOException;

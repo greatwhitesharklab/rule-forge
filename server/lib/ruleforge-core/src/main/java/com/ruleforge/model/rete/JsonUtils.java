@@ -28,7 +28,7 @@ import com.ruleforge.model.rule.Parameter;
 import com.ruleforge.model.rule.Value;
 import com.ruleforge.model.rule.ValueType;
 import com.ruleforge.model.rule.lhs.CommonFunctionParameter;
-import com.ruleforge.runtime.KnowledgePackageWrapper;
+import com.ruleforge.engine.KnowledgePackageWrapper;
 
 /**
  * @author Jacky.gao

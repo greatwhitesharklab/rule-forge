@@ -1,4 +1,5 @@
 package com.ruleforge.model.rule.lhs;
+import com.ruleforge.engine.NodeActivityFactory;
 
 import com.ruleforge.Utils;
 import com.ruleforge.action.ActionValue;
@@ -9,7 +10,7 @@ import com.ruleforge.model.rule.ComplexArithmetic;
 import com.ruleforge.model.rule.Op;
 import com.ruleforge.model.rule.Value;
 import com.ruleforge.engine.EvaluationContext;
-import com.ruleforge.runtime.rete.ValueCompute;
+import com.ruleforge.engine.ValueCompute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.List;

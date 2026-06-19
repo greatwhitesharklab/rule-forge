@@ -4,7 +4,7 @@ import com.ruleforge.runtime.KnowledgePackage;
 
 import com.ruleforge.debug.MessageItem;
 import com.ruleforge.runtime.agenda.AgendaFilter;
-import com.ruleforge.runtime.response.RuleExecutionResponse;
+import com.ruleforge.engine.RuleExecutionResponse;
 import com.ruleforge.runtime.rete.ReteInstance;
 
 import java.io.IOException;

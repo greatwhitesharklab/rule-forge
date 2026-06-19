@@ -280,7 +280,7 @@ class KnowledgeSessionImplActiveGroupTest {
         // Build a fresh ReteInstanceUnit from the Foo rete (valid: 无 effective/expires 日期
         // → isWithinValidPeriod=true, isNotYetEffective=false, isExpired=false).
         private ReteInstanceUnit unit(String ruleName) {
-            ReteInstance ins = rete.newReteInstance();
+            ReteInstance ins = (ReteInstance) rete.newReteInstance();
             return new ReteInstanceUnit(ins, ruleName);
         }
 

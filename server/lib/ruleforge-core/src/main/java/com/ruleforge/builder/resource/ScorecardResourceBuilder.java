@@ -32,7 +32,7 @@ import com.ruleforge.model.scorecard.runtime.ScoreRule;
 import com.ruleforge.model.scorecard.runtime.ScoreRuntimeValue;
 import com.ruleforge.model.table.Condition;
 import com.ruleforge.parse.deserializer.ScorecardDeserializer;
-import com.ruleforge.runtime.KnowledgePackageWrapper;
+import com.ruleforge.engine.KnowledgePackageWrapper;
 
 /**
  * @author Jacky.gao
