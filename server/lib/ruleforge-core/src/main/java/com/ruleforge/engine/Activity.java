@@ -1,6 +1,6 @@
 package com.ruleforge.engine;
 import com.ruleforge.runtime.rete.Instance;
-import com.ruleforge.runtime.rete.Path;
+import com.ruleforge.engine.Path;
 import java.util.List;
 
 

@@ -3,7 +3,7 @@ import com.ruleforge.engine.EvaluationContext;
 
 import com.ruleforge.debug.MsgType;
 import com.ruleforge.model.rule.Rule;
-import com.ruleforge.runtime.KnowledgeSession;
+import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.runtime.agenda.ActivationImpl;
 import com.ruleforge.runtime.event.impl.ActivationCreatedEventImpl;
 

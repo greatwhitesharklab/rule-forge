@@ -1,4 +1,5 @@
 package com.ruleforge.runtime;
+import com.ruleforge.engine.KnowledgeSession;
 
 import com.ruleforge.action.AbstractAction;
 import com.ruleforge.action.ActionValue;

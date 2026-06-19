@@ -1,4 +1,5 @@
-package com.ruleforge.runtime.rete;
+package com.ruleforge.engine;
+import com.ruleforge.runtime.rete.AndActivity;
 import com.ruleforge.engine.Activity;
 
 /**

@@ -1,6 +1,6 @@
 package com.ruleforge.runtime.event;
 
-import com.ruleforge.runtime.KnowledgeSession;
+import com.ruleforge.engine.KnowledgeSession;
 
 /**
  * @author Jacky.gao

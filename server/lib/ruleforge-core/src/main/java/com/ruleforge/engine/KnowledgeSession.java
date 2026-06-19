@@ -1,5 +1,6 @@
-package com.ruleforge.runtime;
+package com.ruleforge.engine;
 import com.ruleforge.engine.WorkingMemory;
+import com.ruleforge.runtime.KnowledgePackage;
 
 import com.ruleforge.debug.MessageItem;
 import com.ruleforge.runtime.agenda.AgendaFilter;

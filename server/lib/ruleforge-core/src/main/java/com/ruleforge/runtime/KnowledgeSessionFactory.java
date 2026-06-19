@@ -1,4 +1,5 @@
 package com.ruleforge.runtime;
+import com.ruleforge.engine.KnowledgeSession;
 
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.engine.Context;

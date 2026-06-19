@@ -10,7 +10,7 @@ import com.ruleforge.model.rule.RuleInfo;
 import com.ruleforge.model.rule.lhs.BaseCriteria;
 import com.ruleforge.model.rule.loop.LoopRule;
 import com.ruleforge.model.scorecard.runtime.ScoreRule;
-import com.ruleforge.runtime.KnowledgeSession;
+import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.runtime.event.impl.ActivationAfterFiredEventImpl;
 import com.ruleforge.runtime.event.impl.ActivationBeforeFiredEventImpl;
 import com.ruleforge.engine.Context;

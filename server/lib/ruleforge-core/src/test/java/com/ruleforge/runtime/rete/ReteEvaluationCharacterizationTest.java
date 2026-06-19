@@ -13,7 +13,7 @@ import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.library.ResourceLibrary;
 import com.ruleforge.runtime.KnowledgePackage;
 import com.ruleforge.runtime.KnowledgePackageImpl;
-import com.ruleforge.runtime.KnowledgeSession;
+import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.runtime.KnowledgeSessionFactory;
 import com.ruleforge.runtime.response.RuleExecutionResponse;
 import com.ruleforge.rete.test.EngineContextWirer;

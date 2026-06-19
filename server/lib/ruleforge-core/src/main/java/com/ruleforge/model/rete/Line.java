@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import com.ruleforge.model.Node;
 import com.ruleforge.runtime.rete.NodeActivityFactory;
-import com.ruleforge.runtime.rete.Path;
+import com.ruleforge.engine.Path;
 
 /**
  * @author Jacky.gao

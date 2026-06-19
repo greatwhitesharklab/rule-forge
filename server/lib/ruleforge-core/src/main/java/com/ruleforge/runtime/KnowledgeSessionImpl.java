@@ -1,4 +1,6 @@
 package com.ruleforge.runtime;
+import com.ruleforge.engine.Path;
+import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.engine.EvaluationContext;
 import com.ruleforge.engine.Context;
 

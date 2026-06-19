@@ -3,7 +3,7 @@ import java.util.Map;
 import java.util.List;
 import com.ruleforge.runtime.EventManager;
 import java.util.List;
-import com.ruleforge.runtime.KnowledgeSession;
+import com.ruleforge.engine.KnowledgeSession;
 
 
 
