@@ -15,3 +15,14 @@
 }
 .grid-table thead tr { background: var(--rf-bg-base); } /* 原 rf-well 头行底 */
 .grid-table thead th { font-weight: 600; }
+
+/* V5.101.7:Grid 可编辑单元格 input/select(原 rf-form-control,去 Bootstrap 复刻)。
+   用于 Cell/CellEditor 内联编辑 + Cell bootbox 子对象选择。inline style 覆盖尺寸。 */
+.grid-cell-input {
+    display: block; width: 100%; padding: 4px 8px;
+    font-size: 13px; line-height: 1.5; color: var(--rf-text-primary);
+    background: var(--rf-bg-container); border: 1px solid var(--rf-border);
+    border-radius: var(--rf-radius-base); outline: none;
+    box-sizing: border-box; transition: border-color 0.2s;
+}
+.grid-cell-input:focus { border-color: var(--rf-primary); box-shadow: 0 0 0 2px rgba(84,105,212,0.1); }

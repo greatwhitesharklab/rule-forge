@@ -77,16 +77,14 @@ export default class ItemDialog extends Component<ItemDialogProps, ItemDialogSta
                 </div>
                 <div className="ff-group">
                     <label>资源文件路径:</label>
-                    <div className="rf-input-group">
-                        <Input type="text"  name="itemPath" disabled
+                    <div style={{display: 'flex', gap: 8}}>
+                        <Input name="itemPath" disabled style={{flex: 1}}
                             value={this.state.itemPath}/>
-                        <span className="rf-input-group-btn">
-                            <Button htmlType="button"  onClick={() => {
+                            <Button htmlType="button" onClick={() => {
                                 componentEvent.eventEmitter.emit(componentEvent.OPEN_KNOWLEDGE_TREE_DIALOG, {project: this.props.project, callback: function (this: ItemDialog, file: string, version: string) {
                                      this.setState({itemPath: 'jcr:' + file, itemVersion: version});
                                 }.bind(this)});
                             }}>选择文件</Button>
-                        </span>
                     </div>
                     {this.state.errors.itemPath && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemPath}</div>}
                 </div>

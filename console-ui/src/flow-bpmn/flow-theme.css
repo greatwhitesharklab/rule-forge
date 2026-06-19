@@ -138,3 +138,18 @@
 .djs-layer-grid {
     display: none;
 }
+
+/* V5.101.7:bpmn 规则属性面板的 HTML 模板按钮(原靠全局 rf-btn,去 Bootstrap 后自带样式)。
+   RuleForgePropertiesPanel 的 rf-rule-browse/cancel/save 在 HTML 字符串里(bpmn-js 注入,非 React)。 */
+.rf-rule-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 4px 12px; font-size: 13px; line-height: 1.5;
+    color: var(--rf-text-primary); background: var(--rf-bg-container);
+    border: 1px solid var(--rf-border); border-radius: var(--rf-radius-base);
+    cursor: pointer; transition: all 0.2s;
+}
+.rf-rule-btn:hover { color: var(--rf-primary); border-color: var(--rf-primary); }
+.rf-rule-btn.rf-rule-save {
+    color: #fff; background: var(--rf-primary); border-color: var(--rf-primary);
+}
+.rf-rule-btn.rf-rule-save:hover { background: var(--rf-primary-hover); border-color: var(--rf-primary-hover); color: #fff; }

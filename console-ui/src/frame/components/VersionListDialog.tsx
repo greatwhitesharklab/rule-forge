@@ -126,33 +126,21 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
                     pagination={false} size="small"
                     style={{tableLayout: 'fixed', wordBreak: 'break-all'}}/>
 
-                <nav aria-label="分页">
-                    <ul className="rf-pagination">
-                        <li>
-                            <a href="#" aria-label="上一页"
-                               onClick={() => {
-                                   const queryData = {...data} as Record<string, unknown>;
-                                   queryData['page'] = ((data['page'] as number) || 1) - 1;
-                                   if ((queryData['page'] as number) < 1) {
-                                       queryData['page'] = 1;
-                                   }
-                                   seeFileVersions(queryData as TreeNodeData & { rpp?: string; page?: number });
-                               }}>
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" aria-label="下一页"
-                               onClick={() => {
-                                   const queryData = {...data} as Record<string, unknown>;
-                                   queryData['page'] = ((data['page'] as number) || 0) + 1;
-                                   seeFileVersions(queryData as TreeNodeData & { rpp?: string; page?: number });
-                               }}>
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
+                <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 8}}>
+                    <Button size="small" disabled={((data['page'] as number) || 1) <= 1}
+                            onClick={() => {
+                                const queryData = {...data} as Record<string, unknown>;
+                                queryData['page'] = Math.max(1, ((data['page'] as number) || 1) - 1);
+                                seeFileVersions(queryData as TreeNodeData & { rpp?: string; page?: number });
+                            }}>上一页</Button>
+                    <span style={{fontSize: 13}}>第 {(data['page'] as number) || 1} 页</span>
+                    <Button size="small"
+                            onClick={() => {
+                                const queryData = {...data} as Record<string, unknown>;
+                                queryData['page'] = ((data['page'] as number) || 0) + 1;
+                                seeFileVersions(queryData as TreeNodeData & { rpp?: string; page?: number });
+                            }}>下一页</Button>
+                </div>
             </div>
         );
         return (<CommonDialog visible={this.state.visible} body={body} title={this.state.title} buttons={[]} large={true} dialogStyle={{

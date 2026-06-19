@@ -133,7 +133,7 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                             style={{ display: this.state.type === 'form' ? 'block' : 'none' }}
                             value={this.state.orderNo} placeholder='订单号'
                             onChange={(e) => this.setState({ orderNo: e.target.value })} />
-                        <Button id="search" htmlType="button" className="rf-navbar-btn" style={{ marginLeft: 'var(--rf-space-3)', display: this.state.type === 'form' ? 'block' : 'none' }} onClick={() => {
+                        <Button id="search" htmlType="button" style={{ marginLeft: 'var(--rf-space-3)', display: this.state.type === 'form' ? 'block' : 'none' }} onClick={() => {
                             console.log('订单号', this.state);
                             if (this.state.type === 'json') {
                                 return;
@@ -235,7 +235,7 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                         options={(this.state.versionsList || []).map(version => ({value: version.name, label: version.name}))}/>
                 </div>
                 <div className="" style={{ marginLeft: 'var(--rf-space-3)' }}>
-                    <Button id="testButton" htmlType="button" color="green" className="rf-navbar-btn" onClick={() => {
+                    <Button id="testButton" htmlType="button" color="green" onClick={() => {
                         if (!this.state.selectedVersion) {
                             alert('请选择版本号');
                             return;

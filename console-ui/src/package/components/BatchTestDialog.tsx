@@ -1,5 +1,5 @@
 import {Component} from 'react';
-import {Button} from 'antd';
+import {Button, Progress} from 'antd';
 import {apiBase} from '@/api/client';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
@@ -148,12 +148,7 @@ export default class BatchTestDialog extends Component<BatchTestDialogProps, Bat
             body = (
                 <div style={{padding: '15px'}}>
                     <h4>批量测试执行中...</h4>
-                    <div className="rf-progress" style={{marginBottom: '10px'}}>
-                        <div className="rf-progress-bar progress-bar-striped active"
-                             role="progressbar" style={{width: progress + '%'}}>
-                            {progress}%
-                        </div>
-                    </div>
+                    <Progress percent={progress} style={{marginBottom: 10}}/>
                     <div className="ff-row">
                         <div className="ff-col-4">总行数: {totalRows}</div>
                         <div className="ff-col-4 rf-text-success">成功: {successCount}</div>

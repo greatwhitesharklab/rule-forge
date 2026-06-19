@@ -512,7 +512,7 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                         <label>目标规则文件</label>
                         <div class="rf-prop-file-row">
                             <input type="text" class="rf-rule-file" value="${tempRule.file || ''}" placeholder="选择或输入文件路径"/>
-                            <button class="rf-btn rf-btn-sm rf-btn-default rf-rule-browse" title="选择文件">
+                            <button class="rf-rule-btn rf-rule-browse" title="选择文件">
                                 <svg viewBox="64 64 896 896" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M909.6 854.5L649.9 594.8C690.2 542.7 712 479 712 412c0-80.2-31.3-155.4-87.9-212.1-56.6-56.7-132-87.9-212.1-87.9s-155.5 31.3-212.1 87.9C143.2 256.5 112 331.8 112 412c0 80.1 31.3 155.5 87.9 212.1C256.5 680.8 331.8 712 412 712c67 0 130.6-21.8 182.7-62l259.7 259.6a8.2 8.2 0 0011.6 0l43.6-43.5a8.2 8.2 0 000-11.6zM570.4 668.3c-44.8 44.9-106 69.7-171.4 69.7s-126.6-24.8-171.4-69.7c-44.9-44.8-69.7-106-69.7-171.4s24.8-126.6 69.7-171.4c44.8-44.9 106-69.7 171.4-69.7s126.6 24.8 171.4 69.7c44.9 44.8 69.7 106 69.7 171.4s-24.8 126.6-69.7 171.4z"/></svg>
                             </button>
                         </div>
@@ -527,8 +527,8 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                     </div>
                 </div>
                 <div class="rf-rule-edit-footer">
-                    <button class="rf-btn rf-btn-sm rf-btn-default rf-rule-cancel">取消</button>
-                    <button class="rf-btn rf-btn-sm rf-btn-primary rf-rule-save" style="margin-left:8px">保存</button>
+                    <button class="rf-rule-btn rf-rule-cancel">取消</button>
+                    <button class="rf-rule-btn rf-rule-save" style="margin-left:8px">保存</button>
                 </div>
             </div>
         `;

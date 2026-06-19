@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Button, Space} from 'antd';
+import {Button, Space, Card} from 'antd';
 import {connect} from 'react-redux';
 import Grid from '../../components/grid/component/Grid.tsx';
 import Splitter from '../../components/splitter/component/Splitter.tsx';
@@ -105,7 +105,7 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                             </div>
                             <div className="ff-col-8 detailPart"
                                  style={{marginTop: '40px', display: 'none', paddingLeft: 0}}>
-                                <div className="rf-panel rf-panel-default"
+                                <Card size="small"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
                                     <div className="ff-row">
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许查看当前项目</div>
@@ -122,8 +122,8 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="rf-panel rf-panel-default filePermissionConfig"
+                                </Card>
+                                <Card size="small" className="filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
                                     <div className="ff-row">
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许查看知识包</div>
@@ -140,7 +140,7 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="ff-row writePackageConfig rf-well"
+                                    <div className="ff-row writePackageConfig ff-well"
                                          style={{padding: '0', marginBottom: '0'}}>
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许修改知识包</div>
                                         <div className="ff-col-5">
@@ -156,8 +156,8 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="rf-panel rf-panel-default filePermissionConfig"
+                                </Card>
+                                <Card size="small" className="filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
                                     <div className="ff-row">
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许查看变量库文件</div>
@@ -174,7 +174,7 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="ff-row writeVariableFileConfig rf-well"
+                                    <div className="ff-row writeVariableFileConfig ff-well"
                                          style={{padding: '0', marginBottom: '0'}}>
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许修改变量库文件</div>
                                         <div className="ff-col-5">
@@ -190,8 +190,8 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="rf-panel rf-panel-default filePermissionConfig"
+                                </Card>
+                                <Card size="small" className="filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
                                     <div className="ff-row">
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许查看参数库文件</div>
@@ -208,7 +208,7 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="ff-row writeParameterFileConfig rf-well"
+                                    <div className="ff-row writeParameterFileConfig ff-well"
                                          style={{padding: '0', marginBottom: '0'}}>
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许修改参数库文件</div>
                                         <div className="ff-col-5">
@@ -224,8 +224,8 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="rf-panel rf-panel-default filePermissionConfig"
+                                </Card>
+                                <Card size="small" className="filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
                                     <div className="ff-row">
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许查看常量库文件</div>
@@ -242,7 +242,7 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="ff-row writeConstantFileConfig rf-well"
+                                    <div className="ff-row writeConstantFileConfig ff-well"
                                          style={{padding: '0', marginBottom: '0'}}>
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许修改常量库文件</div>
                                         <div className="ff-col-5">
@@ -258,8 +258,8 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="rf-panel rf-panel-default filePermissionConfig"
+                                </Card>
+                                <Card size="small" className="filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
                                     <div className="ff-row">
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许查看动作库文件</div>
@@ -276,7 +276,7 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="ff-row writeActionFileConfig rf-well"
+                                    <div className="ff-row writeActionFileConfig ff-well"
                                          style={{padding: '0', marginBottom: '0'}}>
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许修改动作库文件</div>
                                         <div className="ff-col-5">
@@ -292,8 +292,8 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="rf-panel rf-panel-default filePermissionConfig"
+                                </Card>
+                                <Card size="small" className="filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
                                     <div className="ff-row">
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许查看规则集文件</div>
@@ -310,7 +310,7 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="ff-row writeRuleFileConfig rf-well"
+                                    <div className="ff-row writeRuleFileConfig ff-well"
                                          style={{padding: '0', marginBottom: '0'}}>
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许修改规则集文件</div>
                                         <div className="ff-col-5">
@@ -326,8 +326,8 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="rf-panel rf-panel-default filePermissionConfig"
+                                </Card>
+                                <Card size="small" className="filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
                                     <div className="ff-row">
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许查看决策表文件</div>
@@ -344,7 +344,7 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="ff-row writeDecisionTableFileConfig rf-well"
+                                    <div className="ff-row writeDecisionTableFileConfig ff-well"
                                          style={{padding: '0', marginBottom: '0'}}>
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许修改决策表文件</div>
                                         <div className="ff-col-5">
@@ -360,8 +360,8 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="rf-panel rf-panel-default filePermissionConfig"
+                                </Card>
+                                <Card size="small" className="filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
                                     <div className="ff-row">
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许查看决策树文件</div>
@@ -378,7 +378,7 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="ff-row writeDecisionTreeFileConfig rf-well"
+                                    <div className="ff-row writeDecisionTreeFileConfig ff-well"
                                          style={{padding: '0', marginBottom: '0'}}>
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许修改决策树文件</div>
                                         <div className="ff-col-5">
@@ -394,8 +394,8 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="rf-panel rf-panel-default filePermissionConfig"
+                                </Card>
+                                <Card size="small" className="filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
                                     <div className="ff-row">
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许查看评分卡文件</div>
@@ -412,7 +412,7 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="ff-row writeScorecardFileConfig rf-well"
+                                    <div className="ff-row writeScorecardFileConfig ff-well"
                                          style={{padding: '0', marginBottom: '0'}}>
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许修改评分卡文件</div>
                                         <div className="ff-col-5">
@@ -428,8 +428,8 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="rf-panel rf-panel-default filePermissionConfig"
+                                </Card>
+                                <Card size="small" className="filePermissionConfig"
                                      style={{padding: 'var(--rf-space-2)', margin: 'var(--rf-space-2)', width: '350px', lineHeight: '30px'}}>
                                     <div className="ff-row">
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许查看决策流文件</div>
@@ -446,7 +446,7 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="ff-row writeFlowFileConfig rf-well"
+                                    <div className="ff-row writeFlowFileConfig ff-well"
                                          style={{padding: '0', marginBottom: '0'}}>
                                         <div className="ff-col-7" style={{textAlign: 'right'}}>是否允许修改决策流文件</div>
                                         <div className="ff-col-5">
@@ -462,7 +462,7 @@ class ResourceSecurityConfigEditor extends Component<PermissionConfigEditorProps
                                             </label>
                                         </div>
                                     </div>
-                                </div>
+                                </Card>
                             </div>
                         </div>
                     </div>
