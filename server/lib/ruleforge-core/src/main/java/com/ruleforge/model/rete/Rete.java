@@ -2,17 +2,12 @@ package com.ruleforge.model.rete;
 
 import com.ruleforge.model.Node;
 import com.ruleforge.model.library.ResourceLibrary;
-import com.ruleforge.engine.NodeActivityFactory;
-import com.ruleforge.runtime.rete.ObjectTypeActivity;
-import com.ruleforge.runtime.rete.ReteInstance;
-import com.ruleforge.runtime.rete.ReteInstanceUnit;
+import com.ruleforge.engine.ReteInstanceFactory;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,43 +31,11 @@ public class Rete implements Node {
         this.resourceLibrary = resourceLibrary;
     }
 
-    public ReteInstance newReteInstance() {
-        List<ObjectTypeActivity> objectTypeActivities = new ArrayList<>();
-        Map<Object, Object> contextMap = new HashMap<>();
-
-        // V5.76.6: 走 NodeActivityFactory(原 node.newActivity(contextMap))
-        for (ObjectTypeNode node : this.objectTypeNodes) {
-            ObjectTypeActivity activity = (ObjectTypeActivity) NodeActivityFactory.create(node, contextMap);
-            objectTypeActivities.add(activity);
-        }
-
-        Map<String, List<ReteInstanceUnit>> activationGroupReteInstancesMap = this.buildGroupRetesInstance(this.activationGroupRetesMap);
-        Map<String, List<ReteInstanceUnit>> agendaGroupReteInstancesMap = this.buildGroupRetesInstance(this.agendaGroupRetesMap);
-        return new ReteInstance(objectTypeActivities, activationGroupReteInstancesMap, agendaGroupReteInstancesMap);
-    }
-
-    private Map<String, List<ReteInstanceUnit>> buildGroupRetesInstance(Map<String, List<ReteUnit>> groupRetesMap) {
-        if (groupRetesMap == null) {
-            return null;
-        } else {
-            Map<String, List<ReteInstanceUnit>> map = new HashMap<>();
-
-            for (String name : groupRetesMap.keySet()) {
-                List<ReteUnit> reteList = groupRetesMap.get(name);
-
-                for (ReteUnit unit : reteList) {
-                    List<ReteInstanceUnit> instances = map.computeIfAbsent(name, k -> new ArrayList<>());
-
-                    Rete rete = unit.getRete();
-                    ReteInstance ins = rete.newReteInstance();
-                    ReteInstanceUnit insUnit = new ReteInstanceUnit(ins, unit.getRuleName());
-                    insUnit.setEffectiveDate(unit.getEffectiveDate());
-                    insUnit.setExpiresDate(unit.getExpiresDate());
-                    instances.add(insUnit);
-                }
-            }
-
-            return map;
-        }
+    /**
+     * V6.1 TD-2 — 构造逻辑委托给 {@link ReteInstanceFactory}(engine 包),
+     * 本类(model)不再 import runtime.rete.* 类型。
+     */
+    public Object newReteInstance() {
+        return ReteInstanceFactory.create(this);
     }
 }

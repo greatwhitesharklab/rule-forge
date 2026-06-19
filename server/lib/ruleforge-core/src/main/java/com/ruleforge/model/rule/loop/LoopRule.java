@@ -4,7 +4,7 @@ import com.ruleforge.action.Action;
 import com.ruleforge.action.ActionValue;
 import com.ruleforge.model.GeneralEntity;
 import com.ruleforge.model.rule.Rule;
-import com.ruleforge.runtime.KnowledgePackageWrapper;
+import com.ruleforge.engine.KnowledgePackageWrapper;
 import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.engine.KnowledgeSessionFactory;
 import com.ruleforge.engine.RuleExecutionResponse;

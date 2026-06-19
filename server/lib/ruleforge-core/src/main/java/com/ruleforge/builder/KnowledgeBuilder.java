@@ -27,7 +27,7 @@ import com.ruleforge.model.rule.loop.LoopRuleUnit;
 import com.ruleforge.model.scorecard.runtime.ScoreRule;
 import com.ruleforge.model.table.DecisionTable;
 import com.ruleforge.model.table.ScriptDecisionTable;
-import com.ruleforge.runtime.KnowledgePackageWrapper;
+import com.ruleforge.engine.KnowledgePackageWrapper;
 import com.ruleforge.runtime.service.KnowledgePackageService;
 import lombok.Setter;
 import org.dom4j.Element;
