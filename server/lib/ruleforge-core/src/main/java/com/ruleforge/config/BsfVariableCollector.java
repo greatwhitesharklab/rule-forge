@@ -1,4 +1,5 @@
-package com.ruleforge.action;
+package com.ruleforge.config;
+import com.ruleforge.action.BsfVariableProvider;
 
 import com.ruleforge.runtime.rete.Context;
 import org.springframework.beans.BeansException;

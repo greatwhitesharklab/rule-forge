@@ -1,4 +1,6 @@
-package com.ruleforge.runtime.cache;
+package com.ruleforge.config;
+import com.ruleforge.runtime.cache.KnowledgeCache;
+import com.ruleforge.runtime.cache.MemoryKnowledgeCache;
 
 import lombok.Getter;
 import org.springframework.beans.BeansException;

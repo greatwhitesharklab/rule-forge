@@ -3,7 +3,7 @@ package com.ruleforge.runtime.service;
 
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.runtime.KnowledgePackage;
-import com.ruleforge.runtime.cache.CacheUtils;
+import com.ruleforge.config.CacheUtils;
 import com.ruleforge.runtime.cache.KnowledgeCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
