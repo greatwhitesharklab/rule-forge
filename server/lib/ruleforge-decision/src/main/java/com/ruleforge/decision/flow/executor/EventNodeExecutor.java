@@ -5,8 +5,8 @@ import com.ruleforge.decision.flow.EndEventKind;
 import com.ruleforge.decision.flow.engine.FlowContext;
 import com.ruleforge.decision.flow.ir.FlowNode;
 import com.ruleforge.decision.flow.ir.NodeType;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 /**
@@ -28,10 +28,21 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class EventNodeExecutor implements NodeExecutor {
 
     private final NodeExecutorRegistry registry;
+
+    /**
+     * V5.101 — {@code @Lazy} 打破构造器循环: {@link NodeExecutorRegistry} 构造器要
+     * {@code List<NodeExecutor>} (含本 bean), 本 bean 构造器又要 NodeExecutorRegistry。
+     * Spring 6+ 无法打破构造器循环 (即便 allow-circular-references=true, 那只对 setter/field
+     * 有效)。 {@code @Lazy} 让 Spring 注入 registry 的延迟代理, 先创建 EventNodeExecutor,
+     * 再创建 NodeExecutorRegistry (List 里就有 ready 的 EventNodeExecutor), 代理延迟解析到
+     * 真实 registry, 循环打破。 V5.76 (PR #140) Spring-ify flow executor 引入该循环。
+     */
+    public EventNodeExecutor(@Lazy NodeExecutorRegistry registry) {
+        this.registry = registry;
+    }
 
     @Override
     public String supportedType() {
