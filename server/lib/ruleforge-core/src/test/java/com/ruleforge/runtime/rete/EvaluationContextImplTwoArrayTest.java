@@ -2,7 +2,7 @@ package com.ruleforge.runtime.rete;
 
 import com.ruleforge.debug.MessageItem;
 import com.ruleforge.rete.test.EngineContextWirer;
-import com.ruleforge.runtime.WorkingMemory;
+import com.ruleforge.engine.WorkingMemory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

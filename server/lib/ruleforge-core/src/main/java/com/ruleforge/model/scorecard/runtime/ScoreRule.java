@@ -13,7 +13,7 @@ import com.ruleforge.runtime.EngineContext;
 import com.ruleforge.runtime.KnowledgePackageWrapper;
 import com.ruleforge.runtime.KnowledgeSession;
 import com.ruleforge.runtime.KnowledgeSessionFactory;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 import com.ruleforge.runtime.rete.ValueCompute;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

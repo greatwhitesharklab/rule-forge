@@ -1,4 +1,6 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.EvaluationContext;
+import com.ruleforge.engine.Context;
 
 import com.ruleforge.debug.MsgType;
 import com.ruleforge.model.rule.ValueType;

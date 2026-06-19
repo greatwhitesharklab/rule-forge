@@ -1,4 +1,6 @@
 package com.ruleforge.runtime;
+import com.ruleforge.engine.EvaluationContext;
+import com.ruleforge.engine.Context;
 
 import com.ruleforge.debug.DebugWriter;
 import com.ruleforge.debug.MessageItem;

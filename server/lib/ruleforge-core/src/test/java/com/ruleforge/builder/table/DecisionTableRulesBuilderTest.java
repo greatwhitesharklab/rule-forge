@@ -13,7 +13,7 @@ import com.ruleforge.model.rule.lhs.Criterion;
 import com.ruleforge.model.rule.lhs.Lhs;
 import com.ruleforge.model.table.*;
 import com.ruleforge.parse.ValueParser;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

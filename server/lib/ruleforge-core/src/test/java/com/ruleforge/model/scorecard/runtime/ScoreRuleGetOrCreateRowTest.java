@@ -1,4 +1,5 @@
 package com.ruleforge.model.scorecard.runtime;
+import com.ruleforge.engine.Context;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

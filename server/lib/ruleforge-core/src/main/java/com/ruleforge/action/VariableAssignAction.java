@@ -6,7 +6,7 @@ import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.library.Datatype;
 import com.ruleforge.model.rule.Value;
 import com.ruleforge.model.rule.lhs.LeftType;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 import com.ruleforge.runtime.rete.ValueCompute;
 import org.apache.commons.lang.StringUtils;
 

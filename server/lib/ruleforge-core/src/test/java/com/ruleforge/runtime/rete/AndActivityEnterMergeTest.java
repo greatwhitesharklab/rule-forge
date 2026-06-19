@@ -1,4 +1,5 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.EvaluationContext;
 
 import com.ruleforge.model.rule.lhs.BaseCriteria;
 import com.ruleforge.model.rule.lhs.Criteria;

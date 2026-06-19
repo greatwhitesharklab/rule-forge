@@ -1,4 +1,5 @@
 package com.ruleforge.model.function;
+import com.ruleforge.engine.WorkingMemory;
 
 /**
  * 函数描述符 —— 引擎内置/用户扩展的"函数节点"运行时行为。

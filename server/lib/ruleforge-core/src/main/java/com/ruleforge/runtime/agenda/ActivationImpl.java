@@ -13,7 +13,7 @@ import com.ruleforge.model.scorecard.runtime.ScoreRule;
 import com.ruleforge.runtime.KnowledgeSession;
 import com.ruleforge.runtime.event.impl.ActivationAfterFiredEventImpl;
 import com.ruleforge.runtime.event.impl.ActivationBeforeFiredEventImpl;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 import com.ruleforge.runtime.rete.ContextImpl;
 import lombok.Getter;
 import lombok.Setter;

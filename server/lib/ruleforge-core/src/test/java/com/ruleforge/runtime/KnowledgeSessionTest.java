@@ -16,7 +16,7 @@ import com.ruleforge.plugin.EnginePluginRegistry;
 import com.ruleforge.runtime.agenda.Agenda;
 import com.ruleforge.runtime.assertor.AssertorEvaluator;
 import com.ruleforge.runtime.response.RuleExecutionResponse;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 import com.ruleforge.runtime.rete.EvaluationContextImpl;
 import com.ruleforge.runtime.rete.ValueCompute;
 import org.junit.jupiter.api.AfterEach;

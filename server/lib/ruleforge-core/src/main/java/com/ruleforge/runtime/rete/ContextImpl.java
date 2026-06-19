@@ -1,4 +1,5 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.Context;
 
 import com.ruleforge.debug.MessageItem;
 import com.ruleforge.debug.MsgType;
@@ -6,7 +7,7 @@ import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.rule.RuleInfo;
 import com.ruleforge.runtime.ElCalculator;
 import com.ruleforge.runtime.EngineContext;
-import com.ruleforge.runtime.WorkingMemory;
+import com.ruleforge.engine.WorkingMemory;
 import com.ruleforge.runtime.assertor.AssertorEvaluator;
 import org.apache.commons.lang.StringUtils;
 

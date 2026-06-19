@@ -1,4 +1,5 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.Activity;
 
 import com.ruleforge.model.rete.AndNode;
 import com.ruleforge.model.rete.CriteriaNode;

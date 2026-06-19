@@ -11,7 +11,7 @@ import com.ruleforge.model.rule.lhs.LeftType;
 import com.ruleforge.model.rule.lhs.VariableLeftPart;
 import com.ruleforge.model.library.Datatype;
 import com.ruleforge.rete.test.EngineContextWirer;
-import com.ruleforge.runtime.WorkingMemory;
+import com.ruleforge.engine.WorkingMemory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

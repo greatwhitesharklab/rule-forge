@@ -1,4 +1,5 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.Activity;
 
 /**
  * @author Jacky.gao

@@ -4,6 +4,7 @@
 //
 
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.Context;
 
 import com.ruleforge.config.PropertyConfigurer;
 import com.ruleforge.Utils;

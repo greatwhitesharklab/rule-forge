@@ -8,7 +8,7 @@ import com.ruleforge.runtime.KnowledgePackageWrapper;
 import com.ruleforge.runtime.KnowledgeSession;
 import com.ruleforge.runtime.KnowledgeSessionFactory;
 import com.ruleforge.runtime.response.RuleExecutionResponse;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;

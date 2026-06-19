@@ -3,7 +3,7 @@ package com.ruleforge.runtime.agenda;
 import com.ruleforge.action.ActionValue;
 import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.rule.RuleInfo;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;

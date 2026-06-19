@@ -1,12 +1,16 @@
-package com.ruleforge.runtime.rete;
-
-import com.ruleforge.debug.MessageItem;
-import com.ruleforge.debug.MsgType;
-import com.ruleforge.model.rule.RuleInfo;
-import com.ruleforge.runtime.WorkingMemory;
-import com.ruleforge.runtime.assertor.AssertorEvaluator;
-
+package com.ruleforge.engine;
 import java.util.List;
+import com.ruleforge.debug.MessageItem;
+import java.util.List;
+import com.ruleforge.debug.MsgType;
+import java.util.List;
+import com.ruleforge.model.rule.RuleInfo;
+import java.util.List;
+import com.ruleforge.runtime.assertor.AssertorEvaluator;
+import java.util.List;
+import com.ruleforge.runtime.rete.ValueCompute;
+
+
 
 public interface Context {
 

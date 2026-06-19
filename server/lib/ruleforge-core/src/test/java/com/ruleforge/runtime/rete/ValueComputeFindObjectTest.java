@@ -1,4 +1,5 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.WorkingMemory;
 
 import com.ruleforge.rete.test.EngineContextWirer;
 

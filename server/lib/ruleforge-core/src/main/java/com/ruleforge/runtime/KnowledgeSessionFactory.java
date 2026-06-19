@@ -1,7 +1,7 @@
 package com.ruleforge.runtime;
 
 import com.ruleforge.exception.RuleException;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 
 public class KnowledgeSessionFactory {
     public KnowledgeSessionFactory() {

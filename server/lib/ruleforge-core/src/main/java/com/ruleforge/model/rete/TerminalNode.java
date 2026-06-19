@@ -1,4 +1,5 @@
 package com.ruleforge.model.rete;
+import com.ruleforge.engine.Context;
 
 import com.ruleforge.model.rule.Rule;
 
@@ -24,7 +25,7 @@ public class TerminalNode extends ReteNode {
         return nodeType;
     }
 
-    public Rule[] enter(com.ruleforge.runtime.rete.Context context, Object object) {
+    public Rule[] enter(com.ruleforge.engine.Context context, Object object) {
         return new Rule[]{rule};
     }
 

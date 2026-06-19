@@ -6,7 +6,7 @@ import java.util.List;
 import com.ruleforge.action.ActionValue;
 import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.rule.RuleInfo;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 
 /**
  * @author Jacky.gao

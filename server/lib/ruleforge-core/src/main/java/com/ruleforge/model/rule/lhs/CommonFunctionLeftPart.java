@@ -9,7 +9,7 @@ import com.ruleforge.model.function.FunctionDescriptor;
 import com.ruleforge.model.rule.Value;
 import com.ruleforge.runtime.EngineContext;
 import com.ruleforge.runtime.function.WorkingMemoryFunctionContext;
-import com.ruleforge.runtime.rete.EvaluationContext;
+import com.ruleforge.engine.EvaluationContext;
 
 
 /**

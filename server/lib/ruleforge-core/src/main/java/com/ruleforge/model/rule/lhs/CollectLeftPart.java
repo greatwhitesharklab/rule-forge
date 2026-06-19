@@ -1,7 +1,7 @@
 package com.ruleforge.model.rule.lhs;
 
 import com.ruleforge.Utils;
-import com.ruleforge.runtime.rete.EvaluationContext;
+import com.ruleforge.engine.EvaluationContext;
 
 import java.math.BigDecimal;
 import java.util.List;
