@@ -1,4 +1,4 @@
-package com.ruleforge;
+package com.ruleforge.config;
 
 import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 

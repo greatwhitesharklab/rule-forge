@@ -3,7 +3,7 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean id="ruleforge.props" class="com.ruleforge.RuleForgePropertyPlaceholderConfigurer" abstract="true"/>
+    <bean id="ruleforge.props" class="com.ruleforge.config.RuleForgePropertyPlaceholderConfigurer" abstract="true"/>
 
     <bean id="ruleforge.core.propertyPlaceholderConfigurer"
           class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
@@ -23,7 +23,7 @@
         <property name="crosstableDeserializer" ref="ruleforge.crosstableDeserializer"/>
     </bean>
 
-    <bean id="ruleforge.propertyConfigurer" class="com.ruleforge.PropertyConfigurer">
+    <bean id="ruleforge.propertyConfigurer" class="com.ruleforge.config.PropertyConfigurer">
     </bean>
 
     <bean id="ruleforge.crosstabParser" class="com.ruleforge.parse.crosstab.CrosstabParser">
