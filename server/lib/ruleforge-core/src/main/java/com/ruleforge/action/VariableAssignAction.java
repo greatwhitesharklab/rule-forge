@@ -9,8 +9,8 @@ import com.ruleforge.model.rule.lhs.LeftType;
 import com.ruleforge.runtime.rete.Context;
 import com.ruleforge.runtime.rete.ValueCompute;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.BeanUtils;
 
+import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.util.HashMap;
 import java.util.List;
@@ -52,7 +52,12 @@ public class VariableAssignAction extends AbstractAction {
                 label = this.variableCategory + "." + (this.variableLabel == null ? this.variableName : this.variableLabel);
 
                 if (this.datatype.equals(Datatype.Enum) && obj != null && StringUtils.isNotBlank(obj.toString())) {
-                    PropertyDescriptor pd = BeanUtils.getPropertyDescriptor(targetFact.getClass(), this.variableName);
+                    PropertyDescriptor pd;
+                    try {
+                        pd = new PropertyDescriptor(this.variableName, targetFact.getClass());
+                    } catch (IntrospectionException e) {
+                        throw new RuleException(label, obj, "Property not found: " + this.variableName, e);
+                    }
                     Class<Enum> targetClass = (Class<Enum>) pd.getPropertyType();
                     obj = Enum.valueOf(targetClass, obj.toString());
                 } else if (obj != null) {

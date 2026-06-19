@@ -141,7 +141,11 @@
         <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
     </bean>
 
-    <bean id="ruleforge.knowledgeService" class="com.ruleforge.runtime.service.KnowledgeServiceImpl" autowire="constructor"/>
+    <bean id="ruleforge.knowledgeService" class="com.ruleforge.runtime.service.KnowledgeServiceImpl" autowire="constructor">
+        <property name="knowledgeUpdateCycle" value="${ruleforge.knowledgeUpdateCycleV2:0}"/>
+    </bean>
+
+    <bean id="ruleforge.memoryKnowledgeCache" class="com.ruleforge.runtime.cache.MemoryKnowledgeCache"/>
 
     <bean id="ruleforge.dateAction" class="com.ruleforge.runtime.builtinaction.DateAction"/>
     <bean id="ruleforge.stringAction" class="com.ruleforge.runtime.builtinaction.StringAction"/>
