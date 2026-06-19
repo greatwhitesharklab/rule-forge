@@ -3,23 +3,24 @@ package com.ruleforge.runtime.service;
 
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.runtime.KnowledgePackage;
-import com.ruleforge.runtime.cache.CacheUtils;
+import com.ruleforge.config.CacheUtils;
 import com.ruleforge.runtime.cache.KnowledgeCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 
 @Slf4j
-@Service("ruleforge.knowledgeService")
 @RequiredArgsConstructor
 public class KnowledgeServiceImpl implements KnowledgeService {
 
-    @Value("${ruleforge.knowledgeUpdateCycleV2:0}") // 使用 V2 配置，0:每次都从远程获取, >=1:周期检查(毫秒)
-    private Long knowledgeUpdateCycle;
+    private Long knowledgeUpdateCycle = 0L;
     private final KnowledgePackageService knowledgePackageService;
+
+    /** V6.0:由 XML property 注入(原 @Value,去 Spring 注解) */
+    public void setKnowledgeUpdateCycle(Long knowledgeUpdateCycle) {
+        this.knowledgeUpdateCycle = knowledgeUpdateCycle;
+    }
 
     @Override
     public KnowledgePackage[] getKnowledges(String[] packageIds) throws IOException {

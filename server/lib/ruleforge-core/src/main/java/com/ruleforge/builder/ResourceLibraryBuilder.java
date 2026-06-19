@@ -11,7 +11,7 @@ import com.ruleforge.model.library.variable.Variable;
 import com.ruleforge.model.library.variable.VariableCategory;
 import com.ruleforge.model.library.variable.VariableLibrary;
 import com.ruleforge.model.rule.Library;
-import com.ruleforge.runtime.BuiltInActionLibraryBuilder;
+import com.ruleforge.config.BuiltInActionLibraryBuilder;
 import org.dom4j.Element;
 
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package com.ruleforge.runtime;
+package com.ruleforge.config;
 
 import com.ruleforge.model.library.Datatype;
 import com.ruleforge.model.library.action.Parameter;

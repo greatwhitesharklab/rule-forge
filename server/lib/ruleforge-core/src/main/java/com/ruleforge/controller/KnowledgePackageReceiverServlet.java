@@ -3,7 +3,7 @@ package com.ruleforge.controller;
 import com.ruleforge.Configure;
 import com.ruleforge.runtime.KnowledgePackage;
 import com.ruleforge.runtime.KnowledgePackageWrapper;
-import com.ruleforge.runtime.cache.CacheUtils;
+import com.ruleforge.config.CacheUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -5,7 +5,7 @@
 
 package com.ruleforge.runtime.rete;
 
-import com.ruleforge.PropertyConfigurer;
+import com.ruleforge.config.PropertyConfigurer;
 import com.ruleforge.Utils;
 import com.ruleforge.action.ActionValue;
 import com.ruleforge.action.ExecuteMethodAction;

@@ -1,4 +1,6 @@
-package com.ruleforge.builder.resource;
+package com.ruleforge.config;
+import com.ruleforge.builder.resource.ResourceProvider;
+import com.ruleforge.builder.resource.Resource;
 
 import com.ruleforge.exception.RuleException;
 import org.apache.commons.io.IOUtils;

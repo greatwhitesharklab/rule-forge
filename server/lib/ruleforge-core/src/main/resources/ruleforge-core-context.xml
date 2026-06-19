@@ -3,7 +3,7 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean id="ruleforge.props" class="com.ruleforge.RuleForgePropertyPlaceholderConfigurer" abstract="true"/>
+    <bean id="ruleforge.props" class="com.ruleforge.config.RuleForgePropertyPlaceholderConfigurer" abstract="true"/>
 
     <bean id="ruleforge.core.propertyPlaceholderConfigurer"
           class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
@@ -23,7 +23,7 @@
         <property name="crosstableDeserializer" ref="ruleforge.crosstableDeserializer"/>
     </bean>
 
-    <bean id="ruleforge.propertyConfigurer" class="com.ruleforge.PropertyConfigurer">
+    <bean id="ruleforge.propertyConfigurer" class="com.ruleforge.config.PropertyConfigurer">
     </bean>
 
     <bean id="ruleforge.crosstabParser" class="com.ruleforge.parse.crosstab.CrosstabParser">
@@ -60,7 +60,7 @@
         <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
     </bean>
 
-    <bean id="ruleforge.builtInActionLibraryBuilder" class="com.ruleforge.runtime.BuiltInActionLibraryBuilder"/>
+    <bean id="ruleforge.builtInActionLibraryBuilder" class="com.ruleforge.config.BuiltInActionLibraryBuilder"/>
 
     <bean id="ruleforge.rulesRebuilder" class="com.ruleforge.builder.RulesRebuilder">
         <property name="resourceLibraryBuilder" ref="ruleforge.resourceLibraryBuilder"/>
@@ -141,7 +141,11 @@
         <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
     </bean>
 
-    <bean id="ruleforge.knowledgeService" class="com.ruleforge.runtime.service.KnowledgeServiceImpl" autowire="constructor"/>
+    <bean id="ruleforge.knowledgeService" class="com.ruleforge.runtime.service.KnowledgeServiceImpl" autowire="constructor">
+        <property name="knowledgeUpdateCycle" value="${ruleforge.knowledgeUpdateCycleV2:0}"/>
+    </bean>
+
+    <bean id="ruleforge.memoryKnowledgeCache" class="com.ruleforge.runtime.cache.MemoryKnowledgeCache"/>
 
     <bean id="ruleforge.dateAction" class="com.ruleforge.runtime.builtinaction.DateAction"/>
     <bean id="ruleforge.stringAction" class="com.ruleforge.runtime.builtinaction.StringAction"/>
@@ -150,9 +154,9 @@
     <bean id="ruleforge.mapAction" class="com.ruleforge.runtime.builtinaction.MapAction"/>
     <bean id="ruleforge.loopAction" class="com.ruleforge.runtime.builtinaction.LoopAction"/>
 
-    <bean id="ruleforge.cacheUtils" class="com.ruleforge.runtime.cache.CacheUtils"/>
+    <bean id="ruleforge.cacheUtils" class="com.ruleforge.config.CacheUtils"/>
 
-    <bean id="ruleforge.fileResourceProvider" class="com.ruleforge.builder.resource.FileResourceProvider"/>
+    <bean id="ruleforge.fileResourceProvider" class="com.ruleforge.config.FileResourceProvider"/>
 
     <bean id="ruleforge.valueCompute" class="com.ruleforge.runtime.rete.ValueCompute"/>
 
