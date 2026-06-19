@@ -1,4 +1,5 @@
 package com.ruleforge;
+import com.ruleforge.engine.EngineContext;
 
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.library.Datatype;

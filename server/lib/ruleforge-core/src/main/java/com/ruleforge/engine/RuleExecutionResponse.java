@@ -1,9 +1,11 @@
-package com.ruleforge.runtime.response;
+package com.ruleforge.engine;
 
 import com.ruleforge.action.ActionValue;
 import com.ruleforge.model.rule.RuleInfo;
 
 import java.util.List;
+import com.ruleforge.runtime.response.ExecutionResponse;
+import com.ruleforge.runtime.response.FlowExecutionResponse;
 
 public interface RuleExecutionResponse extends ExecutionResponse {
 

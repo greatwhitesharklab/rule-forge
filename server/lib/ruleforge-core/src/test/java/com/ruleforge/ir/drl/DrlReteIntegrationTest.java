@@ -1,4 +1,5 @@
 package com.ruleforge.ir.drl;
+import com.ruleforge.engine.EngineContext;
 import com.ruleforge.engine.AssertorEvaluator;
 import com.ruleforge.engine.ValueCompute;
 
@@ -15,7 +16,7 @@ import com.ruleforge.model.rete.builder.ReteBuilder;
 import com.ruleforge.model.rule.Rule;
 import com.ruleforge.runtime.KnowledgePackage;
 import com.ruleforge.runtime.KnowledgeSessionImpl;
-import com.ruleforge.runtime.response.RuleExecutionResponse;
+import com.ruleforge.engine.RuleExecutionResponse;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

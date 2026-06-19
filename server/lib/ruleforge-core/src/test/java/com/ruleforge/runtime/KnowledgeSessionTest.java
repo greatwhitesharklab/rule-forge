@@ -1,4 +1,5 @@
 package com.ruleforge.runtime;
+import com.ruleforge.engine.EngineContext;
 import com.ruleforge.engine.KnowledgeSession;
 
 import com.ruleforge.action.AbstractAction;
@@ -16,7 +17,7 @@ import com.ruleforge.model.rule.Rule;
 import com.ruleforge.plugin.EnginePluginRegistry;
 import com.ruleforge.runtime.agenda.Agenda;
 import com.ruleforge.engine.AssertorEvaluator;
-import com.ruleforge.runtime.response.RuleExecutionResponse;
+import com.ruleforge.engine.RuleExecutionResponse;
 import com.ruleforge.engine.Context;
 import com.ruleforge.runtime.rete.EvaluationContextImpl;
 import com.ruleforge.engine.ValueCompute;

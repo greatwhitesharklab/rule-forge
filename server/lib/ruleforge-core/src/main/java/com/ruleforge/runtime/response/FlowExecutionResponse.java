@@ -1,4 +1,5 @@
 package com.ruleforge.runtime.response;
+import com.ruleforge.engine.RuleExecutionResponse;
 
 import java.util.List;
 

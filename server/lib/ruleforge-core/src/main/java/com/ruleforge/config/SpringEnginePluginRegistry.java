@@ -9,7 +9,7 @@ import com.ruleforge.model.rete.builder.CriterionBuilder;
 import com.ruleforge.parse.ActionParser;
 import com.ruleforge.parse.CriterionParser;
 import com.ruleforge.plugin.EnginePluginRegistry;
-import com.ruleforge.runtime.EngineContext;
+import com.ruleforge.engine.EngineContext;
 import com.ruleforge.runtime.assertor.Assertor;
 import com.ruleforge.engine.AssertorEvaluator;
 import com.ruleforge.engine.ValueCompute;

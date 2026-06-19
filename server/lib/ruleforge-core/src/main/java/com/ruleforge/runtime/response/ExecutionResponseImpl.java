@@ -1,4 +1,5 @@
 package com.ruleforge.runtime.response;
+import com.ruleforge.engine.RuleExecutionResponse;
 
 import com.ruleforge.action.ActionValue;
 import com.ruleforge.model.rule.RuleInfo;

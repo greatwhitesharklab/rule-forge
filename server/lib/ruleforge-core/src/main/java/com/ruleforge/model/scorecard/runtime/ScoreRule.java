@@ -9,7 +9,7 @@ import com.ruleforge.model.rule.Library;
 import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.scorecard.AssignTargetType;
 import com.ruleforge.model.scorecard.ScoringType;
-import com.ruleforge.runtime.EngineContext;
+import com.ruleforge.engine.EngineContext;
 import com.ruleforge.runtime.KnowledgePackageWrapper;
 import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.runtime.KnowledgeSessionFactory;

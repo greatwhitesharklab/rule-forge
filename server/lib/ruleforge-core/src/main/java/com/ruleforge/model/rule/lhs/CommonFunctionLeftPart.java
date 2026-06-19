@@ -7,8 +7,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ruleforge.model.function.Argument;
 import com.ruleforge.model.function.FunctionDescriptor;
 import com.ruleforge.model.rule.Value;
-import com.ruleforge.runtime.EngineContext;
-import com.ruleforge.runtime.function.WorkingMemoryFunctionContext;
+import com.ruleforge.engine.EngineContext;
+import com.ruleforge.engine.WorkingMemoryFunctionContext;
 import com.ruleforge.engine.EvaluationContext;
 
 

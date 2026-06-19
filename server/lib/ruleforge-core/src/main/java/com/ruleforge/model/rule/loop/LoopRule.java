@@ -7,7 +7,7 @@ import com.ruleforge.model.rule.Rule;
 import com.ruleforge.runtime.KnowledgePackageWrapper;
 import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.runtime.KnowledgeSessionFactory;
-import com.ruleforge.runtime.response.RuleExecutionResponse;
+import com.ruleforge.engine.RuleExecutionResponse;
 import com.ruleforge.engine.Context;
 import java.util.ArrayList;
 import java.util.Collection;

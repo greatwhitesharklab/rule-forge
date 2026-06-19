@@ -11,7 +11,7 @@ import com.ruleforge.model.rule.Value;
 import com.ruleforge.model.rule.lhs.CommonFunctionParameter;
 import com.ruleforge.plugin.EnginePluginRegistry;
 import com.ruleforge.rete.test.EngineContextWirer;
-import com.ruleforge.runtime.EngineContext;
+import com.ruleforge.engine.EngineContext;
 import com.ruleforge.engine.WorkingMemory;
 import com.ruleforge.engine.AssertorEvaluator;
 import com.ruleforge.engine.Context;
