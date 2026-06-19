@@ -1,4 +1,5 @@
 package com.ruleforge.model.rete;
+import com.ruleforge.engine.NodeActivityFactory;
 
 /**
  * RETE AND 节点:所有入边都通过才触发下游。V5.76.6 后不再持有 {@code newActivity}(改由

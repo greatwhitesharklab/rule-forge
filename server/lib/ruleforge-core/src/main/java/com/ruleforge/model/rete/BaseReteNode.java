@@ -1,4 +1,5 @@
 package com.ruleforge.model.rete;
+import com.ruleforge.engine.NodeActivityFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;

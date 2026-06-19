@@ -1,4 +1,9 @@
-package com.ruleforge.runtime.rete;
+package com.ruleforge.engine;
+import com.ruleforge.runtime.rete.AndActivity;
+import com.ruleforge.runtime.rete.CriteriaActivity;
+import com.ruleforge.runtime.rete.ObjectTypeActivity;
+import com.ruleforge.runtime.rete.OrActivity;
+import com.ruleforge.runtime.rete.TerminalActivity;
 import com.ruleforge.engine.Activity;
 
 import com.ruleforge.model.rete.AndNode;

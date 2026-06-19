@@ -1,4 +1,5 @@
 package com.ruleforge.model.rete;
+import com.ruleforge.engine.NodeActivityFactory;
 import com.ruleforge.engine.Context;
 
 import com.ruleforge.model.rule.Rule;

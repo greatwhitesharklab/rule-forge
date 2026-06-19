@@ -12,7 +12,7 @@ import com.ruleforge.model.scorecard.ScoringType;
 import com.ruleforge.engine.EngineContext;
 import com.ruleforge.runtime.KnowledgePackageWrapper;
 import com.ruleforge.engine.KnowledgeSession;
-import com.ruleforge.runtime.KnowledgeSessionFactory;
+import com.ruleforge.engine.KnowledgeSessionFactory;
 import com.ruleforge.engine.Context;
 import com.ruleforge.engine.ValueCompute;
 import org.apache.commons.logging.Log;

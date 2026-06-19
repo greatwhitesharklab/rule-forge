@@ -1,4 +1,5 @@
 package com.ruleforge.runtime;
+import com.ruleforge.engine.KnowledgeSessionFactory;
 import com.ruleforge.engine.KnowledgeSession;
 
 import java.util.List;

@@ -1,4 +1,9 @@
-package com.ruleforge.runtime;
+package com.ruleforge.engine;
+import com.ruleforge.runtime.KnowledgePackage;
+import com.ruleforge.runtime.KnowledgePackageWrapper;
+import com.ruleforge.runtime.BatchSession;
+import com.ruleforge.runtime.KnowledgeSessionImpl;
+import com.ruleforge.runtime.BatchSessionImpl;
 import com.ruleforge.engine.KnowledgeSession;
 
 import com.ruleforge.exception.RuleException;

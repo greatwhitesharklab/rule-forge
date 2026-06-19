@@ -2,7 +2,7 @@ package com.ruleforge.model.rete;
 
 import com.ruleforge.model.Node;
 import com.ruleforge.model.library.ResourceLibrary;
-import com.ruleforge.runtime.rete.NodeActivityFactory;
+import com.ruleforge.engine.NodeActivityFactory;
 import com.ruleforge.runtime.rete.ObjectTypeActivity;
 import com.ruleforge.runtime.rete.ReteInstance;
 import com.ruleforge.runtime.rete.ReteInstanceUnit;

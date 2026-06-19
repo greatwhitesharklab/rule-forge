@@ -1,4 +1,5 @@
 package com.ruleforge.model.rule.lhs;
+import com.ruleforge.engine.NodeActivityFactory;
 
 import com.ruleforge.Utils;
 import com.ruleforge.action.ActionValue;
