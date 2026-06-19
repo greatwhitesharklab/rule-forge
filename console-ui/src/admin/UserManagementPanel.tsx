@@ -1,6 +1,7 @@
 import {Component} from 'react';
 import {Table, Button, Space, Tag, Modal, message} from 'antd';
 import {PlusOutlined, EditOutlined, StopOutlined, CheckOutlined, KeyOutlined, SafetyOutlined} from '@ant-design/icons';
+import PageShell from '@/frame/components/PageShell';
 import {
     listUsers,
     createUser,
@@ -212,12 +213,10 @@ export default class UserManagementPanel extends Component<{}, UserManagementPan
         ];
 
         return (
-            <div style={{padding: 16, height: '100%', overflow: 'auto'}}>
-                <div style={{marginBottom: 16, display: 'flex', justifyContent: 'space-between'}}>
-                    <h3 style={{margin: 0}}>用户管理</h3>
-                    <Button type="primary" icon={<PlusOutlined/>}
-                            onClick={this.showCreateForm}>新增用户</Button>
-                </div>
+            <PageShell
+                title="用户管理"
+                actions={<Button type="primary" icon={<PlusOutlined/>} onClick={this.showCreateForm}>新增用户</Button>}
+            >
                 <Table<UserItem>
                     rowKey="id"
                     dataSource={users}
@@ -241,7 +240,7 @@ export default class UserManagementPanel extends Component<{}, UserManagementPan
                         onClose={this.handleDrawerClose}
                     />
                 )}
-            </div>
+            </PageShell>
         );
     }
 }

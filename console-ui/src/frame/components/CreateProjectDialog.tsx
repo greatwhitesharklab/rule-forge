@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Input} from 'antd';
 import Dialog from '../../components/dialog/component/Dialog.jsx';
 import * as componentEvent from '../../components/componentEvent.js';
 import * as event from '../event.js';
@@ -58,11 +59,11 @@ export default class CreateProjectDialog extends Component<CreateProjectDialogPr
     render() {
         const {dispatch} = this.props;
         const body = (
-            <div className="rf-form-group">
+            <div className="ff-group">
                 <label>新项目名称</label>
-                <input type="text" className="rf-form-control" name="newProjectName" value={this.state.newProjectName}
-                       onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({newProjectName: e.target.value, errors: {}}) }.bind(this)}></input>
-                {this.state.errors.newProjectName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.newProjectName}</div>}
+                <Input name="newProjectName" value={this.state.newProjectName}
+                       onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({newProjectName: e.target.value, errors: {}}) }.bind(this)}/>
+                {this.state.errors.newProjectName && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.newProjectName}</div>}
             </div>
         );
         const buttons = [];

@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Button, Progress} from 'antd';
 import {apiBase} from '@/api/client';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
@@ -147,16 +148,11 @@ export default class BatchTestDialog extends Component<BatchTestDialogProps, Bat
             body = (
                 <div style={{padding: '15px'}}>
                     <h4>批量测试执行中...</h4>
-                    <div className="rf-progress" style={{marginBottom: '10px'}}>
-                        <div className="rf-progress-bar progress-bar-striped active"
-                             role="progressbar" style={{width: progress + '%'}}>
-                            {progress}%
-                        </div>
-                    </div>
-                    <div className="rf-row">
-                        <div className="rf-col-xs-4">总行数: {totalRows}</div>
-                        <div className="rf-col-xs-4 rf-text-success">成功: {successCount}</div>
-                        <div className="rf-col-xs-4 rf-text-danger">失败: {errorCount}</div>
+                    <Progress percent={progress} style={{marginBottom: 10}}/>
+                    <div className="ff-row">
+                        <div className="ff-col-4">总行数: {totalRows}</div>
+                        <div className="ff-col-4" style={{color: 'var(--rf-success)'}}>成功: {successCount}</div>
+                        <div className="ff-col-4" style={{color: 'var(--rf-danger)'}}>失败: {errorCount}</div>
                     </div>
                 </div>
             );
@@ -164,20 +160,20 @@ export default class BatchTestDialog extends Component<BatchTestDialogProps, Bat
             const exportFormId = 'batch-test-export-form';
             body = (
                 <div style={{padding: '15px'}}>
-                    <h4 className="rf-text-success">批量测试完成</h4>
-                    <div className="rf-row" style={{marginBottom: '10px'}}>
-                        <div className="rf-col-xs-4">总行数: {totalRows}</div>
-                        <div className="rf-col-xs-4 rf-text-success">成功: {successCount}</div>
-                        <div className="rf-col-xs-4 rf-text-danger">失败: {errorCount}</div>
+                    <h4  style={{color: 'var(--rf-success)'}}>批量测试完成</h4>
+                    <div className="ff-row" style={{marginBottom: '10px'}}>
+                        <div className="ff-col-4">总行数: {totalRows}</div>
+                        <div className="ff-col-4" style={{color: 'var(--rf-success)'}}>成功: {successCount}</div>
+                        <div className="ff-col-4" style={{color: 'var(--rf-danger)'}}>失败: {errorCount}</div>
                     </div>
                     <form id={exportFormId} method="post"
                           action={apiBase() + '/packageeditor/exportBatchTestExcel'}>
                         <input name="prefix" type="hidden" value={this._buildExportPrefix()}/>
                         <input name="sessionId" type="hidden" value={sessionId || ''}/>
                     </form>
-                    <button className="rf-btn rf-btn-success" onClick={() => (document.getElementById(exportFormId) as HTMLFormElement).submit()}>
+                    <Button color="green" onClick={() => (document.getElementById(exportFormId) as HTMLFormElement).submit()}>
                         <DownloadOutlined /> 导出测试结果
-                    </button>
+                    </Button>
                 </div>
             );
         } else {
@@ -187,7 +183,7 @@ export default class BatchTestDialog extends Component<BatchTestDialogProps, Bat
                     {sessionId ? (
                         <p>Session ID: {sessionId}</p>
                     ) : (
-                        <p className="rf-text-warning">未检测到导入数据，请先上传 Excel</p>
+                        <p  style={{color: 'var(--rf-warning)'}}>未检测到导入数据，请先上传 Excel</p>
                     )}
                 </div>
             );

@@ -1,14 +1,16 @@
-import React, {Component, ReactNode} from 'react';
+import {Component, ReactNode} from 'react';
+import {Button, Table, Tag} from 'antd';
+import type {ColumnsType} from 'antd/es/table';
 import {loadSimulationResults, SimulationResultItem} from '../action.js';
 
 /**
- * 仿真对比结果表格 — 严重度颜色标记
+ * 仿真对比结果表格 — 严重度颜色标记。V5.101:rf-table → antd Table。
  */
-const SEVERITY_COLORS: Record<string, string> = {
-    HIGH: '#F44336',
-    MEDIUM: '#FF9800',
-    LOW: '#2196F3',
-    NONE: '#4CAF50'
+const SEVERITY_TAG: Record<string, string> = {
+    HIGH: 'error',
+    MEDIUM: 'warning',
+    LOW: 'processing',
+    NONE: 'success'
 };
 
 interface SimulationResultsTableProps {
@@ -59,77 +61,43 @@ class SimulationResultsTable extends Component<SimulationResultsTableProps, Simu
         });
     }
 
-    renderSeverityBadge(severity: string): ReactNode {
-        const color = SEVERITY_COLORS[severity] || '#999';
-        return (
-            <span style={{
-                display: 'inline-block', padding: '2px 8px', borderRadius: 3,
-                backgroundColor: color, color: '#fff', fontSize: 11, fontWeight: 'bold'
-            }}>
-                {severity || 'NONE'}
-            </span>
-        );
-    }
-
-    renderRow(item: SimulationResultItem, index: number): ReactNode {
-        const bgColor = item.hasDivergence ? '#FFF8E1' : '#fff';
-        return (
-            <tr key={item.id || index} style={{backgroundColor: bgColor, fontSize: 11}}>
-                <td>{item.originalFlowLogId}</td>
-                <td>{this.renderMatchIcon(item.statusMatch)}</td>
-                <td>{this.renderMatchIcon(item.resultMatch)}</td>
-                <td>{this.renderSeverityBadge(item.divergenceSeverity)}</td>
-                <td>{item.errorMessage || '-'}</td>
-            </tr>
-        );
-    }
-
-    renderMatchIcon(match: boolean | number): ReactNode {
-        if (match === true || match === 1) {
-            return <span style={{color: '#4CAF50'}}>&#10003;</span>;
-        }
-        return <span style={{color: '#F44336'}}>&#10007;</span>;
-    }
+    columns: ColumnsType<SimulationResultItem> = [
+        {title: '日志ID', dataIndex: 'originalFlowLogId', key: 'log'},
+        {
+            title: '状态', dataIndex: 'statusMatch', key: 'st',
+            render: (v: boolean | number) => <span style={{color: (v === true || v === 1) ? 'var(--rf-success)' : 'var(--rf-danger)'}}>{(v === true || v === 1) ? '✓' : '✗'}</span>
+        },
+        {
+            title: '结果', dataIndex: 'resultMatch', key: 'rs',
+            render: (v: boolean | number) => <span style={{color: (v === true || v === 1) ? 'var(--rf-success)' : 'var(--rf-danger)'}}>{(v === true || v === 1) ? '✓' : '✗'}</span>
+        },
+        {
+            title: '严重度', dataIndex: 'divergenceSeverity', key: 'sev',
+            render: (s: string) => <Tag color={SEVERITY_TAG[s] || 'default'}>{s || 'NONE'}</Tag>
+        },
+        {title: '错误', dataIndex: 'errorMessage', key: 'err', render: (v: string) => v || '-'},
+    ];
 
     render(): ReactNode {
         if (!this.props.runId) {
-            return <div style={{color: '#999', fontSize: 12, padding: 8}}>请先启动仿真</div>;
+            return <div style={{color: 'var(--rf-text-tertiary)', fontSize: 12, padding: 8}}>请先启动仿真</div>;
         }
         const state = this.state;
         if (state.loading && state.results.length === 0) {
-            return <div style={{color: '#999', fontSize: 12, padding: 8}}>加载中...</div>;
+            return <div style={{color: 'var(--rf-text-tertiary)', fontSize: 12, padding: 8}}>加载中...</div>;
         }
         return (
             <div>
-                <table className="rf-table rf-table-condensed rf-table-bordered" style={{fontSize: 11}}>
-                    <thead>
-                    <tr>
-                        <th>日志ID</th>
-                        <th>状态</th>
-                        <th>结果</th>
-                        <th>严重度</th>
-                        <th>错误</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {state.results.length > 0
-                        ? state.results.map(this.renderRow.bind(this))
-                        : <tr><td colSpan={5} style={{textAlign: 'center', color: '#999'}}>暂无数据</td></tr>
-                    }
-                    </tbody>
-                </table>
+                <Table<SimulationResultItem> rowKey={(r, i) => String(r.id ?? i)} dataSource={state.results}
+                    columns={this.columns} pagination={false} size="small"
+                    onRow={(r: SimulationResultItem) => ({style: {background: r.hasDivergence ? '#fff8e1' : undefined}})}
+                    locale={{emptyText: '暂无数据'}}/>
                 <div style={{textAlign: 'center', marginTop: 8}}>
-                    <button className="rf-btn rf-btn-xs rf-btn-default"
-                            disabled={state.page <= 1}
-                            onClick={this.loadResults.bind(this, state.page - 1)}>
-                        上一页
-                    </button>
+                    <Button size="small" disabled={state.page <= 1}
+                            onClick={() => this.loadResults(state.page - 1)}>上一页</Button>
                     <span style={{margin: '0 8px', fontSize: 11}}>第 {state.page} 页</span>
-                    <button className="rf-btn rf-btn-xs rf-btn-default"
-                            disabled={state.results.length < state.size}
-                            onClick={this.loadResults.bind(this, state.page + 1)}>
-                        下一页
-                    </button>
+                    <Button size="small" disabled={state.results.length < state.size}
+                            onClick={() => this.loadResults(state.page + 1)}>下一页</Button>
                 </div>
             </div>
         );

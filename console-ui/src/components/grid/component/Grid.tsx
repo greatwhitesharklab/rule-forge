@@ -1,4 +1,5 @@
 import '../css/grid.css';
+import {Input} from 'antd';
 import { Component } from 'react';
 import Row from './Row.tsx';
 import CellEditor from './CellEditor.tsx';
@@ -115,8 +116,8 @@ class Grid extends Component<GridProps, GridState> {
                 {headers.map((header, index) => {
                     if (header.filterable) {
                         return (<td key={uniqueID()}>
-                            <input type="text" onKeyPress={this.onFilter.bind(this, index)} name={header.id}
-                                className="rf-form-control" style={{ height: '28px' }}
+                            <Input type="text" onKeyPress={this.onFilter.bind(this, index)} name={header.id}
+                                 style={{ height: '28px' }}
                                 placeholder='请输入过滤条件，回车查询...' />
                         </td>);
                     } else if (!header.hideFilterRow) {
@@ -152,9 +153,9 @@ class Grid extends Component<GridProps, GridState> {
         });
         const tableStyle: React.CSSProperties = { margin: 0, width: (this.props.width ? this.props.width : '100%') };
         return (
-            <table className="rf-table rf-table-bordered" style={tableStyle}>
+            <table className="grid-table" style={tableStyle}>
                 <thead>
-                    <tr className="rf-well">{headerContent}</tr>
+                    <tr>{headerContent}</tr>
                 </thead>
                 <tbody>{bodyContent}</tbody>
             </table>

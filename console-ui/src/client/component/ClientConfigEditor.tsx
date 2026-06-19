@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import {Button, Space} from 'antd';
 import {connect} from 'react-redux';
 import Grid from '../../components/grid/component/Grid.tsx';
 import * as action from '../action.ts';
@@ -37,18 +38,18 @@ class ClientConfigEditor extends Component<ClientConfigEditorProps> {
         return (
             <div>
                 <div style={{margin: '2px'}}>
-                    <div className="rf-btn-group" style={{margin: '2px'}}>
-                        <button className="rf-btn rf-btn-primary" type="button" onClick={e => {
+                    <Space size="small" style={{margin: '2px'}}>
+                        <Button type="primary" htmlType="button" onClick={e => {
                             dispatch(action.add())
                         }}><PlusCircleOutlined /> 添加
-                        </button>
-                    </div>
-                    <div className="rf-btn-group" style={{margin: '2px'}}>
-                        <button className="rf-btn rf-btn-danger" type="button" onClick={() => {
+                        </Button>
+                    </Space>
+                    <Space size="small" style={{margin: '2px'}}>
+                        <Button color="danger" htmlType="button" onClick={() => {
                             action.save(data, project);
                         }}><SaveOutlined /> 保存
-                        </button>
-                    </div>
+                        </Button>
+                    </Space>
                 </div>
                 <Grid headers={headers} rows={data} dispatch={dispatch} operationConfig={operationConfig}/>
             </div>

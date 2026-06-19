@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import {Button, Space} from 'antd';
 import {connect} from 'react-redux';
 import Grid from '../../components/grid/component/Grid.tsx';
 import * as action from '../action.js';
@@ -71,25 +72,25 @@ class ParameterEditor extends Component<ParameterEditorProps> {
             <div>
                 <ReferenceDialog/>
                 <div style={{margin: '2px'}}>
-                    <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                        <button className="rf-btn rf-btn-primary" type="button"
+                    <Space size="small" style={{margin: '2px'}}>
+                        <Button type="primary" htmlType="button"
                                 onClick={() => {dispatch(action.add());}}>
                             <PlusCircleOutlined /> 添加
-                        </button>
-                    </div>
-                    <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                        <button className="rf-btn rf-btn-danger" type="button"
+                        </Button>
+                    </Space>
+                    <Space size="small" style={{margin: '2px'}}>
+                        <Button color="danger" htmlType="button"
                                 onClick={() => {dispatch(action.save(false, file));}}>
                             <i className="rf rf-save"></i> 保存
-                        </button>
-                        <button className="rf-btn rf-btn-danger" type="button"
+                        </Button>
+                        <Button color="danger" htmlType="button"
                                 onClick={() => {dispatch(action.save(true, file));}}
                                 style={{display: 'none'}}>
                             <i className="rf rf-savenewversion"></i> 保存为新版本
-                        </button>
-                    </div>
-                    <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                        <button className="rf-btn rf-btn-info" type="button" onClick={() => {
+                        </Button>
+                    </Space>
+                    <Space size="small" style={{margin: '2px'}}>
+                        <Button color="blue" htmlType="button" onClick={() => {
                             if (!this.currentData) {
                                 alert('请先选择一条具体的参数');
                                 return;
@@ -101,8 +102,8 @@ class ParameterEditor extends Component<ParameterEditorProps> {
                                 varName: this.currentData.name
                             };
                             refEvent.eventEmitter.emit(refEvent.OPEN_REFERENCE_DIALOG, refData, title);
-                        }}><i className="rf rf-link"></i> 查看引用</button>
-                    </div>
+                        }}><i className="rf rf-link"></i> 查看引用</Button>
+                    </Space>
                 </div>
                 <Grid headers={headers} rows={data} dispatch={dispatch} operationConfig={operationConfig}
                       rowClick={(rowData: ParameterItem) => {

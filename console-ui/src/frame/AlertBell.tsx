@@ -1,5 +1,6 @@
 import {Component} from 'react';
 import {Badge, Popover, Empty, Button, Tag} from 'antd';
+import {BellOutlined} from '@ant-design/icons';
 import {jsonPost} from '@/api/client';
 import * as componentEvent from '@/components/componentEvent.js';
 
@@ -189,18 +190,10 @@ export default class AlertBell extends Component<AlertBellProps, AlertBellState>
                     data-testid="alert-bell-btn"
                     className="topbar-bell"
                     onClick={this.handleBellClick}
-                    style={{
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '4px 8px',
-                        position: 'relative',
-                        fontSize: 16,
-                    }}
                     aria-label="待审通知"
                 >
                     <Badge count={count} size="small" offset={[-2, 2]} overflowCount={99}>
-                        <span style={{fontSize: 18}}>🔔</span>
+                        <BellOutlined/>
                     </Badge>
                 </button>
             </Popover>

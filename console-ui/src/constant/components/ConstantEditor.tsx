@@ -1,4 +1,5 @@
 import React from 'react';
+import {Button, Space} from 'antd';
 import {connect} from 'react-redux';
 import Grid from '../../components/grid/component/Grid.tsx';
 import Splitter from '../../components/splitter/component/Splitter.tsx';
@@ -92,30 +93,30 @@ class ConstantEditor extends React.Component<ConstantEditorProps> {
             ]
         };
         return (
-            <div className="rf-row" style={{margin: '0px'}}>
+            <div className="ff-row" style={{margin: '0px'}}>
                 <ReferenceDialog/>
                 <Splitter orientation='vertical' position='40%'>
                     <div>
                         <div style={{margin: '2px'}}>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-primary" type="button"
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button type="primary" htmlType="button"
                                         onClick={() => {dispatch(action.addMaster());}}>
                                     <PlusCircleOutlined /> 添加分类
-                                </button>
-                            </div>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-danger" type="button"
+                                </Button>
+                            </Space>
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button color="danger" htmlType="button"
                                         onClick={() => {dispatch(action.save(false, file));}}>
                                     <i className="rf rf-save"></i> 保存
-                                </button>
-                                <button className="rf-btn rf-btn-danger" type="button"
+                                </Button>
+                                <Button color="danger" htmlType="button"
                                         onClick={() => {dispatch(action.save(true, file));}}
                                         style={{display: 'none'}}>
                                     <i className="rf rf-savenewversion"></i> 保存为新版本
-                                </button>
-                            </div>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-info" type="button" onClick={() => {
+                                </Button>
+                            </Space>
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button color="blue" htmlType="button" onClick={() => {
                                     if (!this.currentData) {
                                         alert('请先选择一条具体的常量');
                                         return;
@@ -129,8 +130,8 @@ class ConstantEditor extends React.Component<ConstantEditorProps> {
                                         constName: this.currentData.name
                                     };
                                     refEvent.eventEmitter.emit(refEvent.OPEN_REFERENCE_DIALOG, data, title);
-                                }}><i className="rf rf-link"></i> 查看引用</button>
-                            </div>
+                                }}><i className="rf rf-link"></i> 查看引用</Button>
+                            </Space>
                         </div>
                         <Grid headers={masterHeaders} dispatch={dispatch} rows={masterData}
                               operationConfig={masterGridOperationCol} rowClick={(rowData: ConstantCategory) => {
@@ -141,12 +142,12 @@ class ConstantEditor extends React.Component<ConstantEditorProps> {
                     </div>
                     <div>
                         <div style={{margin: '2px'}}>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-primary" type="button"
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button type="primary" htmlType="button"
                                         onClick={() => {dispatch(action.addSlave());}}>
                                     <PlusOutlined /> 添加常量
-                                </button>
-                            </div>
+                                </Button>
+                            </Space>
                         </div>
                         <Grid headers={slaveHeaders} dispatch={dispatch}
                               rows={(masterRowData as ConstantCategory).constants || []}

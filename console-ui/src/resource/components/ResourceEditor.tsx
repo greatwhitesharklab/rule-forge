@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import {Button, Space} from 'antd';
 import Grid from '../../components/grid/component/Grid.tsx';
 import * as action from '../action.js';
 import * as refEvent from '../../reference/event.js';
@@ -89,15 +90,15 @@ class ResourceEditor extends Component<ResourceEditorProps> {
                 <Splitter orientation='vertical' position='450px'>
                     <div style={{padding: '0px'}}>
                         <div style={{margin: '2px'}}>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-primary" type="button" onClick={(e) => {
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button type="primary" htmlType="button" onClick={(e) => {
                                     componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
                                     dispatch(action.reFresh(file))
                                 }}><ReloadOutlined /> 刷新
-                                </button>
-                            </div>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-info" type="button" onClick={(e) => {
+                                </Button>
+                            </Space>
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button color="blue" htmlType="button" onClick={(e) => {
                                     if (!this.currentData) {
                                         alert('请先选择一条具体的变量');
                                         return;
@@ -111,8 +112,8 @@ class ResourceEditor extends Component<ResourceEditorProps> {
                                     };
                                     refEvent.eventEmitter.emit(refEvent.OPEN_REFERENCE_DIALOG, data, title, {fromResourceEditor: true});
                                 }}><i className="rf rf-link"/> 查看引用
-                                </button>
-                            </div>
+                                </Button>
+                            </Space>
                         </div>
 
                         <Grid headers={masterGridHeaders} dispatch={dispatch} rows={masterData} rowClick={(rowData: ResourceCategory) => {
@@ -125,8 +126,8 @@ class ResourceEditor extends Component<ResourceEditorProps> {
                     </div>
                     <div style={{padding: '0px'}}>
                         <div style={{margin: '2px'}}>
-                            <div className="rf-btn-group rf-btn-group-sm" style={{margin: '2px'}}>
-                                <button className="rf-btn rf-btn-primary" type="button" onClick={(e) => {
+                            <Space size="small" style={{margin: '2px'}}>
+                                <Button type="primary" htmlType="button" onClick={(e) => {
                                     console.log(masterRowData)
                                     if (masterRowData.name) {
                                         event.eventEmitter.emit(event.OPEN_CREATE_PARAMS_DIALOG, {
@@ -143,8 +144,8 @@ class ResourceEditor extends Component<ResourceEditorProps> {
                                         alert('请先选择一条数据源！');
                                     }
                                 }}><PlusCircleOutlined /> 添加字段
-                                </button>
-                            </div>
+                                </Button>
+                            </Space>
                         </div>
                         <Grid headers={slaveGridHeaders} dispatch={dispatch}
                               operationConfig={slaveGridOperationCol}

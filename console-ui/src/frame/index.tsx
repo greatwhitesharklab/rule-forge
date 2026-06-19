@@ -77,7 +77,13 @@ function AppBody({activePanel, store, eventObj}: {activePanel: string; store: St
 
     if (activePanel !== 'rules') {
         // 专用面板激活:撑满 content,没有右侧 welcome
-        return <SidePanelConnected store={store} eventObj={eventObj}/>;
+        // V5.101:wrap 在 flex:1 容器里 —— 否则面板在 app-body(flex row)里塌成内容宽度
+        // (实测 monitoring 只有 117px,因为面板自身没 flex:1)。host 撑满,面板撑满 host。
+        return (
+            <div className="app-panel-host">
+                <SidePanelConnected store={store} eventObj={eventObj}/>
+            </div>
+        );
     }
 
     return (

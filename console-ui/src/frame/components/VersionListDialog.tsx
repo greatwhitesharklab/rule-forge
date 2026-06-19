@@ -1,4 +1,6 @@
 import {Component} from 'react';
+import {Button, Table} from 'antd';
+import type {ColumnsType} from 'antd/es/table';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
@@ -54,153 +56,91 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
 
     render() {
         const {list, data} = this.state;
+        const auditText = (status: number | string): string => {
+            switch (+status) {
+                case 0: return '草稿';
+                case 10: return '测试中';
+                case 20: return '审批中';
+                case 90: return '通过';
+                case 91: return '拒绝';
+                default: return '';
+            }
+        };
+        const columns: ColumnsType<VersionRow> = [
+            {title: '版本号', dataIndex: 'name', key: 'name', width: 80},
+            {title: '修改后', dataIndex: 'afterComment', key: 'after',
+                render: (v: string) => <pre>{v}</pre>},
+            {title: '审批状态', dataIndex: 'auditStatus', key: 'audit', width: 80,
+                render: (v: number | string) => auditText(v)},
+            {title: '测试审批状态', dataIndex: 'testAuditStatus', key: 'test', width: 120,
+                render: (v: number | string | null) => (v !== null && v !== undefined && v !== '') ? auditText(v) : ''},
+            {title: '创建人', dataIndex: 'createUser', key: 'user', width: 100},
+            {title: '创建时间', dataIndex: 'createDate', key: 'date', width: 160,
+                render: (v: string) => formatDate(v, 'yyyy-MM-dd HH:mm:ss')},
+            {
+                title: '操作', key: 'op', width: 100,
+                render: (_: unknown, row: VersionRow) => (
+                    <>
+                        <Button type="link" style={{padding: 0}} onClick={() => {
+                            // SPA 化:历史版本也走 /app/editor/<type>?file=<path>:<version> 新标签打开。
+                            const spaSegment = typeToSpaSegment(data.type as string);
+                            if (spaSegment) {
+                                let spaFile: string;
+                                if (data.type === 'resourcePackage') {
+                                    const packageName = (data.fullPath as string).split('/')[1];
+                                    spaFile = packageName + '.rp:' + row.name;
+                                } else {
+                                    spaFile = (data.fullPath as string) + ':' + row.name;
+                                }
+                                window.open('/app/editor/' + spaSegment + '?file=' + encodeURIComponent(spaFile), '_blank');
+                                return;
+                            }
+                            // fallback:无 SPA 路由的 type,保留原 iframe 逻辑。
+                            const fallbackEditorPath = '/html/editor.html?type=' + (data.type as string);
+                            let url = buildEditorUrl(fallbackEditorPath, (data.fullPath as string) + ':' + row.name);
+                            let fullPath = (data.fullPath as string) + ':' + row.name;
+                            let name = (data.name as string) + ':' + row.name;
+                            if (data.type === 'resourcePackage') {
+                                const packageName = (data.fullPath as string).split('/')[1];
+                                url = buildEditorUrl(fallbackEditorPath, packageName + '.rp:' + row.name);
+                                fullPath = '/' + packageName + ':' + row.name;
+                                name = data.name as string;
+                            }
+                            const config: Record<string, unknown> = {
+                                id: (data.id as string) + ':' + row.name,
+                                name: name, fullPath: fullPath, path: url, active: true
+                            };
+                            componentEvent.eventEmitter.emit(componentEvent.TREE_NODE_CLICK, config);
+                        }}>打开</Button>
+                        <Button type="link" style={{padding: 0, marginLeft: 8}} onClick={() => {
+                            const fullPath = (data.fullPath as string) + ':' + row.name;
+                            action.seeFileSource({fullPath} as TreeNodeData);
+                        }}>源码</Button>
+                    </>
+                )
+            },
+        ];
         const body = (
             <div>
-                <table className="rf-table rf-table-bordered rf-table-hover"
-                       style={{tableLayout: 'fixed', wordBreak: 'break-all'}}>
-                    <thead>
-                    <tr>
-                        <td style={{width: '80px'}}>版本号</td>
-                        <td>修改后</td>
-                        <td style={{width: '80px'}}>审批状态</td>
-                        <td style={{width: '120px'}}>测试审批状态</td>
-                        <td style={{width: '100px'}}>创建人</td>
-                        <td style={{width: '160px'}}>创建时间</td>
-                        <td style={{width: '100px'}}>操作</td>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {list.map(function (row: VersionRow, index: number) {
-                        let auditStatusStr = "";
-                        switch (+row.auditStatus) {
-                            case 0:
-                                auditStatusStr = "草稿";
-                                break;
-                            case 10:
-                                auditStatusStr = "测试中";
-                                break;
-                            case 20:
-                                auditStatusStr = "审批中";
-                                break;
-                            case 90:
-                                auditStatusStr = "通过";
-                                break;
-                            case 91:
-                                auditStatusStr = "拒绝";
-                                break;
-                        }
-                        let testAuditStatus = '';
-                        if (row.testAuditStatus !== null) {
-                            switch (+row.testAuditStatus) {
-                                case 0:
-                                    testAuditStatus = "草稿";
-                                    break;
-                                case 10:
-                                    testAuditStatus = "测试中";
-                                    break;
-                                case 20:
-                                    testAuditStatus = "审批中";
-                                    break;
-                                case 90:
-                                    testAuditStatus = "通过";
-                                    break;
-                                case 91:
-                                    testAuditStatus = "拒绝";
-                                    break;
-                            }
-                        }
-                        return (
-                            <tr key={index}>
-                                <td>{row.name}</td>
-                                <td><pre>{row.afterComment}</pre></td>
-                                <td>{auditStatusStr}</td>
-                                <td>{testAuditStatus}</td>
-                                <td>{row.createUser}</td>
-                                <td>{formatDate(row.createDate, 'yyyy-MM-dd HH:mm:ss')}</td>
-                                <td>
-                                    <button type="button" className="rf-btn rf-btn-link" style={{padding: '0'}}
-                                            onClick={() => {
-                                                // SPA 化:历史版本也走 /app/editor/<type>?file=<path>:<version> 新标签打开。
-                                                // data.type(action.ts buildData switch case)→ SPA 路由段(typeToSpaSegment)。
-                                                // 无 SPA 路由的 type(如 ul)回退到原 iframe + TREE_NODE_CLICK。
-                                                const spaSegment = typeToSpaSegment(data.type as string);
-                                                if (spaSegment) {
-                                                    let spaFile: string;
-                                                    if (data.type === 'resourcePackage') {
-                                                        const packageName = (data.fullPath as string).split("/")[1];
-                                                        spaFile = packageName + '.rp:' + row.name;
-                                                    } else {
-                                                        spaFile = (data.fullPath as string) + ':' + row.name;
-                                                    }
-                                                    window.open('/app/editor/' + spaSegment + '?file=' + encodeURIComponent(spaFile), '_blank');
-                                                    return;
-                                                }
+                <Table<VersionRow> rowKey={(_r: VersionRow, i: number) => String(i)} dataSource={list} columns={columns}
+                    pagination={false} size="small"
+                    style={{tableLayout: 'fixed', wordBreak: 'break-all'}}/>
 
-                                                // fallback:无 SPA 路由的 type(如 ul),保留原 iframe 逻辑。
-                                                // action.ts 已不再设置 data.editorPath,fallback 按 data.type 重建一个
-                                                // /html/editor.html?type=<type> 形态供 buildEditorUrl 用(无映射时返回空串,与旧行为一致)。
-                                                const fallbackEditorPath = '/html/editor.html?type=' + (data.type as string);
-                                                let url = buildEditorUrl(fallbackEditorPath, (data.fullPath as string) + ':' + row.name);
-                                                let fullPath = (data.fullPath as string) + ':' + row.name;
-                                                let name = (data.name as string) + ':' + row.name;
-                                                if (data.type === 'resourcePackage') {
-                                                    const packageName = (data.fullPath as string).split("/")[1];
-                                                    url = buildEditorUrl(fallbackEditorPath, packageName + '.rp:' + row.name);
-                                                    fullPath = '/' + packageName + ':' + row.name;
-                                                    name = data.name as string;
-                                                }
-
-                                                const config: Record<string, unknown> = {
-                                                    id: (data.id as string) + ':' + row.name,
-                                                    name: name,
-                                                    fullPath: fullPath,
-                                                    path: url,
-                                                    active: true
-                                                };
-                                                componentEvent.eventEmitter.emit(componentEvent.TREE_NODE_CLICK, config);
-                                            }}>打开
-                                    </button>
-                                    <button type="button" className="rf-btn rf-btn-link"
-                                            style={{padding: '0', marginLeft: '8px'}}
-                                            onClick={() => {
-                                                const fullPath = (data.fullPath as string) + ':' + row.name;
-                                                action.seeFileSource({fullPath} as TreeNodeData);
-                                            }}>源码
-                                    </button>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                    </tbody>
-                </table>
-
-                <nav aria-label="分页">
-                    <ul className="rf-pagination">
-                        <li>
-                            <a href="#" aria-label="上一页"
-                               onClick={() => {
-                                   const queryData = {...data} as Record<string, unknown>;
-                                   queryData['page'] = ((data['page'] as number) || 1) - 1;
-                                   if ((queryData['page'] as number) < 1) {
-                                       queryData['page'] = 1;
-                                   }
-                                   seeFileVersions(queryData as TreeNodeData & { rpp?: string; page?: number });
-                               }}>
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" aria-label="下一页"
-                               onClick={() => {
-                                   const queryData = {...data} as Record<string, unknown>;
-                                   queryData['page'] = ((data['page'] as number) || 0) + 1;
-                                   seeFileVersions(queryData as TreeNodeData & { rpp?: string; page?: number });
-                               }}>
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
+                <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 8}}>
+                    <Button size="small" disabled={((data['page'] as number) || 1) <= 1}
+                            onClick={() => {
+                                const queryData = {...data} as Record<string, unknown>;
+                                queryData['page'] = Math.max(1, ((data['page'] as number) || 1) - 1);
+                                seeFileVersions(queryData as TreeNodeData & { rpp?: string; page?: number });
+                            }}>上一页</Button>
+                    <span style={{fontSize: 13}}>第 {(data['page'] as number) || 1} 页</span>
+                    <Button size="small"
+                            onClick={() => {
+                                const queryData = {...data} as Record<string, unknown>;
+                                queryData['page'] = ((data['page'] as number) || 0) + 1;
+                                seeFileVersions(queryData as TreeNodeData & { rpp?: string; page?: number });
+                            }}>下一页</Button>
+                </div>
             </div>
         );
         return (<CommonDialog visible={this.state.visible} body={body} title={this.state.title} buttons={[]} large={true} dialogStyle={{

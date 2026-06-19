@@ -1,5 +1,7 @@
 import {Component, ReactNode} from 'react';
 import {connect} from 'react-redux';
+import {Tabs} from 'antd';
+import PageShell from '@/frame/components/PageShell';
 import {getGitStatusSummary, getGitStatusRecent, GitStatusSummary, GitStatusFailure} from '@/api/client.js';
 import {DashboardOutlined, ProfileOutlined} from '@ant-design/icons';
 
@@ -152,24 +154,22 @@ class GitStatusPanel extends Component<GitStatusPanelProps, GitStatusPanelState>
     render(): ReactNode {
         const {gitStatusTab} = this.props;
         return (
-            <div className="git-status-panel" style={{height: '100%'}}>
-                <div className="side-panel-header">Git 健康</div>
-                <div className="side-panel-nav">
-                    {TABS.map(tab => (
-                        <div key={tab.id}
-                             className={'side-panel-nav-item' + (gitStatusTab === tab.id ? ' active' : '')}
-                             onClick={() => this.handleTabClick(tab.id)}>
-                            <span style={{marginRight: 8, fontSize: 12}}>{tab.icon}</span>
-                            {tab.label}
-                        </div>
-                    ))}
-                </div>
-                {this.renderHeader()}
-                <div className="git-status-body">
+            <PageShell
+                title="Git 健康"
+                fill
+                toolbar={
+                    <Tabs
+                        activeKey={gitStatusTab}
+                        onChange={(key: string) => this.handleTabClick(key)}
+                        items={TABS.map(t => ({key: t.id, label: (<><span style={{marginRight: 6}}>{t.icon}</span>{t.label}</>)}))}
+                    />
+                }
+            >
+                <div style={{flexShrink: 0}}>{this.renderHeader()}</div>
+                <div className="git-status-body" style={{flex: 1, minHeight: 0, overflow: 'auto'}}>
                     {gitStatusTab === 'recent' ? this.renderRecent() : this.renderSummary()}
                 </div>
-                <div style={{flex: 1}}/>
-                <div className="git-status-status">
+                <div className="git-status-status" style={{flexShrink: 0}}>
                     <div className="status-divider"/>
                     <div className="status-item">
                         <span className={'status-dot ' + (this.state.error
@@ -188,7 +188,7 @@ class GitStatusPanel extends Component<GitStatusPanelProps, GitStatusPanelState>
                         <span className="status-value">{POLL_INTERVAL_MS / 1000}s</span>
                     </div>
                 </div>
-            </div>
+            </PageShell>
         );
     }
 }

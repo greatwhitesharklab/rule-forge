@@ -1,4 +1,5 @@
 import { Component, ReactNode } from 'react';
+import {Button, Modal} from 'antd';
 import * as event from '../../../frame/event.js';
 
 interface DialogButton {
@@ -95,29 +96,22 @@ export default class Dialog extends Component<DialogProps, DialogState> {
 
     render() {
         const { visible, title, body, buttons } = this.state;
-        const buttonElements = (buttons || []).map((btn, index) => (
-            <button type="button" key={index} className={btn.className} onClick={() => btn.click(this.props.dispatch)}>
-                {typeof btn.icon === 'string' ? <i className={btn.icon} /> : btn.icon} {btn.name}
-            </button>
-        ));
+        const buttonElements = (buttons || []).map((btn, index) => {
+            const cls = btn.className || '';
+            const btnProps: {type?: 'primary' | 'link'; danger?: boolean} = {};
+            if (cls.includes('rf-btn-primary')) btnProps.type = 'primary';
+            else if (cls.includes('rf-btn-danger')) btnProps.danger = true;
+            else if (cls.includes('rf-btn-link')) btnProps.type = 'link';
+            return (
+                <Button key={index} {...btnProps} onClick={() => btn.click(this.props.dispatch)}>
+                    {typeof btn.icon === 'string' ? <i className={btn.icon} /> : btn.icon} {btn.name}
+                </Button>
+            );
+        });
         return (
-            <div>
-                {visible && <div className="rf-modal-backdrop rf-fade in" onClick={() => this._close()}></div>}
-                <div className={`modal fade ${visible ? 'in' : ''}`}
-                     style={{ display: visible ? 'block' : 'none' }}
-                     tabIndex={-1} role="dialog" aria-hidden={!visible}>
-                    <div className="rf-modal-dialog">
-                        <div className="rf-modal-content">
-                            <div className="rf-modal-header" style={{ borderBottom: '1px solid var(--rf-border-split)' }}>
-                                <button type="button" className="rf-close" aria-hidden="true" onClick={() => this._close()}>&times;</button>
-                                <h4 className="rf-modal-title" style={{ fontWeight: 'var(--rf-font-weight-semibold)', color: 'var(--rf-text-primary)' }}>{title}</h4>
-                            </div>
-                            <div className="rf-modal-body" style={{ padding: 'var(--rf-space-6)', color: 'var(--rf-text-primary)' }}>{body}</div>
-                            <div className="rf-modal-footer">{buttonElements}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <Modal open={visible} title={title} footer={buttonElements} onCancel={() => this._close()} forceRender>
+                {body}
+            </Modal>
         );
     }
 }

@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Button, Input} from 'antd';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
@@ -67,33 +68,31 @@ export default class ItemDialog extends Component<ItemDialogProps, ItemDialogSta
         const {dispatch} = this.props;
         const body = (
             <div>
-                <div className="rf-form-group">
+                <div className="ff-group">
                     <label>名称:</label>
-                    <input type="text" className="rf-form-control" name="itemName"
+                    <Input type="text"  name="itemName"
                         value={this.state.itemName}
                         onChange={(e) => this.setState({itemName: e.target.value, errors: {...this.state.errors, itemName: undefined}})}/>
-                    {this.state.errors.itemName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemName}</div>}
+                    {this.state.errors.itemName && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.itemName}</div>}
                 </div>
-                <div className="rf-form-group">
+                <div className="ff-group">
                     <label>资源文件路径:</label>
-                    <div className="rf-input-group">
-                        <input type="text" className="rf-form-control" name="itemPath" disabled
+                    <div style={{display: 'flex', gap: 8}}>
+                        <Input name="itemPath" disabled style={{flex: 1}}
                             value={this.state.itemPath}/>
-                        <span className="rf-input-group-btn">
-                            <button type="button" className="rf-btn rf-btn-default" onClick={() => {
+                            <Button htmlType="button" onClick={() => {
                                 componentEvent.eventEmitter.emit(componentEvent.OPEN_KNOWLEDGE_TREE_DIALOG, {project: this.props.project, callback: function (this: ItemDialog, file: string, version: string) {
                                      this.setState({itemPath: 'jcr:' + file, itemVersion: version});
                                 }.bind(this)});
-                            }}>选择文件</button>
-                        </span>
+                            }}>选择文件</Button>
                     </div>
-                    {this.state.errors.itemPath && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemPath}</div>}
+                    {this.state.errors.itemPath && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.itemPath}</div>}
                 </div>
-                <div className="rf-form-group">
+                <div className="ff-group">
                     <label>版本号:</label>
-                    <input type="text" className="rf-form-control" name="itemVersion" disabled
+                    <Input type="text"  name="itemVersion" disabled
                         value={this.state.itemVersion}/>
-                    {this.state.errors.itemVersion && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemVersion}</div>}
+                    {this.state.errors.itemVersion && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.itemVersion}</div>}
                 </div>
             </div>
         );

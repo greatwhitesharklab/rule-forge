@@ -1,4 +1,5 @@
 import {Component, ReactNode} from 'react';
+import {Input} from 'antd';
 import {connect} from 'react-redux';
 import * as ACTIONS from '../action.js';
 import * as componentEvent from '../../components/componentEvent.js';
@@ -236,7 +237,7 @@ class SidebarToolbar extends Component<SidebarToolbarProps, SidebarToolbarState>
                 <div className="sidebar-search">
                     <div className="sidebar-search-wrapper">
                         <SearchOutlined />
-                        <input type="text" className="rf-form-control fileSearchText sidebar-search-input"
+                        <Input type="text" className="fileSearchText sidebar-search-input"
                                placeholder="搜索文件..."
                                onKeyDown={(e) => { if (e.key === 'Enter') this.handleSearch(); }}/>
                     </div>

@@ -1,4 +1,5 @@
 import '../css/grid.css';
+import {Button} from 'antd';
 import { Component, createRef } from 'react';
 import Cell from './Cell.tsx';
 import { uniqueID } from '../../componentAction.js';
@@ -68,10 +69,10 @@ export default class Row extends Component<RowProps> {
                                 );
                             } else {
                                 return (
-                                    <button key={uniqueID()} type="button" className="rf-btn rf-btn-link"
+                                    <Button key={uniqueID()} htmlType="button" type="link"
                                         style={{ padding: '0px 1px' }}
                                         onClick={op.click.bind(this, rowIndex, rowData)}>{op.label}
-                                    </button>
+                                    </Button>
                                 );
                             }
                         })

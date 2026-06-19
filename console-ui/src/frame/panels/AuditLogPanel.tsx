@@ -13,6 +13,7 @@ import {Component, ReactNode} from 'react';
 import {connect} from 'react-redux';
 import {Table, Input, Select, Button, Drawer, Flex, Tag, Spin, Alert} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
+import PageShell from '@/frame/components/PageShell';
 import {getAuditLogs, AuditLogRow} from '@/api/client.js';
 
 const ACTION_OPTIONS = [
@@ -147,10 +148,10 @@ class AuditLogPanel extends Component<{}, AuditLogPanelState> {
     render(): ReactNode {
         const {rows, loading, error, actorFilter, actionFilter, selected} = this.state;
         return (
-            <div className="audit-log-panel" style={{padding: 16, height: '100%', overflow: 'auto'}}>
-                <h3 style={{marginTop: 0}}>审计日志 (V5.17)</h3>
-
-                <Flex gap="middle" style={{marginBottom: 16}}>
+            <PageShell
+                title="审计日志"
+                toolbar={
+                    <Flex gap="middle">
                     <Input
                         data-testid="audit-log-actor-input"
                         placeholder="按执行人过滤"
@@ -174,8 +175,9 @@ class AuditLogPanel extends Component<{}, AuditLogPanelState> {
                     >
                         刷新
                     </Button>
-                </Flex>
-
+                    </Flex>
+                }
+            >
                 {error && (
                     <Alert
                         data-testid="audit-log-error"
@@ -256,7 +258,7 @@ class AuditLogPanel extends Component<{}, AuditLogPanelState> {
                         </Flex>
                     )}
                 </Drawer>
-            </div>
+            </PageShell>
         );
     }
 }

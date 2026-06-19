@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Button, Input, Select} from 'antd';
 import {httpGet, formPost, jsonPut} from '../../api/client.js';
 
 import {alert} from '@/utils/modal';
@@ -118,19 +119,16 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
                 {/* Vendor selector */}
                 <div style={{marginBottom: 8}}>
                     <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>LLM 厂商</label>
-                    <select className="rf-form-control rf-input-sm" value={vendor}
-                            onChange={(e) => this.handleVendorChange(e.target.value)}>
-                        <option value="">选择厂商...</option>
-                        {vendors.map((v) => (
-                            <option key={v.id} value={v.id}>{v.name}</option>
-                        ))}
-                    </select>
+                    <Select size="small" value={vendor}
+                            onChange={(v: string) => this.handleVendorChange(v)}
+                            placeholder="选择厂商..."
+                            options={[{value: '', label: '选择厂商...'}, ...vendors.map((v) => ({value: v.id, label: v.name}))]}/>
                 </div>
 
                 {/* API Key */}
                 <div style={{marginBottom: 8}}>
                     <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>API Key</label>
-                    <input type="password" className="rf-form-control rf-input-sm" value={apiKey}
+                    <Input type="password" size="small" value={apiKey}
                            onChange={(e) => this.setState({apiKey: e.target.value})}
                            placeholder="sk-xxx"/>
                 </div>
@@ -138,7 +136,7 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
                 {/* Base URL */}
                 <div style={{marginBottom: 8}}>
                     <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>Base URL</label>
-                    <input type="text" className="rf-form-control rf-input-sm" value={baseUrl}
+                    <Input type="text" size="small" value={baseUrl}
                            onChange={(e) => this.setState({baseUrl: e.target.value})}/>
                 </div>
 
@@ -146,17 +144,17 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
                 <div style={{marginBottom: 8, display: 'flex', gap: 8}}>
                     <div style={{flex: 1}}>
                         <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>模型</label>
-                        <input type="text" className="rf-form-control rf-input-sm" value={model}
+                        <Input type="text" size="small" value={model}
                                onChange={(e) => this.setState({model: e.target.value})}/>
                     </div>
                     <div style={{width: 70}}>
                         <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>Temperature</label>
-                        <input type="text" className="rf-form-control rf-input-sm" value={temperature}
+                        <Input type="text" size="small" value={temperature}
                                onChange={(e) => this.setState({temperature: e.target.value})}/>
                     </div>
                     <div style={{width: 70}}>
                         <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>Max Tokens</label>
-                        <input type="text" className="rf-form-control rf-input-sm" value={maxTokens}
+                        <Input type="text" size="small" value={maxTokens}
                                onChange={(e) => this.setState({maxTokens: e.target.value})}/>
                     </div>
                 </div>
@@ -164,18 +162,18 @@ class ConfigPanel extends Component<ConfigPanelProps, ConfigPanelState> {
                 {/* System Prompt */}
                 <div style={{marginBottom: 8}}>
                     <label style={{fontSize: 11, color: '#666', display: 'block', marginBottom: 2}}>系统提示词</label>
-                    <textarea className="rf-form-control rf-input-sm" rows={3} value={systemPrompt}
+                    <Input.TextArea size="small" rows={3} value={systemPrompt}
                               onChange={(e) => this.setState({systemPrompt: e.target.value})}/>
                 </div>
 
                 {/* Actions */}
                 <div style={{display: 'flex', gap: 8}}>
-                    <button className="rf-btn rf-btn-sm rf-btn-primary" onClick={this.handleSave}>
+                    <Button type="primary" size="small" onClick={this.handleSave}>
                         <SaveOutlined style={{marginRight: 4}} />保存
-                    </button>
-                    <button className="rf-btn rf-btn-sm rf-btn-default" onClick={this.handleTest} disabled={testing}>
+                    </Button>
+                    <Button size="small" onClick={this.handleTest} disabled={testing}>
                         {testing ? '测试中...' : '测试连接'}
-                    </button>
+                    </Button>
                     {testResult && (
                         <span style={{fontSize: 12, lineHeight: '30px'}}>{testResult}</span>
                     )}

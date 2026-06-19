@@ -1,10 +1,13 @@
-import {Component, ChangeEvent, ReactNode} from 'react';
+import {Component, ReactNode} from 'react';
 import {connect} from 'react-redux';
 import * as action from './action';
 import type {EnvironmentInfo, ApprovalTask, DeploymentRecord, ExecutorNode, GrayStrategy, ShadowConfig, ShadowComparison, ShadowStats} from './action';
 import type {ReleaseState} from './reducer';
 
 import {alert, confirm, prompt} from '@/utils/modal';
+import {Button, Select, Table, Tabs, Tag} from 'antd';
+import type {ColumnsType} from 'antd/es/table';
+import PageShell from '@/frame/components/PageShell';
 import {CheckOutlined, ClockCircleOutlined, CopyOutlined, GlobalOutlined, HddOutlined, InfoCircleOutlined, PlusOutlined, RetweetOutlined, UploadOutlined} from '@ant-design/icons';
 interface ReleasePanelState {
     projectName: string;
@@ -106,55 +109,36 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
         ];
 
         return (
-            <div style={{height: '100%', display: 'flex', flexDirection: 'column', background: '#fff'}}>
-                {/* Header */}
-                <div style={{padding: '10px 15px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                    <h5 style={{margin: 0, fontWeight: 600}}>版本发布</h5>
-                    <span style={{fontSize: 12, color: '#999'}}>{projectName}</span>
-                </div>
-
-                {/* Tab Bar — V5.9.0: icon-text gap 4→8,字体 13→12 让 7 个 tab 不挤 */}
-                <div style={{display: 'flex', borderBottom: '1px solid #e0e0e0', background: '#fafafa'}}>
-                    {tabs.map(tab => (
-                        <button key={tab.id}
-                                onClick={() => this.handleTabChange(tab.id)}
-                                style={{
-                                    flex: 1, padding: '8px 4px', border: 'none', cursor: 'pointer',
-                                    background: activeTab === tab.id ? '#fff' : '#fafafa',
-                                    borderBottom: activeTab === tab.id ? '2px solid #1677ff' : '2px solid transparent',
-                                    fontWeight: activeTab === tab.id ? 600 : 400,
-                                    fontSize: 12,
-                                    color: activeTab === tab.id ? '#1677ff' : 'rgba(0,0,0,0.65)',
-                                    transition: 'all 0.2s'
-                                }}>
-                            <span style={{marginRight: 6, fontSize: 12}}>{tab.icon}</span>
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Tab Content */}
-                <div style={{flex: 1, overflow: 'auto', padding: 15}}>
-                    {!projectName ? (
-                        <div style={{textAlign: 'center', padding: 40, color: '#999'}}>
-                            <InfoCircleOutlined style={{fontSize: 24, display: 'block', marginBottom: 10}} />
-                            请先选择一个项目
-                        </div>
-                    ) : activeTab === 'environments' ? (
-                        this.renderEnvironments(environments, environmentsLoading)
-                    ) : activeTab === 'approvals' ? (
-                        this.renderApprovals(approvals)
-                    ) : activeTab === 'nodes' ? (
-                        this.renderNodes(this.props.nodes)
-                    ) : activeTab === 'gray' ? (
-                        this.renderGrayStrategies(grayStrategies, grayStrategiesLoading)
-                    ) : activeTab === 'shadow' ? (
-                        this.renderShadowPanel(shadowConfigs, shadowConfigsLoading, shadowComparisons, shadowComparisonsLoading, shadowStats)
-                    ) : (
-                        this.renderHistory(deploymentHistory)
-                    )}
-                </div>
-            </div>
+            <PageShell
+                title="版本发布"
+                description={projectName ? `项目:${projectName}` : '请先在左侧选择一个项目'}
+                toolbar={
+                    <Tabs
+                        activeKey={activeTab}
+                        onChange={(key: string) => this.handleTabChange(key)}
+                        items={tabs.map(t => ({key: t.id, label: (<><span style={{marginRight: 6}}>{t.icon}</span>{t.label}</>)}))}
+                    />
+                }
+            >
+                {!projectName ? (
+                    <div style={{textAlign: 'center', padding: 40, color: 'var(--rf-text-tertiary)'}}>
+                        <InfoCircleOutlined style={{fontSize: 24, display: 'block', marginBottom: 10}} />
+                        请先选择一个项目
+                    </div>
+                ) : activeTab === 'environments' ? (
+                    this.renderEnvironments(environments, environmentsLoading)
+                ) : activeTab === 'approvals' ? (
+                    this.renderApprovals(approvals)
+                ) : activeTab === 'nodes' ? (
+                    this.renderNodes(this.props.nodes)
+                ) : activeTab === 'gray' ? (
+                    this.renderGrayStrategies(grayStrategies, grayStrategiesLoading)
+                ) : activeTab === 'shadow' ? (
+                    this.renderShadowPanel(shadowConfigs, shadowConfigsLoading, shadowComparisons, shadowComparisonsLoading, shadowStats)
+                ) : (
+                    this.renderHistory(deploymentHistory)
+                )}
+            </PageShell>
         );
     }
 
@@ -187,7 +171,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                 </span>
                             </div>
                             {env.execEnv === 'prod' && env.projectVersion && (
-                                <button className="rf-btn rf-btn-default rf-btn-xs"
+                                <Button size="small"
                                         onClick={() => {
                                             confirm('确认回滚到上一版本？', (ok) => {
                                                 if (ok) {
@@ -197,7 +181,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                             });
                                         }}>
                                     回滚
-                                </button>
+                                </Button>
                             )}
                         </div>
                         {env.packageId && (
@@ -239,18 +223,18 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             </div>
                             {task.status === 'pending' && (
                                 <div>
-                                    <button className="rf-btn rf-btn-success rf-btn-xs" style={{marginRight: 4}}
+                                    <Button color="green" size="small" style={{marginRight: 4}}
                                             onClick={() => {
                                                 confirm('确认通过该审批？', (ok) => {
                                                     if (ok) this.props.dispatch(action.approveTask(task.id, ''));
                                                 });
-                                            }}>通过</button>
-                                    <button className="rf-btn rf-btn-danger rf-btn-xs"
+                                            }}>通过</Button>
+                                    <Button color="danger" size="small"
                                             onClick={() => {
                                                 prompt('驳回原因', (remark: string | null) => {
                                                     if (remark !== null) this.props.dispatch(action.rejectTask(task.id, remark));
                                                 });
-                                            }}>驳回</button>
+                                            }}>驳回</Button>
                                 </div>
                             )}
                         </div>
@@ -265,52 +249,40 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
 
     renderHistory(history: DeploymentRecord[]) {
         if (!history || history.length === 0) {
-            return <div style={{textAlign: 'center', padding: 40, color: '#999'}}>暂无部署历史</div>;
+            return <div style={{textAlign: 'center', padding: 40, color: 'var(--rf-text-tertiary)'}}>暂无部署历史</div>;
         }
 
         const statusLabels: Record<string, string> = {deployed: '已部署', failed: '失败', rolled_back: '已回滚', superseded: '已替换'};
-        const statusColors: Record<string, string> = {deployed: '#2e7d32', failed: '#c62828', rolled_back: '#f57c00', superseded: '#999'};
+        const statusColors: Record<string, string> = {deployed: 'success', failed: 'error', rolled_back: 'warning', superseded: 'default'};
+
+        const columns: ColumnsType<DeploymentRecord> = [
+            {title: '版本', dataIndex: 'projectVersion', key: 'version'},
+            {title: '环境', dataIndex: 'execEnv', key: 'env'},
+            {title: '状态', dataIndex: 'deployStatus', key: 'status',
+                render: (s: string) => <Tag color={statusColors[s] || 'default'}>{statusLabels[s] || s}</Tag>},
+            {title: '部署人', dataIndex: 'deployUser', key: 'user', render: (v: string) => v || '-'},
+            {title: '时间', dataIndex: 'deployTime', key: 'time', render: (v: string) => v || '-', width: 160},
+            {
+                title: '操作', key: 'actions', width: 140,
+                render: (_: unknown, dep: DeploymentRecord, idx: number) => (
+                    dep.deployStatus === 'deployed' && dep.execEnv === 'prod' && idx > 0 ? (
+                        <Button size="small" danger onClick={() => {
+                            confirm('确认回滚到版本 ' + dep.projectVersion + '？', (ok) => {
+                                if (ok) {
+                                    this.props.dispatch(action.rollbackVersion(
+                                        this.state.projectName, dep.packageId,
+                                        dep.projectVersion, dep.execEnv));
+                                }
+                            });
+                        }}>回滚到此版本</Button>
+                    ) : null
+                )
+            },
+        ];
 
         return (
-            <table className="rf-table rf-table-condensed" style={{fontSize: 13}}>
-                <thead>
-                    <tr>
-                        <th>版本</th>
-                        <th>环境</th>
-                        <th>状态</th>
-                        <th>部署人</th>
-                        <th>时间</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {history.map((dep, idx) => (
-                        <tr key={dep.id || idx}>
-                            <td>{dep.projectVersion}</td>
-                            <td>{dep.execEnv}</td>
-                            <td style={{color: statusColors[dep.deployStatus] || '#666'}}>
-                                {statusLabels[dep.deployStatus] || dep.deployStatus}
-                            </td>
-                            <td>{dep.deployUser || '-'}</td>
-                            <td style={{fontSize: 11}}>{dep.deployTime || '-'}</td>
-                            <td>
-                                {dep.deployStatus === 'deployed' && dep.execEnv === 'prod' && idx > 0 && (
-                                    <button className="rf-btn rf-btn-warning rf-btn-xs"
-                                            onClick={() => {
-                                                confirm('确认回滚到版本 ' + dep.projectVersion + '？', (ok) => {
-                                                    if (ok) {
-                                                        this.props.dispatch(action.rollbackVersion(
-                                                            this.state.projectName, dep.packageId,
-                                                            dep.projectVersion, dep.execEnv));
-                                                    }
-                                                });
-                                            }}>回滚到此版本</button>
-                                )}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+            <Table rowKey={(r: DeploymentRecord, i: number) => String(r.id ?? i)}
+                   columns={columns} dataSource={history} pagination={false} size="small" />
         );
     }
 
@@ -329,48 +301,27 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
         return (
             <div>
                 {/* Node list */}
-                <table className="rf-table rf-table-condensed" style={{fontSize: 13}}>
-                    <thead>
-                        <tr>
-                            <th>节点名称</th>
-                            <th>URL</th>
-                            <th>环境</th>
-                            <th>分组</th>
-                            <th>状态</th>
-                            <th>心跳</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {nodes.map((node, idx) => (
-                            <tr key={node.id || idx}>
-                                <td>{node.nodeName}</td>
-                                <td style={{fontSize: 11, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis'}}>{node.nodeUrl}</td>
-                                <td>{node.execEnv || '-'}</td>
-                                <td>
-                                    <select value={node.nodeGroup || 'default'}
-                                            style={{fontSize: 12, padding: '2px 4px'}}
-                                            onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-                                                this.props.dispatch(action.updateNodeGroup(node.id, e.target.value));
-                                            }}>
-                                        <option value="default">默认</option>
-                                        <option value="canary">灰度</option>
-                                        <option value="vip">VIP</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <span style={{
-                                        display: 'inline-block', padding: '1px 6px', borderRadius: 3, fontSize: 11,
-                                        background: node.status === 'active' ? '#e8f5e9' : '#ffebee',
-                                        color: node.status === 'active' ? '#2e7d32' : '#c62828'
-                                    }}>
-                                        {node.status === 'active' ? '在线' : '离线'}
-                                    </span>
-                                </td>
-                                <td style={{fontSize: 11}}>{node.lastHeartbeat || '-'}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <Table<ExecutorNode> rowKey={(n, i) => String(n.id ?? i)} dataSource={nodes} pagination={false} size="small"
+                    columns={[
+                        {title: '节点名称', dataIndex: 'nodeName', key: 'name'},
+                        {title: 'URL', dataIndex: 'nodeUrl', key: 'url', ellipsis: true,
+                            render: (v: string) => <span style={{fontSize: 11}}>{v}</span>},
+                        {title: '环境', dataIndex: 'execEnv', key: 'env', render: (v: string) => v || '-'},
+                        {
+                            title: '分组', key: 'group', width: 110,
+                            render: (_: unknown, node: ExecutorNode) => (
+                                <Select size="small" value={node.nodeGroup || 'default'}
+                                        onChange={(v: string) => this.props.dispatch(action.updateNodeGroup(node.id, v))}
+                                        options={[{value: 'default', label: '默认'}, {value: 'canary', label: '灰度'}, {value: 'vip', label: 'VIP'}]}
+                                        style={{width: '100%'}}/>
+                            )
+                        },
+                        {
+                            title: '状态', dataIndex: 'status', key: 'status', width: 80,
+                            render: (s: string) => <Tag color={s === 'active' ? 'success' : 'error'}>{s === 'active' ? '在线' : '离线'}</Tag>
+                        },
+                        {title: '心跳', dataIndex: 'lastHeartbeat', key: 'heartbeat', render: (v: string) => v || '-', width: 160},
+                    ]}/>
 
                 {/* Canary deploy section */}
                 <div style={{marginTop: 20, padding: 15, border: '1px solid #e0e0e0', borderRadius: 4, background: '#fafafa'}}>
@@ -387,7 +338,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             <option value="vip">VIP节点</option>
                             <option value="default">默认节点</option>
                         </select>
-                        <button className="rf-btn rf-btn-warning rf-btn-sm" onClick={() => {
+                        <Button color="gold" size="small" icon={<UploadOutlined/>} onClick={() => {
                             const packageId = (document.getElementById('canary-package') as HTMLInputElement).value;
                             const version = (document.getElementById('canary-version') as HTMLInputElement).value;
                             const execEnv = (document.getElementById('canary-env') as HTMLSelectElement).value;
@@ -403,9 +354,8 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                                 }
                             });
                         }}>
-                            <UploadOutlined style={{marginRight: 4}} />
                             灰度部署
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -426,58 +376,32 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                         <p style={{fontSize: 12}}>点击下方按钮创建灰度策略</p>
                     </div>
                 ) : (
-                    <table className="rf-table rf-table-condensed" style={{fontSize: 13}}>
-                        <thead>
-                            <tr>
-                                <th>策略名称</th>
-                                <th>类型</th>
-                                <th>包ID</th>
-                                <th>灰度版本</th>
-                                <th>基准版本</th>
-                                <th>状态</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {strategies.map((s, idx) => (
-                                <tr key={s.id || idx}>
-                                    <td>{s.strategyName}</td>
-                                    <td>
-                                        <span style={{
-                                            display: 'inline-block', padding: '1px 6px', borderRadius: 3, fontSize: 11,
-                                            background: '#e3f2fd', color: '#1565c0'
-                                        }}>
-                                            {typeLabels[s.strategyType] || s.strategyType}
-                                        </span>
-                                    </td>
-                                    <td style={{fontSize: 11}}>{s.packageId}</td>
-                                    <td style={{fontSize: 11, color: '#e65100'}}>{s.targetGitTag}</td>
-                                    <td style={{fontSize: 11}}>{s.baselineGitTag}</td>
-                                    <td>
-                                        <span style={{
-                                            display: 'inline-block', padding: '1px 6px', borderRadius: 3, fontSize: 11,
-                                            background: s.enabled ? '#e8f5e9' : '#ffebee',
-                                            color: s.enabled ? '#2e7d32' : '#c62828'
-                                        }}>
-                                            {s.enabled ? '启用' : '停用'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button className="rf-btn rf-btn-xs" style={{marginRight: 4, fontSize: 11}}
-                                                onClick={() => this.props.dispatch(action.toggleGrayStrategy(
-                                                    s.id, !s.enabled, s.projectId, s.packageId))}>
+                    <Table<GrayStrategy> rowKey={(s, i) => String(s.id ?? i)} dataSource={strategies} pagination={false} size="small"
+                        columns={[
+                            {title: '策略名称', dataIndex: 'strategyName', key: 'name'},
+                            {title: '类型', dataIndex: 'strategyType', key: 'type',
+                                render: (t: string) => <Tag color="blue">{typeLabels[t] || t}</Tag>},
+                            {title: '包ID', dataIndex: 'packageId', key: 'pkg', render: (v: string) => <span style={{fontSize: 11}}>{v}</span>},
+                            {title: '灰度版本', dataIndex: 'targetGitTag', key: 'target',
+                                render: (v: string) => <span style={{fontSize: 11, color: 'var(--rf-warning)'}}>{v}</span>},
+                            {title: '基准版本', dataIndex: 'baselineGitTag', key: 'baseline',
+                                render: (v: string) => <span style={{fontSize: 11}}>{v}</span>},
+                            {title: '状态', dataIndex: 'enabled', key: 'enabled',
+                                render: (v: boolean) => <Tag color={v ? 'success' : 'error'}>{v ? '启用' : '停用'}</Tag>},
+                            {title: '操作', key: 'actions',
+                                render: (_: unknown, s: GrayStrategy) => (
+                                    <>
+                                        <Button size="small" style={{marginRight: 4}}
+                                                onClick={() => this.props.dispatch(action.toggleGrayStrategy(s.id, !s.enabled, s.projectId, s.packageId))}>
                                             {s.enabled ? '停用' : '启用'}
-                                        </button>
-                                        <button className="rf-btn rf-btn-danger rf-btn-xs" style={{fontSize: 11}}
-                                                onClick={() => this.props.dispatch(action.deleteGrayStrategy(
-                                                    s.id, s.projectId, s.packageId))}>
+                                        </Button>
+                                        <Button size="small" danger
+                                                onClick={() => this.props.dispatch(action.deleteGrayStrategy(s.id, s.projectId, s.packageId))}>
                                             删除
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                        </Button>
+                                    </>
+                                )},
+                        ]}/>
                 )}
 
                 {/* Create form */}
@@ -504,7 +428,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                             <input id="gray-target" placeholder="目标版本 git tag" style={{flex: 1, padding: '4px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 3}}/>
                             <input id="gray-baseline" placeholder="基准版本 git tag" style={{flex: 1, padding: '4px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 3}}/>
                         </div>
-                        <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={() => {
+                        <Button type="primary" size="small" onClick={() => {
                             const name = (document.getElementById('gray-name') as HTMLInputElement).value;
                             const type = (document.getElementById('gray-type') as HTMLSelectElement).value;
                             const packageId = (document.getElementById('gray-package') as HTMLInputElement).value;
@@ -530,7 +454,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                         }}>
                             <PlusOutlined style={{marginRight: 4}} />
                             创建策略
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -557,39 +481,25 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                 {(!configs || configs.length === 0) ? (
                     <div style={{textAlign: 'center', padding: 20, color: '#999'}}>暂无陪跑配置</div>
                 ) : (
-                    <table className="rf-table rf-table-bordered rf-table-hover" style={{fontSize: 12}}>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>主规则包</th>
-                                <th>陪跑规则包</th>
-                                <th>陪跑流程ID</th>
-                                <th>采样率(%)</th>
-                                <th>状态</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {configs.map(config => (
-                                <tr key={config.id}>
-                                    <td>{config.id}</td>
-                                    <td style={{maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis'}} title={config.mainRulePackagePath}>{config.mainRulePackagePath}</td>
-                                    <td style={{maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis'}} title={config.shadowRulePackagePath}>{config.shadowRulePackagePath}</td>
-                                    <td>{config.shadowFlowId || '同主流程'}</td>
-                                    <td>{config.sampleRate}</td>
-                                    <td>
-                                        <span style={{color: config.enabled ? '#52c41a' : '#999', cursor: 'pointer'}}
-                                              onClick={() => this.props.dispatch(action.toggleShadowConfig(config.id, !config.enabled))}>
-                                            {config.enabled ? '启用' : '停用'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button className="rf-btn rf-btn-danger rf-btn-xs" onClick={() => this.props.dispatch(action.deleteShadowConfig(config.id))}>删除</button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <Table<ShadowConfig> rowKey="id" dataSource={configs} pagination={false} size="small"
+                        columns={[
+                            {title: 'ID', dataIndex: 'id', key: 'id', width: 60},
+                            {title: '主规则包', dataIndex: 'mainRulePackagePath', key: 'main', ellipsis: true},
+                            {title: '陪跑规则包', dataIndex: 'shadowRulePackagePath', key: 'shadow', ellipsis: true},
+                            {title: '陪跑流程ID', dataIndex: 'shadowFlowId', key: 'flow', render: (v: string) => v || '同主流程'},
+                            {title: '采样率(%)', dataIndex: 'sampleRate', key: 'rate', width: 90},
+                            {title: '状态', dataIndex: 'enabled', key: 'enabled',
+                                render: (v: boolean, c: ShadowConfig) => (
+                                    <Tag style={{cursor: 'pointer'}} color={v ? 'success' : 'default'}
+                                         onClick={() => this.props.dispatch(action.toggleShadowConfig(c.id, !c.enabled))}>
+                                        {v ? '启用' : '停用'}
+                                    </Tag>
+                                )},
+                            {title: '操作', key: 'actions',
+                                render: (_: unknown, c: ShadowConfig) => (
+                                    <Button size="small" danger onClick={() => this.props.dispatch(action.deleteShadowConfig(c.id))}>删除</Button>
+                                )},
+                        ]}/>
                 )}
 
                 {/* 创建表单 */}
@@ -601,7 +511,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                         <input id="shadow-flow-id" placeholder="陪跑流程ID(可选)" style={{width: 120, padding: '4px 8px', fontSize: 12, border: '1px solid #ddd', borderRadius: 3}}/>
                         <input id="shadow-sample-rate" placeholder="采样率(%)" type="number" min="0" max="100" style={{width: 80, padding: '4px 8px', fontSize: 12, border: '1px solid #ddd', borderRadius: 3}}/>
                     </div>
-                    <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={() => {
+                    <Button type="primary" size="small" onClick={() => {
                         const mainPath = (document.getElementById('shadow-main-path') as HTMLInputElement).value;
                         const shadowPath = (document.getElementById('shadow-shadow-path') as HTMLInputElement).value;
                         const flowId = (document.getElementById('shadow-flow-id') as HTMLInputElement).value;
@@ -619,15 +529,13 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                     }}>
                         <PlusOutlined style={{marginRight: 4}} />
                         创建配置
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
     }
 
     renderShadowComparisons(comparisons: ShadowComparison[], loading: boolean, stats: ShadowStats | null) {
-        const severityColors: Record<string, string> = {HIGH: '#f5222d', MEDIUM: '#fa8c16', LOW: '#1890ff', NONE: '#52c41a'};
-
         return (
             <div>
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10}}>
@@ -646,39 +554,23 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                 ) : (!comparisons || comparisons.length === 0) ? (
                     <div style={{textAlign: 'center', padding: 20, color: '#999'}}>暂无对比数据</div>
                 ) : (
-                    <table className="rf-table rf-table-bordered rf-table-hover" style={{fontSize: 12}}>
-                        <thead>
-                            <tr>
-                                <th>用户ID</th>
-                                <th>订单号</th>
-                                <th>主流程耗时</th>
-                                <th>陪跑耗时</th>
-                                <th>状态一致</th>
-                                <th>结果一致</th>
-                                <th>差异级别</th>
-                                <th>时间</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {comparisons.map(comp => (
-                                <tr key={comp.id}>
-                                    <td>{comp.userId}</td>
-                                    <td>{comp.orderNo}</td>
-                                    <td>{comp.mainTotalTimeMs}ms</td>
-                                    <td>{comp.shadowTotalTimeMs}ms</td>
-                                    <td style={{color: comp.statusMatch ? '#52c41a' : '#f5222d'}}>{comp.statusMatch ? '✓' : '✗'}</td>
-                                    <td style={{color: comp.resultMatch ? '#52c41a' : '#f5222d'}}>{comp.resultMatch ? '✓' : '✗'}</td>
-                                    <td>
-                                        <span style={{padding: '2px 6px', borderRadius: 3, color: '#fff',
-                                            background: severityColors[comp.divergenceSeverity] || '#999', fontSize: 11}}>
-                                            {comp.divergenceSeverity}
-                                        </span>
-                                    </td>
-                                    <td>{comp.createdAt}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <Table<ShadowComparison> rowKey="id" dataSource={comparisons} pagination={false} size="small"
+                        columns={[
+                            {title: '用户ID', dataIndex: 'userId', key: 'user'},
+                            {title: '订单号', dataIndex: 'orderNo', key: 'order'},
+                            {title: '主流程耗时', dataIndex: 'mainTotalTimeMs', key: 'mainMs', render: (v: number) => `${v}ms`},
+                            {title: '陪跑耗时', dataIndex: 'shadowTotalTimeMs', key: 'shadowMs', render: (v: number) => `${v}ms`},
+                            {title: '状态一致', dataIndex: 'statusMatch', key: 'sm',
+                                render: (v: boolean) => <span style={{color: v ? 'var(--rf-success)' : 'var(--rf-danger)'}}>{v ? '✓' : '✗'}</span>},
+                            {title: '结果一致', dataIndex: 'resultMatch', key: 'rm',
+                                render: (v: boolean) => <span style={{color: v ? 'var(--rf-success)' : 'var(--rf-danger)'}}>{v ? '✓' : '✗'}</span>},
+                            {title: '差异级别', dataIndex: 'divergenceSeverity', key: 'sev',
+                                render: (s: string) => {
+                                    const color = {HIGH: 'error', MEDIUM: 'warning', LOW: 'processing', NONE: 'success'} as Record<string, string>;
+                                    return <Tag color={color[s] || 'default'}>{s}</Tag>;
+                                }},
+                            {title: '时间', dataIndex: 'createdAt', key: 'time'},
+                        ]}/>
                 )}
             </div>
         );

@@ -1,5 +1,5 @@
 import {Component} from 'react';
-import {Tag, Select, Empty} from 'antd';
+import {Button, Tag, Select, Empty} from 'antd';
 import {jsonPost} from '@/api/client';
 import {ReloadOutlined} from '@ant-design/icons';
 
@@ -116,9 +116,9 @@ export default class AgentAuditView extends Component<AgentAuditViewProps, Agent
                 <span style={{marginLeft: 'auto', color: '#999', fontSize: 11}}>
                     {this.state.rows.length} 条记录
                 </span>
-                <button className="rf-btn rf-btn-xs rf-btn-default" onClick={this.load} disabled={this.state.loading}>
+                <Button size="small" onClick={this.load} disabled={this.state.loading}>
                     <ReloadOutlined />
-                </button>
+                </Button>
             </div>
         );
     }

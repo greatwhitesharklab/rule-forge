@@ -1,4 +1,5 @@
 import '../../../css/iconfont.css';
+import {Input} from 'antd';
 import { Component } from 'react';
 import CommonDialog from './CommonDialog.tsx';
 import CommonTree from '../../tree/component/CommonTree.jsx';
@@ -84,7 +85,7 @@ export default class KnowledgeTreeDialog extends Component<KnowledgeTreeDialogPr
         const body = (
             <div className='tree' style={{ marginLeft: 'var(--rf-space-3)' }}>
                 <div>
-                    <input type="text" className="rf-form-control resSearchText" placeholder="请输入要查询的文件名..."
+                    <Input type="text" className="resSearchText" placeholder="请输入要查询的文件名..."
                            style={{ display: 'inline-block', width: '220px' }} />
                     <a href="#" onClick={this.search.bind(this)} style={{ margin: 'var(--rf-space-2)', fontSize: '16px', color: 'var(--rf-primary)' }}><SearchOutlined /></a>
                 </div>

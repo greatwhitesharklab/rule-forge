@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Input} from 'antd';
 import Dialog from '../../components/dialog/component/Dialog.jsx';
 import * as componentEvent from '../../components/componentEvent.js';
 import * as event from '../event.js';
@@ -60,11 +61,11 @@ export default class CreateFolderDialog extends Component<CreateFolderDialogProp
     render() {
         const {dispatch} = this.props;
         const body = (
-            <div className="rf-form-group">
+            <div className="ff-group">
                 <label>新目录名称</label>
-                <input type="text" className="rf-form-control" name="newFolderName" value={this.state.newFolderName}
-                       onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({newFolderName: e.target.value, errors: {}}) }.bind(this)}></input>
-                {this.state.errors.newFolderName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.newFolderName}</div>}
+                <Input name="newFolderName" value={this.state.newFolderName}
+                       onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({newFolderName: e.target.value, errors: {}}) }.bind(this)}/>
+                {this.state.errors.newFolderName && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.newFolderName}</div>}
             </div>
         );
         const buttons = [];

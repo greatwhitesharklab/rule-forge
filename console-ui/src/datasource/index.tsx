@@ -1,6 +1,8 @@
 import React, {Component} from 'react';
 import {connect} from 'react-redux';
-import {Modal, Radio, Input, Form, Button, Space, Tag, Tooltip, Upload, message} from 'antd';
+import {Alert, Card, Modal, Radio, Input, Form, Select, Button, Space, Table, Tabs, Tag, Tooltip, Upload, message} from 'antd';
+import type {ColumnsType} from 'antd/es/table';
+import PageShell from '@/frame/components/PageShell';
 import {alert} from '@/utils/modal';
 import {
     loadDatasources, createDatasource, updateDatasource, deleteDatasource,
@@ -592,102 +594,79 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
         const {showForm, formDatasource, testResult} = this.state;
 
         return (
-            <div style={{padding: '15px', height: '100%', overflow: 'auto'}}>
-                <ul className="rf-nav rf-nav-tabs" style={{marginBottom: '15px'}}>
-                    <li className={activeTab === 'datasources' ? 'active' : ''}>
-                        <a href="#" onClick={(e) => { e.preventDefault(); this.props.dispatch(setTab('datasources')); }}>数据源</a>
-                    </li>
-                    <li className={activeTab === 'mappings' ? 'active' : ''}>
-                        <a href="#" onClick={(e) => { e.preventDefault(); this.props.dispatch(setTab('mappings')); }}>映射配置</a>
-                    </li>
-                </ul>
-
+            <PageShell
+                title="数据源"
+                description="管理决策流外部数据源连接与字段映射"
+                toolbar={
+                    <Tabs
+                        activeKey={activeTab}
+                        onChange={(key: string) => this.props.dispatch(setTab(key))}
+                        items={[
+                            {key: 'datasources', label: '数据源'},
+                            {key: 'mappings', label: '映射配置'},
+                        ]}
+                    />
+                }
+            >
                 {testResult && (
-                    <div className="rf-alert rf-alert-info" style={{padding: '8px 12px'}}>{testResult}</div>
+                    <Alert type="info" showIcon message={testResult} style={{marginBottom: 12}}/>
                 )}
 
                 {activeTab === 'datasources' && this.renderDatasources(datasources, showForm, formDatasource)}
                 {activeTab === 'mappings' && this.renderMappings(datasources, entityMappings, fieldMappings)}
-            </div>
+            </PageShell>
         );
     }
 
     renderDatasources(datasources: DatasourceItem[], showForm: boolean, formDatasource: DatasourceItem | null) {
+        // V5.101:Bootstrap rf-table 在 thead/tbody 间有 21px 渲染 gap(无空行,box model 干净,
+        // 是 collapse 渲染 bug)→ 换 antd Table,跟 auditLog/用户管理一致,渲染干净。
+        const columns: ColumnsType<DatasourceItem> = [
+            {title: '名称', dataIndex: 'name', key: 'name'},
+            {title: '类型', dataIndex: 'type', key: 'type', render: (v: string) => <Tag>{v}</Tag>},
+            {
+                title: '状态', dataIndex: 'enabled', key: 'enabled',
+                render: (v: boolean) => <Tag color={v ? 'success' : 'default'}>{v ? '启用' : '禁用'}</Tag>
+            },
+            {title: '描述', dataIndex: 'description', key: 'description', render: (v: string) => v || '-'},
+            {title: '超时(ms)', dataIndex: 'timeoutMs', key: 'timeoutMs', width: 100},
+            {
+                title: '缓存', key: 'cache', width: 80,
+                render: (_: unknown, ds: DatasourceItem) => ds.cacheEnabled ? `${ds.cacheTtlHours}h` : '关'
+            },
+            {
+                title: '操作', key: 'actions', width: 300,
+                render: (_: unknown, ds: DatasourceItem) => (
+                    <Space size="middle">
+                        <Tooltip title="编辑数据源">
+                            <Button size="small" icon={<EditOutlined />} onClick={() => this.handleEdit(ds)} />
+                        </Tooltip>
+                        <Tooltip title="测试连接(单条)">
+                            <Button size="small" type="primary" ghost icon={<ApiOutlined />}
+                                    onClick={() => this.handleTest(ds.id!)}>测试</Button>
+                        </Tooltip>
+                        <Tooltip title="批量测试 V5.8.0+:FLOW 测集成 / DATASOURCE 测数据源">
+                            <Button size="small" type="primary" icon={<ThunderboltOutlined />}
+                                    onClick={() => this.handleBatchTest(ds)}>批量测试</Button>
+                        </Tooltip>
+                        <Tooltip title="删除数据源">
+                            <Button size="small" danger icon={<DeleteOutlined />}
+                                    onClick={() => this.handleDelete(ds.id!)} />
+                        </Tooltip>
+                    </Space>
+                )
+            },
+        ];
         return (
             <div>
-                <div style={{marginBottom: '10px'}}>
-                    <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={this.handleCreate}>
-                        <PlusOutlined /> 新增数据源
-                    </button>
+                <div style={{marginBottom: 12}}>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={this.handleCreate}>新增数据源</Button>
                 </div>
 
                 {showForm && formDatasource && this.renderForm(formDatasource)}
 
-                <table className="rf-table rf-table-bordered rf-table-hover" style={{fontSize: '13px'}}>
-                    <thead>
-                        <tr>
-                            <th>名称</th>
-                            <th>类型</th>
-                            <th>状态</th>
-                            <th>描述</th>
-                            <th>超时(ms)</th>
-                            <th>缓存</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {datasources.map(ds => (
-                            <tr key={ds.id}>
-                                <td>{ds.name}</td>
-                                <td><span className="rf-label rf-label-info">{ds.type}</span></td>
-                                <td>{ds.enabled ? '✓ 启用' : '✗ 禁用'}</td>
-                                <td>{ds.description || '-'}</td>
-                                <td>{ds.timeoutMs}</td>
-                                <td>{ds.cacheEnabled ? `${ds.cacheTtlHours}h` : '关'}</td>
-                                <td>
-                                    <Space size="middle">
-                                        <Tooltip title="编辑数据源">
-                                            <Button
-                                                size="small"
-                                                icon={<EditOutlined />}
-                                                onClick={() => this.handleEdit(ds)}
-                                            />
-                                        </Tooltip>
-                                        <Tooltip title="测试连接(单条)">
-                                            <Button
-                                                size="small"
-                                                type="primary"
-                                                ghost
-                                                icon={<ApiOutlined />}
-                                                onClick={() => this.handleTest(ds.id!)}
-                                            >
-                                                测试
-                                            </Button>
-                                        </Tooltip>
-                                        <Tooltip title="批量测试 V5.8.0+:FLOW 测集成 / DATASOURCE 测数据源">
-                                            <Button
-                                                size="small"
-                                                type="primary"
-                                                icon={<ThunderboltOutlined />}
-                                                onClick={() => this.handleBatchTest(ds)}
-                                            >
-                                                批量测试
-                                            </Button>
-                                        </Tooltip>
-                                        <Tooltip title="删除数据源">
-                                            <Button
-                                                size="small"
-                                                danger
-                                                icon={<DeleteOutlined />}
-                                                onClick={() => this.handleDelete(ds.id!)}
-                                            />
-                                        </Tooltip>
-                                    </Space>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <Table rowKey="id" columns={columns} dataSource={datasources}
+                       pagination={false} size="middle" />
             </div>
         );
     }
@@ -701,35 +680,32 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
         try { configJson = JSON.parse(formDatasource.configJson || '{}'); } catch (_e) { /* ignore */ }
 
         return (
-            <div className="rf-panel rf-panel-default" style={{marginBottom: '15px'}}>
-                <div className="rf-panel-heading">
-                    <strong>{formDatasource.id ? '编辑数据源' : '新增数据源'}</strong>
-                </div>
-                <div className="rf-panel-body" style={{padding: '10px'}}>
-                    <div className="form-horizontal">
-                        <div className="rf-form-group">
-                            <label className="rf-col-sm-2 rf-control-label">名称</label>
-                            <div className="rf-col-sm-6">
-                                <input className="rf-form-control rf-input-sm" value={formDatasource.name || ''}
+            <Card size="small" title={formDatasource.id ? '编辑数据源' : '新增数据源'} style={{marginBottom: 15}}>
+                <div className="">
+                        <div className="ff-group">
+                            <label className="ff-col-2 ">名称</label>
+                            <div className="ff-col-6">
+                                <Input size="small" value={formDatasource.name || ''}
                                        onChange={e => this.handleFormChange('name', e.target.value)} />
                             </div>
                         </div>
-                        <div className="rf-form-group">
-                            <label className="rf-col-sm-2 rf-control-label">类型</label>
-                            <div className="rf-col-sm-6">
-                                <select className="rf-form-control rf-input-sm" value={formDatasource.type || 'REST_API'}
-                                        onChange={e => this.handleFormChange('type', e.target.value)}>
-                                    <option value="ADVANCE_AI">Advance AI</option>
-                                    <option value="REST_API">REST API</option>
-                                    <option value="JDBC">JDBC</option>
-                                    <option value="PKL">PKL 模型</option>
-                                </select>
+                        <div className="ff-group">
+                            <label className="ff-col-2 ">类型</label>
+                            <div className="ff-col-6">
+                                <Select size="small" value={formDatasource.type || 'REST_API'}
+                                        onChange={(v: string) => this.handleFormChange('type', v)}
+                                        options={[
+                                            {value: 'ADVANCE_AI', label: 'Advance AI'},
+                                            {value: 'REST_API', label: 'REST API'},
+                                            {value: 'JDBC', label: 'JDBC'},
+                                            {value: 'PKL', label: 'PKL 模型'},
+                                        ]}/>
                             </div>
                         </div>
-                        <div className="rf-form-group">
-                            <label className="rf-col-sm-2 rf-control-label">描述</label>
-                            <div className="rf-col-sm-6">
-                                <input className="rf-form-control rf-input-sm" value={formDatasource.description || ''}
+                        <div className="ff-group">
+                            <label className="ff-col-2 ">描述</label>
+                            <div className="ff-col-6">
+                                <Input size="small" value={formDatasource.description || ''}
                                        onChange={e => this.handleFormChange('description', e.target.value)} />
                             </div>
                         </div>
@@ -739,40 +715,39 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
                         {isPkl && this.renderPklConfig(configJson)}
                         {!isAdvanceAi && !isJdbc && !isPkl && this.renderRestConfig(configJson)}
 
-                        <div className="rf-form-group">
-                            <div className="rf-col-sm-offset-2 rf-col-sm-6">
-                                <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={this.handleSave}>保存</button>
+                        <div className="ff-group">
+                            <div className="ff-col-offset-2 ff-col-6">
+                                <Button type="primary" size="small" onClick={this.handleSave}>保存</Button>
                                 {' '}
-                                <button className="rf-btn rf-btn-default rf-btn-sm" onClick={() => this.setState({showForm: false})}>取消</button>
+                                <Button size="small" onClick={() => this.setState({showForm: false})}>取消</Button>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
+            </Card>
         );
     }
 
     renderAdvanceAiConfig(config: Record<string, unknown>) {
         return (
             <>
-                <div className="rf-form-group">
-                    <label className="rf-col-sm-2 rf-control-label">Base URL</label>
-                    <div className="rf-col-sm-6">
-                        <input className="rf-form-control rf-input-sm" value={(config.baseUrl as string) || ''}
+                <div className="ff-group">
+                    <label className="ff-col-2 ">Base URL</label>
+                    <div className="ff-col-6">
+                        <Input size="small" value={(config.baseUrl as string) || ''}
                                onChange={e => this.updateConfigJson('baseUrl', e.target.value)} />
                     </div>
                 </div>
-                <div className="rf-form-group">
-                    <label className="rf-col-sm-2 rf-control-label">Access Key</label>
-                    <div className="rf-col-sm-6">
-                        <input className="rf-form-control rf-input-sm" type="password" value={(config.accessKey as string) || ''}
+                <div className="ff-group">
+                    <label className="ff-col-2 ">Access Key</label>
+                    <div className="ff-col-6">
+                        <Input size="small" type="password" value={(config.accessKey as string) || ''}
                                onChange={e => this.updateConfigJson('accessKey', e.target.value)} />
                     </div>
                 </div>
-                <div className="rf-form-group">
-                    <label className="rf-col-sm-2 rf-control-label">Secret Key</label>
-                    <div className="rf-col-sm-6">
-                        <input className="rf-form-control rf-input-sm" type="password" value={(config.secretKey as string) || ''}
+                <div className="ff-group">
+                    <label className="ff-col-2 ">Secret Key</label>
+                    <div className="ff-col-6">
+                        <Input size="small" type="password" value={(config.secretKey as string) || ''}
                                onChange={e => this.updateConfigJson('secretKey', e.target.value)} />
                     </div>
                 </div>
@@ -783,31 +758,31 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
     renderJdbcConfig(config: Record<string, unknown>) {
         return (
             <>
-                <div className="rf-form-group">
-                    <label className="rf-col-sm-2 rf-control-label">JDBC URL</label>
-                    <div className="rf-col-sm-6">
-                        <input className="rf-form-control rf-input-sm" value={(config.url as string) || ''}
+                <div className="ff-group">
+                    <label className="ff-col-2 ">JDBC URL</label>
+                    <div className="ff-col-6">
+                        <Input size="small" value={(config.url as string) || ''}
                                onChange={e => this.updateConfigJson('url', e.target.value)} />
                     </div>
                 </div>
-                <div className="rf-form-group">
-                    <label className="rf-col-sm-2 rf-control-label">用户名</label>
-                    <div className="rf-col-sm-6">
-                        <input className="rf-form-control rf-input-sm" value={(config.username as string) || ''}
+                <div className="ff-group">
+                    <label className="ff-col-2 ">用户名</label>
+                    <div className="ff-col-6">
+                        <Input size="small" value={(config.username as string) || ''}
                                onChange={e => this.updateConfigJson('username', e.target.value)} />
                     </div>
                 </div>
-                <div className="rf-form-group">
-                    <label className="rf-col-sm-2 rf-control-label">密码</label>
-                    <div className="rf-col-sm-6">
-                        <input className="rf-form-control rf-input-sm" type="password" value={(config.password as string) || ''}
+                <div className="ff-group">
+                    <label className="ff-col-2 ">密码</label>
+                    <div className="ff-col-6">
+                        <Input size="small" type="password" value={(config.password as string) || ''}
                                onChange={e => this.updateConfigJson('password', e.target.value)} />
                     </div>
                 </div>
-                <div className="rf-form-group">
-                    <label className="rf-col-sm-2 rf-control-label">查询模板</label>
-                    <div className="rf-col-sm-6">
-                        <input className="rf-form-control rf-input-sm"
+                <div className="ff-group">
+                    <label className="ff-col-2 ">查询模板</label>
+                    <div className="ff-col-6">
+                        <Input size="small"
                                value={(config.queryTemplate as string) || ''}
                                placeholder="SELECT ${fieldName} FROM table WHERE user_id = '${entityId}'"
                                onChange={e => this.updateConfigJson('queryTemplate', e.target.value)} />
@@ -820,17 +795,17 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
     renderRestConfig(config: Record<string, unknown>) {
         return (
             <>
-                <div className="rf-form-group">
-                    <label className="rf-col-sm-2 rf-control-label">Base URL</label>
-                    <div className="rf-col-sm-6">
-                        <input className="rf-form-control rf-input-sm" value={(config.baseUrl as string) || ''}
+                <div className="ff-group">
+                    <label className="ff-col-2 ">Base URL</label>
+                    <div className="ff-col-6">
+                        <Input size="small" value={(config.baseUrl as string) || ''}
                                onChange={e => this.updateConfigJson('baseUrl', e.target.value)} />
                     </div>
                 </div>
-                <div className="rf-form-group">
-                    <label className="rf-col-sm-2 rf-control-label">Endpoint</label>
-                    <div className="rf-col-sm-6">
-                        <input className="rf-form-control rf-input-sm" value={(config.endpoint as string) || ''}
+                <div className="ff-group">
+                    <label className="ff-col-2 ">Endpoint</label>
+                    <div className="ff-col-6">
+                        <Input size="small" value={(config.endpoint as string) || ''}
                                onChange={e => this.updateConfigJson('endpoint', e.target.value)} />
                     </div>
                 </div>
@@ -841,42 +816,40 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
     renderPklConfig(config: Record<string, unknown>) {
         return (
             <>
-                <div className="rf-form-group">
-                    <label className="rf-col-sm-2 rf-control-label">模型服务地址</label>
-                    <div className="rf-col-sm-6">
-                        <input className="rf-form-control rf-input-sm"
+                <div className="ff-group">
+                    <label className="ff-col-2 ">模型服务地址</label>
+                    <div className="ff-col-6">
+                        <Input size="small"
                                value={(config.modelServiceUrl as string) || ''}
                                placeholder="http://localhost:8501"
                                onChange={e => this.updateConfigJson('modelServiceUrl', e.target.value)} />
                     </div>
                 </div>
-                <div className="rf-form-group">
-                    <label className="rf-col-sm-2 rf-control-label">模型 ID</label>
-                    <div className="rf-col-sm-4">
-                        <input className="rf-form-control rf-input-sm"
+                <div className="ff-group">
+                    <label className="ff-col-2 ">模型 ID</label>
+                    <div className="ff-col-4">
+                        <Input size="small"
                                value={(config.modelId as string) || ''}
                                placeholder="credit_scoring_v1"
                                onChange={e => this.updateConfigJson('modelId', e.target.value)} />
                     </div>
-                    <div className="rf-col-sm-2">
-                        <button className="rf-btn rf-btn-sm rf-btn-default" onClick={() => this.fetchModelList()}>
+                    <div className="ff-col-2">
+                        <Button size="small" onClick={() => this.fetchModelList()}>
                             <ReloadOutlined /> 加载模型
-                        </button>
+                        </Button>
                     </div>
                 </div>
                 {this.state.availableModels.length > 0 && (
-                    <div className="rf-form-group">
-                        <label className="rf-col-sm-2 rf-control-label">可选模型</label>
-                        <div className="rf-col-sm-6">
-                            <select className="rf-form-control rf-input-sm"
-                                    onChange={e => this.updateConfigJson('modelId', e.target.value)}>
-                                <option value="">选择模型...</option>
-                                {this.state.availableModels.map(m => (
-                                    <option key={m.model_id} value={m.model_id}>
-                                        {m.name} ({m.model_id}) {m.active ? '✓' : '✗'}
-                                    </option>
-                                ))}
-                            </select>
+                    <div className="ff-group">
+                        <label className="ff-col-2 ">可选模型</label>
+                        <div className="ff-col-6">
+                            <Select size="small"
+                                    onChange={(v: string) => this.updateConfigJson('modelId', v)}
+                                    placeholder="选择模型..."
+                                    options={this.state.availableModels.map(m => ({
+                                        value: m.model_id,
+                                        label: `${m.name} (${m.model_id}) ${m.active ? '✓' : '✗'}`
+                                    }))}/>
                         </div>
                     </div>
                 )}
@@ -917,65 +890,50 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
             <div>
                 <h5 style={{marginBottom: '10px'}}>实体类 → 数据源映射</h5>
                 <div className="form-inline" style={{marginBottom: '15px'}}>
-                    <input className="rf-form-control rf-input-sm" placeholder="实体类名 (clazz)"
+                    <Input size="small" placeholder="实体类名 (clazz)"
                            value={this.state.mappingClazz}
                            onChange={e => this.setState({mappingClazz: e.target.value})} />
                     {' '}
-                    <select className="rf-form-control rf-input-sm" value={this.state.mappingDatasourceId}
-                            onChange={e => this.setState({mappingDatasourceId: e.target.value})}>
-                        <option value="">选择数据源</option>
-                        {datasources.map(ds => <option key={ds.id} value={ds.id}>{ds.name}</option>)}
-                    </select>
+                    <Select size="small" value={this.state.mappingDatasourceId}
+                            onChange={(v: string) => this.setState({mappingDatasourceId: v})}
+                            placeholder="选择数据源"
+                            options={datasources.map(ds => ({value: String(ds.id), label: ds.name}))}/>
                     {' '}
-                    <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={this.handleSaveMapping}>保存映射</button>
+                    <Button type="primary" size="small" onClick={this.handleSaveMapping}>保存映射</Button>
                 </div>
 
-                <table className="rf-table rf-table-bordered rf-table-hover" style={{fontSize: '13px'}}>
-                    <thead>
-                        <tr><th>实体类 (clazz)</th><th>数据源</th><th>操作</th></tr>
-                    </thead>
-                    <tbody>
-                        {entityMappings.map(m => {
-                            const ds = datasources.find(d => d.id === m.datasourceId);
-                            return (
-                                <tr key={m.id}>
-                                    <td>{m.clazz}</td>
-                                    <td>{ds ? ds.name : '(未知)'}</td>
-                                    <td>
-                                        <button className="rf-btn rf-btn-xs rf-btn-info"
-                                                onClick={() => this.handleLoadFieldMappings(m.datasourceId, m.clazz)}>
-                                            字段映射
-                                        </button>
+                <Table<EntityMapping> rowKey="id" dataSource={entityMappings} pagination={false} size="small"
+                    columns={[
+                        {title: '实体类 (clazz)', dataIndex: 'clazz', key: 'clazz'},
+                        {title: '数据源', key: 'ds',
+                            render: (_: unknown, m: EntityMapping) => {
+                                const ds = datasources.find(d => d.id === m.datasourceId);
+                                return ds ? ds.name : '(未知)';
+                            }},
+                        {title: '操作', key: 'op',
+                            render: (_: unknown, m: EntityMapping) => {
+                                const ds = datasources.find(d => d.id === m.datasourceId);
+                                return (
+                                    <>
+                                        <Button size="small"
+                                                onClick={() => this.handleLoadFieldMappings(m.datasourceId, m.clazz)}>字段映射</Button>
                                         {ds && ds.type === 'PKL' && (
-                                            <>
-                                                {' '}
-                                                <button className="rf-btn rf-btn-xs rf-btn-warning"
-                                                        onClick={() => this.handleFetchModelFields(m.datasourceId, m.clazz, ds)}>
-                                                    获取模型字段
-                                                </button>
-                                            </>
+                                            <Button size="small" style={{marginLeft: 4}}
+                                                    onClick={() => this.handleFetchModelFields(m.datasourceId, m.clazz, ds)}>获取模型字段</Button>
                                         )}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+                                    </>
+                                );
+                            }},
+                    ]}/>
 
                 {fieldMappings.length > 0 && (
                     <div>
                         <h5 style={{marginTop: '15px'}}>字段映射: {this.state.mappingFieldClazz}</h5>
-                        <table className="rf-table rf-table-bordered rf-table-hover" style={{fontSize: '13px'}}>
-                            <thead><tr><th>规则变量名</th><th>外部字段名</th></tr></thead>
-                            <tbody>
-                                {fieldMappings.map(fm => (
-                                    <tr key={fm.id}>
-                                        <td>{fm.variableName}</td>
-                                        <td>{fm.remoteField}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        <Table<FieldMapping> rowKey="id" dataSource={fieldMappings} pagination={false} size="small"
+                            columns={[
+                                {title: '规则变量名', dataIndex: 'variableName', key: 'v'},
+                                {title: '外部字段名', dataIndex: 'remoteField', key: 'r'},
+                            ]}/>
                     </div>
                 )}
             </div>

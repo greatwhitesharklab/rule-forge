@@ -1,4 +1,5 @@
 import {Component} from 'react';
+import {Input} from 'antd';
 import * as event from '../event.js';
 import * as action from '../action.js';
 import * as componentEvent from '../../components/componentEvent.js';
@@ -80,13 +81,13 @@ export default class RenameDialog extends Component<RenameDialogProps, RenameDia
             }.bind(this)
         }];
         const body = (
-            <div className="rf-form-group">
+            <div className="ff-group">
                 <label>名称</label>
-                <input type="text" className="rf-form-control" name="newFileNameForRename" value={this.state.fileName}
+                <Input name="newFileNameForRename" value={this.state.fileName}
                        onChange={function (e: React.ChangeEvent<HTMLInputElement>) {
                            this.setState({fileName: e.target.value, errors: {}});
-                       }.bind(this)}></input>
-                {this.state.errors.fileName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.fileName}</div>}
+                       }.bind(this)}/>
+                {this.state.errors.fileName && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.fileName}</div>}
             </div>
         );
         return (<CommonDialog visible={this.state.visible} body={body} buttons={buttons} title='重命名'

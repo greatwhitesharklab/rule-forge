@@ -1,4 +1,5 @@
 import {useEffect, useRef} from 'react';
+import {Button} from 'antd';
 import {useSearchParams} from 'react-router-dom';
 import FlowEditor from './FlowEditor';
 import KnowledgeTreeDialog from '../components/dialog/component/KnowledgeTreeDialog';
@@ -117,34 +118,34 @@ export default function EditorRoute() {
             <DirtyContext.Provider value={dirtyApi}>
                 {/* 工具栏 — 复现 index.tsx toolbarRoot.render 的内容 */}
                 <div className="toolbar">
-                    <button className="rf-btn rf-btn-ghost rf-btn-sm" onClick={function () { saveFlow(false); }}>
+                    <Button size="small" onClick={function () { saveFlow(false); }}>
                         <i className="rf rf-save"/> {isDirty ? '*保存' : '保存'}
-                    </button>{' '}
-                    <button className="rf-btn rf-btn-ghost rf-btn-sm" onClick={function () { saveFlow(true); }}>
+                    </Button>{' '}
+                    <Button size="small" onClick={function () { saveFlow(true); }}>
                         <i className="rf rf-savenewversion"/> {isDirty ? '*生成版本' : '生成版本'}
-                    </button>{' '}
-                    <button className="rf-btn rf-btn-primary rf-btn-sm" onClick={function () {
+                    </Button>{' '}
+                    <Button type="primary" size="small" onClick={function () {
                         event.eventEmitter.emit(event.OPEN_QUICK_TEST_DIALOG, {
                             project: project, file: decodedFile
                         });
                     }}>
                         <ThunderboltOutlined /> 快速测试
-                    </button>
+                    </Button>
                     {' | '}
-                    <button className="rf-btn rf-btn-ghost rf-btn-sm" onClick={function () { openImportDialog('VariableLibrary'); }}>
+                    <Button size="small" onClick={function () { openImportDialog('VariableLibrary'); }}>
                         <i className="rf rf-variable"/> 变量库
-                    </button>
-                    <button className="rf-btn rf-btn-ghost rf-btn-sm" onClick={function () { openImportDialog('ConstantLibrary'); }}>
+                    </Button>
+                    <Button size="small" onClick={function () { openImportDialog('ConstantLibrary'); }}>
                         <i className="rf rf-constant"/> 常量库
-                    </button>
-                    <button className="rf-btn rf-btn-ghost rf-btn-sm" onClick={function () { openImportDialog('ActionLibrary'); }}>
+                    </Button>
+                    <Button size="small" onClick={function () { openImportDialog('ActionLibrary'); }}>
                         <i className="rf rf-action"/> 动作库
-                    </button>
-                    <button className="rf-btn rf-btn-ghost rf-btn-sm" onClick={function () { openImportDialog('ParameterLibrary'); }}>
+                    </Button>
+                    <Button size="small" onClick={function () { openImportDialog('ParameterLibrary'); }}>
                         <i className="rf rf-parameter"/> 参数库
-                    </button>
+                    </Button>
                     {' | '}
-                    <button className="rf-btn rf-btn-success rf-btn-sm" onClick={function () {
+                    <Button color="green" size="small" onClick={function () {
                         if (!editorRef.current) return;
                         editorRef.current.saveXML().then(function (xml: string) {
                             if (!xml) return;
@@ -156,7 +157,7 @@ export default function EditorRoute() {
                         });
                     }}>
                         <UploadOutlined /> 部署
-                    </button>
+                    </Button>
                 </div>
 
                 {/* 编辑器 — container 高度复现 editor.html?type=flowbpmn 的 calc(100vh - 45px) */}
