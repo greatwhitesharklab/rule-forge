@@ -1,4 +1,5 @@
 package com.ruleforge.runtime;
+import com.ruleforge.engine.ValueCompute;
 import com.ruleforge.engine.Path;
 import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.engine.EvaluationContext;

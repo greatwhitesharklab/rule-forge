@@ -3,7 +3,7 @@
 // (powered by Fernflower decompiler)
 //
 
-package com.ruleforge.runtime.rete;
+package com.ruleforge.engine;
 import com.ruleforge.engine.Context;
 
 import com.ruleforge.config.PropertyConfigurer;

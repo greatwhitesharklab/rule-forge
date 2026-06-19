@@ -1,4 +1,6 @@
-package com.ruleforge.runtime.assertor;
+package com.ruleforge.engine;
+import com.ruleforge.runtime.assertor.Assertor;
+import java.util.Collection;
 
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.library.Datatype;

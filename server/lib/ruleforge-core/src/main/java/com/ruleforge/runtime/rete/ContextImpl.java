@@ -1,4 +1,5 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.ValueCompute;
 import com.ruleforge.engine.Context;
 
 import com.ruleforge.debug.MessageItem;
@@ -8,7 +9,7 @@ import com.ruleforge.model.rule.RuleInfo;
 import com.ruleforge.runtime.ElCalculator;
 import com.ruleforge.runtime.EngineContext;
 import com.ruleforge.engine.WorkingMemory;
-import com.ruleforge.runtime.assertor.AssertorEvaluator;
+import com.ruleforge.engine.AssertorEvaluator;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.HashMap;

@@ -6,7 +6,7 @@ import com.ruleforge.Utils;
 import com.ruleforge.model.library.Datatype;
 import com.ruleforge.model.rule.Op;
 import com.ruleforge.model.rule.Value;
-import com.ruleforge.runtime.assertor.AssertorEvaluator;
+import com.ruleforge.engine.AssertorEvaluator;
 import com.ruleforge.engine.EvaluationContext;
 
 /**

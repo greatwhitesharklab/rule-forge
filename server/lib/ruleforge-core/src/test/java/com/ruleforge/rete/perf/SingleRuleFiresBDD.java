@@ -1,4 +1,5 @@
 package com.ruleforge.rete.perf;
+import com.ruleforge.engine.ValueCompute;
 
 import com.ruleforge.rete.test.EngineContextWirer;
 

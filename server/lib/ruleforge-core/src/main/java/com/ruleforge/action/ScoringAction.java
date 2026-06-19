@@ -7,7 +7,7 @@ import com.ruleforge.model.rule.Value;
 import com.ruleforge.model.scorecard.runtime.ScoreRuntimeValue;
 import com.ruleforge.runtime.EngineContext;
 import com.ruleforge.engine.Context;
-import com.ruleforge.runtime.rete.ValueCompute;
+import com.ruleforge.engine.ValueCompute;
 
 /**
  * @author Jacky.gao

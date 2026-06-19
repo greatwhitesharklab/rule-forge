@@ -4,7 +4,7 @@ import com.ruleforge.debug.MsgType;
 import com.ruleforge.model.rule.Value;
 import com.ruleforge.runtime.EngineContext;
 import com.ruleforge.engine.Context;
-import com.ruleforge.runtime.rete.ValueCompute;
+import com.ruleforge.engine.ValueCompute;
 
 import java.math.BigDecimal;
 import java.util.List;

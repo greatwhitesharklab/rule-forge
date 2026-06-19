@@ -1,4 +1,6 @@
 package com.ruleforge.ir.drl;
+import com.ruleforge.engine.AssertorEvaluator;
+import com.ruleforge.engine.ValueCompute;
 
 import com.ruleforge.builder.KnowledgeBase;
 import com.ruleforge.model.library.Datatype;

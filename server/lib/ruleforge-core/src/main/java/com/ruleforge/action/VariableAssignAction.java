@@ -7,7 +7,7 @@ import com.ruleforge.model.library.Datatype;
 import com.ruleforge.model.rule.Value;
 import com.ruleforge.model.rule.lhs.LeftType;
 import com.ruleforge.engine.Context;
-import com.ruleforge.runtime.rete.ValueCompute;
+import com.ruleforge.engine.ValueCompute;
 import org.apache.commons.lang.StringUtils;
 
 import java.beans.IntrospectionException;

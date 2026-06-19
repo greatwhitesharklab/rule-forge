@@ -1,4 +1,6 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.AssertorEvaluator;
+import com.ruleforge.engine.ValueCompute;
 import com.ruleforge.engine.WorkingMemory;
 
 import com.ruleforge.action.AbstractAction;

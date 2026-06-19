@@ -14,7 +14,7 @@ import com.ruleforge.runtime.KnowledgePackageWrapper;
 import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.runtime.KnowledgeSessionFactory;
 import com.ruleforge.engine.Context;
-import com.ruleforge.runtime.rete.ValueCompute;
+import com.ruleforge.engine.ValueCompute;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import com.fasterxml.jackson.annotation.JsonIgnore;
