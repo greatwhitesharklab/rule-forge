@@ -27,8 +27,10 @@ public final class NodeActivityFactory {
         if (node == null) {
             throw new IllegalArgumentException("node must not be null");
         }
-        if (context.containsKey(node)) {
-            return (Activity) context.get(node);
+        // V5.100.9 — 砍 containsKey+get 双 lookup(context.put 只存非 null Activity → get+null-check 安全)
+        Activity cached = (Activity) context.get(node);
+        if (cached != null) {
+            return cached;
         }
         Activity activity;
         if (node instanceof TerminalNode) {
