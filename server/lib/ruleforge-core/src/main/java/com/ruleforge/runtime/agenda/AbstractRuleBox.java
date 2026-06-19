@@ -2,9 +2,9 @@ package com.ruleforge.runtime.agenda;
 
 import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.rule.RuleInfo;
-import com.ruleforge.runtime.KnowledgeSession;
+import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.runtime.event.impl.ActivationCancelledEventImpl;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 
 import java.util.ArrayList;
 import java.util.Collections;

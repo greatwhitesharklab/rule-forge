@@ -2,7 +2,7 @@ package com.ruleforge.model.rule.lhs;
 
 import java.util.List;
 
-import com.ruleforge.runtime.rete.EvaluationContext;
+import com.ruleforge.engine.EvaluationContext;
 
 /**
  * @author Jacky.gao

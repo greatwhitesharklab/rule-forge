@@ -1,6 +1,6 @@
 package com.ruleforge.model.scorecard.runtime;
 
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 
 /**
  * @author Jacky.gao

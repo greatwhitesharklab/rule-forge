@@ -5,7 +5,7 @@ import com.ruleforge.model.rule.Op;
 import com.ruleforge.model.rule.SimpleValue;
 import com.ruleforge.model.library.Datatype;
 import com.ruleforge.rete.test.EngineContextWirer;
-import com.ruleforge.runtime.WorkingMemory;
+import com.ruleforge.engine.WorkingMemory;
 import com.ruleforge.runtime.rete.EvaluationContextImpl;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;

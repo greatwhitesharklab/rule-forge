@@ -1,4 +1,5 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.Path;
 
 import com.ruleforge.builder.KnowledgeBase;
 import com.ruleforge.model.library.Datatype;

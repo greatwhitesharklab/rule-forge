@@ -1,4 +1,6 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.Path;
+import com.ruleforge.engine.Activity;
 
 import com.ruleforge.model.GeneralEntity;
 import org.junit.jupiter.api.DisplayName;

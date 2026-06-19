@@ -1,4 +1,5 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.WorkingMemory;
 
 import com.ruleforge.action.AbstractAction;
 import com.ruleforge.action.ActionValue;
@@ -12,10 +13,11 @@ import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.library.ResourceLibrary;
 import com.ruleforge.runtime.KnowledgePackage;
 import com.ruleforge.runtime.KnowledgePackageImpl;
-import com.ruleforge.runtime.KnowledgeSession;
+import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.runtime.KnowledgeSessionFactory;
 import com.ruleforge.runtime.response.RuleExecutionResponse;
 import com.ruleforge.rete.test.EngineContextWirer;
+import com.ruleforge.engine.Context;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

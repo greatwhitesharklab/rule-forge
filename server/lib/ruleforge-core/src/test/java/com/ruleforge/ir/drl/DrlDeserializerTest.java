@@ -1,4 +1,5 @@
 package com.ruleforge.ir.drl;
+import com.ruleforge.engine.Path;
 
 import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.rule.Rhs;

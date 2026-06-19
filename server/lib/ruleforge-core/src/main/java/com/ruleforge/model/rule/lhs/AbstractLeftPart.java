@@ -2,7 +2,7 @@ package com.ruleforge.model.rule.lhs;
 
 import com.ruleforge.Utils;
 import com.ruleforge.exception.RuleException;
-import com.ruleforge.runtime.rete.EvaluationContext;
+import com.ruleforge.engine.EvaluationContext;
 
 import java.util.ArrayList;
 import java.util.Collection;

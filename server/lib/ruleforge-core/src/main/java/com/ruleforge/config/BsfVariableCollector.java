@@ -1,7 +1,7 @@
 package com.ruleforge.config;
 import com.ruleforge.action.BsfVariableProvider;
 
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;

@@ -1,4 +1,4 @@
-package com.ruleforge.runtime.rete;
+package com.ruleforge.engine;
 
 
 public interface EvaluationContext extends Context {

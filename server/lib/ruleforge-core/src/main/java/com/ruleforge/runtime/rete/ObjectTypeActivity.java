@@ -1,4 +1,5 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.EvaluationContext;
 
 import com.ruleforge.exception.RuleAssertException;
 import com.ruleforge.model.GeneralEntity;

@@ -5,7 +5,7 @@ import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.library.Datatype;
 import com.ruleforge.model.rule.Parameter;
 import com.ruleforge.runtime.EngineContext;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 import com.ruleforge.runtime.rete.ValueCompute;
 
 import java.lang.reflect.Method;

@@ -2,7 +2,7 @@ package com.ruleforge.runtime.function;
 
 import com.ruleforge.model.function.FunctionContext;
 import com.ruleforge.model.rule.RuleInfo;
-import com.ruleforge.runtime.WorkingMemory;
+import com.ruleforge.engine.WorkingMemory;
 
 import java.util.Map;
 

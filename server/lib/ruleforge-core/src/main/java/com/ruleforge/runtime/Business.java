@@ -1,4 +1,5 @@
 package com.ruleforge.runtime;
+import com.ruleforge.engine.KnowledgeSession;
 
 /**
  * @author Jacky.gao

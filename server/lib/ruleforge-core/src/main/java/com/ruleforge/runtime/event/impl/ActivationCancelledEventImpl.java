@@ -1,6 +1,6 @@
 package com.ruleforge.runtime.event.impl;
 
-import com.ruleforge.runtime.KnowledgeSession;
+import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.runtime.agenda.Activation;
 import com.ruleforge.runtime.event.ActivationCancelledEvent;
 

@@ -1,7 +1,9 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.Activity;
+import com.ruleforge.engine.EvaluationContext;
 
 import com.ruleforge.debug.MessageItem;
-import com.ruleforge.runtime.WorkingMemory;
+import com.ruleforge.engine.WorkingMemory;
 
 import java.util.List;
 import java.util.Map;

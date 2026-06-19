@@ -2,7 +2,7 @@ package com.ruleforge.runtime.agenda;
 
 import com.ruleforge.action.ActionValue;
 import com.ruleforge.model.rule.RuleInfo;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 import lombok.Getter;
 
 import java.util.ArrayList;

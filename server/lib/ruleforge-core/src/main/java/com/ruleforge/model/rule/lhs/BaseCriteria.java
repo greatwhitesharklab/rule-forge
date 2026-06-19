@@ -1,6 +1,6 @@
 package com.ruleforge.model.rule.lhs;
 
-import com.ruleforge.runtime.rete.EvaluationContext;
+import com.ruleforge.engine.EvaluationContext;
 
 import java.util.List;
 

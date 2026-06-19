@@ -3,7 +3,7 @@ package com.ruleforge.action;
 import com.ruleforge.debug.MsgType;
 import com.ruleforge.model.rule.Value;
 import com.ruleforge.runtime.EngineContext;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 import com.ruleforge.runtime.rete.ValueCompute;
 
 import java.math.BigDecimal;

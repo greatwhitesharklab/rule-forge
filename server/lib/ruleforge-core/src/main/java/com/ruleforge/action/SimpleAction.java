@@ -3,7 +3,7 @@ package com.ruleforge.action;
 import java.util.List;
 import java.util.Map;
 
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 
 /**
  * @author Jacky.gao

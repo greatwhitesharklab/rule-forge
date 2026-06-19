@@ -5,10 +5,10 @@ import com.ruleforge.action.ActionValue;
 import com.ruleforge.model.rule.ElseRuleBuilder;
 import com.ruleforge.model.rule.Rule;
 import com.ruleforge.model.rule.RuleInfo;
-import com.ruleforge.runtime.KnowledgeSession;
+import com.ruleforge.engine.KnowledgeSession;
 import com.ruleforge.runtime.response.ExecutionResponseImpl;
 import com.ruleforge.runtime.response.RuleExecutionResponse;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 import com.ruleforge.runtime.rete.FactTracker;
 import com.ruleforge.runtime.rete.ReteInstance;
 

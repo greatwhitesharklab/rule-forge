@@ -1,4 +1,7 @@
 package com.ruleforge.runtime.rete;
+import com.ruleforge.engine.Path;
+import com.ruleforge.engine.Activity;
+import com.ruleforge.engine.EvaluationContext;
 
 import java.util.ArrayList;
 import java.util.Collection;

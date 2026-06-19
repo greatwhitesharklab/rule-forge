@@ -1,6 +1,6 @@
 package com.ruleforge.action;
 
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 
 import java.util.List;
 

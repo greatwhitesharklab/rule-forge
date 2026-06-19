@@ -2,7 +2,7 @@ package com.ruleforge.model.scorecard.runtime;
 
 import com.ruleforge.Utils;
 import com.ruleforge.debug.MsgType;
-import com.ruleforge.runtime.rete.Context;
+import com.ruleforge.engine.Context;
 
 import java.math.BigDecimal;
 import java.util.List;
