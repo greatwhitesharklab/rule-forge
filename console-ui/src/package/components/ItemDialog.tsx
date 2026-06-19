@@ -73,7 +73,7 @@ export default class ItemDialog extends Component<ItemDialogProps, ItemDialogSta
                     <Input type="text"  name="itemName"
                         value={this.state.itemName}
                         onChange={(e) => this.setState({itemName: e.target.value, errors: {...this.state.errors, itemName: undefined}})}/>
-                    {this.state.errors.itemName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemName}</div>}
+                    {this.state.errors.itemName && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.itemName}</div>}
                 </div>
                 <div className="ff-group">
                     <label>资源文件路径:</label>
@@ -86,13 +86,13 @@ export default class ItemDialog extends Component<ItemDialogProps, ItemDialogSta
                                 }.bind(this)});
                             }}>选择文件</Button>
                     </div>
-                    {this.state.errors.itemPath && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemPath}</div>}
+                    {this.state.errors.itemPath && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.itemPath}</div>}
                 </div>
                 <div className="ff-group">
                     <label>版本号:</label>
                     <Input type="text"  name="itemVersion" disabled
                         value={this.state.itemVersion}/>
-                    {this.state.errors.itemVersion && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.itemVersion}</div>}
+                    {this.state.errors.itemVersion && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.itemVersion}</div>}
                 </div>
             </div>
         );

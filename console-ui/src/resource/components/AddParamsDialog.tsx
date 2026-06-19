@@ -124,14 +124,14 @@ export default class AddParamsDialog extends Component<AddParamsDialogProps, Add
                         <Input type="text" name="name" 
                             value={this.state.name}
                             onChange={(e) => this.setState({name: e.target.value, errors: {...this.state.errors, name: undefined}})}/>
-                        {this.state.errors.name && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.name}</div>}
+                        {this.state.errors.name && <div  style={{fontSize:'12px', color: 'var(--rf-danger)'}}>{this.state.errors.name}</div>}
                     </div>
                     <div className="ff-group ff-col-6">
                         <label>标题：</label>
                         <Input type="text" name="label" 
                             value={this.state.label}
                             onChange={(e) => this.setState({label: e.target.value, errors: {...this.state.errors, label: undefined}})}/>
-                        {this.state.errors.label && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.label}</div>}
+                        {this.state.errors.label && <div  style={{fontSize:'12px', color: 'var(--rf-danger)'}}>{this.state.errors.label}</div>}
                     </div>
                 </div>
                 <div className="ff-row">
@@ -140,7 +140,7 @@ export default class AddParamsDialog extends Component<AddParamsDialogProps, Add
                         <Input type="text" name="defaultValue" 
                             value={this.state.defaultValue}
                             onChange={(e) => this.setState({defaultValue: e.target.value, errors: {...this.state.errors, defaultValue: undefined}})}/>
-                        {this.state.errors.defaultValue && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.defaultValue}</div>}
+                        {this.state.errors.defaultValue && <div  style={{fontSize:'12px', color: 'var(--rf-danger)'}}>{this.state.errors.defaultValue}</div>}
                     </div>
                     <div className="ff-group ff-col-6">
                         <label>数据类型:</label>
@@ -149,7 +149,7 @@ export default class AddParamsDialog extends Component<AddParamsDialogProps, Add
                             onChange={(v: string) => this.setState({type: v, errors: {...this.state.errors, type: undefined}})}
                             options={['String', 'Integer', 'Char', 'Double', 'Long', 'Float', 'BigDecimal', 'Boolean', 'Date', 'List', 'Set', 'Map', 'Enum', 'Object']
                                 .map(o => ({value: o, label: o}))}/>
-                        {this.state.errors.type && <div className="rf-text-danger" style={{fontSize:'12px'}}>{this.state.errors.type}</div>}
+                        {this.state.errors.type && <div  style={{fontSize:'12px', color: 'var(--rf-danger)'}}>{this.state.errors.type}</div>}
                     </div>
                 </div>
                 <div className="ff-group">

@@ -151,8 +151,8 @@ export default class BatchTestDialog extends Component<BatchTestDialogProps, Bat
                     <Progress percent={progress} style={{marginBottom: 10}}/>
                     <div className="ff-row">
                         <div className="ff-col-4">总行数: {totalRows}</div>
-                        <div className="ff-col-4 rf-text-success">成功: {successCount}</div>
-                        <div className="ff-col-4 rf-text-danger">失败: {errorCount}</div>
+                        <div className="ff-col-4" style={{color: 'var(--rf-success)'}}>成功: {successCount}</div>
+                        <div className="ff-col-4" style={{color: 'var(--rf-danger)'}}>失败: {errorCount}</div>
                     </div>
                 </div>
             );
@@ -160,11 +160,11 @@ export default class BatchTestDialog extends Component<BatchTestDialogProps, Bat
             const exportFormId = 'batch-test-export-form';
             body = (
                 <div style={{padding: '15px'}}>
-                    <h4 className="rf-text-success">批量测试完成</h4>
+                    <h4  style={{color: 'var(--rf-success)'}}>批量测试完成</h4>
                     <div className="ff-row" style={{marginBottom: '10px'}}>
                         <div className="ff-col-4">总行数: {totalRows}</div>
-                        <div className="ff-col-4 rf-text-success">成功: {successCount}</div>
-                        <div className="ff-col-4 rf-text-danger">失败: {errorCount}</div>
+                        <div className="ff-col-4" style={{color: 'var(--rf-success)'}}>成功: {successCount}</div>
+                        <div className="ff-col-4" style={{color: 'var(--rf-danger)'}}>失败: {errorCount}</div>
                     </div>
                     <form id={exportFormId} method="post"
                           action={apiBase() + '/packageeditor/exportBatchTestExcel'}>
@@ -183,7 +183,7 @@ export default class BatchTestDialog extends Component<BatchTestDialogProps, Bat
                     {sessionId ? (
                         <p>Session ID: {sessionId}</p>
                     ) : (
-                        <p className="rf-text-warning">未检测到导入数据，请先上传 Excel</p>
+                        <p  style={{color: 'var(--rf-warning)'}}>未检测到导入数据，请先上传 Excel</p>
                     )}
                 </div>
             );

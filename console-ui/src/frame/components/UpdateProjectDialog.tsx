@@ -59,7 +59,7 @@ export default class UpdateProjectDialog extends Component<UpdateProjectDialogPr
                 <label>项目名称</label>
                 <Input name="projectName" value={this.state.projectName}
                        onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({projectName: e.target.value, errors: {}}) }.bind(this)}/>
-                {this.state.errors.projectName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.projectName}</div>}
+                {this.state.errors.projectName && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.projectName}</div>}
             </div>
         );
         const buttons = [];

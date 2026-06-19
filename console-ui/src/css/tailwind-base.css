@@ -159,16 +159,8 @@ a:hover { color: var(--rf-primary-hover); }
 /* ========== Checkbox ========== */
 
 /* ===== Text utilities ===== */
-.rf-text-center { text-align: center; }
-.rf-text-right { text-align: right; }
-.rf-text-danger { color: #ff4d4f; }
-.rf-text-muted { color: var(--rf-text-disabled); }
 /* V5.9.0 a11y: #52c41a → #237b00 */
-.rf-text-success { color: #237b00; }
-.rf-text-warning { color: #faad14; }
 /* V5.9.0 a11y: #06b6d4 → #0891b2 */
-.rf-text-info { color: #0891b2; }
-.rf-text-left { text-align: left; }
 
 /* ===== Pull ===== */
 
@@ -236,9 +228,6 @@ body .ant-modal-mask.ant-modal-mask {
 /* ========== RF Utility Classes ========== */
 .rf { color: var(--rf-text-secondary); transition: color 0.2s; }
 .rf:hover { color: var(--rf-primary); }
-.rf-text-primary { color: var(--rf-text-primary); }
-.rf-text-secondary { color: var(--rf-text-secondary); }
-.rf-text-tertiary { color: var(--rf-text-tertiary); }
 
 /* ========== Login Page ========== */
 .login-container { display: flex; min-height: 100vh; overflow: hidden; }

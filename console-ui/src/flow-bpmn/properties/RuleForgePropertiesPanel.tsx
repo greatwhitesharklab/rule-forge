@@ -440,7 +440,7 @@ export default class RuleForgePropertiesPanel extends Component<PropertiesPanelP
                         <tbody>
                             {rulesList.map((rule, idx) => (
                                 <tr key={idx}>
-                                    <td className="rf-text-center">{idx + 1}</td>
+                                    <td  style={{textAlign: 'center'}}>{idx + 1}</td>
                                     <td>{rule.name || '(未命名)'}</td>
                                     <td>
                                         <Button size="small" title="编辑"

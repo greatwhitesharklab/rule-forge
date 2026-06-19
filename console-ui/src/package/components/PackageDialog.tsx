@@ -71,14 +71,14 @@ export default class PackageDialog extends Component<PackageDialogProps, Package
                         value={this.state.packageId}
                         disabled={this.state.disabled}
                         onChange={(e) => this.setState({packageId: e.target.value, errors: {...this.state.errors, packageId: undefined}})}/>
-                    {this.state.errors.packageId && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.packageId}</div>}
+                    {this.state.errors.packageId && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.packageId}</div>}
                 </div>
                 <div className="ff-group">
                     <label>包名称:</label>
                     <Input type="text"  name="packageName"
                         value={this.state.packageName}
                         onChange={(e) => this.setState({packageName: e.target.value, errors: {...this.state.errors, packageName: undefined}})}/>
-                    {this.state.errors.packageName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.packageName}</div>}
+                    {this.state.errors.packageName && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.packageName}</div>}
                 </div>
             </div>
         );

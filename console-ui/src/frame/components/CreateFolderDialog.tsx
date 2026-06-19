@@ -65,7 +65,7 @@ export default class CreateFolderDialog extends Component<CreateFolderDialogProp
                 <label>新目录名称</label>
                 <Input name="newFolderName" value={this.state.newFolderName}
                        onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({newFolderName: e.target.value, errors: {}}) }.bind(this)}/>
-                {this.state.errors.newFolderName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.newFolderName}</div>}
+                {this.state.errors.newFolderName && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.newFolderName}</div>}
             </div>
         );
         const buttons = [];

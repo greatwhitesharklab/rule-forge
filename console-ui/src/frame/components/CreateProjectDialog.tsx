@@ -63,7 +63,7 @@ export default class CreateProjectDialog extends Component<CreateProjectDialogPr
                 <label>新项目名称</label>
                 <Input name="newProjectName" value={this.state.newProjectName}
                        onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({newProjectName: e.target.value, errors: {}}) }.bind(this)}/>
-                {this.state.errors.newProjectName && <div className="rf-text-danger" style={{fontSize: '12px'}}>{this.state.errors.newProjectName}</div>}
+                {this.state.errors.newProjectName && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.newProjectName}</div>}
             </div>
         );
         const buttons = [];
