@@ -286,92 +286,69 @@ class KnowledgeSessionTest {
         void shouldClearInitParametersBetweenFires() throws Exception {
             // Given — 构造一个含 List 型 initParameter 的 session
             KnowledgeSession session = KnowledgeSessionFactory.newKnowledgeSession(buildEmptyPackage());
-            Field f = KnowledgeSessionImpl.class.getDeclaredField("initParameters");
-            f.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            Map<String, Object> initParams = (Map<String, Object>) f.get(session);
+            Field pm = KnowledgeSessionImpl.class.getDeclaredField("paramManager");
+            pm.setAccessible(true);
+            SessionParameterManager paramMgr = (SessionParameterManager) pm.get(session);
+            Map<String, Object> initParams = paramMgr.getInitParameters();
             initParams.put("listParam", new ArrayList<>(List.of("a", "b", "c")));
 
             // When — fireRules 一次,触发 clearInitParameters
             session.fireRules();
-            // 二次 fireRules 之前,initParameters 应该已被 clear
-            @SuppressWarnings("unchecked")
-            Map<String, Object> after = (Map<String, Object>) f.get(session);
-            Object listParam = after.get("listParam");
 
-            // Then — 列表被清空(clearInitParameters 对 List 调 clear),键仍在但 value 空
+            // Then — 列表被清空
+            Map<String, Object> after = paramMgr.getInitParameters();
+            Object listParam = after.get("listParam");
             assertThat(listParam).isInstanceOf(List.class);
             assertThat((List<?>) listParam).isEmpty();
         }
 
-        // Given initParameters 里有 String 类型
-        // When fireRules
-        // Then String 键被移除(clearInitParameters 不保留 String key)
         @Test
         @DisplayName("initParameters String 键应在 fireRules 后被移除")
         void shouldRemoveStringKeysOnFire() throws Exception {
-            // Given
             KnowledgeSession session = KnowledgeSessionFactory.newKnowledgeSession(buildEmptyPackage());
-            Field f = KnowledgeSessionImpl.class.getDeclaredField("initParameters");
-            f.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            Map<String, Object> initParams = (Map<String, Object>) f.get(session);
-            initParams.put("stringParam", "hello");
+            Field pm = KnowledgeSessionImpl.class.getDeclaredField("paramManager");
+            pm.setAccessible(true);
+            SessionParameterManager paramMgr = (SessionParameterManager) pm.get(session);
+            paramMgr.getInitParameters().put("stringParam", "hello");
 
-            // When
             session.fireRules();
 
-            // Then
-            @SuppressWarnings("unchecked")
-            Map<String, Object> after = (Map<String, Object>) f.get(session);
+            Map<String, Object> after = paramMgr.getInitParameters();
             assertThat(after).doesNotContainKey("stringParam");
         }
 
-        // Given initParameters 里有 Number / Boolean
-        // When fireRules
-        // Then Number 归 0,Boolean 归 false(原地重置,不是 remove)
         @Test
         @DisplayName("initParameters Number 归 0 / Boolean 归 false")
         void shouldResetNumberAndBoolean() throws Exception {
-            // Given
             KnowledgeSession session = KnowledgeSessionFactory.newKnowledgeSession(buildEmptyPackage());
-            Field f = KnowledgeSessionImpl.class.getDeclaredField("initParameters");
-            f.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            Map<String, Object> initParams = (Map<String, Object>) f.get(session);
+            Field pm = KnowledgeSessionImpl.class.getDeclaredField("paramManager");
+            pm.setAccessible(true);
+            SessionParameterManager paramMgr = (SessionParameterManager) pm.get(session);
+            Map<String, Object> initParams = paramMgr.getInitParameters();
             initParams.put("numParam", 42);
             initParams.put("boolParam", true);
 
-            // When
             session.fireRules();
 
-            // Then
-            @SuppressWarnings("unchecked")
-            Map<String, Object> after = (Map<String, Object>) f.get(session);
+            Map<String, Object> after = paramMgr.getInitParameters();
             assertThat(after).containsEntry("numParam", 0);
             assertThat(after).containsEntry("boolParam", false);
         }
 
-        // 第二次调用幂等 — clearInitParameters 反复调用不应抛错
         @Test
-        @DisplayName("clearInitParameters 反复调用应幂等 — 不抛错、不破坏 initParameters 内部状态")
+        @DisplayName("clearInitParameters 反复调用应幂等")
         void shouldBeIdempotentOnRepeatedFires() throws Exception {
-            // Given
             KnowledgeSession session = KnowledgeSessionFactory.newKnowledgeSession(buildEmptyPackage());
-            Field f = KnowledgeSessionImpl.class.getDeclaredField("initParameters");
-            f.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            Map<String, Object> initParams = (Map<String, Object>) f.get(session);
-            initParams.put("numParam", 1);
+            Field pm = KnowledgeSessionImpl.class.getDeclaredField("paramManager");
+            pm.setAccessible(true);
+            SessionParameterManager paramMgr = (SessionParameterManager) pm.get(session);
+            paramMgr.getInitParameters().put("numParam", 1);
 
-            // When — 连续 fireRules 5 次
             for (int i = 0; i < 5; i++) {
                 session.fireRules();
             }
 
-            // Then — initParameters 仍在(不是被 clear 整张 map,只是 value 重置)
-            @SuppressWarnings("unchecked")
-            Map<String, Object> after = (Map<String, Object>) f.get(session);
+            Map<String, Object> after = paramMgr.getInitParameters();
             assertThat(after).containsKey("numParam");
             assertThat(after.get("numParam")).isEqualTo(0);
         }
