@@ -52,9 +52,12 @@ public class ExecuteCommonFunctionAction extends AbstractAction {
         Object result = function.doFunction(object, property, new WorkingMemoryFunctionContext(context.getWorkingMemory()));
         info = info + (object == null ? "" : object);
 
-        // 执行信息
-        String msg = "*** 执行函数：" + info;
-        context.logMsg(msg, MsgType.ExecuteFunction);
+        // V6.9.10 — debug gate (V5.88/V5.95/V5.90/V6.9.9 同档): skip 字符串拼接 +
+        // MessageItem 分配 + ArrayList.add 当 rule.debug=false (V5.90 默认) 时
+        if (this.debug) {
+            String msg = "*** 执行函数：" + info;
+            context.logMsg(msg, MsgType.ExecuteFunction);
+        }
 
         if (result != null) {
             return new ActionValueImpl(name, result);
