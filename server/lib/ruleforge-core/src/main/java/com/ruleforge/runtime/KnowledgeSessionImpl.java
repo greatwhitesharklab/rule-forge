@@ -37,9 +37,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     private Agenda agenda;
     private KnowledgeSession parentSession;
     private List<String> activedActivationGroup;
-    private Map<String, Object> sessionValueMap;
+    private final SessionParameterManager paramManager = new SessionParameterManager();
     private List<MessageItem> execMessageItems;
-    private Map<String, Object> initParameters;
     /**
      * V5.82 — 全部 fact 累加列表(同 className 多 fact 不覆盖,引擎 fireRules / activeRule
      * / activeAgendaGroup / retract 走本字段)。
@@ -50,7 +49,6 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     private List<Object> allFactsList;
     private List<KnowledgePackage> knowledgePackageList;
     private List<ReteInstance> reteInstanceList;
-    private Map<String, Object> parameterMap;
     private List<Map<?, ?>> factMaps;
     private Map<String, KnowledgeSession> knowledgeSessionMap;
     private Map<String, List<ReteInstanceUnit>> activationReteInstancesMap;
@@ -67,13 +65,10 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
 
     public KnowledgeSessionImpl(KnowledgePackage[] knowledgePackages, KnowledgeSession parentSession) {
         this.activedActivationGroup = new ArrayList<>();
-        this.sessionValueMap = new HashMap<>();
         this.execMessageItems = new ArrayList<>();
-        this.initParameters = new HashMap<>();
         this.allFactsList = new ArrayList<>();
         this.knowledgePackageList = new ArrayList<>();
         this.reteInstanceList = new ArrayList<>();
-        this.parameterMap = new HashMap<>();
         this.factMaps = new ArrayList<>();
         this.knowledgeSessionMap = new HashMap<>();
         this.activationReteInstancesMap = new HashMap<>();
@@ -83,12 +78,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
         for (KnowledgePackage knowledgePackage : knowledgePackages) {
             this.knowledgePackageList.add(knowledgePackage);
             this.reteInstanceList.add(knowledgePackage.newReteInstance());
-            Map<String, String> params = knowledgePackage.getParameters();
-            if (params != null) {
-                for (String key : params.keySet()) {
-                    putDefaultParameter(key, Datatype.valueOf(params.get(key)));
-                }
-            }
+            this.paramManager.initFromKnowledgePackage(knowledgePackage);
         }
 
         this.initFromParentSession(parentSession);
@@ -103,7 +93,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
             this.execMessageItems = parentSession.getExecMessageItems();
             this.knowledgeSessionMap = parentSession.getKnowledgeSessionMap();
             this.allFactsList.addAll(parentSession.getAllFactsList());
-            this.sessionValueMap.putAll(parentSession.getSessionValueMap());
+            this.paramManager.initFromParentSessionValueMap(parentSession.getSessionValueMap());
         }
     }
 
@@ -140,18 +130,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     private RuleExecutionResponse execute(AgendaFilter filter, Map<String, Object> params, int max) {
-        this.parameterMap.clear();
-        clearInitParameters();
-        this.parameterMap.putAll(this.initParameters);
-        for (Map<?, ?> factMap : this.factMaps) {
-            for (Object key : factMap.keySet()) {
-                this.parameterMap.put(key.toString(), factMap.get(key));
-            }
-        }
-        if (params != null) {
-            this.parameterMap.putAll(params);
-        }
-        addToFactsMap(this.parameterMap);
+        this.paramManager.prepareForExecution(params, this.factMaps);
+        addToFactsMap(this.paramManager.getParameterMap());
 
         long start = System.currentTimeMillis();
         evaluationRete(this.allFactsList);
@@ -161,62 +141,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
         return resp;
     }
 
-    private void clearInitParameters() {
-        List<String> stringList = new ArrayList<>();
-        // V5.96 — Iterator var123 → enhanced for (keySet 是 read-only,for-each OK)
-        for (String key : this.initParameters.keySet()) {
-            Object obj = this.initParameters.get(key);
-            if (obj != null) {
-                if (obj instanceof List) {
-                    ((List) obj).clear();
-                } else if (obj instanceof Set) {
-                    ((Set) obj).clear();
-                } else if (obj instanceof Map) {
-                    ((Map) obj).clear();
-                } else if (obj instanceof Number) {
-                    this.initParameters.put(key, 0);
-                } else if (obj instanceof Boolean) {
-                    this.initParameters.put(key, false);
-                } else if (obj instanceof String) {
-                    stringList.add(key);
-                }
-            }
-        }
-
-        // V5.96 — Iterator var123 → enhanced for
-        for (String key : stringList) {
-            this.initParameters.remove(key);
-        }
-
-    }
-
-    /** 按声明类型给参数放默认值(与原构造器 if-else 链等价;其他类型不放默认值)。 */
-    private void putDefaultParameter(String key, Datatype type) {
-        Object defaultValue;
-        switch (type) {
-            case Integer:
-            case Long:
-            case Double:
-            case Float:
-                defaultValue = 0;
-                break;
-            case Boolean:
-                defaultValue = false;
-                break;
-            case List:
-                defaultValue = new ArrayList<>();
-                break;
-            case Set:
-                defaultValue = new HashSet<>();
-                break;
-            case Map:
-                defaultValue = new HashMap<>();
-                break;
-            default:
-                return;
-        }
-        this.initParameters.put(key, defaultValue);
-    }
+    // V6.2 — clearInitParameters / putDefaultParameter 已移到 SessionParameterManager
 
     /** 规则尚未生效(effectiveDate 在未来)。 */
     private static boolean isNotYetEffective(ReteInstanceUnit unit) {
@@ -240,7 +165,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public Object getParameter(String key) {
-        return this.parameterMap.get(key);
+        return this.paramManager.getParameter(key);
     }
 
     public boolean update(Object obj) {
@@ -272,7 +197,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public Map<String, Object> getParameters() {
-        return this.parameterMap;
+        return this.paramManager.getParameters();
     }
 
     private void addToFactsMap(Object fact) {
@@ -530,15 +455,15 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public Object getSessionValue(String key) {
-        return this.sessionValueMap.get(key);
+        return this.paramManager.getSessionValueMap().get(key);
     }
 
     public void setSessionValue(String key, Object value) {
-        this.sessionValueMap.put(key, value);
+        this.paramManager.getSessionValueMap().put(key, value);
     }
 
     public Map<String, Object> getSessionValueMap() {
-        return this.sessionValueMap;
+        return this.paramManager.getSessionValueMap();
     }
 
     public Map<String, KnowledgeSession> getKnowledgeSessionMap() {
