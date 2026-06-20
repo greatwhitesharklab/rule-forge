@@ -30,54 +30,49 @@ public class CellContentBuilder {
         }
         List<Condition> conditions = joint.getConditions();
         List<Joint> joints = joint.getJoints();
-        if ((conditions == null || conditions.size() == 0) && (joints == null || joints.size() == 0)) {
+        // V6.9.4 — size()==0 → isEmpty() 风格统一
+        if (isEmpty(conditions) && isEmpty(joints)) {
             return null;
         }
-        Junction topJunction = null;
+        // V6.9.4 — 收口 if/else state machine: size==1 passthrough 提为 early return
         if (conditions.size() == 1) {
             return newCriteria(col, conditions.get(0));
-        } else {
-            if (joint.getType().equals(JointType.and)) {
-                topJunction = new And();
-            } else {
-                topJunction = new Or();
-            }
-            buildConditionsCriterion(conditions, topJunction, col);
-            buildJointsCriterion(joints, col, topJunction);
-            return topJunction;
         }
+        Junction topJunction = topJunctionOf(joint);
+        buildConditionsCriterion(conditions, topJunction, col);
+        buildJointsCriterion(joints, col, topJunction);
+        return topJunction;
     }
 
     public Criterion buildCriterion(Cell cell, ComplexColumn col) {
         Joint joint = cell.getJoint();
         if (joint == null) {
             return null;
-        } else {
-            List<Condition> conditions = joint.getConditions();
-            List<Joint> joints = joint.getJoints();
-            if ((conditions == null || conditions.size() == 0) && (joints == null || joints.size() == 0)) {
-                return null;
-            } else {
-                Junction topJunction = null;
-                if (conditions.size() == 1) {
-                    return this.newCriteria(cell, col, conditions.get(0));
-                } else {
-                    if (joint.getType().equals(JointType.and)) {
-                        topJunction = new And();
-                    } else {
-                        topJunction = new Or();
-                    }
-
-                    this.buildConditionsCriterion(cell, conditions, topJunction, col);
-                    this.buildJointsCriterion(cell, joints, col, topJunction);
-                    return topJunction;
-                }
-            }
         }
+        List<Condition> conditions = joint.getConditions();
+        List<Joint> joints = joint.getJoints();
+        if (isEmpty(conditions) && isEmpty(joints)) {
+            return null;
+        }
+        if (conditions.size() == 1) {
+            return this.newCriteria(cell, col, conditions.get(0));
+        }
+        Junction topJunction = topJunctionOf(joint);
+        this.buildConditionsCriterion(cell, conditions, topJunction, col);
+        this.buildJointsCriterion(cell, joints, col, topJunction);
+        return topJunction;
+    }
+
+    private static Junction topJunctionOf(Joint joint) {
+        return joint.getType().equals(JointType.and) ? new And() : new Or();
+    }
+
+    private static <T> boolean isEmpty(List<T> list) {
+        return list == null || list.isEmpty();
     }
 
     private void buildJointsCriterion(List<Joint> joints, Column col, Junction parentJunction) {
-        if (joints == null || joints.size() == 0) {
+        if (joints == null || joints.isEmpty()) {
             return;
         }
         for (Joint joint : joints) {
@@ -91,7 +86,8 @@ public class CellContentBuilder {
     }
 
     private void buildJointsCriterion(Cell cell, List<Joint> joints, ComplexColumn col, Junction parentJunction) {
-        if (joints != null && joints.size() != 0) {
+        // V6.9.4 — size()!=0 → !isEmpty()
+        if (joints != null && !joints.isEmpty()) {
             // V5.96 — Iterator var123 → enhanced for
             for (Joint joint : joints) {
                 Junction junction = joint.getJunction();
@@ -105,7 +101,8 @@ public class CellContentBuilder {
     }
 
     private void buildConditionsCriterion(List<Condition> conditions, Junction junction, Column col) {
-        if (conditions == null || conditions.size() == 0) {
+        // V6.9.4 — size()==0 → isEmpty()
+        if (conditions == null || conditions.isEmpty()) {
             return;
         }
         for (Condition condition : conditions) {
@@ -115,7 +112,8 @@ public class CellContentBuilder {
     }
 
     private void buildConditionsCriterion(Cell cell, List<Condition> conditions, Junction junction, ComplexColumn col) {
-        if (conditions != null && conditions.size() != 0) {
+        // V6.9.4 — size()!=0 → !isEmpty()
+        if (conditions != null && !conditions.isEmpty()) {
             // V5.96 — Iterator var123 → enhanced for
             for (Condition condition : conditions) {
                 Criteria criteria = this.newCriteria(cell, col, condition);
