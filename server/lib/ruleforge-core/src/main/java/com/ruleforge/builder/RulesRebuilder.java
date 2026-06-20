@@ -610,9 +610,14 @@ public class RulesRebuilder {
     }
 
     public Variable getVariableByName(List<VariableCategory> variableCategories, String category, String name, Map<String, String> namedMap) {
+        // V6.9 — 砍 containsKey + get 双 lookup, 套 V5.93 原则. value 永为 String (namedMap
+        // 是 category 重命名表,正常用法 put non-null value), 所以 `get(key) != null` ↔
+        // `containsKey(key)` 100% 等价. 节省 1 个 containsKey hash lookup per call (build-time
+        // per-rule-build 路径, JFR 0 sample 预期, perf 微优化 + code elegance).
         if (namedMap != null) {
-            if (namedMap.containsKey(category)) {
-                category = namedMap.get(category);
+            String renamed = namedMap.get(category);
+            if (renamed != null) {
+                category = renamed;
             }
         }
         for (VariableCategory c : variableCategories) {
@@ -629,9 +634,11 @@ public class RulesRebuilder {
     }
 
     public Variable getVariableByLabel(List<VariableCategory> variableCategories, String category, String label, Map<String, String> namedMap) {
+        // V6.9 — 同 getVariableByName, 砍 containsKey + get 双 lookup 套 V5.93 原则.
         if (namedMap != null) {
-            if (namedMap.containsKey(category)) {
-                category = namedMap.get(category);
+            String renamed = namedMap.get(category);
+            if (renamed != null) {
+                category = renamed;
             }
         }
         for (VariableCategory c : variableCategories) {
