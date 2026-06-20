@@ -364,7 +364,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public void writeLogFile() throws IOException {
-        if (executionState.getExecMessageItems().size() != 0) {
+        // V6.9.6 — size()!=0 → !isEmpty() 风格统一
+        if (!executionState.getExecMessageItems().isEmpty()) {
             for (DebugWriter writer : EngineContext.getDebugWriters()) {
                 writer.write(executionState.getExecMessageItems());
             }
