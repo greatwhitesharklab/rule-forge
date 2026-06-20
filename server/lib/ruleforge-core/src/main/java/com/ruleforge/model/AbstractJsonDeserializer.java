@@ -41,28 +41,28 @@ public abstract class AbstractJsonDeserializer<T> extends JsonDeserializer<T> {
             if (ruleNode == null) {
                 ruleNode = node;
             }
-            Rule rule = null;
+            Rule rule;
+            // V6.9.8 — 收口 3-level nested if/else if/else state machine (V6.2-V6.9.7 同档):
+            //   if (notBlank scoringType) → ScoreRule
+            //   else {
+            //       if (loopRuleStr != null) {
+            //           if (Boolean.parseBoolean(loopRuleStr)) → LoopRule
+            //           else → Rule
+            //       } else → Rule
+            //   }
+            // 收口成 early return chain + 抽 isLoopRule(ruleNode) helper 消内层冗余 null-check
             String scoringTypeStr = JsonUtils.getJsonValue(ruleNode, "scoringType");
             if (StringUtils.isNotBlank(scoringTypeStr)) {
-                ScoringType scoringType = ScoringType.valueOf(scoringTypeStr);
                 ScoreRule scoreRule = new ScoreRule();
-                scoreRule.setScoringType(scoringType);
+                scoreRule.setScoringType(ScoringType.valueOf(scoringTypeStr));
                 buildScoreRule(jsonParser, ruleNode, scoreRule);
                 rule = scoreRule;
+            } else if (isLoopRule(ruleNode)) {
+                LoopRule loopRule = new LoopRule();
+                buildLoopRule(ruleNode, loopRule);
+                rule = loopRule;
             } else {
-                String loopRuleStr = JsonUtils.getJsonValue(ruleNode, "loopRule");
-                if (loopRuleStr != null) {
-                    boolean isLoopRule = Boolean.parseBoolean(loopRuleStr);
-                    if (isLoopRule) {
-                        LoopRule loopRule = new LoopRule();
-                        buildLoopRule(ruleNode, loopRule);
-                        rule = loopRule;
-                    } else {
-                        rule = new Rule();
-                    }
-                } else {
-                    rule = new Rule();
-                }
+                rule = new Rule();
             }
             rule.setActivationGroup(JsonUtils.getJsonValue(ruleNode, "activationGroup"));
             rule.setAgendaGroup(JsonUtils.getJsonValue(ruleNode, "agendaGroup"));
@@ -113,6 +113,13 @@ public abstract class AbstractJsonDeserializer<T> extends JsonDeserializer<T> {
         } catch (ParseException e) {
             throw new RuleException(e);
         }
+    }
+
+    // V6.9.8 — helper for parseRule 3-level state machine closure: 检查 loopRule 属性
+    // 是否存在 + 真值。 null 或 "false" 都返 false, 跟 Boolean.parseBoolean 一致。
+    private static boolean isLoopRule(JsonNode ruleNode) {
+        String loopRuleStr = JsonUtils.getJsonValue(ruleNode, "loopRule");
+        return loopRuleStr != null && Boolean.parseBoolean(loopRuleStr);
     }
 
     private void buildScoreRule(JsonParser jsonParser, JsonNode ruleNode, ScoreRule rule) {
