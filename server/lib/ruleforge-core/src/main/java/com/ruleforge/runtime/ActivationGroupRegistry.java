@@ -2,10 +2,11 @@ package com.ruleforge.runtime;
 
 import com.ruleforge.runtime.rete.ReteInstanceUnit;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * V6.3 — 从 KnowledgeSessionImpl 抽取的 activation / agenda group 状态管理
@@ -19,7 +20,9 @@ import java.util.Map;
  *   <li>{@code agendaReteInstancesMap} — agenda group name → 关联 ReteInstanceUnit list
  *       (同上,源是 {@code reteInstance.getAgendaGroupReteInstancesMap()})</li>
  *   <li>{@code activedActivationGroup} — 已激活的 activation group id (reteInstanceId+key 拼接)
- *       列表,二次进入同一 group 跳过 (防 double-fire)</li>
+ *       set, 二次进入同一 group 跳过 (防 double-fire)。 <b>V6.7</b> 改 {@code HashSet} —
+ *       {@code isActivated} 从 O(n) linear scan 降到 O(1) hash lookup, 累计 active group
+ *       数大时 (10+) 收益显著。</li>
  * </ul>
  *
  * <p>KnowledgeSessionImpl 主类只编排 {@link KnowledgeSessionImpl#activeRule}/{@link
@@ -31,8 +34,8 @@ public class ActivationGroupRegistry {
     private final Map<String, List<ReteInstanceUnit>> activationReteInstancesMap = new HashMap<>();
     /** agenda group name → 该 group 内 ReteInstanceUnit 列表。 */
     private final Map<String, List<ReteInstanceUnit>> agendaReteInstancesMap = new HashMap<>();
-    /** 已激活的 activation group id 列表 (含 reteInstanceId 前缀, 防不同 reteInstance 串味)。 */
-    private final List<String> activedActivationGroup = new ArrayList<>();
+    /** V6.7 — 已激活的 activation group id set (含 reteInstanceId 前缀, 防不同 reteInstance 串味)。 */
+    private final Set<String> activedActivationGroup = new HashSet<>();
 
     /** reset() 时调用 — 清空全部 3 个状态。 */
     public void clear() {
@@ -53,12 +56,19 @@ public class ActivationGroupRegistry {
         this.agendaReteInstancesMap.putAll(agendaReteInstanceMap);
     }
 
-    /** evaluationRete: 检查 activation group id 是否已激活(防 double-fire)。 */
+    /**
+     * evaluationRete: 检查 activation group id 是否已激活 (防 double-fire)。
+     * V6.7 — HashSet O(1) contains (原 List O(n) linear scan)。
+     */
     public boolean isActivated(String groupId) {
         return this.activedActivationGroup.contains(groupId);
     }
 
-    /** evaluationRete: 标记 activation group id 已激活(trackers 非空时)。 */
+    /**
+     * evaluationRete: 标记 activation group id 已激活 (trackers 非空时)。
+     * V6.7 — HashSet.add 返 boolean (新 add = true, 重复 add = false), 行为同 List.add
+     * (永远返 true) 在调用方未检查返值的语义下等价 (HashSet 自动 dedup)。
+     */
     public void markActivated(String groupId) {
         this.activedActivationGroup.add(groupId);
     }
