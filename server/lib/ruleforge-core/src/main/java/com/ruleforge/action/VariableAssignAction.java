@@ -78,9 +78,13 @@ public class VariableAssignAction extends AbstractAction {
         String propertyName = this.variableName;
         Utils.setObjectProperty(targetFact, propertyName, obj);
 
-        // 执行信息
-        String msg = "### 变量赋值：" + label + "=" + obj;
-        context.logMsg(msg, MsgType.VarAssign);
+        // V6.9.9 — debug gate (V5.88/V5.95/V5.90 模式): skip 字符串拼接 + MessageItem 分配
+        // 当 rule.debug=false (V5.90 默认) 时。每条 action fire 节省 1 次 StringBuilder 分配 +
+        // 1 次 MessageItem 分配 + 1 次 ArrayList.add。
+        if (this.debug) {
+            String msg = "### 变量赋值：" + label + "=" + obj;
+            context.logMsg(msg, MsgType.VarAssign);
+        }
 
         return null;
     }

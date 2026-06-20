@@ -67,9 +67,13 @@ public class ExecuteMethodAction extends AbstractAction {
                 }
                 Object value = method.invoke(obj, wrap.getValues());
 
-                // 执行信息
-                String msg = info + "(" + wrap.valuesToString() + ")";
-                context.logMsg(msg, MsgType.ExecuteBeanMethod);
+                // V6.9.9.2 — debug gate (V5.88/V5.95/V5.90/V6.9.9.1 模式):
+                // skip wrap.valuesToString() StringBuffer 分配 + MessageItem 分配 + ArrayList.add
+                // 当 rule.debug=false (V5.90 默认) 时
+                if (this.debug) {
+                    String msg = info + "(" + wrap.valuesToString() + ")";
+                    context.logMsg(msg, MsgType.ExecuteBeanMethod);
+                }
 
                 if (value != null) {
                     return new ActionValueImpl(valueKey, value);
@@ -85,9 +89,11 @@ public class ExecuteMethodAction extends AbstractAction {
                 }
                 Object value = method.invoke(obj);
 
-                // 执行信息
-                String msg = info + "()";
-                context.logMsg(msg, MsgType.ExecuteBeanMethod);
+                // V6.9.9.2 — debug gate (V5.88/V5.95/V5.90/V6.9.9.1 模式)
+                if (this.debug) {
+                    String msg = info + "()";
+                    context.logMsg(msg, MsgType.ExecuteBeanMethod);
+                }
 
                 if (value != null) {
                     return new ActionValueImpl(valueKey, value);
