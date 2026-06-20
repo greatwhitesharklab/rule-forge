@@ -95,6 +95,52 @@ class VariableAssignActionTest {
         }
     }
 
+    // ─── V6.9.9 debug gate — logMsg 只在 debug=true 时调 ─────────────────────
+
+    @Nested
+    @DisplayName("V6.9.9 — debug gate: logMsg 只在 action.debug=true 时调")
+    class DebugGate {
+
+        @Test
+        @DisplayName("debug=false (V5.90 默认) → 不调 logMsg (避免 StringBuilder + MessageItem 分配)")
+        void debugFalseSkipsLogMsg() {
+            action.setValue(value());
+            action.setDatatype(Datatype.String);
+            action.setDebug(false);
+
+            java.util.HashMap<String, Object> params = new java.util.HashMap<>();
+            params.put("name", "old");
+            when(context.getVariableCategoryClass("Cat")).thenReturn(HashMap.class.getName());
+            when(context.getWorkingMemory().getParameters()).thenReturn(params);
+            when(valueCompute.complexValueCompute(any(), any(), any(), any())).thenReturn("new");
+
+            action.execute(context, new Object(), new ArrayList<>());
+
+            // assignment 还是发生, 但 logMsg 被 gate 跳过
+            assertThat(params.get("name")).isEqualTo("new");
+            verify(context, never()).logMsg(anyString(), any(MsgType.class));
+        }
+
+        @Test
+        @DisplayName("debug=true → 调 logMsg (跟 V6.9.6 行为一致)")
+        void debugTrueCallsLogMsg() {
+            action.setValue(value());
+            action.setDatatype(Datatype.String);
+            action.setDebug(true);
+
+            java.util.HashMap<String, Object> params = new java.util.HashMap<>();
+            params.put("name", "old");
+            when(context.getVariableCategoryClass("Cat")).thenReturn(HashMap.class.getName());
+            when(context.getWorkingMemory().getParameters()).thenReturn(params);
+            when(valueCompute.complexValueCompute(any(), any(), any(), any())).thenReturn("new");
+
+            action.execute(context, new Object(), new ArrayList<>());
+
+            assertThat(params.get("name")).isEqualTo("new");
+            verify(context).logMsg(anyString(), eq(MsgType.VarAssign));
+        }
+    }
+
     // ─── className 是 HashMap.parameters → WM.getParameters() ────────────────
 
     @Nested
@@ -106,6 +152,7 @@ class VariableAssignActionTest {
         void usesWorkingMemoryParameters() {
             action.setValue(value());
             action.setDatatype(Datatype.String);
+            action.setDebug(true);  // V6.9.9 — debug gate: opt-in log assertion
 
             java.util.HashMap<String, Object> params = new java.util.HashMap<>();
             params.put("name", "old");
@@ -178,6 +225,7 @@ class VariableAssignActionTest {
         void assignsNullWithoutConversion() {
             action.setValue(value());
             action.setDatatype(Datatype.String);
+            action.setDebug(true);  // V6.9.9 — debug gate: opt-in log assertion
 
             java.util.HashMap<String, Object> params = new java.util.HashMap<>();
             params.put("name", "old");
