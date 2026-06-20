@@ -36,15 +36,14 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     private EvaluationContextImpl evaluationContext;
     private Agenda agenda;
     private KnowledgeSession parentSession;
-    private List<String> activedActivationGroup;
+    // V6.3 — activation / agenda group 状态管理已移到 ActivationGroupRegistry (god class 拆分延续)。
+    private final ActivationGroupRegistry activationRegistry = new ActivationGroupRegistry();
     private final SessionParameterManager paramManager = new SessionParameterManager();
     private final FactStore factStore = new FactStore();
     private List<MessageItem> execMessageItems;
     private List<KnowledgePackage> knowledgePackageList;
     private List<ReteInstance> reteInstanceList;
     private Map<String, KnowledgeSession> knowledgeSessionMap;
-    private Map<String, List<ReteInstanceUnit>> activationReteInstancesMap;
-    private Map<String, List<ReteInstanceUnit>> agendaReteInstancesMap;
     private KnowledgeEventManager knowledgeEventManager;
 
     public KnowledgeSessionImpl(KnowledgePackage knowledgePackage) {
@@ -56,15 +55,13 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public KnowledgeSessionImpl(KnowledgePackage[] knowledgePackages, KnowledgeSession parentSession) {
-        this.activedActivationGroup = new ArrayList<>();
         this.execMessageItems = new ArrayList<>();
-        
+
         this.knowledgePackageList = new ArrayList<>();
         this.reteInstanceList = new ArrayList<>();
-        
+
         this.knowledgeSessionMap = new HashMap<>();
-        this.activationReteInstancesMap = new HashMap<>();
-        this.agendaReteInstancesMap = new HashMap<>();
+        // V6.3 — activationRegistry / paramManager / factStore 已在字段声明处初始化 (final)
         this.knowledgeEventManager = new KnowledgeEventManagerImpl();
 
         for (KnowledgePackage knowledgePackage : knowledgePackages) {
@@ -195,12 +192,11 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     // V6.2 — addToFactsMap / getClassName 已移到 FactStore
 
     private void reset() {
-        this.activationReteInstancesMap.clear();
+        // V6.3 — activation / agenda group 状态委托 ActivationGroupRegistry.clear()
+        activationRegistry.clear();
         this.agenda.clean();
         factStore.getFactMaps().clear();
         factStore.getAllFactsList().clear();
-        this.activedActivationGroup.clear();
-        this.agendaReteInstancesMap.clear();
     }
 
     private void reevaluate(Object obj) {
@@ -239,7 +235,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
             this.doRete(reteInstance, "__*__", true);
             Map<String, List<ReteInstanceUnit>> agendaReteInstanceMap = reteInstance.getAgendaGroupReteInstancesMap();
             if (agendaReteInstanceMap != null) {
-                this.agendaReteInstancesMap.putAll(agendaReteInstanceMap);
+                activationRegistry.recordAgendaGroupUnits(agendaReteInstanceMap);
             }
 
             // 原 do-while-find (reteInstanceMap == null 则 skip 到下一个 reteInstance) →
@@ -250,14 +246,14 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
                 continue;
             }
 
-            this.activationReteInstancesMap.putAll(reteInstanceMap);
+            activationRegistry.recordActivationGroupUnits(reteInstanceMap);
             String reteInstanceId = reteInstance.getId();
 
             // 中层: 遍历 activation-group keys。 原 do-while-find (已 actived 的 skip) →
             // contains-check + continue。
             for (String key : reteInstanceMap.keySet()) {
                 String id = reteInstanceId + key;
-                if (this.activedActivationGroup.contains(id)) {
+                if (activationRegistry.isActivated(id)) {
                     continue;
                 }
 
@@ -279,7 +275,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
                     for (Object fact : facts) {
                         trackers = ri.enter(this.evaluationContext, fact);
                         if (trackers != null && !trackers.isEmpty()) {
-                            this.activedActivationGroup.add(id);
+                            activationRegistry.markActivated(id);
                             this.agenda.addTrackers(trackers, false);
                             break;
                         }
@@ -308,7 +304,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
         // Rete.buildGroupRetesInstance 用 computeIfAbsent(k -> new ArrayList<>()) 装入, 无
         // put(key, null) 风险), 所以 get == null ↔ !containsKey 100% 等价. 节省 1 个
         // containsKey hash lookup per activeRule 调用 (低频: 用户显式激活 rule group).
-        List<ReteInstanceUnit> unitList = this.activationReteInstancesMap.get(activationGroupName);
+        // V6.3 — 委托 ActivationGroupRegistry.getActivationGroupUnits().
+        List<ReteInstanceUnit> unitList = activationRegistry.getActivationGroupUnits(activationGroupName);
         if (unitList == null) {
             throw new RuleException("Activation group [" + activationGroupName + "] not exist!");
         } else {
@@ -336,7 +333,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
         // V5.100.6 — 砍 containsKey + get 双 lookup, 套 V5.93 原则 (跟 activeRule 同档).
         // value 永为 List<ReteInstanceUnit> (非 null, Rete.buildGroupRetesInstance 用
         // computeIfAbsent(k -> new ArrayList<>())).
-        List<ReteInstanceUnit> unitList = this.agendaReteInstancesMap.get(groupName);
+        // V6.3 — 委托 ActivationGroupRegistry.getAgendaGroupUnits().
+        List<ReteInstanceUnit> unitList = activationRegistry.getAgendaGroupUnits(groupName);
         if (unitList == null) {
             throw new RuleException("Agenda group [" + groupName + "] not exist!");
         } else {
