@@ -35,7 +35,8 @@ public class ListAction {
     @ActionMethod(name = "求List中所有的数字最小值")
     @ActionMethodParameter(names = {"包含所有数字的集合对象"})
     public Number min(List<Object> list) {
-        if (list.size() == 0) {
+        // V6.9.5 — size()==0 → isEmpty() 风格统一
+        if (list.isEmpty()) {
             throw new RuleException("Number list can not be null when compute min value from list.");
         }
         double min = Double.MAX_VALUE;
@@ -73,42 +74,27 @@ public class ListAction {
             private int objectCompare(final String propertyName, final boolean asc, Object o1, Object o2) {
                 Object v1 = Utils.getObjectProperty(o1, propertyName);
                 Object v2 = Utils.getObjectProperty(o2, propertyName);
+                // V6.9.5 — 6 处 asc/desc if/else state machine → ternary (跟 V6.9.4 topJunctionOf 同模式)
                 if (v1 == null) {
-                    if (asc) {
-                        return 0;
-                    } else {
-                        return 1;
-                    }
+                    return asc ? 0 : 1;
                 }
                 if (v2 == null) {
-                    if (asc) {
-                        return 1;
-                    } else {
-                        return 0;
-                    }
+                    return asc ? 1 : 0;
                 }
                 if (v1 instanceof String) {
-                    if (asc) {
-                        return ((String) v1).compareTo(v2.toString());
-                    } else {
-                        return ((String) v2).compareTo(v1.toString());
-                    }
+                    return asc
+                        ? ((String) v1).compareTo(v2.toString())
+                        : ((String) v2).compareTo(v1.toString());
                 }
                 if (v1 instanceof Date) {
-                    if (asc) {
-                        return ((Date) v1).compareTo((Date) v2);
-                    } else {
-                        return ((Date) v2).compareTo((Date) v1);
-                    }
+                    return asc
+                        ? ((Date) v1).compareTo((Date) v2)
+                        : ((Date) v2).compareTo((Date) v1);
                 }
                 if (v1 instanceof Number) {
                     BigDecimal b1 = Utils.toBigDecimal(v1);
                     BigDecimal b2 = Utils.toBigDecimal(v2);
-                    if (asc) {
-                        return b1.compareTo(b2);
-                    } else {
-                        return b2.compareTo(b1);
-                    }
+                    return asc ? b1.compareTo(b2) : b2.compareTo(b1);
                 }
                 return 0;
             }
