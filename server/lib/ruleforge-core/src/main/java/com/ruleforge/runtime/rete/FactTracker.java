@@ -50,8 +50,17 @@ public class FactTracker {
     }
 
     public FactTracker newSubFactTracker() {
+        // V6.9.1 — 父 objectCriteriaMap 为空时跳过 putAll, 节省 HashMap.putAll 调用
+        // (JFR 显示 FactTracker.<init> + newSubFactTracker 是 rete hot path,
+        // V5.100.9 报告过)。 父 map 常见场景: ReteInstance.enter() L70 创建的空 tracker,
+        // 立即被 AbstractActivity.visitPaths L47 多次 newSubFactTracker() 调用,
+        // 每次都 `new HashMap() + putAll(emptyMap)` 浪费。 多个 sub tracker 各自独立
+        // (每次 new FactTracker()), 各自可独立 addObjectCriteria (新 key 走 .put 不影响
+        // 父, V5.97 锁契约保留)。
         FactTracker tracker = new FactTracker();
-        tracker.getObjectCriteriaMap().putAll(objectCriteriaMap);
+        if (!objectCriteriaMap.isEmpty()) {
+            tracker.getObjectCriteriaMap().putAll(objectCriteriaMap);
+        }
         return tracker;
     }
 }
