@@ -410,10 +410,15 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public void putKnowledgeSession(String id, KnowledgeSession session) {
-        if (reteRegistry.getKnowledgeSessionMap().containsKey(id)) {
-            reteRegistry.registerKnowledgeSession(id, session);
-        }
-
+        // V6.8 — 砍 containsKey guard (silent bug fix)。 旧实现:
+        //   if (map.containsKey(id)) { map.put(id, session); }
+        // 在调用方 KnowledgeSessionFactory.L31-34 的语义下 (session == null → 创建新会话并
+        // put, 即 id 不存在时调) → containsKey 永远 false → put 永远跳过 → 新子会话从未注册
+        // 到 map。 反编译 artifact + 业务 bug 双重。 标准 Map.put 语义本就是"无论 key 是否存在
+        // 都写入",覆盖 + 新增都返 void,无需 containsKey 守卫。 调用方 KnowledgeSessionFactory
+        // 已先 getKnowledgeSession(id) 做 null check,这里的 containsKey 是冗余 TOCTOU
+        // (跟 V5.93 containsKey+get 双 lookup 同构 — 调用方已保证 absent 时才调)。
+        reteRegistry.registerKnowledgeSession(id, session);
     }
 
     public Object getSessionValue(String key) {
