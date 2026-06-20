@@ -33,11 +33,8 @@ public class LeftParser extends AbstractParser<Left> {
     public Left parse(Element element) {
         Left left = new Left();
         String type = element.attributeValue("type");
-        if (StringUtils.isNotEmpty(type)) {
-            left.setType(LeftType.valueOf(type));
-        } else {
-            left.setType(LeftType.variable);
-        }
+        // V6.9.7 — if/else state machine → ternary (跟 V6.9.4 topJunctionOf 同模式)
+        left.setType(StringUtils.isNotEmpty(type) ? LeftType.valueOf(type) : LeftType.variable);
 
         switch (left.getType()) {
             case variable:
@@ -85,19 +82,19 @@ public class LeftParser extends AbstractParser<Left> {
     }
 
     private ComplexArithmetic convertSimpleArithmetic(SimpleArithmetic simpleArith) {
+        // V6.9.7 — 2-level if/else state machine → early return (跟 V6.9.3 OrBuilder buildCriterion 同模式)
         if (simpleArith == null) {
             return null;
-        } else {
-            ComplexArithmetic complex = new ComplexArithmetic();
-            complex.setType(simpleArith.getType());
-            SimpleValue simpleValue = new SimpleValue();
-            complex.setValue(simpleValue);
-            SimpleArithmeticValue sv = simpleArith.getValue();
-            simpleValue.setContent(sv.getContent());
-            SimpleArithmetic nextSimpleArithmetic = sv.getArithmetic();
-            simpleValue.setArithmetic(this.convertSimpleArithmetic(nextSimpleArithmetic));
-            return complex;
         }
+        ComplexArithmetic complex = new ComplexArithmetic();
+        complex.setType(simpleArith.getType());
+        SimpleValue simpleValue = new SimpleValue();
+        complex.setValue(simpleValue);
+        SimpleArithmeticValue sv = simpleArith.getValue();
+        simpleValue.setContent(sv.getContent());
+        SimpleArithmetic nextSimpleArithmetic = sv.getArithmetic();
+        simpleValue.setArithmetic(this.convertSimpleArithmetic(nextSimpleArithmetic));
+        return complex;
     }
 
     private CommonFunctionLeftPart buildCommonFunctionLeftPart(Element element) {

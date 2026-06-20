@@ -647,11 +647,13 @@ public class DrlDeserializer {
                 // 期望:exprAtom (cmpOp exprAtom)*
                 List<DrlParser.ExprAtomContext> atoms = e.exprAtom();
                 List<DrlParser.CmpOpContext> ops = e.cmpOp();
+                // V6.9.7 — 收口 if/else if state machine → 2 个单层 if (跟 V6.9.3 OrBuilder 同模式)
                 // 第一版:1 个 cmpOp + 2 个 exprAtom = 单条 PropertyCriteria
                 if (atoms.size() == 2 && ops.size() == 1) {
                     result.add(buildPropertyCriteria(dp, atoms.get(0), ops.get(0), atoms.get(1)));
                     idx++;
-                } else if (atoms.size() == 1 && ops.isEmpty()) {
+                }
+                if (atoms.size() == 1 && ops.isEmpty()) {
                     // 纯引用(无 op)— V5.42.4 跳过,留 V5.42.5
                     idx++;
                 }
