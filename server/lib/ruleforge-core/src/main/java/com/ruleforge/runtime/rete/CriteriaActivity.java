@@ -96,20 +96,22 @@ public class CriteriaActivity extends AbstractActivity {
     }
 
     public boolean joinNodeIsPassed() {
+        // V6.9.2 — 收口 Fernflower 反编译 state machine (V6.2 visitPaths / V6.3 KnowledgeBase
+        // / V6.4 LeftParser 同档)。 旧实现 4-level 嵌套 if/return/fall-through:
+        //   paths==null → fall through → false
+        //   size>1 → false
+        //   size==1 → 递归 child
+        //   size==0 → fall through → false
+        // 简化后 early return + 单层 if, 行为 100% 等价, JFR CriteriaActivity.enter L30
+        // per-fact hot path 调用点 JIT inlining 受益。 V5.96 立的 "skip 反编译 state machine"
+        // 原则延续。
         List<Path> paths = this.getPaths();
-        if (paths != null) {
-            if (paths.size() > 1) {
-                return false;
-            }
-
-            if (paths.size() == 1) {
-                Path path = paths.get(0);
-                AbstractActivity activity = (AbstractActivity) path.getTo();
-                return activity.joinNodeIsPassed();
-            }
+        if (paths == null || paths.size() != 1) {
+            return false;
         }
-
-        return false;
+        Path path = paths.get(0);
+        AbstractActivity activity = (AbstractActivity) path.getTo();
+        return activity.joinNodeIsPassed();
     }
 
     public void reset() {

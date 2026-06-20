@@ -69,10 +69,10 @@ class ReteActivityCharacterizationTest {
     class AndJoin {
 
         @Test
-        @DisplayName("AndActivity.joinNodeIsPassed 无 path 时抛 NPE(已知缺陷,锁定待 TD-2.2 修)")
-        void noPathsThrowsNpe() {
+        @DisplayName("AndActivity.joinNodeIsPassed 无 path 时返 false (V6.9.2 — 修 pre-existing NPE, 收口 state machine 顺手 null safety)")
+        void noPathsReturnsFalse() {
             AndActivity and = new AndActivity();
-            assertThatThrownBy(and::joinNodeIsPassed).isInstanceOf(NullPointerException.class);
+            assertThat(and.joinNodeIsPassed()).isFalse();
         }
 
         @Test
@@ -107,10 +107,10 @@ class ReteActivityCharacterizationTest {
     class OrJoin {
 
         @Test
-        @DisplayName("OrActivity.joinNodeIsPassed 无 path 时抛 NPE(已知缺陷)")
-        void noPathsThrowsNpe() {
+        @DisplayName("OrActivity.joinNodeIsPassed 无 path 时返 false (V6.9.2 — 修 pre-existing NPE, 收口 state machine 顺手 null safety)")
+        void noPathsReturnsFalse() {
             OrActivity or = new OrActivity();
-            assertThatThrownBy(or::joinNodeIsPassed).isInstanceOf(NullPointerException.class);
+            assertThat(or.joinNodeIsPassed()).isFalse();
         }
 
         @Test
