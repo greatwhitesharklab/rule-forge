@@ -22,7 +22,7 @@ public class OrBuilder extends JunctionBuilder {
     public List<BaseReteNode> buildCriterion(BaseCriterion c, BuildContext context) {
         Or or = (Or) c;
         List<Criterion> criterions = or.getCriterions();
-        if (criterions != null && criterions.size() != 0) {
+        if (criterions != null && !criterions.isEmpty()) {
             List<BaseReteNode> childNodes = new ArrayList();
             // V5.96 — Iterator var123 → enhanced for
             for (Criterion criterion : criterions) {
@@ -32,21 +32,26 @@ public class OrBuilder extends JunctionBuilder {
                 }
             }
 
-            if (childNodes.size() == 0) {
+            // V6.9.3 — 收口 Fernflower 反编译 if/else if/else state machine (V6.2-V6.4 同档):
+            //   if (size==0) return null;
+            //   else if (size==1) return childNodes;
+            //   else { build OrNode + addLines + return [orNode]; }
+            // 简化成 early return + 单层 if, 行为 100% 等价。
+            if (childNodes.isEmpty()) {
                 return null;
-            } else if (childNodes.size() == 1) {
-                return childNodes;
-            } else {
-                OrNode orNode = new OrNode(context.nextId());
-                // V5.96 — Iterator var123 → enhanced for
-                for (BaseReteNode node : childNodes) {
-                    node.addLine(orNode);
-                }
-
-                List<BaseReteNode> list = new ArrayList();
-                list.add(orNode);
-                return list;
             }
+            if (childNodes.size() == 1) {
+                return childNodes;
+            }
+            OrNode orNode = new OrNode(context.nextId());
+            // V5.96 — Iterator var123 → enhanced for
+            for (BaseReteNode node : childNodes) {
+                node.addLine(orNode);
+            }
+
+            List<BaseReteNode> list = new ArrayList();
+            list.add(orNode);
+            return list;
         } else {
             throw new RuleException("Condition join node[or] need one child at least.");
         }

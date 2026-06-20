@@ -79,6 +79,13 @@ public class AndBuilder extends JunctionBuilder {
 
             // terminal block (原 !var7.hasNext() 分支): 全部 criterion 跑完后, 根据
             // currentCriteriaNode / andNode 累积状态构造 result.
+            // V6.9.3 — 收口 Fernflower 3-level if/return state machine (V6.2-V6.4 同档):
+            //   if (size==1 && currentCriteriaNode != null) return [currentCriteriaNode];  // passthrough
+            //   if (andNode == null) return [currentCriteriaNode];  // chain
+            //   if (andNode != null && currentCriteriaNode != null) currentCriteriaNode.addLine(andNode);
+            //   return [andNode];  // cross-type join
+            // 简化成 early return + 简化 boolean (andNode != null 已被前一 early return 兜底),
+            // 行为 100% 等价。
             List<BaseReteNode> result = new ArrayList();
             if (criterions.size() == 1 && currentCriteriaNode != null) {
                 result.add((BaseReteNode) currentCriteriaNode);
@@ -90,7 +97,7 @@ public class AndBuilder extends JunctionBuilder {
                 return result;
             }
 
-            if (andNode != null && currentCriteriaNode != null) {
+            if (currentCriteriaNode != null) {
                 currentCriteriaNode.addLine(andNode);
             }
 
