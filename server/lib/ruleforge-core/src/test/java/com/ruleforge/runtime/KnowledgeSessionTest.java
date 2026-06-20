@@ -381,9 +381,11 @@ class KnowledgeSessionTest {
             assertThat(ruleFired.get()).isTrue();
 
             // Then — agenda 已被 reset(clean → ruleBox.clean → matchedRules 清)
-            Field f = KnowledgeSessionImpl.class.getDeclaredField("agenda");
+            // V6.5 — agenda 字段移到 ExecutionState,反射访问路径迁移
+            Field f = KnowledgeSessionImpl.class.getDeclaredField("executionState");
             f.setAccessible(true);
-            Agenda agenda = (Agenda) f.get(session);
+            ExecutionState execState = (ExecutionState) f.get(session);
+            Agenda agenda = execState.getAgenda();
             // agenda.matchedRules 在 fireRules 末尾被 addMatchedRules 推到 response,
             // 后续 clean() 不直接清 matchedRules(它归 ruleBox 管),但应仍可调不抛错
             assertThatCode(agenda::clean).doesNotThrowAnyException();
@@ -404,11 +406,12 @@ class KnowledgeSessionTest {
         @Test
         @DisplayName("evaluationContext.clean() 后 criteriaValue/partValue 应为空")
         void shouldCleanEvaluationContext() throws Exception {
-            // Given — evaluationContext 是 KnowledgeSessionImpl 的私有字段
+            // Given — evaluationContext 是 ExecutionState 字段 (V6.5 字段迁移)
             KnowledgeSession session = KnowledgeSessionFactory.newKnowledgeSession(buildEmptyPackage());
-            Field f = KnowledgeSessionImpl.class.getDeclaredField("evaluationContext");
+            Field f = KnowledgeSessionImpl.class.getDeclaredField("executionState");
             f.setAccessible(true);
-            EvaluationContextImpl evalCtx = (EvaluationContextImpl) f.get(session);
+            ExecutionState execState = (ExecutionState) f.get(session);
+            EvaluationContextImpl evalCtx = execState.getEvaluationContext();
 
             evalCtx.storeCriteriaValue("c1", 1);
             evalCtx.storeCriteriaValue("c2", 2);
