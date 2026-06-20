@@ -35,15 +35,14 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     private Context context;
     private EvaluationContextImpl evaluationContext;
     private Agenda agenda;
-    private KnowledgeSession parentSession;
+    // V6.4 — RETE 网络 + 子会话注册表已移到 ReteSessionRegistry (god class 拆分延续 V6.2/V6.3)。
+    // parentSession 也归本协作者管 (跟 knowledgePackageList / reteInstanceList / knowledgeSessionMap 同源)。
+    private final ReteSessionRegistry reteRegistry = new ReteSessionRegistry();
     // V6.3 — activation / agenda group 状态管理已移到 ActivationGroupRegistry (god class 拆分延续)。
     private final ActivationGroupRegistry activationRegistry = new ActivationGroupRegistry();
     private final SessionParameterManager paramManager = new SessionParameterManager();
     private final FactStore factStore = new FactStore();
     private List<MessageItem> execMessageItems;
-    private List<KnowledgePackage> knowledgePackageList;
-    private List<ReteInstance> reteInstanceList;
-    private Map<String, KnowledgeSession> knowledgeSessionMap;
     private KnowledgeEventManager knowledgeEventManager;
 
     public KnowledgeSessionImpl(KnowledgePackage knowledgePackage) {
@@ -57,16 +56,11 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     public KnowledgeSessionImpl(KnowledgePackage[] knowledgePackages, KnowledgeSession parentSession) {
         this.execMessageItems = new ArrayList<>();
 
-        this.knowledgePackageList = new ArrayList<>();
-        this.reteInstanceList = new ArrayList<>();
-
-        this.knowledgeSessionMap = new HashMap<>();
-        // V6.3 — activationRegistry / paramManager / factStore 已在字段声明处初始化 (final)
+        // V6.4 — activationRegistry / paramManager / factStore / reteRegistry 已在字段声明处初始化 (final)
         this.knowledgeEventManager = new KnowledgeEventManagerImpl();
 
         for (KnowledgePackage knowledgePackage : knowledgePackages) {
-            this.knowledgePackageList.add(knowledgePackage);
-            this.reteInstanceList.add(knowledgePackage.newReteInstance());
+            reteRegistry.recordKnowledgePackage(knowledgePackage);
             this.paramManager.initFromKnowledgePackage(knowledgePackage);
         }
 
@@ -77,10 +71,12 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
 
     public void initFromParentSession(KnowledgeSession parentSession) {
         if (parentSession != null) {
-            this.parentSession = parentSession;
+            // V6.4 — parentSession + knowledgeSessionMap 委托 ReteSessionRegistry
+            reteRegistry.setParentSession(parentSession);
+            // 复用 parent 的 knowledgeSessionMap 同引用 (原 L83 字段重赋值语义,保留行为)
+            reteRegistry.setKnowledgeSessionMap(parentSession.getKnowledgeSessionMap());
             this.knowledgeEventManager.getKnowledgeEventListeners().addAll(parentSession.getKnowledgeEventListeners());
             this.execMessageItems = parentSession.getExecMessageItems();
-            this.knowledgeSessionMap = parentSession.getKnowledgeSessionMap();
             factStore.addAll(parentSession.getAllFactsList());
             this.paramManager.initFromParentSessionValueMap(parentSession.getSessionValueMap());
         }
@@ -150,7 +146,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public List<KnowledgePackage> getKnowledgePackageList() {
-        return this.knowledgePackageList;
+        return reteRegistry.getKnowledgePackageList();
     }
 
     public Object getParameter(String key) {
@@ -200,7 +196,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     private void reevaluate(Object obj) {
-        for (ReteInstance reteInstance : this.reteInstanceList) {
+        for (ReteInstance reteInstance : reteRegistry.getReteInstanceList()) {
             reteInstance.resetForReevaluate(obj);
         }
 
@@ -219,7 +215,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
         // 真 per-fact hot path — flatten 后必须跑 perf bench (HotPathBenchTest +
         // EvalBenchmarkV579) 确认无 wall-time 回归。 回归覆盖: 全量 + EffectiveDateWindow
         // 3 tests (activation-group + effective/expired 过滤, 锁 innermost find-valid)。
-        for (ReteInstance reteInstance : this.reteInstanceList) {
+        for (ReteInstance reteInstance : reteRegistry.getReteInstanceList()) {
             Collection trackers = null;
 
             // 外层 per-reteInstance: 每个 fact 进入 rete 前清 EvaluationContext 缓存 + reset
@@ -413,12 +409,12 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public KnowledgeSession getKnowledgeSession(String id) {
-        return this.knowledgeSessionMap.get(id);
+        return reteRegistry.getKnowledgeSessionMap().get(id);
     }
 
     public void putKnowledgeSession(String id, KnowledgeSession session) {
-        if (this.knowledgeSessionMap.containsKey(id)) {
-            this.knowledgeSessionMap.put(id, session);
+        if (reteRegistry.getKnowledgeSessionMap().containsKey(id)) {
+            reteRegistry.registerKnowledgeSession(id, session);
         }
 
     }
@@ -436,17 +432,17 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public Map<String, KnowledgeSession> getKnowledgeSessionMap() {
-        return this.knowledgeSessionMap;
+        return reteRegistry.getKnowledgeSessionMap();
     }
 
     public KnowledgeSession getParentSession() {
-        return this.parentSession;
+        return reteRegistry.getParentSession();
     }
 
     private void initContext() {
         Map<String, String> allVariableCategoryMap = null;
 
-        for (KnowledgePackage knowledgePackage : this.knowledgePackageList) {
+        for (KnowledgePackage knowledgePackage : reteRegistry.getKnowledgePackageList()) {
             if (allVariableCategoryMap == null) {
                 allVariableCategoryMap = knowledgePackage.getVariableCateogoryMap();
             } else {
@@ -463,6 +459,6 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public List<ReteInstance> getReteInstanceList() {
-        return this.reteInstanceList;
+        return reteRegistry.getReteInstanceList();
     }
 }
