@@ -31,54 +31,58 @@ public class VariableAssignAction extends AbstractAction {
     }
 
     public ActionValue execute(Context context, Object matchedObject, List<Object> allMatchedObjects) {
-        Object targetFact;
-        ValueCompute valueCompute = context.getValueCompute();
-        Object obj;
         if (this.value == null) {
             return null;
-        } else {
-            obj = valueCompute.complexValueCompute(this.value, matchedObject, context, allMatchedObjects);
-            String label;
-            String className = context.getVariableCategoryClass(this.variableCategory);
-            if (className.equals(HashMap.class.getName())) {
-                targetFact = context.getWorkingMemory().getParameters();
-            } else {
-                targetFact = valueCompute.findObject(className, matchedObject, context);
+        }
+        // V6.9.6 — 收口 3-level nested if/else Fernflower 反编译 state machine (V6.2-V6.9.5 同档):
+        //   if (value == null) return null;
+        //   else {
+        //       ... compute className / targetFact ...
+        //       if (targetFact == null) throw;
+        //       else {
+        //           ... compute label ...
+        //           if (Enum && obj != null && notBlank) { enum path }
+        //           else if (obj != null) { generic convert }
+        //           // implicit else: skip conversion
+        //           setObjectProperty + logMsg;
+        //       }
+        //   }
+        // 收口成 early return chain, 行为 100% 等价。
+        ValueCompute valueCompute = context.getValueCompute();
+        Object obj = valueCompute.complexValueCompute(this.value, matchedObject, context, allMatchedObjects);
+        String className = context.getVariableCategoryClass(this.variableCategory);
+        Object targetFact = className.equals(HashMap.class.getName())
+            ? context.getWorkingMemory().getParameters()
+            : valueCompute.findObject(className, matchedObject, context);
+        if (targetFact == null) {
+            throw new RuleException("Class[" + className + "] not found in working memory.");
+        }
+        String label = this.variableCategory + "." + (this.variableLabel == null ? this.variableName : this.variableLabel);
+        if (this.datatype.equals(Datatype.Enum) && obj != null && StringUtils.isNotBlank(obj.toString())) {
+            PropertyDescriptor pd;
+            try {
+                pd = new PropertyDescriptor(this.variableName, targetFact.getClass());
+            } catch (IntrospectionException e) {
+                throw new RuleException(label, obj, "Property not found: " + this.variableName, e);
             }
-
-            if (targetFact == null) {
-                throw new RuleException("Class[" + className + "] not found in working memory.");
-            } else {
-                label = this.variableCategory + "." + (this.variableLabel == null ? this.variableName : this.variableLabel);
-
-                if (this.datatype.equals(Datatype.Enum) && obj != null && StringUtils.isNotBlank(obj.toString())) {
-                    PropertyDescriptor pd;
-                    try {
-                        pd = new PropertyDescriptor(this.variableName, targetFact.getClass());
-                    } catch (IntrospectionException e) {
-                        throw new RuleException(label, obj, "Property not found: " + this.variableName, e);
-                    }
-                    Class<Enum> targetClass = (Class<Enum>) pd.getPropertyType();
-                    obj = Enum.valueOf(targetClass, obj.toString());
-                } else if (obj != null) {
-                    try {
-                        obj = this.datatype.convert(obj);
-                    } catch (IllegalArgumentException e) {
-                        throw new RuleException(label, obj, e.getMessage(), e);
-                    }
-                }
-
-                String propertyName = this.variableName;
-                Utils.setObjectProperty(targetFact, propertyName, obj);
-
-                // 执行信息
-                String msg = "### 变量赋值：" + label + "=" + obj;
-                context.logMsg(msg, MsgType.VarAssign);
-
-                return null;
+            Class<Enum> targetClass = (Class<Enum>) pd.getPropertyType();
+            obj = Enum.valueOf(targetClass, obj.toString());
+        } else if (obj != null) {
+            try {
+                obj = this.datatype.convert(obj);
+            } catch (IllegalArgumentException e) {
+                throw new RuleException(label, obj, e.getMessage(), e);
             }
         }
 
+        String propertyName = this.variableName;
+        Utils.setObjectProperty(targetFact, propertyName, obj);
+
+        // 执行信息
+        String msg = "### 变量赋值：" + label + "=" + obj;
+        context.logMsg(msg, MsgType.VarAssign);
+
+        return null;
     }
 
     public LeftType getType() {
