@@ -28,16 +28,19 @@ public class OrActivity extends JoinActivity {
     }
 
     public boolean joinNodeIsPassed() {
-        if (!this.passed) {
-            List<Path> paths = this.getPaths();
-            if (paths.size() == 1) {
-                Path path = (Path) paths.get(0);
-                AbstractActivity activity = (AbstractActivity) path.getTo();
-                return activity.joinNodeIsPassed();
-            }
+        // V6.9.2 — 收口 Fernflower state machine (V6.2 同档), 跟 AndActivity 完全同构。 旧实现
+        // 缺 paths==null guard, 简化: passed=true → true early return; paths.size()==1 →
+        // 递归 child; 否则 false。 顺带 null safety。
+        if (this.passed) {
+            return true;
         }
-
-        return this.passed;
+        List<Path> paths = this.getPaths();
+        if (paths == null || paths.size() != 1) {
+            return false;
+        }
+        Path path = paths.get(0);
+        AbstractActivity activity = (AbstractActivity) path.getTo();
+        return activity.joinNodeIsPassed();
     }
 
     public void reset() {
