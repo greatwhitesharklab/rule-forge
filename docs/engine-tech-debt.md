@@ -38,14 +38,27 @@ V5.75 引擎架构审计产出。两项大重构经评估**不适合塞进 clean
 
 ---
 
-## TD-2 · `model/` → `runtime/` 分层倒置(RETE node/activity 融合)
+## TD-2 · `model/` → `runtime/` 分层倒置 — ✅ 已完成(V6.1)
 
-**现状**(V5.75 审计):47 个 `model/` 文件反向 `import com.ruleforge.runtime.*`,集中在:
+**验收**: `grep -r "import com.ruleforge.runtime" ruleforge-core/src/main/java/com/ruleforge/model` = **0** ✓
 
-| 被引类型 | 次数 | 含义 |
-|---|---|---|
-| `runtime.WorkingMemory` | 20 | 函数描述符/动作收集器要访问 fact 存储 |
-| `runtime.rete.EvaluationContext` | 12 | RETE 节点求值要上下文 |
+**完成方式**(V6.1,PR #183-#185):
+
+引入 `com.ruleforge.engine` 中性包,把 model 和 runtime 共享的 15 个接口/类型从 runtime 移到 engine:
+Context / EvaluationContext / Activity / WorkingMemory / KnowledgeSession / Path / ValueCompute /
+AssertorEvaluator / RuleExecutionResponse / WorkingMemoryFunctionContext / EngineContext /
+NodeActivityFactory / KnowledgeSessionFactory / KnowledgePackageWrapper / ReteInstanceFactory。
+
+model 依赖 engine 接口(依赖倒置),runtime 实现 engine 接口。`Rete.newReteInstance()` 返回
+Object + 委托 `engine.ReteInstanceFactory` 隐藏 runtime 构造。
+
+**设计决策**:model 类保留 `evaluate()` 方法(Rich Domain Model 模式)。这些方法只依赖 engine
+接口,不依赖 runtime 具体实现。原始 TD doc 想要的"model.rete.def(纯结构)与 runtime.rete.exec
+(执行器)分离"被判定为 **不值得做** —— model.evaluate() 调 engine 接口是标准依赖倒置,
+把 evaluate 搬到 runtime Visitor 只是把方法换个类放,model 仍需 import engine 接口做参数类型。
+Fowler 的 Rich Domain Model 模式支持此设计。
+
+---
 | `runtime.rete.Context` / `Activity` | 各 6 | **node 即 activity** —— 节点自带执行行为 |
 | 其余(TerminalActivity/ReteInstance/Path/...) | 各 1-2 | 长尾 |
 
