@@ -40,16 +40,23 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * V5.100.6 — {@link KnowledgeSessionImpl#activeRule(String, String)} +
+ * V5.100.6 → V6.3 — {@link KnowledgeSessionImpl#activeRule(String, String)} +
  * {@link KnowledgeSessionImpl#activeAgendaGroup(String)} group-existence 契约 BDD。
  *
  * <p>锁 V5.100.6 修法 (2 处 {@code containsKey + get} 双 lookup → {@code get == null} 单 lookup)
- * 的行为不变性:
+ * + V6.3 god class 拆分 (activation 状态从 KnowledgeSessionImpl 字段移到
+ * {@link ActivationGroupRegistry} 协作者) 的行为不变性:
  * <ul>
  *   <li>group 不存在 (map 无 key) → 抛 RuleException("...group [...] not exist!")</li>
  *   <li>group 存在 (map 有 key, 即便空 list) → 不抛 (loop no-op on empty list, clean())</li>
  *   <li>activeRule / activeAgendaGroup 两个方法同档 (同 V5.93 模式)</li>
  * </ul>
+ *
+ * <p><b>V6.3 反射路径迁移</b>: 反射访问从 {@code KnowledgeSessionImpl.activationReteInstancesMap}
+ * → {@code KnowledgeSessionImpl.activationRegistry.activationReteInstancesMap} (同 V6.2
+ * 把 initParameters 从 KnowledgeSessionImpl 移到 SessionParameterManager 的反射路径迁移模式)。
+ * {@link ActivationGroupRegistry} 提供 {@code getActivationReteInstancesMap()} /
+ * {@code getAgendaReteInstancesMap()} 暴露内部 map, 让测试 fixture 不变。
  *
  * <p><b>Why V5.100.6 选这条</b>: V5.93 原则系列 (V5.100.0-5) 的最后一处安全 containsKey+get。
  * value 永为 {@code List<ReteInstanceUnit>} (非 null, Rete.buildGroupRetesInstance 用
@@ -61,11 +68,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * hot path, 需独立 characterization test 投资). V5.100.6 只砍 containsKey, 内层 100% 保留。
  *
  * <p><b>Test fixture</b>: 用最小 KnowledgePackage (Foo rule, 跟 SingleRuleFiresBDD 同) 构造
- * session (initContext 设好 evaluationContext), 再用反射往 activationReteInstancesMap /
- * agendaReteInstancesMap 装测试 entry (生产时这俩 map 由 evaluationRete 内 putAll 填)。
+ * session (initContext 设好 evaluationContext), 再用反射往 ActivationGroupRegistry 的
+ * activationReteInstancesMap / agendaReteInstancesMap 装测试 entry (生产时这俩 map 由
+ * evaluationRete 内 recordActivationGroupUnits / recordAgendaGroupUnits 装入)。
  *
  * @see com.ruleforge.docs.notes.v51006-knowledgesessionimpl-activegroup-containskey V5.100.6 完整 doc
- * @since 5.100.6
+ * @since 5.100.6 (V6.3 跟随 god class 拆分迁移反射路径)
  */
 @DisplayName("V5.100.6 — KnowledgeSessionImpl activeRule/activeAgendaGroup group-existence 契约")
 class KnowledgeSessionImplActiveGroupTest {
@@ -73,6 +81,7 @@ class KnowledgeSessionImplActiveGroupTest {
     private KnowledgeSessionImpl session;
     private Map<String, List<ReteInstanceUnit>> activationMap;
     private Map<String, List<ReteInstanceUnit>> agendaMap;
+    private ActivationGroupRegistry activationRegistry;
     private Rete rete;
 
     @BeforeAll
@@ -126,16 +135,13 @@ class KnowledgeSessionImplActiveGroupTest {
         KnowledgePackage kp = new KnowledgeBase(rete).getKnowledgePackage();
         session = new KnowledgeSessionImpl(kp);
 
-        // 反射拿 session 的 2 个 map (生产由 evaluationRete 内 putAll 填, 这里手动装测试 entry)
-        activationMap = getMapField("activationReteInstancesMap");
-        agendaMap = getMapField("agendaReteInstancesMap");
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, List<ReteInstanceUnit>> getMapField(String name) throws Exception {
-        Field f = KnowledgeSessionImpl.class.getDeclaredField(name);
-        f.setAccessible(true);
-        return (Map<String, List<ReteInstanceUnit>>) f.get(session);
+        // V6.3 — 反射拿 session.activationRegistry 的 2 个 map (生产由 evaluationRete 内
+        // recordActivationGroupUnits / recordAgendaGroupUnits 填, 这里手动装测试 entry)。
+        Field regField = KnowledgeSessionImpl.class.getDeclaredField("activationRegistry");
+        regField.setAccessible(true);
+        activationRegistry = (ActivationGroupRegistry) regField.get(session);
+        activationMap = activationRegistry.getActivationReteInstancesMap();
+        agendaMap = activationRegistry.getAgendaReteInstancesMap();
     }
 
     // ─── activeRule: group 不存在 → 抛 ─────────────────────────────────────
