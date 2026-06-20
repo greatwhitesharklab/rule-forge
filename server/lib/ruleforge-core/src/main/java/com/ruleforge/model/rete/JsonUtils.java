@@ -2,7 +2,6 @@ package com.ruleforge.model.rete;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import lombok.Getter;
@@ -74,19 +73,17 @@ public class JsonUtils {
         if (parametersNode == null) {
             return null;
         }
-        Iterator<JsonNode> iter = parametersNode.iterator();
+        // V6.9.12 — V5.96 skip: Iterator + while 状态机 → enhanced for。
+        // 同时删 L88-89 死代码: `if (valueTypeText != null) { param.setValue(parseValue(...)); }`
+        // 立即被下方无条件 `param.setValue(parseValue(...))` 覆盖, 经典 dead-then-overwrite
+        // 反编译 artifact。 L91 单独保留, 行为 100% 等价 (parseValue 内部已处理 value==null)。
         List<Parameter> parameters = new ArrayList<Parameter>();
-        while (iter.hasNext()) {
-            JsonNode parameterNode = iter.next();
+        for (JsonNode parameterNode : parametersNode) {
             Parameter param = new Parameter();
             param.setName(getJsonValue(parameterNode, "name"));
             String type = getJsonValue(parameterNode, "type");
             if (type != null) {
                 param.setType(Datatype.valueOf(type));
-            }
-            String valueTypeText = getJsonValue(parameterNode, "valueType");
-            if (valueTypeText != null) {
-                param.setValue(parseValue(parameterNode));
             }
             param.setValue(parseValue(parameterNode));
             parameters.add(param);
