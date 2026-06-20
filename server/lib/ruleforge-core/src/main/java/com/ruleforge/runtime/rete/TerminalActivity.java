@@ -26,9 +26,14 @@ public class TerminalActivity extends AbstractActivity {
         KnowledgeSession session = (KnowledgeSession) context.getWorkingMemory();
         session.fireEvent(new ActivationCreatedEventImpl(ac, session));
 
-        // 执行信息
-        String msg = "√√√ 规则【" + this.rule.getName() + "】成功匹配";
-        context.logMsg(msg, MsgType.RuleMatch);
+        // V6.9.11 — debug gate (V5.88 CriteriaActivity.logMessage 早返 / V5.90 Rule.debug 默认 /
+        // V6.9.9-V6.9.10 action logMsg 门控 同档): skip 字符串拼接 + MessageItem 分配 +
+        // ArrayList.add 当 rule.debug=false (V5.90 默认) 时。 Rule.debug 是 Boolean 可空,
+        // 用 Boolean.TRUE.equals(...) 兼容 null。
+        if (Boolean.TRUE.equals(this.rule.getDebug())) {
+            String msg = "√√√ 规则【" + this.rule.getName() + "】成功匹配";
+            context.logMsg(msg, MsgType.RuleMatch);
+        }
 
         return result;
     }
