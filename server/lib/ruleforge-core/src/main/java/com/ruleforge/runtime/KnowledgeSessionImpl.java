@@ -32,17 +32,15 @@ import java.util.*;
  * 深度清理需先补 characterization test 锁定现有行为。
  */
 public class KnowledgeSessionImpl implements KnowledgeSession {
-    private Context context;
-    private EvaluationContextImpl evaluationContext;
-    private Agenda agenda;
+    // V6.5 — 执行状态(context / evaluationContext / agenda / execMessageItems)已移到
+    // ExecutionState (god class 拆分第四轮收口,延续 V6.2/V6.3/V6.4 模式)。
+    private final ExecutionState executionState = new ExecutionState();
     // V6.4 — RETE 网络 + 子会话注册表已移到 ReteSessionRegistry (god class 拆分延续 V6.2/V6.3)。
-    // parentSession 也归本协作者管 (跟 knowledgePackageList / reteInstanceList / knowledgeSessionMap 同源)。
     private final ReteSessionRegistry reteRegistry = new ReteSessionRegistry();
     // V6.3 — activation / agenda group 状态管理已移到 ActivationGroupRegistry (god class 拆分延续)。
     private final ActivationGroupRegistry activationRegistry = new ActivationGroupRegistry();
     private final SessionParameterManager paramManager = new SessionParameterManager();
     private final FactStore factStore = new FactStore();
-    private List<MessageItem> execMessageItems;
     private KnowledgeEventManager knowledgeEventManager;
 
     public KnowledgeSessionImpl(KnowledgePackage knowledgePackage) {
@@ -54,9 +52,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public KnowledgeSessionImpl(KnowledgePackage[] knowledgePackages, KnowledgeSession parentSession) {
-        this.execMessageItems = new ArrayList<>();
-
-        // V6.4 — activationRegistry / paramManager / factStore / reteRegistry 已在字段声明处初始化 (final)
+        // V6.5 — executionState / reteRegistry / activationRegistry / paramManager / factStore
+        // 已在字段声明处初始化 (final)
         this.knowledgeEventManager = new KnowledgeEventManagerImpl();
 
         for (KnowledgePackage knowledgePackage : knowledgePackages) {
@@ -65,8 +62,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
         }
 
         this.initFromParentSession(parentSession);
-        this.initContext();
-        this.agenda = new Agenda(this.context);
+        executionState.init(reteRegistry.getKnowledgePackageList(), this);
     }
 
     public void initFromParentSession(KnowledgeSession parentSession) {
@@ -76,7 +72,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
             // 复用 parent 的 knowledgeSessionMap 同引用 (原 L83 字段重赋值语义,保留行为)
             reteRegistry.setKnowledgeSessionMap(parentSession.getKnowledgeSessionMap());
             this.knowledgeEventManager.getKnowledgeEventListeners().addAll(parentSession.getKnowledgeEventListeners());
-            this.execMessageItems = parentSession.getExecMessageItems();
+            // V6.5 — execMessageItems 委托 ExecutionState (保留原 L82 字段重赋值语义)
+            executionState.inheritExecMessageItemsFromParent(parentSession.getExecMessageItems());
             factStore.addAll(parentSession.getAllFactsList());
             this.paramManager.initFromParentSessionValueMap(parentSession.getSessionValueMap());
         }
@@ -120,7 +117,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
 
         long start = System.currentTimeMillis();
         evaluationRete(factStore.getAllFactsList());
-        ExecutionResponseImpl resp = (ExecutionResponseImpl) this.agenda.execute(filter, max);
+        ExecutionResponseImpl resp = (ExecutionResponseImpl) executionState.getAgenda().execute(filter, max);
         resp.setDuration(System.currentTimeMillis() - start);
         reset();
         return resp;
@@ -170,7 +167,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     }
 
     public boolean retract(Object fact) {
-        this.agenda.retract(fact);
+        executionState.getAgenda().retract(fact);
         // V5.82:按 reference equality 移除首次出现的 fact(同 className 多 fact 不再误删)
         factStore.remove(fact);
         return true;
@@ -190,7 +187,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
     private void reset() {
         // V6.3 — activation / agenda group 状态委托 ActivationGroupRegistry.clear()
         activationRegistry.clear();
-        this.agenda.clean();
+        executionState.getAgenda().clean();
         factStore.getFactMaps().clear();
         factStore.getAllFactsList().clear();
     }
@@ -223,7 +220,7 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
             // 累积状态,让 2-pattern join 能跨 fact 累积左右 fact 匹配 (见
             // [[v582-allfactsmap-rewrite]] TD-19.5.4)。
             for (Object fact : facts) {
-                this.evaluationContext.clean();
+                executionState.getEvaluationContext().clean();
                 reteInstance.resetStickyStateOnly();
                 this.doRete(reteInstance, fact, false);
             }
@@ -269,10 +266,10 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
 
                     ReteInstance ri = insUnit.getReteInstance();
                     for (Object fact : facts) {
-                        trackers = ri.enter(this.evaluationContext, fact);
+                        trackers = ri.enter(executionState.getEvaluationContext(), fact);
                         if (trackers != null && !trackers.isEmpty()) {
                             activationRegistry.markActivated(id);
-                            this.agenda.addTrackers(trackers, false);
+                            executionState.getAgenda().addTrackers(trackers, false);
                             break;
                         }
                     }
@@ -284,13 +281,13 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
             }
         }
 
-        this.evaluationContext.clean();
+        executionState.getEvaluationContext().clean();
     }
 
     private void doRete(ReteInstance reteInstance, Object fact, boolean noneCondition) {
-        Collection<FactTracker> trackers = reteInstance.enter(this.evaluationContext, fact);
+        Collection<FactTracker> trackers = reteInstance.enter(executionState.getEvaluationContext(), fact);
         if (trackers != null) {
-            this.agenda.addTrackers(trackers, noneCondition);
+            executionState.getAgenda().addTrackers(trackers, noneCondition);
         }
     }
 
@@ -313,15 +310,15 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
                     ReteInstance reteIns = insUnit.getReteInstance();
                     // V5.82:走 allFactsList(全 fact),不再走 allFactsMap 的 last-wins 视图
                     for (Object fact : factStore.getAllFactsList()) {
-                        Collection<FactTracker> trackers = reteIns.enter(this.evaluationContext, fact);
+                        Collection<FactTracker> trackers = reteIns.enter(executionState.getEvaluationContext(), fact);
                         if (trackers != null) {
-                            this.agenda.addTrackers(trackers, false);
+                            executionState.getAgenda().addTrackers(trackers, false);
                         }
                     }
                 }
             }
 
-            this.evaluationContext.clean();
+            executionState.getEvaluationContext().clean();
         }
     }
 
@@ -352,32 +349,32 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
                 Collection<FactTracker> trackers = null;
                 // V5.82:走 allFactsList(全 fact)
                 for (Object fact : factStore.getAllFactsList()) {
-                    trackers = reteIns.enter(this.evaluationContext, fact);
+                    trackers = reteIns.enter(executionState.getEvaluationContext(), fact);
                     if (trackers != null) {
-                        this.agenda.addTrackers(trackers, false);
+                        executionState.getAgenda().addTrackers(trackers, false);
                     }
                 }
 
-                trackers = reteIns.enter(this.evaluationContext, "__*__");
+                trackers = reteIns.enter(executionState.getEvaluationContext(), "__*__");
                 if (trackers != null) {
-                    this.agenda.addTrackers(trackers, true);
+                    executionState.getAgenda().addTrackers(trackers, true);
                 }
             }
         }
     }
 
     public void writeLogFile() throws IOException {
-        if (this.execMessageItems.size() != 0) {
+        if (executionState.getExecMessageItems().size() != 0) {
             for (DebugWriter writer : EngineContext.getDebugWriters()) {
-                writer.write(this.execMessageItems);
+                writer.write(executionState.getExecMessageItems());
             }
 
-            this.execMessageItems.clear();
+            executionState.clearExecMessageItems();
         }
     }
 
     public List<MessageItem> getExecMessageItems() {
-        return this.execMessageItems;
+        return executionState.getExecMessageItems();
     }
 
     public Map<String, Object> getAllFactsMap() {
@@ -439,23 +436,8 @@ public class KnowledgeSessionImpl implements KnowledgeSession {
         return reteRegistry.getParentSession();
     }
 
-    private void initContext() {
-        Map<String, String> allVariableCategoryMap = null;
-
-        for (KnowledgePackage knowledgePackage : reteRegistry.getKnowledgePackageList()) {
-            if (allVariableCategoryMap == null) {
-                allVariableCategoryMap = knowledgePackage.getVariableCateogoryMap();
-            } else {
-                allVariableCategoryMap.putAll(knowledgePackage.getVariableCateogoryMap());
-            }
-        }
-
-        this.context = new ContextImpl(this, allVariableCategoryMap, this.execMessageItems);
-        this.evaluationContext = new EvaluationContextImpl(this, allVariableCategoryMap, this.execMessageItems);
-    }
-
     public Context getContext() {
-        return this.context;
+        return executionState.getContext();
     }
 
     public List<ReteInstance> getReteInstanceList() {
