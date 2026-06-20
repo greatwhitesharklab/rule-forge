@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public class ReteNodeJsonDeserializer extends AbstractJsonDeserializer<List<ReteNode>> {
@@ -23,11 +22,11 @@ public class ReteNodeJsonDeserializer extends AbstractJsonDeserializer<List<Rete
     public List<ReteNode> deserialize(JsonParser jsonParser, DeserializationContext ctxt) throws IOException, JsonProcessingException {
         ObjectCodec oc = jsonParser.getCodec();
         JsonNode jsonNode = oc.readTree(jsonParser);
+        // V6.9.13 — V5.96 skip: Iterator + while 状态机 → enhanced for。 跟 RuleJsonDeserializer
+        // + V6.9.12 JsonUtils.parseParameters 同模式 (反编译 artifact 收口)。
         List<ReteNode> reteNodes = new ArrayList<>();
-        Iterator<JsonNode> childrenNodesIter = jsonNode.elements();
 
-        while (childrenNodesIter.hasNext()) {
-            JsonNode childNode = childrenNodesIter.next();
+        for (JsonNode childNode : jsonNode) {
             int id = childNode.get("id").asInt();
             JsonNode nodeTypeNode = childNode.get("nodeType");
             if (nodeTypeNode != null) {
@@ -196,10 +195,8 @@ public class ReteNodeJsonDeserializer extends AbstractJsonDeserializer<List<Rete
     private MultiCondition parseMultiCondition(JsonNode multiConditionNode) {
         MultiCondition condition = new MultiCondition();
         condition.setType(JunctionType.valueOf(JsonUtils.getJsonValue(multiConditionNode, "type")));
-        Iterator<JsonNode> iter = multiConditionNode.get("conditions").elements();
-
-        while (iter.hasNext()) {
-            JsonNode propertyCriteriaNode = iter.next();
+        // V6.9.13 — V5.96 skip: Iterator + while 状态机 → enhanced for。 跟 deserialize() 同模式。
+        for (JsonNode propertyCriteriaNode : multiConditionNode.get("conditions")) {
             PropertyCriteria pc = new PropertyCriteria();
             pc.setOp(Op.valueOf(JsonUtils.getJsonValue(propertyCriteriaNode, "op")));
             pc.setProperty(JsonUtils.getJsonValue(propertyCriteriaNode, "property"));

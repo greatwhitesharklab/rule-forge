@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -21,10 +20,11 @@ public class RuleJsonDeserializer extends AbstractJsonDeserializer<List<Rule>> {
     public List<Rule> deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
         ObjectCodec oc = jp.getCodec();
         JsonNode jsonNode = oc.readTree(jp);
-        Iterator<JsonNode> childrenNodesIter = jsonNode.elements();
+        // V6.9.13 — V5.96 skip: Iterator + while 状态机 → enhanced for。 跟 V6.9.12
+        // JsonUtils.parseParameters 同模式 (反编译 artifact 收口)。 Build-time per-JSON-parse
+        // 调用, JFR 0 sample 预期。
         List<Rule> rules = new ArrayList<>();
-        while (childrenNodesIter.hasNext()) {
-            JsonNode childNode = childrenNodesIter.next();
+        for (JsonNode childNode : jsonNode) {
             rules.add(parseRule(jp, childNode));
         }
         return rules;
