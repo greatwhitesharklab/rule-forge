@@ -23,13 +23,13 @@ public class CrosstabRulesBuilder {
     }
 
     public List<Rule> buildRules(CrosstabDefinition crosstab) {
-        List<Rule> rules = new ArrayList();
-        List<CellRange> topRanges = new ArrayList();
-        List<CellRange> leftRanges = new ArrayList();
+        List<Rule> rules = new ArrayList<>();
+        List<CellRange> topRanges = new ArrayList<>();
+        List<CellRange> leftRanges = new ArrayList<>();
         Map<String, CrossCell> cellsMap = this.buildCellsMap(crosstab.getCells());
         List<CrossRow> rows = crosstab.getRows();
         List<CrossColumn> columns = crosstab.getColumns();
-        List<CellRange> valueCellRanges = new ArrayList();
+        List<CellRange> valueCellRanges = new ArrayList<>();
 
         for (int i = 0; i < rows.size(); ++i) {
             CrossRow row = (CrossRow) rows.get(i);
@@ -276,7 +276,7 @@ public class CrosstabRulesBuilder {
     }
 
     private Map<String, CrossCell> buildCellsMap(List<CrossCell> cells) {
-        Map<String, CrossCell> map = new HashMap();
+        Map<String, CrossCell> map = new HashMap<>();
         // V5.96 — Iterator var123 → enhanced for
         for (CrossCell cell : cells) {
             String key = cell.getRow() + "," + cell.getCol();

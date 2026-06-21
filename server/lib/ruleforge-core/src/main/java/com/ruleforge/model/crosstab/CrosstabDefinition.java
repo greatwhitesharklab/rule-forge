@@ -162,7 +162,7 @@ public class CrosstabDefinition {
 
     public void addLibrary(Library library) {
         if (this.libraries == null) {
-            this.libraries = new ArrayList();
+            this.libraries = new ArrayList<>();
         }
 
         this.libraries.add(library);

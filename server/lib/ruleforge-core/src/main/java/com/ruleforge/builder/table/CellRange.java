@@ -21,7 +21,7 @@ public class CellRange {
     private Datatype datatype;
     private CellRange parentRange;
     private CrossCell cell;
-    private List<CellRange> children = new ArrayList();
+    private List<CellRange> children = new ArrayList<>();
 
     CellRange() {
     }

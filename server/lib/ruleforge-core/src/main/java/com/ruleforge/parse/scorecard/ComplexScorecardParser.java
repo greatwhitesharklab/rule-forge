@@ -131,7 +131,7 @@ public class ComplexScorecardParser implements Parser<ComplexScorecardDefinition
                 this.rulesRebuilder.rebuildAction(cell.getAction(), resLibraries, namedMap, false);
             } else if (cell.getValue() != null) {
                 this.rulesRebuilder.rebuildValue(cell.getValue(), resLibraries, namedMap, false);
-            } else if (cell.getJoint() != null && cell.getJoint() != null && cell.getJoint().getJunction() != null) {
+            } else if (cell.getJoint() != null && cell.getJoint().getJunction() != null) {
                 List<Condition> conditions = cell.getJoint().getConditions();
                 if (conditions != null) {
                     // V5.96 — Iterator var123 → enhanced for

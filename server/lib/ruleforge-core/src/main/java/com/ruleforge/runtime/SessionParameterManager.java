@@ -33,11 +33,11 @@ public class SessionParameterManager {
             Object obj = this.initParameters.get(key);
             if (obj != null) {
                 if (obj instanceof List) {
-                    ((List) obj).clear();
+                    ((List<?>) obj).clear();
                 } else if (obj instanceof Set) {
-                    ((Set) obj).clear();
+                    ((Set<?>) obj).clear();
                 } else if (obj instanceof Map) {
-                    ((Map) obj).clear();
+                    ((Map<?, ?>) obj).clear();
                 } else if (obj instanceof Number) {
                     this.initParameters.put(key, 0);
                 } else if (obj instanceof Boolean) {

@@ -35,24 +35,10 @@ public class ReteBuilder {
 
         for (Rule rule : rules) {
             if (!this.isPass(rule)) {
-                Object agendaRules;
                 if (StringUtils.isNotBlank(rule.getActivationGroup())) {
-                    agendaRules = activationRulesMap.get(rule.getActivationGroup());
-                    if (agendaRules == null) {
-                        ArrayList<Rule> ruleArrayList = new ArrayList<>();
-                        ruleArrayList.add(rule);
-                        activationRulesMap.put(rule.getActivationGroup(), ruleArrayList);
-                    } else {
-                        ((List) agendaRules).add(rule);
-                    }
+                    addRuleToGroup(activationRulesMap, rule.getActivationGroup(), rule);
                 } else if (StringUtils.isNotBlank(rule.getAgendaGroup())) {
-                    agendaRules = agendaRulesMap.get(rule.getAgendaGroup());
-                    if (agendaRules == null) {
-                        ArrayList<Rule> ruleArrayList = new ArrayList<>();
-                        agendaRulesMap.put(rule.getAgendaGroup(), ruleArrayList);
-                    } else {
-                        ((List) agendaRules).add(rule);
-                    }
+                    addRuleToGroup(agendaRulesMap, rule.getAgendaGroup(), rule);
                 } else {
                     TerminalNode terminalNode = new TerminalNode(rule, context.nextId());
                     this.buildBranch(rule, context, terminalNode);
@@ -64,6 +50,15 @@ public class ReteBuilder {
         rete.setActivationGroupRetesMap(this.buildRetesMap(activationRulesMap, context));
         rete.setAgendaGroupRetesMap(this.buildRetesMap(agendaRulesMap, context));
         return rete;
+    }
+
+    private static void addRuleToGroup(Map<String, List<Rule>> groupMap, String group, Rule rule) {
+        List<Rule> groupRules = groupMap.get(group);
+        if (groupRules == null) {
+            groupRules = new ArrayList<>();
+            groupMap.put(group, groupRules);
+        }
+        groupRules.add(rule);
     }
 
     private boolean isPass(Rule rule) {
