@@ -106,22 +106,20 @@ public class ClassUtils {
     }
 
     private static String getPropertyAnnotationLabel(Class<?> cls, String fieldName) throws Exception {
-        Field field = null;
-        while (field == null) {
+        // V6.9.24 — V5.96 skip 模式: while (field == null) 状态机 → 显式 for-loop 走 superclass chain
+        for (Class<?> c = cls; c != null; c = c.getSuperclass()) {
             try {
-                field = cls.getDeclaredField(fieldName);
+                Field field = c.getDeclaredField(fieldName);
+                Label pd = field.getAnnotation(Label.class);
+                return pd == null ? null : pd.value();
             } catch (NoSuchFieldException ex) {
-                if (cls == Object.class) {
+                if (c == Object.class) {
                     throw ex;
                 }
-                cls = cls.getSuperclass();
+                // continue walking up superclass chain
             }
         }
-        Label pd = field.getAnnotation(Label.class);
-        if (pd != null) {
-            return pd.value();
-        }
-        return null;
+        throw new NoSuchFieldException(fieldName);
     }
 
     private static Datatype getDateType(Class<?> type) {
@@ -144,8 +142,6 @@ public class ClassUtils {
         } else if (Double.class.isAssignableFrom(type)
                 || double.class.isAssignableFrom(type)) {
             return Datatype.Double;
-        } else if (Date.class.isAssignableFrom(type)) {
-            return Datatype.Date;
         } else if (Date.class.isAssignableFrom(type)) {
             return Datatype.Date;
         } else if (List.class.isAssignableFrom(type)) {
