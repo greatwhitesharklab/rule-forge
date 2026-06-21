@@ -74,15 +74,11 @@ core ← decision ← executor ← executor-app
 
 ## 开发原则
 
-### 最高优先级:agent 连续性 & 长时间自主
-
-本项目的工程规则围绕一个最高优先级:**让 agent 能连续、长时间自主运行,不被不必要的中断打断**。下面所有规则(BDD/TDD、代码优雅、Sub-task 工作流、版本约定、模块边界)都服务于它;**任何规则与之冲突时,以连续性为准**。
+**原则**:让 agent 连续自主运行,不被不必要中断打断。破坏性操作谨慎,缺信息用合理默认推进并标注。
 
 - **默认不中断**:写测试、写实现、推进 sub-task、写文档都不 ask user,直接做
-- **一个特性一个分支连续做完再一次 PR**,不中途拆(拆 = 合并→切 main→开分支,中断推进)
-- **不定义中断情形**:agent 不预留"中断问用户"的口子 —— 遇到破坏性风险就谨慎操作(不删数据/不覆盖未读文件/commit 保进度),缺关键信息就用最合理的默认推进并标注假设。只有用户主动发话才停
+- **commit 即 save**:每个 sub-task 完成立即 commit,即使 context 被压缩也能从 commit 继续,不丢进度
 - **方案选型前置**:涉及多种合理路径的选型(交互模型、技术栈、架构方案)在**需求开始时**就和用户确认,不作为中途中断的理由。读到代码发现新复杂度时,先用现有信息继续推进,不回头问选型
-- **长时间运行保进度**:每个 sub-task 完成立即 commit(即使 context 被压缩,也能从 commit 继续,不丢进度)。auto-compact 由 TUI 自动处理,无需 agent 介入
 
 ### BDD/TDD
 
@@ -105,14 +101,12 @@ core ← decision ← executor ← executor-app
 
 ### Sub-task 工作流
 
-- **BDD/TDD 硬规则不破**:每个 sub-task 按"先写 BDD → 写实现 → 跑全量回归 → mark complete"循环
-- **不打断主流程**:sub-task 完成 → 内部 mark complete → 直接做下一个,**不**等用户确认
-- **大分支 + 多次 commit + 一次性 PR**:
-  - 一个特性(V5.x.y)开**一个**分支 `feature/V5.x.y-<slug>`
-  - 内部 N 个 sub-task 各自独立 commit(commit message 标 `V5.x.y.N <title>`)
-  - **所有** sub-task 跑完 → `git push -u origin` → `gh pr create` → `gh pr merge --squash --delete-branch`(**自**合并,走 GitHub PR API,**不**本地 merge)
-  - 合并后 `git checkout main && git pull` 回主干,继续下一个特性
-- **无例外 — 任何改动都是一个特性一个分支一次 PR**:热修复、文档改动、CLAUDE.md 本身各自**就是**一个特性,各自走分支 PR,没有特殊通道;跨周跨月的大特性也在同一个分支上连续做完再一次 PR。**禁止中途拆独立 PR**(中途拆 = 合并当前 → 切回 main → 开新分支,会中断 agent 全权委托的连续推进节奏)
+- **BDD/TDD 硬规则**:先写测试 → 写实现 → 跑全量回归 → commit。sub-task 完成直接做下一个,不 ask user。
+- **分支 + PR 流程**:
+  - 一个特性 (V5.x.y) 开一个分支 `feature/V5.x.y-<slug>`, N 个 sub-task 在分支内 commit
+  - 完成后 `git push -u origin` → `gh pr create` → `gh pr merge --squash --delete-branch`(走 GitHub PR API,不本地 merge)
+  - `git checkout main && git pull` 回主干,继续下一个特性
+- **灵活分组**: 同 concern 的 sub-task 可共分支; 不同 concern 可独立分支独立 PR。按实际情况决定。版本号 V6.x.y 三位原则保持。
 
 ### 版本约定 (V5.16 起)
 
