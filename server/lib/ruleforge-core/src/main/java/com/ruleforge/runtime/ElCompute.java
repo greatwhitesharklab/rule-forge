@@ -162,8 +162,9 @@ public class ElCompute {
                     char op = (Character) this.operateStack.pop();
 
                     do {
+                        Object right = this.dataStack.pop();
                         left = this.dataStack.pop();
-                        result = this.calculate(left, op, left);
+                        result = this.calculate(left, op, right);
                         this.dataStack.push(result);
                         if (this.operateStack.isEmpty()) {
                             break;

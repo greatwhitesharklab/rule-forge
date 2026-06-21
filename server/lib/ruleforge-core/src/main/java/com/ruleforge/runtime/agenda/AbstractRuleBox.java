@@ -17,12 +17,12 @@ public abstract class AbstractRuleBox implements RuleBox {
 
     public AbstractRuleBox(Context context, List<RuleInfo> executedRules) {
         this.context = context;
-        this.rules = new ArrayList();
+        this.rules = new ArrayList<>();
         this.executedRules = executedRules;
     }
 
     protected void retract(Object obj, List<Activation> activations) {
-        List<Activation> needRemovedList = new ArrayList();
+        List<Activation> needRemovedList = new ArrayList<>();
         // V5.96 — Iterator var123 → enhanced for
         for (Activation activation : activations) {
             if (activation.contain(obj)) {

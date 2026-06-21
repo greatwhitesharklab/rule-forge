@@ -26,13 +26,13 @@ public class DefaultHtmlFileDebugWriter implements DebugWriter {
         if (parentDir != null && !parentDir.exists()) {
             parentDir.mkdirs();
         }
-        FileOutputStream out = new FileOutputStream(file);
-        String sb = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>RuleForge调试日志信息</title><body style='font-size:12px'>" +
-                msg.toString() +
-                "</body></html>";
-        IOUtils.write(sb, out);
-        out.flush();
-        out.close();
+        try (FileOutputStream out = new FileOutputStream(file)) {
+            String sb = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>RuleForge调试日志信息</title><body style='font-size:12px'>" +
+                    msg.toString() +
+                    "</body></html>";
+            IOUtils.write(sb, out);
+            out.flush();
+        }
     }
 
     public void setPath(String path) {
