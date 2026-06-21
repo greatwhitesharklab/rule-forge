@@ -57,7 +57,10 @@ public class ScoreRule extends Rule {
                 int rowNumber = scoreValue.getRowNumber();
                 String rowItem;
                 rowItem = "--- 行" + rowNumber + ",得分：" + scoreValue.getValue();
-                context.logMsg(rowItem, MsgType.ScoreCard);
+                // V6.9.17 — logMsg debug 门控 (V6.9.9.1 模式)
+                if (isdebug) {
+                    context.logMsg(rowItem, MsgType.ScoreCard);
+                }
 
                 RowItemImpl rowItemImpl = getOrCreateRow(rowMap, rowNumber);
 
@@ -83,7 +86,10 @@ public class ScoreRule extends Rule {
             actualScore = card.executeWeightSum(context);
         } else if (this.scoringType.equals(ScoringType.custom)) {
             msg = "--- 执行自定义评分卡得分计算Bean:" + this.scoringBean;
-            context.logMsg(msg, MsgType.ScoreCard);
+            // V6.9.17 — logMsg debug 门控 (V6.9.9.1 模式)
+            if (isdebug) {
+                context.logMsg(msg, MsgType.ScoreCard);
+            }
 
             ScoringStrategy scoringStrategy = (ScoringStrategy) EngineContext.getBean(this.scoringBean);
             actualScore = scoringStrategy.calculate(card, context);
