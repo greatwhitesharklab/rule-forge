@@ -29,8 +29,11 @@ public class ScorecardImpl implements Scorecard {
             row.setActualScore(score);
             result = result.add(score);
         }
-        String msg = "+++ 求和得分：" + result;
-        context.logMsg(msg, MsgType.ScoreCard);
+        // V6.9.16 — logMsg debug 门控 (V6.9.9.1 模式)
+        if (this.debug) {
+            String msg = "+++ 求和得分：" + result;
+            context.logMsg(msg, MsgType.ScoreCard);
+        }
         return result;
     }
 
@@ -43,8 +46,11 @@ public class ScorecardImpl implements Scorecard {
             row.setActualScore(actualScore);
             result = result.add(actualScore);
         }
-        String msg = "+++ 加权求和得分：" + result;
-        context.logMsg(msg, MsgType.ScoreCard);
+        // V6.9.16 — logMsg debug 门控 (V6.9.9.1 模式)
+        if (this.debug) {
+            String msg = "+++ 加权求和得分：" + result;
+            context.logMsg(msg, MsgType.ScoreCard);
+        }
         return result;
     }
 
