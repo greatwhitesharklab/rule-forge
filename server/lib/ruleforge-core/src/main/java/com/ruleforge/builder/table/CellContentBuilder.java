@@ -11,6 +11,7 @@ import com.ruleforge.model.rule.lhs.LeftType;
 import com.ruleforge.model.rule.lhs.Or;
 import com.ruleforge.model.rule.lhs.VariableLeftPart;
 import com.ruleforge.model.scorecard.ComplexColumn;
+import com.ruleforge.model.library.Datatype;
 import com.ruleforge.model.table.Cell;
 import com.ruleforge.model.table.Column;
 import com.ruleforge.model.table.Condition;
@@ -123,31 +124,35 @@ public class CellContentBuilder {
     }
 
     private Criteria newCriteria(Column col, Condition condition) {
-        Criteria criteria = new Criteria();
-        Left left = new Left();
-        VariableLeftPart part = new VariableLeftPart();
-        part.setVariableCategory(col.getVariableCategory());
-        part.setVariableName(col.getVariableName());
-        part.setVariableLabel(col.getVariableLabel());
-        part.setDatatype(col.getDatatype());
-        left.setLeftPart(part);
-        left.setType(LeftType.variable);
-        criteria.setLeft(left);
-        criteria.setOp(condition.getOp());
-        criteria.setValue(condition.getValue());
-        return criteria;
+        return buildCriteria(
+            newVariableLeftPart(col.getVariableCategory(), col.getVariableName(),
+                col.getVariableLabel(), col.getDatatype()),
+            condition);
     }
 
     private Criteria newCriteria(Cell cell, ComplexColumn col, Condition condition) {
-        Criteria criteria = new Criteria();
-        Left left = new Left();
+        return buildCriteria(
+            newVariableLeftPart(col.getVariableCategory(), cell.getVariableName(),
+                cell.getVariableLabel(), cell.getDatatype()),
+            condition);
+    }
+
+    // V6.9.23 — V6.9.14 helper extract: 2 overloads 14 行 100% 同构 (build Left + VariableLeftPart +
+    // Criteria skeleton + setOp/setValue) → 1 builder + 1 VariableLeftPart factory
+    private VariableLeftPart newVariableLeftPart(String category, String name, String label, Datatype datatype) {
         VariableLeftPart part = new VariableLeftPart();
-        part.setVariableCategory(col.getVariableCategory());
-        part.setVariableLabel(cell.getVariableLabel());
-        part.setVariableName(cell.getVariableName());
-        part.setDatatype(cell.getDatatype());
+        part.setVariableCategory(category);
+        part.setVariableName(name);
+        part.setVariableLabel(label);
+        part.setDatatype(datatype);
+        return part;
+    }
+
+    private Criteria buildCriteria(VariableLeftPart part, Condition condition) {
+        Left left = new Left();
         left.setLeftPart(part);
         left.setType(LeftType.variable);
+        Criteria criteria = new Criteria();
         criteria.setLeft(left);
         criteria.setOp(condition.getOp());
         criteria.setValue(condition.getValue());
