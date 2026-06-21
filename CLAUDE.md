@@ -33,20 +33,22 @@ docker compose logs -f console-app # 看 console 日志
 
 ## 项目架构
 
+> **V6.11 audit 修正** (2026-06-21): 实际只有 2 lib 模块 (ruleforge-console / ruleforge-executor
+> 不是独立 lib, 它们的 `com.ruleforge.console.*` / `com.ruleforge.executor.*` 源码住在
+> 各自 app 模块内, 跟 .console.app.* / .executor.app.* 同包)。
+
 ```
 parent                  Maven parent POM,Spring Boot BOM,Java 17
-ruleforge-core          RETE 规则引擎(解析、执行、知识库)
-ruleforge-decision      自建 BPMN 2.0 决策流引擎
-ruleforge-console       Web 控制台业务(controller/service/db)
-ruleforge-executor      规则执行引擎(测试端点、知识包)
-ruleforge-console-app   可部署 Spring Boot app — 编辑器
-ruleforge-executor-app  可部署 Spring Boot app — 执行器
+ruleforge-core          lib/ — RETE 规则引擎(解析、执行、知识库)
+ruleforge-decision      lib/ — 自建 BPMN 2.0 决策流引擎 + 共享 entity
+ruleforge-console-app   app/ — 可部署 Spring Boot app — 编辑器(含 com.ruleforge.console.* 业务)
+ruleforge-executor-app  app/ — 可部署 Spring Boot app — 执行器(含 com.ruleforge.executor.* 业务)
 ```
 
 依赖链:
 ```
-core ← decision ← console ← console-app
-core ← decision ← executor ← executor-app
+core ← decision ← console-app
+core ← decision ← executor-app
 ```
 
 ### 模块详解
@@ -124,12 +126,10 @@ core ← decision ← executor ← executor-app
 
 ### 模块边界 — 禁止"借实体"
 
-**核心规则:`ruleforge-console-app` 和 `ruleforge-executor-app` 是平行的可部署 Spring Boot app,互不依赖。** 共享的只有 `ruleforge-core`/`ruleforge-decision`/`ruleforge-console`/`ruleforge-executor` 库模块。
+**核心规则:`ruleforge-console-app` 和 `ruleforge-executor-app` 是平行的可部署 Spring Boot app,互不依赖。** 共享的只有 `ruleforge-core` / `ruleforge-decision` 两个 lib 模块(跟 5 Maven 模块 pom 一致)。
 
-**禁止的反模式**:
-- ❌ console-app 里 `import com.ruleforge.decision.entity.*`(这些 entity 在 executor-app 里)
-- ❌ console-app 里 `import com.ruleforge.decision.mapper.clickhouse.*`(同理)
-- ❌ 任何"在 A app 里 import B app 的类"—— 看起来能编(IDE 把整 monorepo index 了),**实际上 pom.xml 没声明依赖,`mvn -pl <app> package` 一定失败**
+**禁止的反模式**(只有 1 条,因为共享 lib 是合理设计):
+- ❌ **任何"在 A app 里 import B app 的类"** — 看起来能编(IDE 把整 monorepo index 了),**实际上 pom.xml 没声明依赖,`mvn -pl <app> package` 一定失败**。跨 app 只能走 HTTP(RestTemplate / HttpClient, console → executor 单向)。
 
 **表/Entity 归属速查**:
 
@@ -139,8 +139,9 @@ core ← decision ← executor ← executor-app
 | `nd_*` (V5.1~V5.13 批测/agent/监控/决策日志) | console-app 专属 | `appDataSource` (`app_db`) |
 | `act_*`/`flw_*` (流程引擎) | console-app + executor-app 共用 | `flowable` (`flowable_db`) |
 | `com.ruleforge.console.app.entity.*` | console-app | 看 entity 注释指明 DataSource |
-| `com.ruleforge.decision.entity.*` | executor-app | `ruleforgeDataSource`(executor 侧) |
-| `com.ruleforge.console.*` (storage/flow/batchtest/migration/observability) | console 模块 | 可在 console-app 直接用 |
+| **`com.ruleforge.decision.entity.*`** | **共享 `lib/ruleforge-decision` (V6.11 修正, 之前误标为 executor-app 专属)** | `ruleforgeDataSource`(console 侧 + executor 侧都用) |
+| `com.ruleforge.console.*` (storage/flow/batchtest/migration/observability) | console-app 内置业务包 | 可在 console-app 直接用 |
+| `com.ruleforge.executor.*` (controller/service/...) | executor-app 内置业务包 | 可在 executor-app 直接用 |
 
 ## 配置
 
