@@ -3,6 +3,8 @@ import {Button, Input, Select} from 'antd';
 import CommonDialog from './CommonDialog.tsx';
 import * as event from '../../componentEvent.js';
 import * as action from '../../componentAction.js';
+// V6.12.3 TODO: migrate to @codemirror/* v6 (ScriptEditorPopup.tsx 已用 v6,
+//                v5 仍在 SourceDialog + QuickTestDialog 2 处,v6 API 不同需重写)
 import CodeMirror from 'codemirror';
 import '../../../../node_modules/codemirror/lib/codemirror.css';
 import '../../../../node_modules/codemirror/theme/3024-day.css';
@@ -134,7 +136,6 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                             value={this.state.orderNo} placeholder='订单号'
                             onChange={(e) => this.setState({ orderNo: e.target.value })} />
                         <Button id="search" htmlType="button" style={{ marginLeft: 'var(--rf-space-3)', display: this.state.type === 'form' ? 'block' : 'none' }} onClick={() => {
-                            console.log('订单号', this.state);
                             if (this.state.type === 'json') {
                                 return;
                             }
@@ -149,7 +150,6 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                                 filePath: `jcr:${this.state.file},${this.state.selectedVersion}`,
                             };
                             action.loadVariableCategories(params, (data: VariableCategory[]) => {
-                                console.log('数据源', data);
                                 this.setState({
                                     variableData: data
                                 });
@@ -193,7 +193,6 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                         display: this.state.showLog ? 'block' : 'none'
                     }} onClick={() => {
                         const logContent = (this.state.logData || []).map(item => `<p>》》》规则（RuleSet：${decodeURIComponent(item.fileName || '')}，${item.version}），已被添加到执行队列；</p>`);
-                        console.log('logContent', logContent);
                         dialog({ title: '日志', message: logContent.join('') });
                     }}>查看详细日志</button>
                 </div>
@@ -224,7 +223,6 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                             ruleName: ''
                         };
                         action.loadVariableCategories(params, (data: VariableCategory[]) => {
-                            console.log('数据源', data);
                             this.setState({
                                 variableData: data
                             });
@@ -240,7 +238,6 @@ export default class QuickTestDialog extends Component<QuickTestDialogProps, Qui
                             alert('请选择版本号');
                             return;
                         }
-                        console.log('变量数据源', this.state.variableData);
                         let logData = this.state.logData || [];
                         logData.push({
                             project: this.state.project,
