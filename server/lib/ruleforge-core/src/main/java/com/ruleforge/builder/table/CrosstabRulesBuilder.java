@@ -187,6 +187,23 @@ public class CrosstabRulesBuilder {
         return criteria;
     }
 
+    // V6.9.14 — 抽 addOrAttachToParent helper, 消 addTopCell L206-215 + addLeftCell L240-249
+    // 8 行 100% 同构 pattern (start==1 直 add; 否则 findParentRange 找 parent; 找到 addChild,
+    // 找不到 直 add)。 Build-time 调用, JFR 0 sample 预期, pure code elegance + dead-code
+    // reduction (8 行 → 1 行 × 2 call site)。
+    private void addOrAttachToParent(CellRange range, int start, int end, List<CellRange> ranges) {
+        if (start == 1) {
+            ranges.add(range);
+        } else {
+            CellRange parentRange = this.findParentRange(start, end, ranges);
+            if (parentRange != null) {
+                parentRange.addChildRange(range);
+            } else {
+                ranges.add(range);
+            }
+        }
+    }
+
     private CellRange addTopCell(CrossCell cell, List<CellRange> ranges, TopRow row) {
         int start = cell.getCol();
         int colspan = cell.getColspan();
@@ -203,16 +220,7 @@ public class CrosstabRulesBuilder {
         range.setVariableName(row.getVariableName());
         range.setVariableLabel(row.getVariableLabel());
         range.setDatatype(row.getDatatype());
-        if (start == 1) {
-            ranges.add(range);
-        } else {
-            CellRange parentRange = this.findParentRange(start, end, ranges);
-            if (parentRange != null) {
-                parentRange.addChildRange(range);
-            } else {
-                ranges.add(range);
-            }
-        }
+        this.addOrAttachToParent(range, start, end, ranges);
 
         return range;
     }
@@ -237,16 +245,7 @@ public class CrosstabRulesBuilder {
             range.setDatatype(leftCol.getDatatype());
         }
 
-        if (start == 1) {
-            ranges.add(range);
-        } else {
-            CellRange parentRange = this.findParentRange(start, end, ranges);
-            if (parentRange != null) {
-                parentRange.addChildRange(range);
-            } else {
-                ranges.add(range);
-            }
-        }
+        this.addOrAttachToParent(range, start, end, ranges);
 
         return range;
     }
