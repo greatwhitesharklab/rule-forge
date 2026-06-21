@@ -16,15 +16,18 @@ public class ConsolePrintAction extends AbstractAction {
     public ActionValue execute(Context context, Object matchedObject, List<Object> allMatchedObjects) {
         ValueCompute valueCompute = EngineContext.getValueCompute();
         Object content = valueCompute.complexValueCompute(value, matchedObject, context, allMatchedObjects);
-        if (content instanceof BigDecimal) {
-            BigDecimal b = (BigDecimal) content;
-            context.logMsg("☢☢☢ 控制台输出：" + b.toPlainString(), MsgType.ConsoleOutput);
-        } else if (content instanceof Double) {
-            Double d = (Double) content;
-            context.logMsg("☢☢☢ 控制台输出：" + d.toString(), MsgType.ConsoleOutput);
-        } else {
-            String msg = (content == null ? "null" : content.toString());
-            context.logMsg("☢☢☢ 控制台输出：" + msg, MsgType.ConsoleOutput);
+        // V6.9.21 — V6.9.9.1 series 收口: logMsg 门控 (AbstractAction.debug 默认 false)
+        if (this.debug) {
+            if (content instanceof BigDecimal) {
+                BigDecimal b = (BigDecimal) content;
+                context.logMsg("☢☢☢ 控制台输出：" + b.toPlainString(), MsgType.ConsoleOutput);
+            } else if (content instanceof Double) {
+                Double d = (Double) content;
+                context.logMsg("☢☢☢ 控制台输出：" + d.toString(), MsgType.ConsoleOutput);
+            } else {
+                String msg = (content == null ? "null" : content.toString());
+                context.logMsg("☢☢☢ 控制台输出：" + msg, MsgType.ConsoleOutput);
+            }
         }
         return null;
     }

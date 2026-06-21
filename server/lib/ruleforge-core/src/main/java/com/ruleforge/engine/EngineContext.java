@@ -41,10 +41,11 @@ public final class EngineContext {
             if (fun.isDisabled()) {
                 continue;
             }
-            if (byName.containsKey(fun.getName())) {
+            // V6.9.20 — V5.93 double-lookup 收口: containsKey + put → putIfAbsent + null check
+            FunctionDescriptor prev = byName.putIfAbsent(fun.getName(), fun);
+            if (prev != null) {
                 throw new RuntimeException("Duplicate function [" + fun.getName() + "]");
             }
-            byName.put(fun.getName(), fun);
             byLabel.put(fun.getLabel(), fun);
         }
         functionDescriptorMap = byName;
