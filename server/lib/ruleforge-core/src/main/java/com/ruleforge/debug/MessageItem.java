@@ -1,8 +1,24 @@
 package com.ruleforge.debug;
 
 import java.util.Date;
+import java.util.EnumMap;
+import java.util.Map;
 
 public class MessageItem {
+    // V6.9.29 — V6.9.14 + V6.2: 28 行 switch (8 cases) → static EnumMap;
+    // 砍重复 case ConsoleOutput (matches default "#000", dead code)
+    private static final Map<MsgType, String> COLOR_BY_TYPE = new EnumMap<>(MsgType.class);
+    static {
+        COLOR_BY_TYPE.put(MsgType.Condition, "#6495ED");
+        COLOR_BY_TYPE.put(MsgType.ExecuteBeanMethod, "#8A2BE2");
+        COLOR_BY_TYPE.put(MsgType.ExecuteFunction, "#008B8B");
+        COLOR_BY_TYPE.put(MsgType.RuleFlow, "#9932CC");
+        COLOR_BY_TYPE.put(MsgType.VarAssign, "#FF7F50");
+        COLOR_BY_TYPE.put(MsgType.ScoreCard, "#40E0D0");
+        COLOR_BY_TYPE.put(MsgType.RuleMatch, "#666600");
+        // ConsoleOutput omitted — falls through to default "#000"
+    }
+
     private String msg;
     private MsgType type;
     private String leftVariable;
@@ -31,33 +47,7 @@ public class MessageItem {
     }
 
     public String toHtml() {
-        String color = "#000";
-        switch (type) {
-            case Condition:
-                color = "#6495ED";
-                break;
-            case ConsoleOutput:
-                color = "#000";
-                break;
-            case ExecuteBeanMethod:
-                color = "#8A2BE2";
-                break;
-            case ExecuteFunction:
-                color = "#008B8B";
-                break;
-            case RuleFlow:
-                color = "#9932CC";
-                break;
-            case VarAssign:
-                color = "#FF7F50";
-                break;
-            case ScoreCard:
-                color = "#40E0D0";
-                break;
-            case RuleMatch:
-                color = "#666600";
-                break;
-        }
+        String color = COLOR_BY_TYPE.getOrDefault(type, "#000");
         return "<div style=\"color:" + color + ";margin:2px\">" + msg + "</div>";
     }
 
