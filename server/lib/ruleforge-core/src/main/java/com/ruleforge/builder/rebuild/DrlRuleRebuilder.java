@@ -52,21 +52,9 @@ public class DrlRuleRebuilder implements RuleTypeRebuilder {
             delegate.rebuildCriterion(rule.getLhs().getCriterion(), resLibraries, namedMap, forDSL);
         }
         // RHS
-        Rhs rhs = rule.getRhs();
-        if (rhs != null && rhs.getActions() != null) {
-            List<Action> actions = rhs.getActions();
-            for (Action action : actions) {
-                delegate.rebuildAction(action, resLibraries, namedMap, forDSL);
-            }
-        }
+        rebuildActions(rule.getRhs(), resLibraries, namedMap, forDSL);
         // Other
-        Other other = rule.getOther();
-        if (other != null && other.getActions() != null) {
-            List<Action> otherActions = other.getActions();
-            for (Action action : otherActions) {
-                delegate.rebuildAction(action, resLibraries, namedMap, forDSL);
-            }
-        }
+        rebuildActions(rule.getOther(), resLibraries, namedMap, forDSL);
         // LoopRule — V5.47 之前就在的 instanceof 路径,搬过来 1:1
         if (rule instanceof LoopRule) {
             LoopRule loopRule = (LoopRule) rule;
@@ -75,18 +63,36 @@ public class DrlRuleRebuilder implements RuleTypeRebuilder {
                 Value value = target.getValue();
                 delegate.rebuildValue(value, resLibraries, namedMap, forDSL);
             }
-            LoopStart start = loopRule.getLoopStart();
-            if (start != null && start.getActions() != null) {
-                for (Action action : start.getActions()) {
-                    delegate.rebuildAction(action, resLibraries, namedMap, forDSL);
-                }
-            }
-            LoopEnd end = loopRule.getLoopEnd();
-            if (end != null && end.getActions() != null) {
-                for (Action action : end.getActions()) {
-                    delegate.rebuildAction(action, resLibraries, namedMap, forDSL);
-                }
-            }
+            rebuildActions(loopRule.getLoopStart(), resLibraries, namedMap, forDSL);
+            rebuildActions(loopRule.getLoopEnd(), resLibraries, namedMap, forDSL);
+        }
+    }
+
+    // V6.9.28 — V6.9.14 helper extract: 4 method-local copies of
+    // `if (X != null && X.getActions() != null) { for (Action a : ...) delegate.rebuildAction(...); }`
+    // → 1 helper supporting Rhs / Other / LoopStart / LoopEnd (all share List<Action> getActions())
+    private void rebuildActions(Object actionContainer, ResourceLibrary resLibraries,
+                                Map<String, String> namedMap, boolean forDSL) {
+        if (actionContainer == null) {
+            return;
+        }
+        List<Action> actions;
+        if (actionContainer instanceof Rhs) {
+            actions = ((Rhs) actionContainer).getActions();
+        } else if (actionContainer instanceof Other) {
+            actions = ((Other) actionContainer).getActions();
+        } else if (actionContainer instanceof LoopStart) {
+            actions = ((LoopStart) actionContainer).getActions();
+        } else if (actionContainer instanceof LoopEnd) {
+            actions = ((LoopEnd) actionContainer).getActions();
+        } else {
+            return;
+        }
+        if (actions == null) {
+            return;
+        }
+        for (Action action : actions) {
+            delegate.rebuildAction(action, resLibraries, namedMap, forDSL);
         }
     }
 }

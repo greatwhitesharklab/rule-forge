@@ -12,18 +12,12 @@ public class MemoryKnowledgeCache implements KnowledgeCache {
 
     @Override
     public KnowledgePackage getKnowledge(String packageId) {
-        if (packageId.startsWith("/")) {
-            packageId = packageId.substring(1);
-        }
-        return this.map.get(packageId);
+        return this.map.get(stripLeadingSlash(packageId));
     }
 
     @Override
     public void putKnowledge(String packageId, KnowledgePackage knowledgePackage) {
-        if (packageId.startsWith("/")) {
-            packageId = packageId.substring(1);
-        }
-        this.map.put(packageId, knowledgePackage);
+        this.map.put(stripLeadingSlash(packageId), knowledgePackage);
     }
 
     @Override
@@ -42,25 +36,21 @@ public class MemoryKnowledgeCache implements KnowledgeCache {
 
     @Override
     public void markKnowledgeDirty(String fullPackageId) {
-        if (fullPackageId.startsWith("/")) {
-            fullPackageId = fullPackageId.substring(1);
-        }
-        dirtyFlags.put(fullPackageId, true);
+        dirtyFlags.put(stripLeadingSlash(fullPackageId), true);
     }
 
     @Override
     public boolean isKnowledgeDirty(String fullPackageId) {
-        if (fullPackageId.startsWith("/")) {
-            fullPackageId = fullPackageId.substring(1);
-        }
-        return dirtyFlags.getOrDefault(fullPackageId, false);
+        return dirtyFlags.getOrDefault(stripLeadingSlash(fullPackageId), false);
     }
 
     @Override
     public void clearKnowledgeDirty(String fullPackageId) {
-        if (fullPackageId.startsWith("/")) {
-            fullPackageId = fullPackageId.substring(1);
-        }
-        dirtyFlags.remove(fullPackageId);
+        dirtyFlags.remove(stripLeadingSlash(fullPackageId));
+    }
+
+    // V6.9.27 — V6.9.14 helper extract: 5 method 3 行 100% 同构 leading-slash strip
+    private static String stripLeadingSlash(String id) {
+        return id.startsWith("/") ? id.substring(1) : id;
     }
 }
