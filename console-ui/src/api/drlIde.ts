@@ -5,11 +5,13 @@
  * 给 console-ui Monaco editor 用。所有方法返 Promise,失败 throw — caller
  * (DrlMonaco) 自行 catch 转成"no diagnostics"或"no hover"。
  *
- * <p>path 拼写跟 {@code vite.config.ts} proxy 配套:/api → console 8180
- * → /ruleforge/ide/*(DrlIdeController @RequestMapping)。
+ * <p>V6.12.4 — 改用集中 {@link jsonPost} (apiBase() 默认 /api, 路径去掉前缀),
+ * 错误处理走 client 统一路径。
  *
  * @since 5.78
  */
+
+import {jsonPost} from './client.js';
 
 export interface SyntaxErrorItem {
     line: number;       // 1-based(后端 ANTLR 约定)
@@ -38,43 +40,19 @@ export interface HoverResponse {
 }
 
 /**
- * POST /api/ide/parse
+ * POST /ide/parse
  *
  * <p>后端 @ 500ms 量级;live editing 走 300ms debounce 后调,典型
  * DRL 文件 1KB 内 5ms 出。
  */
-export async function parseDrl(content: string): Promise<ParseResponse> {
-    const resp = await fetch('/api/ide/parse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
-    });
-    if (!resp.ok) {
-        throw new Error(`ide/parse ${resp.status}: ${await resp.text()}`);
-    }
-    return resp.json();
+export function parseDrl(content: string): Promise<ParseResponse> {
+    return jsonPost<ParseResponse>('/ide/parse', {content}, {silent: true});
 }
 
-export async function completeDrl(content: string, caretOffset: number): Promise<CompleteResponse> {
-    const resp = await fetch('/api/ide/complete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, caretOffset }),
-    });
-    if (!resp.ok) {
-        throw new Error(`ide/complete ${resp.status}: ${await resp.text()}`);
-    }
-    return resp.json();
+export function completeDrl(content: string, caretOffset: number): Promise<CompleteResponse> {
+    return jsonPost<CompleteResponse>('/ide/complete', {content, caretOffset}, {silent: true});
 }
 
 export async function hoverDrl(content: string, line: number, col: number): Promise<HoverResponse> {
-    const resp = await fetch('/api/ide/hover', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, line, col }),
-    });
-    if (!resp.ok) {
-        throw new Error(`ide/hover ${resp.status}: ${await resp.text()}`);
-    }
-    return resp.json();
+    return jsonPost<HoverResponse>('/ide/hover', {content, line, col}, {silent: true});
 }

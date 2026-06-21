@@ -1,3 +1,5 @@
+// V6.12.3 TODO: migrate to @codemirror/* v6 (ScriptEditorPopup.tsx 已用 v6,
+//                v5 仍在 SourceDialog + QuickTestDialog 2 处,v6 API 不同需重写)
 import CodeMirror from 'codemirror';
 // V5.74.5:静态 import xml mode 替换原先的 `await import(...xml.js)` + `window.CodeMirror = ...`。
 // Vite 把 UMD/CJS module 转 ESM,xml.js IIFE 通过 CJS 分支(require)拿到 CodeMirror 后

@@ -1,261 +1,110 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {Button, Input} from 'antd';
-const { mocks, clearModalMockState, getLastAlertMessage, getLastConfirm, confirmLast } = vi.hoisted(() => {
-    const alerts: { message: unknown; cb?: () => void }[] = [];
-    const confirms: { message: string; callback: (ok: boolean) => void }[] = [];
-    const alert = vi.fn((message: unknown, cb?: () => void) => {
-        alerts.push({ message, cb });
-        if (typeof cb === 'function') cb();
-    });
-    const confirm = vi.fn((message: string, callback: (ok: boolean) => void) => {
-        confirms.push({ message, callback });
-    });
-    const prompt = vi.fn();
-    const dialog = vi.fn();
-    return {
-        mocks: { alert, confirm, prompt, dialog },
-        clearModalMockState: () => {
-            alerts.length = 0;
-            confirms.length = 0;
-            alert.mockReset();
-            confirm.mockReset();
-            prompt.mockReset();
-            dialog.mockReset();
-        },
-        getLastAlertMessage: () => {
-            const last = alerts[alerts.length - 1];
-            if (!last) return null;
-            return typeof last.message === 'string' ? last.message : String(last.message);
-        },
-        getLastConfirm: () => confirms[confirms.length - 1] ?? null,
-        confirmLast: (accept = true) => {
-            const last = confirms[confirms.length - 1];
-            if (last) last.callback(accept);
-        },
-    };
-});
-vi.mock('@/utils/modal', () => mocks);
-
 import { render, fireEvent, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 
-// We need to mock bootbox before importing the component
-// Import LoginPage as a named class component
-// Since index.tsx renders to DOM directly, we import the component indirectly
-// We'll create a wrapper approach by reading the module
-let LoginPage: React.ComponentType<object> | undefined;
+// Mock the API client module used by the real LoginPage.
+// The real component uses `formPost('/frame/login', ...)` from ../api/client.js.
+const { formPost } = vi.hoisted(() => ({
+    formPost: vi.fn(),
+}));
 
-beforeAll(async () => {
-    // The login/index.tsx renders to #root at module level, so we need to prevent that
-    // by ensuring no #root element exists during import
-    const mod = await import('./index.tsx');
-    // The module exports are not explicit, but the component is in the file
-    // We need to get it another way - let's re-read and eval just the component
-});
+vi.mock('../api/client.js', () => ({
+    formPost: formPost,
+}));
 
-// Actually, the login/index.tsx has side effects (ReactDOM.render at bottom)
-// and doesn't export the component. We need to handle this differently.
-// Let's create a minimal approach by importing the file which will try to render
-// but since #root doesn't exist in jsdom, it should be safe.
+import LoginPage from './index';
 
-describe('LoginPage Component', () => {
-    let fetchMock: ReturnType<typeof vi.fn>;
-    let originalLocation: typeof window.location;
+describe('V6.12.2 — LoginPage (real component, not mock)', () => {
+    let originalLocation: Location;
+    let formPostMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
-        fetchMock = vi.fn();
-        window.fetch = fetchMock as unknown as typeof fetch;
-        // V5.72: apiBase 改纯 Vite env,改用 vi.stubEnv mock VITE_API_BASE
-        vi.stubEnv('VITE_API_BASE', 'http://testserver');
-
-        // Store and mock window.location
+        formPostMock = formPost as ReturnType<typeof vi.fn>;
+        formPostMock.mockReset();
+        // Mock window.location so the redirect target is observable.
         originalLocation = window.location;
-        delete window.location;
-        (window as unknown as Record<string, unknown>).location = { href: '', search: '' };
+        delete (window as { location?: unknown }).location;
+        (window as unknown as Record<string, unknown>).location = {
+            href: '',
+            search: '',
+        };
     });
 
     afterEach(() => {
-        window.fetch = undefined as unknown as typeof fetch;
-        vi.unstubAllEnvs();
-        (window as unknown as Record<string, unknown>).location = originalLocation;
+        (window as { location?: unknown }).location = originalLocation;
         vi.restoreAllMocks();
     });
 
-    // Since the component is not exported, we test it by dynamically importing
-    // and catching the side-effect rendering. For proper testing we define
-    // a minimal component inline that mirrors LoginPage behavior.
-    // However, the actual component IS in the file and will try to render to #root.
-    // In jsdom, document.getElementById('root') returns null, so the render is skipped.
-
-    async function getLoginPage(): Promise<null> {
-        // The file has side effects but they're guarded by `if (container)` check
-        // We need to re-import to get a fresh module each time
-        vi.resetModules();
-        const mod = await import('./index.tsx');
-        // The component is not exported, but we can get it by examining default export
-        // Since it's not exported, we need a different approach
-        // Let's render it ourselves
-        return null;
-    }
-
-    // Because LoginPage is not exported from index.tsx, we create a testable version
-    // that mirrors the exact same component code for testing purposes.
-
-    function TestableLoginPage(): React.ComponentType<object> {
-        const { Component } = React;
-
-        class LoginPage extends Component<object, { username: string; password: string; error: string; loading: boolean }> {
-            state = { username: '', password: '', error: '', loading: false };
-
-            handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-                e.preventDefault();
-                this.setState({ loading: true, error: '' });
-                const { username, password } = this.state;
-                fetch(((globalThis as {process?: {env?: Record<string, string | undefined>}}).process?.env?.VITE_API_BASE || (import.meta as any).env?.VITE_API_BASE) + '/frame/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ username, password }).toString()
-                }).then(function (response) {
-                    if (!response.ok) throw response;
-                    return response.json();
-                }).then((result: { status: boolean }) => {
-                    this.setState({ loading: false });
-                    if (result.status) {
-                        const redirect = new URLSearchParams(window.location.search).get('redirect') || 'index.html';
-                        window.location.href = redirect;
-                    } else {
-                        this.setState({ error: '登录失败' });
-                    }
-                }).catch(() => {
-                    this.setState({ loading: false, error: '登录失败，请检查用户名和密码' });
-                });
-            };
-
-            render() {
-                const { username, password, error, loading } = this.state;
-                return (
-                    <div>
-                        <h2>RuleForge</h2>
-                        <form onSubmit={this.handleSubmit}>
-                            <div className="ff-group">
-                                <Input type="text"  placeholder="用户名"
-                                    value={username}
-                                    onChange={(e) => this.setState({ username: e.target.value })} />
-                            </div>
-                            <div className="ff-group">
-                                <Input type="password"  placeholder="密码"
-                                    value={password}
-                                    onChange={(e) => this.setState({ password: e.target.value })} />
-                            </div>
-                            {error && <div className="rf-alert rf-alert-danger">{error}</div>}
-                            <Button htmlType="submit" type="primary" block disabled={loading}>
-                                {loading ? '登录中...' : '登 录'}
-                            </Button>
-                        </form>
-                    </div>
-                );
-            }
-        }
-
-        return LoginPage;
-    }
-
-    it('GIVEN the login page WHEN rendered THEN it should display username input, password input, and submit button', () => {
-        const LoginPageComp = TestableLoginPage();
-        render(React.createElement(LoginPageComp));
-
-        expect(screen.getByPlaceholderText('用户名')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('密码')).toBeInTheDocument();
+    it('GIVEN the login page WHEN rendered THEN shows brand, two inputs, and submit button', () => {
+        render(<LoginPage />);
+        expect(screen.getByText('RuleForge')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('请输入用户名')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('请输入密码')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: '登 录' })).toBeInTheDocument();
     });
 
-    it('GIVEN the login page WHEN username input changes THEN state should update', () => {
-        const LoginPageComp = TestableLoginPage();
-        render(React.createElement(LoginPageComp));
-
-        const usernameInput = screen.getByPlaceholderText('用户名') as HTMLInputElement;
-        fireEvent.change(usernameInput, { target: { value: 'testuser' } });
-
-        expect(usernameInput.value).toBe('testuser');
+    it('GIVEN username input WHEN user types THEN state updates', () => {
+        render(<LoginPage />);
+        const input = screen.getByPlaceholderText('请输入用户名') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: 'admin' } });
+        expect(input.value).toBe('admin');
     });
 
-    it('GIVEN the login page WHEN password input changes THEN state should update', () => {
-        const LoginPageComp = TestableLoginPage();
-        render(React.createElement(LoginPageComp));
-
-        const passwordInput = screen.getByPlaceholderText('密码') as HTMLInputElement;
-        fireEvent.change(passwordInput, { target: { value: 'testpass' } });
-
-        expect(passwordInput.value).toBe('testpass');
+    it('GIVEN password input WHEN user types THEN state updates', () => {
+        render(<LoginPage />);
+        const input = screen.getByPlaceholderText('请输入密码') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: 'secret' } });
+        expect(input.value).toBe('secret');
     });
 
-    it('GIVEN valid credentials WHEN form is submitted THEN it should call fetch with correct URL and params', () => {
-        const LoginPageComp = TestableLoginPage();
-        fetchMock.mockResolvedValue({
-            ok: true,
-            json: () => Promise.resolve({ status: true }),
-        });
+    it('GIVEN valid credentials WHEN form submitted THEN formPost called with /frame/login and form data', async () => {
+        formPostMock.mockResolvedValue({ status: true, data: undefined, message: '' });
+        render(<LoginPage />);
 
-        render(React.createElement(LoginPageComp));
-
-        fireEvent.change(screen.getByPlaceholderText('用户名'), { target: { value: 'admin' } });
-        fireEvent.change(screen.getByPlaceholderText('密码'), { target: { value: 'secret' } });
-        fireEvent.click(screen.getByRole('button', { name: '登 录' }));
-
-        expect(fetchMock).toHaveBeenCalledTimes(1);
-        expect(fetchMock.mock.calls[0][0]).toBe('http://testserver/frame/login');
-        expect(fetchMock.mock.calls[0][1].method).toBe('POST');
-    });
-
-    it('GIVEN a successful login response WHEN form is submitted THEN it should redirect', async () => {
-        const LoginPageComp = TestableLoginPage();
-        fetchMock.mockResolvedValue({
-            ok: true,
-            json: () => Promise.resolve({ status: true }),
-        });
-        (window.location as unknown as { search: string }).search = '';
-
-        render(React.createElement(LoginPageComp));
-
-        fireEvent.change(screen.getByPlaceholderText('用户名'), { target: { value: 'admin' } });
-        fireEvent.change(screen.getByPlaceholderText('密码'), { target: { value: 'secret' } });
+        fireEvent.change(screen.getByPlaceholderText('请输入用户名'), { target: { value: 'admin' } });
+        fireEvent.change(screen.getByPlaceholderText('请输入密码'), { target: { value: 'secret' } });
         fireEvent.click(screen.getByRole('button', { name: '登 录' }));
 
         await waitFor(() => {
-            expect((window.location as unknown as { href: string }).href).toBe('index.html');
+            expect(formPostMock).toHaveBeenCalledTimes(1);
         });
+        expect(formPostMock.mock.calls[0][0]).toBe('/frame/login');
+        expect(formPostMock.mock.calls[0][1]).toEqual({ username: 'admin', password: 'secret' });
     });
 
-    it('GIVEN a redirect param in URL WHEN login succeeds THEN it should redirect to the specified URL', async () => {
-        const LoginPageComp = TestableLoginPage();
-        fetchMock.mockResolvedValue({
-            ok: true,
-            json: () => Promise.resolve({ status: true }),
-        });
-        (window.location as unknown as { search: string }).search = '?redirect=dashboard.html';
+    it('GIVEN login success (status true) and no redirect param WHEN submitted THEN window.location.href set to /app', async () => {
+        formPostMock.mockResolvedValue({ status: true, data: undefined, message: '' });
+        (window as unknown as { location: { href: string; search: string } }).location.search = '';
+        render(<LoginPage />);
 
-        render(React.createElement(LoginPageComp));
-
-        fireEvent.change(screen.getByPlaceholderText('用户名'), { target: { value: 'admin' } });
-        fireEvent.change(screen.getByPlaceholderText('密码'), { target: { value: 'secret' } });
+        fireEvent.change(screen.getByPlaceholderText('请输入用户名'), { target: { value: 'admin' } });
+        fireEvent.change(screen.getByPlaceholderText('请输入密码'), { target: { value: 'secret' } });
         fireEvent.click(screen.getByRole('button', { name: '登 录' }));
 
         await waitFor(() => {
-            expect((window.location as unknown as { href: string }).href).toBe('dashboard.html');
+            expect((window as unknown as { location: { href: string } }).location.href).toBe('/app');
         });
     });
 
-    it('GIVEN a failed login response (status false) WHEN form is submitted THEN it should display error message', async () => {
-        const LoginPageComp = TestableLoginPage();
-        fetchMock.mockResolvedValue({
-            ok: true,
-            json: () => Promise.resolve({ status: false }),
+    it('GIVEN login success with ?redirect= param WHEN submitted THEN window.location.href set to redirect target', async () => {
+        formPostMock.mockResolvedValue({ status: true, data: undefined, message: '' });
+        (window as unknown as { location: { href: string; search: string } }).location.search = '?redirect=/app/editor';
+        render(<LoginPage />);
+
+        fireEvent.change(screen.getByPlaceholderText('请输入用户名'), { target: { value: 'admin' } });
+        fireEvent.change(screen.getByPlaceholderText('请输入密码'), { target: { value: 'secret' } });
+        fireEvent.click(screen.getByRole('button', { name: '登 录' }));
+
+        await waitFor(() => {
+            expect((window as unknown as { location: { href: string } }).location.href).toBe('/app/editor');
         });
+    });
 
-        render(React.createElement(LoginPageComp));
+    it('GIVEN login failure (status false) WHEN submitted THEN displays 登录失败 error', async () => {
+        formPostMock.mockResolvedValue({ status: false, data: undefined, message: '' });
+        render(<LoginPage />);
 
-        fireEvent.change(screen.getByPlaceholderText('用户名'), { target: { value: 'admin' } });
-        fireEvent.change(screen.getByPlaceholderText('密码'), { target: { value: 'wrong' } });
+        fireEvent.change(screen.getByPlaceholderText('请输入用户名'), { target: { value: 'admin' } });
+        fireEvent.change(screen.getByPlaceholderText('请输入密码'), { target: { value: 'wrong' } });
         fireEvent.click(screen.getByRole('button', { name: '登 录' }));
 
         await waitFor(() => {
@@ -263,14 +112,12 @@ describe('LoginPage Component', () => {
         });
     });
 
-    it('GIVEN a network error WHEN form is submitted THEN it should display error message', async () => {
-        const LoginPageComp = TestableLoginPage();
-        fetchMock.mockRejectedValue(new Error('Network error'));
+    it('GIVEN formPost rejects (network error) WHEN submitted THEN displays 登录失败，请检查用户名和密码', async () => {
+        formPostMock.mockRejectedValue(new Error('Network error'));
+        render(<LoginPage />);
 
-        render(React.createElement(LoginPageComp));
-
-        fireEvent.change(screen.getByPlaceholderText('用户名'), { target: { value: 'admin' } });
-        fireEvent.change(screen.getByPlaceholderText('密码'), { target: { value: 'secret' } });
+        fireEvent.change(screen.getByPlaceholderText('请输入用户名'), { target: { value: 'admin' } });
+        fireEvent.change(screen.getByPlaceholderText('请输入密码'), { target: { value: 'secret' } });
         fireEvent.click(screen.getByRole('button', { name: '登 录' }));
 
         await waitFor(() => {
@@ -278,26 +125,20 @@ describe('LoginPage Component', () => {
         });
     });
 
-    it('GIVEN the form WHEN submitted THEN the loading state should be reflected on button', async () => {
-        const LoginPageComp = TestableLoginPage();
-        // Use a promise that doesn't resolve immediately
-        let resolvePromise: (value: unknown) => void;
-        fetchMock.mockReturnValue(new Promise(resolve => { resolvePromise = resolve; }));
-
-        render(React.createElement(LoginPageComp));
+    it('GIVEN click submit WHEN formPost is in-flight THEN button shows 登录中... and is disabled', async () => {
+        let resolveFn: (v: unknown) => void = () => {};
+        formPostMock.mockReturnValue(new Promise((r) => { resolveFn = r; }));
+        render(<LoginPage />);
 
         const button = screen.getByRole('button', { name: '登 录' });
         fireEvent.click(button);
 
-        // After clicking, loading should be true
         await waitFor(() => {
             expect(screen.getByText('登录中...')).toBeInTheDocument();
         });
+        expect((button as HTMLButtonElement).disabled).toBe(true);
 
-        // Resolve the promise to clean up
-        resolvePromise!({
-            ok: true,
-            json: () => Promise.resolve({ status: true }),
-        });
+        // Resolve to clean up.
+        resolveFn({ status: true, data: undefined, message: '' });
     });
 });

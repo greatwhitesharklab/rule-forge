@@ -14,7 +14,7 @@ interface UIState {
     simulationTab: string;
     gitStatusTab: string;
     /**
-     * 当前选中的项目名(项目过滤)。SidebarToolbar / RuleEditorPanel 选择项目时 dispatch
+     * 当前选中的项目名(项目过滤)。RuleEditorPanel 选择项目时 dispatch
      * SET_PROJECT_NAME;action.ts thunks(loadData/rename/fileRename/...)通过 getState() 读取,
      * 不再走 window._projectName。
      */

@@ -16,7 +16,7 @@ import * as action from './action';
  * {@code createRoot(#container)},直接 return JSX。替代原 iframe
  * {@code editor.html?type=permission}。
  *
- * <p>原 iframe 入口从 TopBar / SidebarToolbar 下拉菜单触发;SPA 化后改为
+ * <p>原 iframe 入口从 TopBar 下拉菜单触发;SPA 化后改为
  * {@code window.open('/app/editor/permission', '_blank')}。
  */
 export default function EditorRoute() {

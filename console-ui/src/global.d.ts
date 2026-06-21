@@ -262,7 +262,7 @@ interface Window {
     // Current selection state for complex scorecard
     _currentConditionCell: any;
 
-    // File search term (used by SidebarToolbar, FileTreePanel)
+    // File search term (used by FileTreePanel)
     searchFileName: string;
 
     // Welcome page
