@@ -39,65 +39,61 @@ public class ActivationImpl implements Activation {
             KnowledgeSession session = (KnowledgeSession) context.getWorkingMemory();
             session.fireEvent(new ActivationBeforeFiredEventImpl(this, session));
             executedRules.add(this.rule);
-            boolean enabled = true;
-            if (this.rule.getEnabled() != null) {
-                enabled = this.rule.getEnabled();
-            }
-
+            // V6.9.15 — 4-level nested if/else → early return chain (V5.96 skip 模式)
+            boolean enabled = this.rule.getEnabled() == null || this.rule.getEnabled();
             if (!enabled) {
                 return null;
+            }
+            Date now = new Date();
+            Date effectiveDate = this.rule.getEffectiveDate();
+            if (effectiveDate != null && effectiveDate.getTime() > now.getTime()) {
+                return null;
+            }
+            Date expiresDate = this.rule.getExpiresDate();
+            if (expiresDate != null && expiresDate.getTime() < now.getTime()) {
+                return null;
+            }
+
+            // V6.9.15 — 4 关都过, 进入正常执行路径 (rule type dispatch 是 legitimate, 保留 if/else if/else)
+            List<Object> matchedObjects = new ArrayList<>(this.objectCriteriaMap.keySet());
+            List actions;
+            if (this.rule instanceof LoopRule) {
+                LoopRule loopRule = (LoopRule) this.rule;
+                actions = loopRule.execute(context, this.objectCriteriaMap.keySet(), matchedObjects);
+                if (actions != null) {
+                    actionValues.addAll(actions);
+                }
+            } else if (this.rule instanceof ScoreRule) {
+                ScoreRule scoreRule = (ScoreRule) this.rule;
+                scoreRule.execute(context, this.objectCriteriaMap.keySet(), matchedObjects);
             } else {
-                Date now = new Date();
-                Date effectiveDate = this.rule.getEffectiveDate();
-                if (effectiveDate != null && effectiveDate.getTime() > now.getTime()) {
-                    return null;
-                } else {
-                    Date expiresDate = this.rule.getExpiresDate();
-                    if (expiresDate != null && expiresDate.getTime() < now.getTime()) {
-                        return null;
-                    } else {
-                        List<Object> matchedObjects = new ArrayList<>(this.objectCriteriaMap.keySet());
-                        List actions;
-                        if (this.rule instanceof LoopRule) {
-                            LoopRule loopRule = (LoopRule) this.rule;
-                            actions = loopRule.execute(context, this.objectCriteriaMap.keySet(), matchedObjects);
-                            if (actions != null) {
-                                actionValues.addAll(actions);
+                Rhs rhs = this.rule.getRhs();
+                if (rhs != null) {
+                    actions = rhs.getActions();
+                    if (actions != null) {
+                        int index = 1;
+                        // V5.96 — for(Iterator var123; ...) → enhanced for + 显式 ++index (raw List,强转)
+                        for (Object o : actions) {
+                            Action action = (Action) o;
+                            if (this.rule.getDebug() != null) {
+                                action.setDebug(this.rule.getDebug());
                             }
-                        } else if (this.rule instanceof ScoreRule) {
-                            ScoreRule scoreRule = (ScoreRule) this.rule;
-                            scoreRule.execute(context, this.objectCriteriaMap.keySet(), matchedObjects);
-                        } else {
-                            Rhs rhs = this.rule.getRhs();
-                            if (rhs != null) {
-                                actions = rhs.getActions();
-                                if (actions != null) {
-                                    int index = 1;
-                                    // V5.96 — for(Iterator var123; ...) → enhanced for + 显式 ++index (raw List,强转)
-                                    for (Object o : actions) {
-                                        Action action = (Action) o;
-                                        if (this.rule.getDebug() != null) {
-                                            action.setDebug(this.rule.getDebug());
-                                        }
 
-                                        context.addTipMsg("动作" + index + "." + this.transferActionType(action.getActionType()));
-                                        ActionValue actionValue = action.execute(context, this.objectCriteriaMap.keySet(), matchedObjects);
-                                        if (actionValue != null) {
-                                            actionValues.add(actionValue);
-                                        }
-                                        index++;
-                                    }
-                                }
+                            context.addTipMsg("动作" + index + "." + this.transferActionType(action.getActionType()));
+                            ActionValue actionValue = action.execute(context, this.objectCriteriaMap.keySet(), matchedObjects);
+                            if (actionValue != null) {
+                                actionValues.add(actionValue);
                             }
+                            index++;
                         }
-
-                        session.fireEvent(new ActivationAfterFiredEventImpl(this, session));
-                        this.processed = true;
-                        context.cleanTipMsg();
-                        return this.rule;
                     }
                 }
             }
+
+            session.fireEvent(new ActivationAfterFiredEventImpl(this, session));
+            this.processed = true;
+            context.cleanTipMsg();
+            return this.rule;
         } catch (Exception var16) {
             String tipMsg = context.getTipMsg();
             throw new RuleAssertException(tipMsg, var16);
