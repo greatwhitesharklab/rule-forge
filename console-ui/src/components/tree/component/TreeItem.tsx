@@ -10,6 +10,20 @@ interface TreeItemProps {
     expandLevel?: number;
     treeType?: string;
     draggable?: boolean;
+    /**
+     * V6.13.1:只读模式。
+     * <ul>
+     *   <li>右键 context menu 不弹 (无新建/重命名/删除/锁定 等编辑入口)</li>
+     *   <li>文件 click 走 {@link onFileReadOnlyClick} 而非 window.open 编辑器</li>
+     *   <li>父组件 (FileTreePanel) 选 git 版本时传 true,选 working tree 时传 false</li>
+     * </ul>
+     */
+    readOnly?: boolean;
+    /**
+     * V6.13.1:readOnly 模式下文件 click 触发的回调,代替默认 window.open 打开编辑器。
+     * FileTreePanel 接到后 dispatch seeFileSource thunk,弹源码对话框 (走 git snapshot)。
+     */
+    onFileReadOnlyClick?: (data: TreeNodeData) => void;
 }
 
 interface TreeItemState {
@@ -60,6 +74,11 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
     }
 
     _handleContextMenu(e: React.MouseEvent<HTMLSpanElement>) {
+        // V6.13.1:readOnly 模式禁右键 context menu (新建/重命名/删除等编辑入口全无)
+        if (this.props.readOnly) {
+            e.preventDefault();
+            return;
+        }
         const contextMenu = this.props.data.contextMenu;
         if (!contextMenu || contextMenu.length === 0) {
             return;
@@ -110,12 +129,13 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
     }
 
     render() {
-        const {data, dispatch} = this.props;
+        const {data, dispatch, readOnly} = this.props;
         const children = data.children;
         const spanId = "node-" + data.id, menuId = 'treenodemenu' + data.id;
         const {contextMenuVisible, contextMenuX, contextMenuY} = this.state;
         let menu: React.ReactElement | null = null;
-        if (data.contextMenu) {
+        // V6.13.1:readOnly 模式不挂 Menu (删编辑入口,跟右键禁菜单双保险)
+        if (data.contextMenu && !readOnly) {
             menu = <Menu items={data.contextMenu} data={data} dispatch={dispatch} menuId={menuId}
                             visible={contextMenuVisible} x={contextMenuX} y={contextMenuY}/>;
         }
@@ -146,6 +166,13 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
             return (
                 <li>
                     <span id={spanId} onContextMenu={this._handleContextMenu} onClick={(e) => {
+                        // V6.13.1:readOnly 模式 (看 git 历史版本) 文件 click 不开编辑器,
+                        // 走 onFileReadOnlyClick 回调 → 父组件 dispatch seeFileSource → 弹源码对话框 (走 git snapshot)
+                        if (readOnly && this.props.onFileReadOnlyClick && isFile) {
+                            this.props.onFileReadOnlyClick(data);
+                            e.stopPropagation();
+                            return;
+                        }
                         if (isFile) {
                             // 已完成 SPA 化的 React 编辑器集合:新标签打开 /app/editor/<type>,
                             // 不走原 iframe (editor.html?type=...)。判断优先级:data.type 直配 >

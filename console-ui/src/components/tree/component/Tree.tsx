@@ -11,13 +11,17 @@ interface TreeProps {
     // Mapped from Redux state
     data?: TreeNodeData;
     dispatch?: (action: unknown) => void;
+    /** V6.13.1:只读模式 (看 git 历史版本),见 TreeItem.readOnly 注释 */
+    readOnly?: boolean;
+    /** V6.13.1:readOnly 模式下文件 click 回调,代替 window.open 编辑器 */
+    onFileReadOnlyClick?: (data: TreeNodeData) => void;
 }
 
 class Tree extends Component<TreeProps> {
     static defaultProps = {expandLevel: 3};
 
     render() {
-        const {data, dispatch, draggable, treeType} = this.props;
+        const {data, dispatch, draggable, treeType, readOnly, onFileReadOnlyClick} = this.props;
         if (data) {
             // Render children directly, skip the root node itself
             const items = data.children || [];
@@ -26,7 +30,8 @@ class Tree extends Component<TreeProps> {
                     <ul>
                         {items.map((child, index) => (
                             <TreeItem key={child.id || (child.fullPath + '_' + index)} data={child} dispatch={dispatch} treeType={treeType}
-                                      expandLevel={this.props.expandLevel} draggable={draggable}/>
+                                      expandLevel={this.props.expandLevel} draggable={draggable}
+                                      readOnly={readOnly} onFileReadOnlyClick={onFileReadOnlyClick}/>
                         ))}
                     </ul>
                 </div>

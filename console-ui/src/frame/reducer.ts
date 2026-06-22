@@ -87,11 +87,6 @@ export function selectSearchFileName(state: FrameState): string | null {
     return (state.ui && state.ui.searchFileName) ?? null;
 }
 
-/** V5.74.3:select current gitTag for version-aware file source reading. */
-export function selectCurrentGitTag(state: FrameState): string | null {
-    return (state.ui && state.ui.currentGitTag) ?? null;
-}
-
 function tree(state: FrameState = {}, action: { type: string; [key: string]: any }): FrameState {
     switch (action.type){
         case ACTIONS.ADD:

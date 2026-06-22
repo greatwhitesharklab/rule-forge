@@ -379,22 +379,15 @@ body .ant-modal-mask.ant-modal-mask {
 .topbar-dropdown-divider { height: 1px; background: var(--rf-border-split); margin: 4px 0; }
 
 /* ========== File Tree Panel ========== */
-/* V5.101:文件搜索迁入顶栏,这里只剩视图切换(tree ⇄ 知识包)的精简工具条 */
+/* V6.13.1:统一文件树 + 知识包视图。工具条只剩版本下拉 (默认 Working tree,选版本进 read-only),
+ *         toggle button 删 (从 V5.101 起的"文件树 ⇄ 知识包"两个 view 入口合并)。 */
 .file-tree-panel { display: flex; flex-direction: column; height: 100%; background: var(--rf-bg-container); }
 .file-tree-toolbar {
-    display: flex; align-items: center; justify-content: flex-end;
+    display: flex; align-items: center; justify-content: flex-start;
     padding: 6px var(--rf-space-sm); flex-shrink: 0;
     border-bottom: 1px solid var(--rf-border-split);
 }
-.file-tree-view-toggle {
-    display: inline-flex; align-items: center; gap: 5px;
-    height: 26px; padding: 0 10px; border: 1px solid var(--rf-border-split);
-    background: var(--rf-bg-container); color: var(--rf-text-secondary);
-    font-size: 12px; border-radius: var(--rf-radius-base); cursor: pointer;
-    transition: all 0.15s;
-}
-.file-tree-view-toggle:hover { color: var(--rf-primary); border-color: var(--rf-primary-hover); background: var(--rf-primary-bg); }
-.file-tree-view-toggle .anticon { font-size: 13px; }
+.file-tree-version-selector .ant-select-selector { min-height: 26px !important; }
 .file-tree-content { flex: 1; overflow: auto; padding: 0 var(--rf-space-sm) var(--rf-space-sm); }
 .file-tree-content::-webkit-scrollbar { width: 4px; }
 .file-tree-content::-webkit-scrollbar-track { background: transparent; }

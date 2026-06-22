@@ -35,6 +35,10 @@ interface PackageNavigatorProps {
  * 改为 antd Select + Tag(审计状态)+ 精简 branch chip + token 化样式(tailwind-base.css)。
  *
  * <p>数据契约不变:/packageeditor/loadPackages | listBranches | loadPackageTree。
+ *
+ * <p>V6.13.1:FrameApp 侧栏 (FileTreePanel) 不再使用本组件 (合并到统一 Tree + 版本下拉);
+ * 仅 {@code package-editor} 主屏 ({@code package/action.ts:742} loadPackages caller)
+ * 仍 import 本组件做完整的 "包 → 分支 → 版本 → 文件" 多级浏览 UI。
  */
 export default function PackageNavigator({project, onFileSelect, onVersionChange}: PackageNavigatorProps) {
     const [packages, setPackages] = useState<PackageItem[]>([]);
