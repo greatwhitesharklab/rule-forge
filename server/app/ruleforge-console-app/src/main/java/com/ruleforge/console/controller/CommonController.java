@@ -63,6 +63,7 @@ import static com.ruleforge.console.storage.RuleForgeBaseRepositoryService.RES_P
 public class CommonController extends BaseController {
 
     private final RuleForgeRepositoryService ruleforgeRepositoryService;
+    private final EnvironmentUtils environmentUtils;
     private final ExternalProcessService externalProcessService;
     private final ExternalRepository externalRepository;
 
@@ -401,7 +402,7 @@ public class CommonController extends BaseController {
     public Map<String, Object> saveFile(@RequestParam("file") String file,
                                         @RequestParam("content") String content,
                                         @RequestParam(value = "newVersion", required = false) boolean newVersion) {
-        User user = EnvironmentUtils.getLoginUser(null);
+        User user = environmentUtils.getLoginUser(null);
         Map<String, Object> result = new HashMap<>();
         result.put("status", true);
 
@@ -470,7 +471,7 @@ public class CommonController extends BaseController {
                                                @RequestParam(required = false) String searchFileName) throws Exception {
         project = Utils.decodeURL(project);
 
-        User user = EnvironmentUtils.getLoginUser(null);
+        User user = environmentUtils.getLoginUser(null);
         FileType[] types = null;
         if (StringUtils.isNotBlank(forLib) && forLib.equals("true")) {
             types = new FileType[]{FileType.ActionLibrary, FileType.ConstantLibrary, FileType.VariableLibrary, FileType.ParameterLibrary};
@@ -519,7 +520,7 @@ public class CommonController extends BaseController {
             }
 
             project = project.replace(".rp", "");
-            User user = EnvironmentUtils.getLoginUser(null);
+            User user = environmentUtils.getLoginUser(null);
             // todo
             ProjectEntity projectEntity = this.projectRepository.findByName(project);
 

@@ -53,6 +53,7 @@ import static com.ruleforge.console.repository.BaseRepositoryService.RES_PACKGE_
 public class PackageController extends BaseController {
 
     private final RuleForgeRepositoryService ruleforgeRepositoryService;
+    private final EnvironmentUtils environmentUtils;
     private final GitStorageService gitStorageService;
     private final ExternalProcessService externalProcessService;
     private final HttpSessionKnowledgeCache httpSessionKnowledgeCache;
@@ -97,7 +98,7 @@ public class PackageController extends BaseController {
         String project = ((String) map.get("project")).split(":")[0];
         project = project.replace(".rp", "");
         project = Utils.decodeURL(project);
-        User user = EnvironmentUtils.getLoginUser(null);
+        User user = environmentUtils.getLoginUser(null);
         String path = project + "/" + RES_PACKGE_FILE;
         String xml = Utils.decodeURL((String) map.get("xml"));
         xml = Utils.decodeURL(xml);
@@ -195,7 +196,7 @@ public class PackageController extends BaseController {
                                     @RequestParam String targetVersion,
                                     @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm") Date startTime,
                                     @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm") Date endTime) throws Exception {
-        User user = EnvironmentUtils.getLoginUser(null);
+        User user = environmentUtils.getLoginUser(null);
         // todo 修改使用标记
         ProjectEntity projectEntity = projectRepository.findByName(project);
         long count = runtimeRepository.countActiveFlows(projectEntity.getId(), targetVersion, "test");

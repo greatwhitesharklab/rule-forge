@@ -1,5 +1,6 @@
 package com.ruleforge.console.controller;
 
+import com.ruleforge.console.EnvironmentProvider;
 import com.ruleforge.console.app.entity.UserEntity;
 import com.ruleforge.console.app.entity.UserProjectPermissionEntity;
 import com.ruleforge.console.audit.service.AuditService;
@@ -13,16 +14,13 @@ import com.ruleforge.console.repository.RepositoryService;
 import com.ruleforge.console.repository.permission.PermissionStore;
 import com.ruleforge.console.servlet.permission.ProjectConfig;
 import com.ruleforge.console.util.EnvironmentUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -47,26 +45,23 @@ class PermissionControllerUserMgmtTest {
     @Mock private UserProjectPermissionMapper permissionMapper;
     /** V5.17:audit log 服务,user-mgmt 操作都走它 */
     @Mock private AuditService auditService;
+    @Mock private EnvironmentProvider environmentProvider;
 
-    @InjectMocks
+    private EnvironmentUtils environmentUtils;
     private PermissionController controller;
-
-    private MockedStatic<EnvironmentUtils> envUtilsMock;
 
     @BeforeEach
     void mockEnvironmentUtils() {
-        envUtilsMock = mockStatic(EnvironmentUtils.class);
+        environmentUtils = new EnvironmentUtils(List.of(environmentProvider));
+        controller = new PermissionController(
+                repositoryService, environmentUtils, permissionStore, authService,
+                userMapper, permissionMapper, auditService);
         // 默认:admin 用户
         DefaultUser admin = new DefaultUser();
         admin.setUsername("admin");
         admin.setAdmin(true);
         admin.setCompanyId("ruleforge");
-        envUtilsMock.when(() -> EnvironmentUtils.getLoginUser(any())).thenReturn(admin);
-    }
-
-    @AfterEach
-    void closeMock() {
-        envUtilsMock.close();
+        when(environmentProvider.getLoginUser(any())).thenReturn(admin);
     }
 
     @Nested
@@ -112,7 +107,7 @@ class PermissionControllerUserMgmtTest {
             DefaultUser nonAdmin = new DefaultUser();
             nonAdmin.setUsername("user1");
             nonAdmin.setAdmin(false);
-            envUtilsMock.when(() -> EnvironmentUtils.getLoginUser(any())).thenReturn(nonAdmin);
+            when(environmentProvider.getLoginUser(any())).thenReturn(nonAdmin);
 
             assertThatThrownBy(() -> controller.createUser("x", "y", false, false))
                     .isInstanceOf(NoPermissionException.class);

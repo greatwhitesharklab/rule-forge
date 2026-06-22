@@ -28,6 +28,7 @@ import java.util.Map;
 public class ApprovalController extends BaseController {
 
     private final ApprovalRepository approvalRepository;
+    private final EnvironmentUtils environmentUtils;
     private final ProjectRepository projectRepository;
     private final RuntimeRepository runtimeRepository;
     private final RuleForgeRepositoryService ruleforgeRepositoryService;
@@ -61,7 +62,7 @@ public class ApprovalController extends BaseController {
                                        @RequestParam(required = false) String approveRemark) {
         Map<String, Object> result = new HashMap<>();
         try {
-            String approver = EnvironmentUtils.getLoginUser(null).getUsername();
+            String approver = environmentUtils.getLoginUser(null).getUsername();
 
             ApprovalTaskEntity task = approvalRepository.findById(taskId);
             if (task == null) {
@@ -156,7 +157,7 @@ public class ApprovalController extends BaseController {
                                       @RequestParam(required = false) String approveRemark) {
         Map<String, Object> result = new HashMap<>();
         try {
-            String approver = EnvironmentUtils.getLoginUser(null).getUsername();
+            String approver = environmentUtils.getLoginUser(null).getUsername();
 
             ApprovalTaskEntity task = approvalRepository.findById(taskId);
             if (task == null) {

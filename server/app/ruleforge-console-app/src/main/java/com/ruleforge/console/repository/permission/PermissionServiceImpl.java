@@ -19,6 +19,7 @@ import java.util.List;
  */
 public class PermissionServiceImpl implements PermissionStore, PermissionService {
     private Logger logger = LoggerFactory.getLogger(PermissionServiceImpl.class);
+    private final EnvironmentUtils environmentUtils;
     private RepositoryService repositoryService;
 
     @Override
@@ -196,12 +197,12 @@ public class PermissionServiceImpl implements PermissionStore, PermissionService
 
     @Override
     public boolean isAdmin() {
-        User user = EnvironmentUtils.getLoginUser(RequestHolder.newRequestContext());
+        User user = environmentUtils.getLoginUser(RequestHolder.newRequestContext());
         return user.isAdmin();
     }
 
     private ProjectConfig loadProjectPermission(String project) {
-        User user = EnvironmentUtils.getLoginUser(RequestHolder.newRequestContext());
+        User user = environmentUtils.getLoginUser(RequestHolder.newRequestContext());
         String companyId = user.getCompanyId();
         try {
             List<UserPermission> permissions = repositoryService.loadResourceSecurityConfigs(companyId);
@@ -230,5 +231,13 @@ public class PermissionServiceImpl implements PermissionStore, PermissionService
 
     public void setRepositoryService(RepositoryService repositoryService) {
         this.repositoryService = repositoryService;
+    }
+
+    /**
+     * V6.13.4d: 构造注入 {@link EnvironmentUtils}(原 static lookup)。{@link RepositoryService}
+     * 保留 setter 注入(原 code 兼容性,调用方可能用 {@code setRepositoryService} 配置)。
+     */
+    public PermissionServiceImpl(EnvironmentUtils environmentUtils) {
+        this.environmentUtils = environmentUtils;
     }
 }

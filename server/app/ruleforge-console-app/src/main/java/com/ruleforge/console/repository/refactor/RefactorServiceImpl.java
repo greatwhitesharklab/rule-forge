@@ -16,23 +16,32 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 import org.apache.commons.io.IOUtils;
-import org.springframework.context.ApplicationContext;
 
 public class RefactorServiceImpl implements RefactorService {
+    private final EnvironmentUtils environmentUtils;
     private RepositoryService repositoryService;
     private Collection<FileRefactor> fileRefactors;
     private Collection<ContentRefactor> contentRefactors;
 
-    public RefactorServiceImpl(RepositoryService repositoryService, ApplicationContext context) {
+    /**
+     * V6.13.4d: 注入 {@link EnvironmentUtils} + Spring 自动注入 {@link FileRefactor}/
+     * {@link ContentRefactor} bean 集合(原 {@code ApplicationContext.getBeansOfType}
+     * 反模式,跟 core V6.13.4a 同模式收敛)。
+     */
+    public RefactorServiceImpl(RepositoryService repositoryService,
+                               EnvironmentUtils environmentUtils,
+                               Collection<FileRefactor> fileRefactors,
+                               Collection<ContentRefactor> contentRefactors) {
         this.repositoryService = repositoryService;
-        this.fileRefactors = context.getBeansOfType(FileRefactor.class).values();
-        this.contentRefactors = context.getBeansOfType(ContentRefactor.class).values();
+        this.environmentUtils = environmentUtils;
+        this.fileRefactors = fileRefactors;
+        this.contentRefactors = contentRefactors;
     }
 
     @Override
     public void refactorFile(String oldPath, String newPath, Repository repo) throws Exception {
         String resPackagePath = oldPath.substring(1, oldPath.length()) + "/" + "___res__package__file__";
-        User user = EnvironmentUtils.getLoginUser(new RequestContext(RequestHolder.getRequest(), RequestHolder.getResponse()));
+        User user = environmentUtils.getLoginUser(new RequestContext(RequestHolder.getRequest(), RequestHolder.getResponse()));
         RepositoryFile rootFile = repo.getRootFile();
         List<RepositoryFile> children = rootFile.getChildren();
         if (oldPath.indexOf("___temp_mount_project_node_for_import__") > -1) {
@@ -65,7 +74,7 @@ public class RefactorServiceImpl implements RefactorService {
     @Override
     public void refactorFile(String oldPath, String newPath) throws Exception {
         String project = this.repositoryService.getProject(oldPath);
-        User user = EnvironmentUtils.getLoginUser(new RequestContext(RequestHolder.getRequest(), RequestHolder.getResponse()));
+        User user = environmentUtils.getLoginUser(new RequestContext(RequestHolder.getRequest(), RequestHolder.getResponse()));
         FileType[] types = new FileType[]{FileType.DecisionTable, FileType.Crosstab, FileType.DecisionTree, FileType.RuleFlow, FileType.Ruleset, FileType.UL, FileType.Scorecard, FileType.ComplexScorecard, FileType.ScriptDecisionTable};
         Repository repo = this.repositoryService.loadRepository(project, user, false, types, (String)null);
         RepositoryFile rootFile = repo.getRootFile();
@@ -120,7 +129,7 @@ public class RefactorServiceImpl implements RefactorService {
     @Override
     public void refactorItem(String path, Item item) throws Exception {
         String project = this.repositoryService.getProject(path);
-        User user = EnvironmentUtils.getLoginUser(new RequestContext(RequestHolder.getRequest(), RequestHolder.getResponse()));
+        User user = environmentUtils.getLoginUser(new RequestContext(RequestHolder.getRequest(), RequestHolder.getResponse()));
         FileType[] types = new FileType[]{FileType.DecisionTable, FileType.Crosstab, FileType.DecisionTree, FileType.RuleFlow, FileType.Ruleset, FileType.UL, FileType.Scorecard, FileType.ComplexScorecard, FileType.ScriptDecisionTable};
         Repository repo = this.repositoryService.loadRepository(project, user, false, types, (String)null);
         RepositoryFile rootFile = repo.getRootFile();

@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 public class BpmnFlowController {
 
     private final RuleForgeRepositoryService repositoryService;
+    private final EnvironmentUtils environmentUtils;
     private final FlowXmlConverter flowXmlConverter;
     private final BpmnXmlParser bpmnXmlParser;
     private final RestTemplate execRestTemplate;
@@ -71,7 +72,7 @@ public class BpmnFlowController {
                            @RequestParam String content,
                            @RequestParam(required = false, defaultValue = "false") boolean newVersion) {
         try {
-            User user = EnvironmentUtils.getLoginUser(null);
+            User user = environmentUtils.getLoginUser(null);
             repositoryService.saveFile(file, content, newVersion, null, user);
             // V5.20: save 之后通知 executor 清缓存。失败不影响 save 自身结果。
             notifyExecutorInvalidate(file);

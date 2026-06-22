@@ -27,6 +27,7 @@ import java.util.Map;
 public class DeploymentController {
 
     private final DeploymentService deploymentService;
+    private final EnvironmentUtils environmentUtils;
     private final ProjectRepository projectRepository;
     private final RuntimeRepository runtimeRepository;
     private final ExternalProcessService externalProcessService;
@@ -181,7 +182,7 @@ public class DeploymentController {
             return deployUser;
         }
         try {
-            return EnvironmentUtils.getLoginUser(null).getUsername();
+            return environmentUtils.getLoginUser(null).getUsername();
         } catch (Exception e) {
             return "system";
         }

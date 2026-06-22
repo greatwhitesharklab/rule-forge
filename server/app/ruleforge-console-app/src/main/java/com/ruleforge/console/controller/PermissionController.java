@@ -39,6 +39,7 @@ import java.util.Map;
 public class PermissionController {
 
     private final RepositoryService repositoryService;
+    private final EnvironmentUtils environmentUtils;
     private final PermissionStore permissionStore;
     private final AuthService authService;
     private final UserMapper userMapper;
@@ -53,10 +54,10 @@ public class PermissionController {
         if (!((com.ruleforge.console.repository.permission.PermissionService) permissionStore).isAdmin()) {
             throw new NoPermissionException();
         }
-        User loginUser = EnvironmentUtils.getLoginUser(null);
+        User loginUser = environmentUtils.getLoginUser(null);
         String companyId = loginUser != null ? loginUser.getCompanyId() : null;
         List<UserPermission> permissions = repositoryService.loadResourceSecurityConfigs(companyId);
-        List<User> users = EnvironmentUtils.getEnvironmentProvider().getUsers();
+        List<User> users = environmentUtils.getEnvironmentProvider().getUsers();
         if (users == null) users = new ArrayList<>();
         List<UserPermission> result = new ArrayList<>();
         for (User user : users) {
@@ -90,7 +91,7 @@ public class PermissionController {
         if (!((com.ruleforge.console.repository.permission.PermissionService) permissionStore).isAdmin()) {
             throw new NoPermissionException();
         }
-        User user = EnvironmentUtils.getLoginUser(null);
+        User user = environmentUtils.getLoginUser(null);
         String companyId = user != null ? user.getCompanyId() : null;
         content = com.ruleforge.Utils.decodeURL(content);
         String path = BaseRepositoryService.RESOURCE_SECURITY_CONFIG_FILE + (companyId == null ? "" : companyId);
@@ -225,14 +226,14 @@ public class PermissionController {
 
     /** 当前 admin 用户名(给 audit 当 actor);非 admin 不调(走 assertAdmin 兜底) */
     private String currentAdminUsername() {
-        User u = EnvironmentUtils.getLoginUser(null);
+        User u = environmentUtils.getLoginUser(null);
         return u != null ? u.getUsername() : null;
     }
 
     // ── 内部 helper ──
 
     private void assertAdmin() {
-        User user = EnvironmentUtils.getLoginUser(null);
+        User user = environmentUtils.getLoginUser(null);
         if (user == null || !user.isAdmin()) {
             throw new NoPermissionException();
         }

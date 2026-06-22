@@ -1,5 +1,6 @@
 package com.ruleforge.console.audit;
 
+import com.ruleforge.console.EnvironmentProvider;
 import com.ruleforge.console.app.service.AuthService;
 import com.ruleforge.console.audit.entity.AuditLogEntity;
 import com.ruleforge.console.audit.service.AuditService;
@@ -11,13 +12,11 @@ import com.ruleforge.console.model.DefaultUser;
 import com.ruleforge.console.repository.RepositoryService;
 import com.ruleforge.console.repository.permission.PermissionStore;
 import com.ruleforge.console.util.EnvironmentUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -26,10 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,8 +36,9 @@ import static org.mockito.Mockito.when;
  * <p>GET /ruleforge/permission/audit 拉 audit log(分页 + 过滤),
  * 复用 PermissionController 路由,跟现有 /users 端点一样 admin-only。
  *
- * <p>测试 mock {@code EnvironmentUtils.getLoginUser(any())} 切 admin/non-admin
- * 状态(跟现有 {@code PermissionControllerUserMgmtTest} 同款模式)。
+ * <p>测试 mock {@code environmentProvider.getLoginUser(any())} 切 admin/non-admin
+ * 状态(跟现有 {@code PermissionControllerUserMgmtTest} 同款模式)。V6.13.4d:
+ * 改构造注入 {@link EnvironmentUtils},不再用 mockStatic。
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuditController - V5.17 audit log 查询端点")
@@ -52,21 +50,15 @@ class AuditControllerTest {
     private final UserMapper userMapper = mock(UserMapper.class);
     private final UserProjectPermissionMapper permissionMapper = mock(UserProjectPermissionMapper.class);
     private final AuditService auditService = mock(AuditService.class);
+    private final EnvironmentProvider environmentProvider = mock(EnvironmentProvider.class);
+    private final EnvironmentUtils environmentUtils = new EnvironmentUtils(List.of(environmentProvider));
     private final PermissionController controller = new PermissionController(
-            repositoryService, permissionStore, authService, userMapper, permissionMapper, auditService);
-
-    private MockedStatic<EnvironmentUtils> envUtilsMock;
+            repositoryService, environmentUtils, permissionStore, authService, userMapper, permissionMapper, auditService);
 
     @BeforeEach
     void mockEnvironmentUtils() {
-        envUtilsMock = mockStatic(EnvironmentUtils.class);
         // 默认:admin 用户
-        envUtilsMock.when(() -> EnvironmentUtils.getLoginUser(any())).thenReturn(admin("admin"));
-    }
-
-    @AfterEach
-    void closeMock() {
-        envUtilsMock.close();
+        when(environmentProvider.getLoginUser(any())).thenReturn(admin("admin"));
     }
 
     private static DefaultUser admin(String name) {
@@ -88,7 +80,7 @@ class AuditControllerTest {
             DefaultUser nonAdmin = new DefaultUser();
             nonAdmin.setUsername("user1");
             nonAdmin.setAdmin(false);
-            envUtilsMock.when(() -> EnvironmentUtils.getLoginUser(any())).thenReturn(nonAdmin);
+            when(environmentProvider.getLoginUser(any())).thenReturn(nonAdmin);
 
             // When 调 /permission/audit
             // Then 抛 NoPermissionException

@@ -74,6 +74,7 @@ public class FrameController extends BaseController {
     private static final String CLASSIFY_COOKIE_NAME = "_lib_classify";
     private final RuleForgeRepositoryService ruleforgeRepositoryService;
     private final EnvironmentProvider environmentProvider;
+    private final EnvironmentUtils environmentUtils;
     private final ProjectRepository projectRepository;
     private final RuntimeRepository runtimeRepository;
     private final GitStorageService gitStorageService;
@@ -86,7 +87,7 @@ public class FrameController extends BaseController {
                                             @RequestParam(value = "projectDetail", required = false) Boolean projectDetail,
                                             HttpServletRequest req, HttpServletResponse resp) {
         try {
-            User user = EnvironmentUtils.getLoginUser(null);
+            User user = environmentUtils.getLoginUser(null);
             boolean classify = getClassify(classifyValue, req, resp);
             projectName = Utils.decodeURL(projectName);
             FileType[] types = null;
@@ -353,7 +354,7 @@ public class FrameController extends BaseController {
             content.append("</").append(name).append(">");
         }
 
-        User user = EnvironmentUtils.getLoginUser(null);
+        User user = environmentUtils.getLoginUser(null);
         RepositoryFile newFileInfo = new RepositoryFile();
         newFileInfo.setFullPath(path);
         if (fileType.equals(FileType.VariableLibrary)) {
@@ -781,7 +782,7 @@ public class FrameController extends BaseController {
         Map<String, Object> result = new HashMap<>();
         result.put("status", false);
         path = Utils.decodeURL(path);
-        User user = EnvironmentUtils.getLoginUser(null);
+        User user = environmentUtils.getLoginUser(null);
         String deleteProjectName = path;
         if (deleteProjectName.startsWith("/")) {
             deleteProjectName = deleteProjectName.substring(1);
@@ -817,7 +818,7 @@ public class FrameController extends BaseController {
                                           @RequestParam(value = "classify", required = false) String classifyValue,
                                           @RequestParam(value = "types", required = false) String typesStr,
                                           HttpServletRequest req, HttpServletResponse resp) throws Exception {
-        User user = EnvironmentUtils.getLoginUser(null);
+        User user = environmentUtils.getLoginUser(null);
         log.info(String.format("deleteFile path:%s isFolder：%s projectName:%s searchFileName:%s classify:%s types：%s user:%s",
                 path, isFolder, projectName, searchFileName, classifyValue, typesStr, JSON.toJSONString(user)));
         path = Utils.decodeURL(path);
@@ -837,7 +838,7 @@ public class FrameController extends BaseController {
                                             @RequestParam(value = "types", required = false) String typesStr,
                                             HttpServletRequest req, HttpServletResponse resp) throws Exception {
         fullFolderName = Utils.decodeURL(fullFolderName);
-        User user = EnvironmentUtils.getLoginUser(null);
+        User user = environmentUtils.getLoginUser(null);
         this.ruleforgeRepositoryService.createDir(fullFolderName, user);
         return loadProjects(projectName, searchFileName, classifyValue, typesStr, true, req, resp);
     }
@@ -865,21 +866,21 @@ public class FrameController extends BaseController {
                                         HttpServletRequest req, HttpServletResponse resp) throws Exception {
         projectName = Utils.decodeURL(projectName);
         boolean classify = getClassify(classifyValue, req, resp);
-        User user = EnvironmentUtils.getLoginUser(null);
+        User user = environmentUtils.getLoginUser(null);
         return this.ruleforgeRepositoryService.createProject(projectName, user, classify);
     }
 
     @PostMapping("/lockFile")
     public void lockFile(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         String file = req.getParameter("file");
-        User user = EnvironmentUtils.getLoginUser(new RequestContext(req, resp));
+        User user = environmentUtils.getLoginUser(new RequestContext(req, resp));
         this.ruleforgeRepositoryService.lockPath(file, user);
     }
 
     @PostMapping("/unlockFile")
     public void unlockFile(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         String file = req.getParameter("file");
-        User user = EnvironmentUtils.getLoginUser(new RequestContext(req, resp));
+        User user = environmentUtils.getLoginUser(new RequestContext(req, resp));
         this.ruleforgeRepositoryService.unlockPath(file, user, null);
     }
 
@@ -893,7 +894,7 @@ public class FrameController extends BaseController {
             InputStream inputStream = this.ruleforgeRepositoryService.readFile(oldFullPath, null);
             String content = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             inputStream.close();
-            User user = EnvironmentUtils.getLoginUser(new RequestContext(req, resp));
+            User user = environmentUtils.getLoginUser(new RequestContext(req, resp));
             this.ruleforgeRepositoryService.createFile(newFullPath, content, user);
         } catch (Exception ex) {
             throw new RuleException(ex);

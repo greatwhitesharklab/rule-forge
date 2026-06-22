@@ -1,16 +1,15 @@
 package com.ruleforge.console.flow.controller;
 
+import com.ruleforge.console.EnvironmentProvider;
 import com.ruleforge.console.flow.converter.FlowXmlConverter;
 import com.ruleforge.console.service.RuleForgeRepositoryService;
 import com.ruleforge.console.util.EnvironmentUtils;
 import com.ruleforge.console.model.User;
 import com.ruleforge.decision.flow.parser.BpmnXmlParser;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
@@ -18,6 +17,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -31,8 +31,8 @@ class BpmnFlowControllerTest {
 
     private RuleForgeRepositoryService repositoryService;
     private FlowXmlConverter flowXmlConverter;
+    private EnvironmentProvider environmentProvider;
     private BpmnFlowController controller;
-    private MockedStatic<EnvironmentUtils> envUtilsMock;
 
     @BeforeEach
     void setUp() {
@@ -40,20 +40,15 @@ class BpmnFlowControllerTest {
         flowXmlConverter = new FlowXmlConverter();
         BpmnXmlParser parser = new BpmnXmlParser();
         RestTemplate restTemplate = mock(RestTemplate.class);
-        // V5.21+: 构造器去 flowableRepositoryService(deployBpmn 改为走自建路径)
-        controller = new BpmnFlowController(repositoryService, flowXmlConverter, parser, restTemplate);
+        environmentProvider = mock(EnvironmentProvider.class);
+        EnvironmentUtils environmentUtils = new EnvironmentUtils(List.of(environmentProvider));
+        // V6.13.4d: EnvironmentUtils 走构造注入 (sanctioned boundary)
+        controller = new BpmnFlowController(repositoryService, environmentUtils, flowXmlConverter, parser, restTemplate);
         // V5.20+: 注入 ruleforge.exec.url(原本 @Value 拿,这里测试用 ReflectionTestUtils 注入)
         ReflectionTestUtils.setField(controller, "execUrl", "http://test-exec:8280");
-        envUtilsMock = mockStatic(EnvironmentUtils.class);
         User testUser = mock(User.class);
         when(testUser.getUsername()).thenReturn("testuser");
-        envUtilsMock.when(() -> EnvironmentUtils.getLoginUser(null))
-            .thenReturn(testUser);
-    }
-
-    @AfterEach
-    void tearDown() {
-        envUtilsMock.close();
+        when(environmentProvider.getLoginUser(null)).thenReturn(testUser);
     }
 
     @Nested

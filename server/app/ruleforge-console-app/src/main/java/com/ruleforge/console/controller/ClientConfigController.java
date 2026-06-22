@@ -18,6 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ClientConfigController {
 
+    private final EnvironmentUtils environmentUtils;
     private final RepositoryService repositoryService;
 
     @PostMapping("/loadData")
@@ -31,7 +32,7 @@ public class ClientConfigController {
         project = Utils.decodeURL(project);
         String file = project + "/" + BaseRepositoryService.CLIENT_CONFIG_FILE;
         content = Utils.decodeURL(content);
-        User user = EnvironmentUtils.getLoginUser(null);
+        User user = environmentUtils.getLoginUser(null);
         repositoryService.saveFile(file, content, false, null, user);
     }
 }

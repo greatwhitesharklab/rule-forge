@@ -35,11 +35,12 @@ import org.springframework.stereotype.Service;
 public class PermissionServiceImpl implements PermissionService {
 
     private final UserMapper userMapper;
+    private final EnvironmentUtils environmentUtils;
     private final UserProjectPermissionMapper permissionMapper;
 
     @Override
     public boolean isAdmin() {
-        User user = EnvironmentUtils.getLoginUser(RequestHolder.newRequestContext());
+        User user = environmentUtils.getLoginUser(RequestHolder.newRequestContext());
         return user != null && user.isAdmin();
     }
 
@@ -114,7 +115,7 @@ public class PermissionServiceImpl implements PermissionService {
      * 从 DB 加载项目权限:session user → username → user_id → permission row → ProjectConfig
      */
     private ProjectConfig loadProjectPermission(String path) {
-        User user = EnvironmentUtils.getLoginUser(RequestHolder.newRequestContext());
+        User user = environmentUtils.getLoginUser(RequestHolder.newRequestContext());
         if (user == null) return null;
 
         path = processPath(path);

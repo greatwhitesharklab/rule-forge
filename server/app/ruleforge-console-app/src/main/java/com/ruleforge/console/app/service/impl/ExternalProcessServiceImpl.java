@@ -28,6 +28,7 @@ import java.util.UUID;
 public class ExternalProcessServiceImpl implements ExternalProcessService {
 
     private final RestTemplate execRestTemplate;
+    private final EnvironmentUtils environmentUtils;
     private final ApprovalRepository approvalRepository;
     private final ProjectRepository projectRepository;
 
@@ -77,8 +78,8 @@ public class ExternalProcessServiceImpl implements ExternalProcessService {
         task.setApprovalType("deploy");
         task.setExplainText(explain);
         task.setRemark(remark);
-        task.setRequester(EnvironmentUtils.getLoginUser(null) != null
-                ? EnvironmentUtils.getLoginUser(null).getUsername() : null);
+        task.setRequester(environmentUtils.getLoginUser(null) != null
+                ? environmentUtils.getLoginUser(null).getUsername() : null);
 
         if ("manual".equalsIgnoreCase(approvalMode)) {
             task.setStatus("pending");
@@ -109,8 +110,8 @@ public class ExternalProcessServiceImpl implements ExternalProcessService {
         task.setApprovalType("test_deploy");
         task.setExplainText(explain);
         task.setRemark(remark);
-        task.setRequester(EnvironmentUtils.getLoginUser(null) != null
-                ? EnvironmentUtils.getLoginUser(null).getUsername() : null);
+        task.setRequester(environmentUtils.getLoginUser(null) != null
+                ? environmentUtils.getLoginUser(null).getUsername() : null);
 
         if ("manual".equalsIgnoreCase(approvalMode)) {
             task.setStatus("pending");
