@@ -63,6 +63,8 @@ class DecisionServiceImplFactsInjectionTest {
                 mock(com.ruleforge.decision.service.IDecisionLogService.class),
                 mock(com.ruleforge.decision.service.IShadowConfigService.class),
                 mock(com.ruleforge.decision.service.IShadowExecutionService.class),
+                // V6.14.2: 补 V5.76 加的 KnowledgeService ctor 参数(pos 6)
+                mock(com.ruleforge.runtime.service.KnowledgeService.class),
                 mock(com.ruleforge.decision.service.IGrayStrategyService.class),
                 new io.micrometer.core.instrument.simple.SimpleMeterRegistry(),
                 // V5.20+ 自建决策流执行器 — injectFacts 测不到这些,但构造器要
