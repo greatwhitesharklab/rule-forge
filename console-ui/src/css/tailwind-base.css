@@ -643,6 +643,10 @@ body .ant-modal-mask.ant-modal-mask {
     white-space: nowrap;
 }
 .panel-project-btn > span { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; }
+/* V6.13.2:箭头 + icon 不该被 `> span { flex:1 }` 拉满,显式 auto,否则 anticon 在 flex 容器里被拉成 74px 宽,
+   视觉上 text 和 arrow 中间空一大块。 */
+.panel-project-btn > i,
+.panel-project-btn > .anticon { flex: 0 0 auto; }
 .panel-project-btn:hover {
     border-color: var(--rf-primary-hover);
     background: var(--rf-primary-bg);
