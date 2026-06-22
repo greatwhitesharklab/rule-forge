@@ -210,11 +210,16 @@ body .ant-modal-wrap.ant-modal-wrap {
     align-items: center !important;
     justify-content: center !important;
     display: flex !important;
+    /* V6.12.6:forceRender 的 wrap 永远在 DOM,inline display:none 被 !important 覆盖,
+       默认 pointer-events:none 让空 wrap 不拦截点击;dialog 显式 pointer-events:auto
+       接收点击。Modal 打开时(.ant-modal display:block)行为不变。 */
+    pointer-events: none;
 }
 body .ant-modal-wrap.ant-modal-wrap .ant-modal {
     top: 0 !important;
     padding-bottom: 0 !important;
     margin: 0 auto !important;
+    pointer-events: auto;
 }
 body .ant-modal-content {
     border-radius: 6px !important;
