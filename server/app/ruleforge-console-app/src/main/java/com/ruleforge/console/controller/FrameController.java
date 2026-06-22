@@ -17,7 +17,7 @@ import com.ruleforge.console.servlet.RequestContext;
 import com.ruleforge.console.servlet.frame.ExportProject;
 import com.ruleforge.console.util.GitPathUtils;
 import com.ruleforge.exception.RuleException;
-import com.ruleforge.runtime.cache.CacheUtils;
+import com.ruleforge.config.CacheUtils;
 import com.ruleforge.console.model.Repository;
 import com.ruleforge.console.model.User;
 import com.ruleforge.console.service.RuleForgeRepositoryService;

@@ -12,7 +12,7 @@ import com.ruleforge.console.repository.data.RuntimeRepository;
 import com.ruleforge.console.service.RuleForgeRepositoryService;
 import com.ruleforge.console.storage.GitStorageService;
 import com.ruleforge.console.util.EnvironmentUtils;
-import com.ruleforge.runtime.cache.CacheUtils;
+import com.ruleforge.config.CacheUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;

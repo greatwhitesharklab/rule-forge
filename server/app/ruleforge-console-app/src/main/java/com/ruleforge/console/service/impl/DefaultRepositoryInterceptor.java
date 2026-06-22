@@ -1,6 +1,6 @@
 package com.ruleforge.console.service.impl;
 
-import com.ruleforge.runtime.cache.CacheUtils;
+import com.ruleforge.config.CacheUtils;
 import com.ruleforge.console.service.RepositoryInterceptor;
 
 public class DefaultRepositoryInterceptor implements RepositoryInterceptor {

@@ -12,7 +12,7 @@ import com.ruleforge.model.rule.lhs.Criterion;
 import com.ruleforge.model.rule.lhs.Junction;
 import com.ruleforge.model.rule.lhs.Lhs;
 import com.ruleforge.runtime.response.ExecutionResponseImpl;
-import com.ruleforge.runtime.response.RuleExecutionResponse;
+import com.ruleforge.engine.RuleExecutionResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruleforge.decision.entity.ShadowFlowLog;

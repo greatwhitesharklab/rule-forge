@@ -1,11 +1,11 @@
 package com.ruleforge.executor.controller;
 
 import com.ruleforge.runtime.KnowledgePackage;
-import com.ruleforge.runtime.KnowledgeSession;
-import com.ruleforge.runtime.KnowledgeSessionFactory;
-import com.ruleforge.runtime.cache.CacheUtils;
+import com.ruleforge.engine.KnowledgeSession;
+import com.ruleforge.engine.KnowledgeSessionFactory;
+import com.ruleforge.config.CacheUtils;
 import com.ruleforge.runtime.cache.KnowledgeCache;
-import com.ruleforge.runtime.response.RuleExecutionResponse;
+import com.ruleforge.engine.RuleExecutionResponse;
 import com.ruleforge.runtime.service.KnowledgeService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

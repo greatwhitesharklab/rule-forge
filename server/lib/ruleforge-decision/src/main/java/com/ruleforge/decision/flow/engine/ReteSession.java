@@ -1,7 +1,7 @@
 package com.ruleforge.decision.flow.engine;
 
 import com.ruleforge.model.GeneralEntity;
-import com.ruleforge.runtime.KnowledgeSession;
+import com.ruleforge.engine.KnowledgeSession;
 
 import java.util.ArrayList;
 import java.util.List;

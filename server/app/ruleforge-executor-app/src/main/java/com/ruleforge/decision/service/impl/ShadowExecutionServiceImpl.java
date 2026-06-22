@@ -2,8 +2,8 @@ package com.ruleforge.decision.service.impl;
 
 import com.ruleforge.debug.MessageItem;
 import com.ruleforge.runtime.KnowledgePackage;
-import com.ruleforge.runtime.KnowledgeSession;
-import com.ruleforge.runtime.KnowledgeSessionFactory;
+import com.ruleforge.engine.KnowledgeSession;
+import com.ruleforge.engine.KnowledgeSessionFactory;
 import com.ruleforge.runtime.response.ExecutionResponseImpl;
 import com.ruleforge.runtime.service.KnowledgeService;
 import com.ruleforge.decision.model.OutputModel;
