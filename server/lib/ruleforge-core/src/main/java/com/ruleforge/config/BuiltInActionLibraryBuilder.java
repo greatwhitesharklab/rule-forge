@@ -20,10 +20,14 @@ import java.util.*;
  *
  * <p>V6.13.4a: 去除 {@code ApplicationContextAware} — 改 {@code @Component} + 构造注入
  * {@link ListableBeanFactory}(Spring 的 {@code ApplicationContext} 接口继承自
- * {@code ListableBeanFactory},足够提供 {@code getBeanDefinitionNames} + {@code getBean}
+ * {@link ListableBeanFactory},足够提供 {@code getBeanDefinitionNames} + {@code getBean}
  * 用于扫描所有带 {@link ActionBean} 注解的 bean)。
+ *
+ * <p>V6.13.4f: 显式 {@code @Component("ruleforge.builtInActionLibraryBuilder")} 指定 bean name
+ * 匹配 {@code ruleforge-core-context.xml} 的 {@code <property ref="ruleforge.builtInActionLibraryBuilder">}
+ * (ResourceLibraryBuilder 注入用)。默认 name(builtInActionLibraryBuilder)会让该 XML ref 断。
  */
-@Component
+@Component("ruleforge.builtInActionLibraryBuilder")
 public class BuiltInActionLibraryBuilder {
     private final ListableBeanFactory beanFactory;
     private List<SpringBean> builtInActions = new ArrayList<>();
