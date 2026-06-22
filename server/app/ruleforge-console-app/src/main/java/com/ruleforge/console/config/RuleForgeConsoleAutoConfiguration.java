@@ -23,6 +23,10 @@ import org.springframework.context.annotation.*;
         "com.ruleforge.console.storage.impl",
         "com.ruleforge.console.flow",
         "com.ruleforge.console.model",
+        // V6.13.3: 之前漏 com.ruleforge.console.util,导致 @Component EnvironmentUtils 永远不被
+        // 实例化,setApplicationContext 永不跑,任何 EnvironmentUtils.getLoginUser() 调用
+        // 触发 NPE (`applicationContext is null`) — 包括创建新项目等基础操作。
+        "com.ruleforge.console.util",
         // V5.8.0: BatchTest 多态化的包(Subject / InputSource / Orchestrator / Controller)
         "com.ruleforge.console.batchtest",
         // V5.43.8 — 路线 B 收口删 com.ruleforge.console.migration 整包
