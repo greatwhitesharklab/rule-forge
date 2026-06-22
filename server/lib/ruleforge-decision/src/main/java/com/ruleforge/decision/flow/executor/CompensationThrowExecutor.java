@@ -4,9 +4,7 @@ import com.ruleforge.decision.exception.AsyncNodeSuspendException;
 import com.ruleforge.decision.flow.engine.FlowContext;
 import com.ruleforge.decision.flow.ir.FlowNode;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,15 +16,30 @@ import org.springframework.stereotype.Component;
  * 3. handler 失败 → log + 累积到 trace.failures,继续下一个
  * 4. handler suspend → 透传 {@link AsyncNodeSuspendException}(外层 traverse catch 写 WAITING_CALLBACK)
  *
- * <p>关键设计:Java 端 {@link NodeExecutor#execute(FlowNode, FlowContext)} 拿不到 registry。
- * 采用 V5.33 A1 {@code MultiInstanceExecutor.Holder.REGISTRY} 同套路(静态 fallback + Spring primary)
- * 拿 {@link NodeExecutorRegistry},再用 registry.resolve + traverse 跑 sub-flow(在
- * {@link CompensationRunner} 内部已经用 sub-traverse 跑 sub-flow,所以 CompensationThrow
- * 只需要拿 registry 给 Runner 用即可)。
+ * <p>V6.13.4c: 套 V5.33 A1 {@link MultiInstanceExecutor} 模式 — 构造注入 {@link BeanFactory}
+ * 替代 {@code ApplicationContextAware} static lookup。{@code Holder.REGISTRY} 静态 fallback
+ * 仍保留(测试场景无 BeanFactory)。
  */
 @Slf4j
 @Component
-public class CompensationThrowExecutor implements NodeExecutor, ApplicationContextAware {
+public class CompensationThrowExecutor implements NodeExecutor {
+
+    private final BeanFactory beanFactory;
+
+    /**
+     * Spring ctor — production 路径走 BeanFactory 解析 registry。
+     */
+    public CompensationThrowExecutor(BeanFactory beanFactory) {
+        this.beanFactory = beanFactory;
+    }
+
+    /**
+     * 无参 ctor — 测试场景由 {@link Holder#REGISTRY} 显式注入 registry,
+     * 跟 V5.33 A1 {@code MultiInstanceExecutor} 同模式。
+     */
+    public CompensationThrowExecutor() {
+        this.beanFactory = null;
+    }
 
     @Override
     public String supportedType() {
@@ -41,7 +54,7 @@ public class CompensationThrowExecutor implements NodeExecutor, ApplicationConte
         if (reg == null) {
             throw new com.ruleforge.decision.exception.FlowExecutionException(
                 "CompensationThrow requires NodeExecutorRegistry; "
-                + "neither Holder.REGISTRY nor Spring context available. "
+                + "neither Holder.REGISTRY nor Spring BeanFactory available. "
                 + "Did you forget to construct a registry in your test?");
         }
         CompensationRunner.runHandlers(getCurrentDef(context), context, reg);
@@ -59,20 +72,13 @@ public class CompensationThrowExecutor implements NodeExecutor, ApplicationConte
 
     private NodeExecutorRegistry resolveRegistry() {
         if (Holder.REGISTRY != null) return Holder.REGISTRY;
-        if (applicationContext != null) {
+        if (beanFactory != null) {
             try {
-                return applicationContext.getBean(NodeExecutorRegistry.class);
-            } catch (BeansException ignore) {}
+                return beanFactory.getBean(NodeExecutorRegistry.class);
+            } catch (Exception ignore) {}
         }
         return null;
     }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
-    }
-
-    private ApplicationContext applicationContext;
 
     /**
      * V5.33 A1 / V5.34 A3 模式:测试场景下由测试代码显式注入 registry +
