@@ -40,6 +40,15 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
         </dependency>
+        <!--
+          V6.13.4a: jakarta.annotation-api 提供 @PostConstruct。
+          Spring Framework 7 移除了 org.springframework.beans.factory.annotation.PostConstruct,
+          必须走 jakarta.annotation.PostConstruct (JSR-250 standard)。
+        -->
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+        </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>

@@ -27,6 +27,10 @@ import org.springframework.context.annotation.*;
         // 实例化,setApplicationContext 永不跑,任何 EnvironmentUtils.getLoginUser() 调用
         // 触发 NPE (`applicationContext is null`) — 包括创建新项目等基础操作。
         "com.ruleforge.console.util",
+        // V6.13.4a: 5 个 core config 类 (CacheUtils / BuiltInActionLibraryBuilder /
+        // FileResourceProvider / PropertyConfigurer / BsfVariableCollector) 改 @Component
+        // 后,必须显式加入 scan — core XML 没 <context:component-scan>,默认扫不到。
+        "com.ruleforge.config",
         // V5.8.0: BatchTest 多态化的包(Subject / InputSource / Orchestrator / Controller)
         "com.ruleforge.console.batchtest",
         // V5.43.8 — 路线 B 收口删 com.ruleforge.console.migration 整包

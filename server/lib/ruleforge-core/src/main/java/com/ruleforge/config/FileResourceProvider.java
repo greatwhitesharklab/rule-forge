@@ -4,9 +4,8 @@ import com.ruleforge.builder.resource.Resource;
 
 import com.ruleforge.exception.RuleException;
 import org.apache.commons.io.IOUtils;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,14 +15,23 @@ import java.nio.charset.StandardCharsets;
  * @author Jacky.gao
  * @author fred
  * 2014年12月22日
+ *
+ * <p>V6.13.4a: 去除 {@code ApplicationContextAware} — 改构造注入 {@link ResourceLoader}。
+ * 之前 {@code applicationContext.getResource(path)} 等价于 {@code resourceLoader.getResource(path)},
+ * Spring 自动配置 ResourceLoader 时 ApplicationContext 也是 ResourceLoader。
  */
-public class FileResourceProvider implements ResourceProvider, ApplicationContextAware {
-    private ApplicationContext applicationContext;
+@Component
+public class FileResourceProvider implements ResourceProvider {
+    private final ResourceLoader resourceLoader;
+
+    public FileResourceProvider(ResourceLoader resourceLoader) {
+        this.resourceLoader = resourceLoader;
+    }
 
     @Override
     public Resource provide(String path, String version, String projectVersion, boolean containSnapshot) {
         try {
-            InputStream inputStream = applicationContext.getResource(path).getInputStream();
+            InputStream inputStream = resourceLoader.getResource(path).getInputStream();
             String content = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             IOUtils.closeQuietly(inputStream);
             return new Resource(content, path, projectVersion);
@@ -34,9 +42,5 @@ public class FileResourceProvider implements ResourceProvider, ApplicationContex
 
     public boolean support(String path) {
         return path.startsWith("classpath:") || path.startsWith("file:") || path.startsWith("WEB-INF/");
-    }
-
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
     }
 }

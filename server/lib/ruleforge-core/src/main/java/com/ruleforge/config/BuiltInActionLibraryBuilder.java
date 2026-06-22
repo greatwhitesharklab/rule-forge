@@ -6,9 +6,9 @@ import com.ruleforge.model.library.action.SpringBean;
 import com.ruleforge.model.library.action.annotation.ActionBean;
 import com.ruleforge.model.library.action.annotation.ActionMethod;
 import com.ruleforge.model.library.action.annotation.ActionMethodParameter;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -17,23 +17,34 @@ import java.util.*;
 /**
  * @author Jacky.gao
  * @since 2015年11月26日
+ *
+ * <p>V6.13.4a: 去除 {@code ApplicationContextAware} — 改 {@code @Component} + 构造注入
+ * {@link ListableBeanFactory}(Spring 的 {@code ApplicationContext} 接口继承自
+ * {@code ListableBeanFactory},足够提供 {@code getBeanDefinitionNames} + {@code getBean}
+ * 用于扫描所有带 {@link ActionBean} 注解的 bean)。
  */
-public class BuiltInActionLibraryBuilder implements ApplicationContextAware {
+@Component
+public class BuiltInActionLibraryBuilder {
+    private final ListableBeanFactory beanFactory;
     private List<SpringBean> builtInActions = new ArrayList<>();
+
+    public BuiltInActionLibraryBuilder(ListableBeanFactory beanFactory) {
+        this.beanFactory = beanFactory;
+    }
 
     public List<SpringBean> getBuiltInActions() {
         return builtInActions;
     }
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        System.out.println("Load built in actions...");
-        String[] names = applicationContext.getBeanDefinitionNames();
+    @PostConstruct
+    void init() {
+        // V6.13.4a: 删原 `System.out.println("Load built in actions...")` 启动噪音
+        String[] names = beanFactory.getBeanDefinitionNames();
         if (names == null) return;
         for (String name : names) {
             Object obj = null;
             try {
-                obj = applicationContext.getBean(name);
+                obj = beanFactory.getBean(name);
             } catch (Exception ex) {
                 continue;
             }

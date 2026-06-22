@@ -23,8 +23,8 @@
         <property name="crosstableDeserializer" ref="ruleforge.crosstableDeserializer"/>
     </bean>
 
-    <bean id="ruleforge.propertyConfigurer" class="com.ruleforge.config.PropertyConfigurer">
-    </bean>
+    <!-- V6.13.4a:PropertyConfigurer 改 @Component 构造注入 List<PropertiesLoaderSupport>,
+         删 XML bean (改由 RuleForgeConsoleAutoConfiguration @ComponentScan 扫到) -->
 
     <bean id="ruleforge.crosstabParser" class="com.ruleforge.parse.crosstab.CrosstabParser">
         <property name="crossRowParser" ref="ruleforge.crossRowParser"/>
@@ -60,7 +60,7 @@
         <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
     </bean>
 
-    <bean id="ruleforge.builtInActionLibraryBuilder" class="com.ruleforge.config.BuiltInActionLibraryBuilder"/>
+    <!-- V6.13.4a:BuiltInActionLibraryBuilder 改 @Component,删 XML bean -->
 
     <bean id="ruleforge.rulesRebuilder" class="com.ruleforge.builder.RulesRebuilder">
         <property name="resourceLibraryBuilder" ref="ruleforge.resourceLibraryBuilder"/>
@@ -154,9 +154,7 @@
     <bean id="ruleforge.mapAction" class="com.ruleforge.runtime.builtinaction.MapAction"/>
     <bean id="ruleforge.loopAction" class="com.ruleforge.runtime.builtinaction.LoopAction"/>
 
-    <bean id="ruleforge.cacheUtils" class="com.ruleforge.config.CacheUtils"/>
-
-    <bean id="ruleforge.fileResourceProvider" class="com.ruleforge.config.FileResourceProvider"/>
+    <!-- V6.13.4a:CacheUtils + FileResourceProvider 改 @Component,删 XML bean -->
 
     <bean id="ruleforge.valueCompute" class="com.ruleforge.runtime.rete.ValueCompute"/>
 
