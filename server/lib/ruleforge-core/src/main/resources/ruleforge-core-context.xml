@@ -11,9 +11,11 @@
         <property name="location" value="classpath:ruleforge-core-context.properties"/>
     </bean>
 
-    <!-- V5.76: ruleforge-core 内唯一 ApplicationContextAware 类,集中收集所有插件 bean。
-         引擎类注入 EnginePluginRegistry 接口取用,自身不接触 Spring。 -->
-    <bean id="ruleforge.pluginRegistry" class="com.ruleforge.config.SpringEnginePluginRegistry"/>
+    <!-- V6.13.4e: ruleforge-core 内唯一接触 ApplicationContext 的类,集中收集所有插件 bean。
+         引擎类注入 EnginePluginRegistry 接口取用,自身不接触 Spring。
+         autowire="constructor" 让 Spring 按类型把当前 ApplicationContext 注入 ctor
+         (替代原 ApplicationContextAware 回调)。@PostConstruct init() 做插件扫描 + EngineContext.init。 -->
+    <bean id="ruleforge.pluginRegistry" class="com.ruleforge.config.SpringEnginePluginRegistry" autowire="constructor"/>
 
     <bean id="ruleforge.crosstableDeserializer" class="com.ruleforge.parse.deserializer.CrosstableDeserializer">
         <property name="crosstabParser" ref="ruleforge.crosstabParser"/>
@@ -156,7 +158,7 @@
 
     <!-- V6.13.4a:CacheUtils + FileResourceProvider 改 @Component,删 XML bean -->
 
-    <bean id="ruleforge.valueCompute" class="com.ruleforge.runtime.rete.ValueCompute"/>
+    <bean id="ruleforge.valueCompute" class="com.ruleforge.engine.ValueCompute"/>
 
 <bean class="com.ruleforge.builder.resource.DecisionTableResourceBuilder">
         <property name="decisionTableDeserializer" ref="ruleforge.decisionTableDeserializer"/>
@@ -186,7 +188,7 @@
     <!-- V5.44.3 — 4 library deserializer bean (actionLibraryDeserializer / variableLibraryDeserializer /
          constantLibraryDeserializer / parameterLibraryDeserializer) 删。library 走 DRL import 段。 -->
 
-    <bean id="ruleforge.assertorEvaluator" class="com.ruleforge.runtime.assertor.AssertorEvaluator">
+    <bean id="ruleforge.assertorEvaluator" class="com.ruleforge.engine.AssertorEvaluator">
         <property name="pluginRegistry" ref="ruleforge.pluginRegistry"/>
     </bean>
 

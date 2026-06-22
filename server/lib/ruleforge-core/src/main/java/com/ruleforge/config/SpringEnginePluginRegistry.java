@@ -14,29 +14,35 @@ import com.ruleforge.runtime.assertor.Assertor;
 import com.ruleforge.engine.AssertorEvaluator;
 import com.ruleforge.engine.ValueCompute;
 import com.ruleforge.Splash;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.BeanFactory;
+import jakarta.annotation.PostConstruct;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 
 import java.util.Collection;
 import java.util.Collections;
 
 /**
- * {@link EnginePluginRegistry} 的 Spring 实现 —— {@code ruleforge-core} 内唯一
- * {@link ApplicationContextAware} 类(CLAUDE.md "核心不渗 Spring" 的 sanctioned 触点)。
+ * {@link EnginePluginRegistry} 的 Spring 实现 —— {@code ruleforge-core} 内唯一接触
+ * {@link ApplicationContext} 的类(CLAUDE.md "核心不渗 Spring" 的 sanctioned 触点)。
  *
- * <p>V6.13.4b: 仍保留 {@code ApplicationContextAware} 作 sanctioned 入口,但内部 lazy
- * {@code getBean(...)} 走构造注入的 {@link BeanFactory}({@code ApplicationContext} 接口
- * 继承自 {@code BeanFactory},通过 ctor 注入 {@code BeanFactory} 而非存 raw ctx,
- * 新代码看不到 {@code ApplicationContext} 类型,ctx 泄漏面收敛到本类 setApplicationContext
- * 一行赋值)。
+ * <p>V6.13.4e: 收口 V6.13.4 系列 —— 去 {@code ApplicationContextAware} +
+ * {@code setApplicationContext} 回调,改构造注入 {@link ApplicationContext}(跟
+ * V6.13.4a 5 个 core Aware 类同模式)。V6.13.4b 的 {@code BeanFactory} 过渡字段
+ * 一并移除:ctor 直接持 ctx,ctx 本身即 {@code BeanFactory},lazy {@code getBean}
+ * 改回 {@code applicationContext.getBean},不再需要额外 {@code BeanFactory} 抽象。
  *
- * <p>9 个 {@code getBeansOfType} 仍走 {@code applicationContext.getBeansOfType} —
- * 因为 {@code BeanFactory} 接口本身不暴露 {@code getBeansOfType},需要 ApplicationContext
- * 才能扫。这是有意保留的 sanctioned ctx 接触点。
+ * <p>装配:{@code ruleforge-core-context.xml} 的 {@code <bean id="ruleforge.pluginRegistry">}
+ * 加 {@code autowire="constructor"},Spring 按类型把当前 ApplicationContext 注入 ctor。
+ * 9 个 {@code getBeansOfType} + {@link EngineContext#init} + {@link Splash} 从
+ * {@code setApplicationContext} 搬到 {@link #init()} ({@code @PostConstruct}) —— 时机等价
+ * (bean 构造 + 注入完成后、bean 使用前),避免在 ctor 里触发其他 bean 提前实例化的循环依赖风险。
+ *
+ * <p>注:本类 {@code import org.springframework.context.ApplicationContext} 是有意保留的
+ * sanctioned 依赖 —— 引擎**逻辑**(model/runtime/parse/ir,365 文件)0 Spring import,
+ * 全部走 {@link EnginePluginRegistry} 接口 + {@link EngineContext} 静态桥;只有本装配类
+ * 接触 Spring。"去 setApplicationContext" 去的是 Aware 回调反模式,**不是**去掉 Spring 装配
+ * (那是另一个目标,需要 SPI/ServiceLoader 替代,目前无此需求)。
  */
-public class SpringEnginePluginRegistry implements ApplicationContextAware, EnginePluginRegistry {
+public class SpringEnginePluginRegistry implements EnginePluginRegistry {
 
     private Collection<Assertor> assertors = Collections.emptyList();
     private Collection<CriterionParser> criterionParsers = Collections.emptyList();
@@ -48,16 +54,20 @@ public class SpringEnginePluginRegistry implements ApplicationContextAware, Engi
     private Collection<FunctionDescriptor> functionDescriptors = Collections.emptyList();
     private Collection<DebugWriter> debugWriters = Collections.emptyList();
 
-    private ApplicationContext applicationContext;
-    private final BeanFactory beanFactory;
+    private final ApplicationContext applicationContext;
 
-    public SpringEnginePluginRegistry(BeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
+    public SpringEnginePluginRegistry(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
     }
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
+    /**
+     * V6.13.4e: 原 {@code setApplicationContext} 职责搬迁到此。{@code @PostConstruct}
+     * 在 ctor + 依赖注入完成后调用,等价于原 Aware 回调时机;9 个 {@code getBeansOfType}
+     * 在此触发各类 plugin bean 实例化(若未实例化),{@link EngineContext#init} 把本 registry
+     * 注入静态桥供深调用点取用。
+     */
+    @PostConstruct
+    void init() {
         this.assertors = applicationContext.getBeansOfType(Assertor.class).values();
         this.criterionParsers = applicationContext.getBeansOfType(CriterionParser.class).values();
         this.actionParsers = applicationContext.getBeansOfType(ActionParser.class).values();
@@ -82,19 +92,19 @@ public class SpringEnginePluginRegistry implements ApplicationContextAware, Engi
     @Override public Collection<FunctionDescriptor> getFunctionDescriptors() { return functionDescriptors; }
     @Override public Collection<DebugWriter> getDebugWriters() { return debugWriters; }
 
-    /** 懒查(单例);不在 setApplicationContext 里 eager getBean,避免与注入 registry 的 bean 形成初始化环。 */
+    /** 懒查(单例);不在 init() 里 eager getBean,避免与注入 registry 的 bean 形成初始化环。 */
     @Override
     public AssertorEvaluator getAssertorEvaluator() {
-        return beanFactory.getBean("ruleforge.assertorEvaluator", AssertorEvaluator.class);
+        return applicationContext.getBean("ruleforge.assertorEvaluator", AssertorEvaluator.class);
     }
 
     @Override
     public ValueCompute getValueCompute() {
-        return beanFactory.getBean("ruleforge.valueCompute", ValueCompute.class);
+        return applicationContext.getBean("ruleforge.valueCompute", ValueCompute.class);
     }
 
     @Override
     public Object getBean(String beanId) {
-        return beanFactory.getBean(beanId);
+        return applicationContext.getBean(beanId);
     }
 }
