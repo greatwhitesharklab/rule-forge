@@ -45,28 +45,45 @@ interface FileTreeProps extends FileTreeOwnProps {
  * <p>样式走 fileTree.css(定制 .ant-tree + --rf-* token,跟 PackageNavigator 同代)。
  */
 function FileTreeImpl({data, dispatch, treeType, readOnly, onFileReadOnlyClick, expandLevel = 3}: FileTreeProps) {
-    const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+    // V6.13.5f:拆 user 手动 caret(userExpandedKeys)与搜索自动展开祖先(searchExpandedKeys),
+    // 合并后给 antd expandedKeys。避免清空搜索重置用户手点 caret 的副作用(老 V6.13.5e 行为)。
+    const [userExpandedKeys, setUserExpandedKeys] = useState<React.Key[]>([]);
+    const [searchExpandedKeys, setSearchExpandedKeys] = useState<React.Key[]>([]);
     const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
 
-    // data 变化(loadData 增量 / project 切换)→ 重算初始展开(_forceExpand / _level < expandLevel)
+    // data 变化(loadData 增量 / project 切换)→ 重算 user 初始展开(_forceExpand / _level < expandLevel)
     useEffect(() => {
-        setExpandedKeys(collectInitialExpandedKeys(data, expandLevel));
+        setUserExpandedKeys(collectInitialExpandedKeys(data, expandLevel));
     }, [data, expandLevel]);
 
-    // 搜索 → 重置 expandedKeys 为初始 + 命中祖先(清空搜索时也回到初始 expandLevel 状态,避免遗留全展开)
+    // 搜索词变化 → 重算 search 自动展开祖先(term 空 → [])
     useEffect(() => {
-        if (!data) return;
-        if (!searchTerm) {
-            setExpandedKeys(collectInitialExpandedKeys(data, expandLevel));
+        if (!data) {
+            setSearchExpandedKeys([]);
             return;
         }
-        const base = collectInitialExpandedKeys(data, expandLevel);
-        const ancestors = collectMatchAncestorKeys(data, searchTerm);
-        setExpandedKeys(Array.from(new Set([...base, ...ancestors])));
-    }, [searchTerm, data, expandLevel]);
+        if (!searchTerm) {
+            setSearchExpandedKeys([]);
+            return;
+        }
+        setSearchExpandedKeys(Array.from(collectMatchAncestorKeys(data, searchTerm)));
+    }, [searchTerm, data]);
+
+    // 合并 user + search 给 antd
+    const expandedKeys = useMemo<React.Key[]>(
+        () => Array.from(new Set([...userExpandedKeys, ...searchExpandedKeys])),
+        [userExpandedKeys, searchExpandedKeys],
+    );
 
     const treeData = useMemo(() => buildAntTreeData(data, searchTerm), [data, searchTerm]);
+
+    // antd onExpand 给的是合并后 keys → 反推 user 部分(去掉 search 自动展开的祖先,其余视为用户手动)
+    const onExpand: TreeProps['onExpand'] = (keys) => {
+        const searchSet = new Set(searchExpandedKeys);
+        // 用户手动 caret = 合并后 keys 减去 search 自动展开部分
+        setUserExpandedKeys(keys.filter(k => !searchSet.has(k)));
+    };
 
     // antd loadData:懒加载未加载容器(toAntNode children=undefined)触发。node.rawData 挂原始 TreeNodeData。
     const loadData = useCallback((node: {rawData?: TreeNodeData}) => {
@@ -99,7 +116,7 @@ function FileTreeImpl({data, dispatch, treeType, readOnly, onFileReadOnlyClick, 
                 className="rf-file-tree"
                 treeData={treeData}
                 expandedKeys={expandedKeys}
-                onExpand={(keys) => setExpandedKeys(keys)}
+                onExpand={onExpand}
                 selectedKeys={selectedKeys}
                 onSelect={onSelect}
                 loadData={loadData as TreeProps['loadData']}

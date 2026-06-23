@@ -22,6 +22,17 @@ const CONTAINER_TYPES = new Set<string>([
     'publicResource',
 ]);
 
+/**
+ * V6.13.5f:antd Tree 要求兄弟 key 唯一,但 buildData 给 resource 容器和它所有 lib/ruleLib/...
+ * 虚拟分类子节点赋同一个 fullPath(同一物理路径多虚拟分类是老 reducer 行为,有测试覆盖,不动)。
+ * 这里用 (fullPath, type) 派生唯一 key:同 fullPath 不同 type 拼不同 key,不污染 store data。
+ * type 缺失 fallback 到 fullPath(原行为兜底)。
+ */
+export function nodeKey(data: TreeNodeData): string {
+    const base = data.fullPath || data.id || '';
+    return data.type ? base + '#' + data.type : base;
+}
+
 /** antd `<Tree>` 的节点(转换后),rawData 挂回原始 TreeNodeData 供 titleRender/loadData 用。 */
 export interface AntTreeNode {
     key: string;
@@ -194,6 +205,7 @@ export function hasMatchInSubtree(data: TreeNodeData, term: string): boolean {
 /**
  * 收集命中节点的所有祖先 key(用于搜索时自动展开祖先)。递归遍历,ancestors 栈不含当前节点。
  * 返回的 Set 包含所有"有命中后代"的祖先 key(展开它们才能看到命中节点)。
+ * V6.13.5f:key 用 nodeKey(派生自 fullPath+type),跟 antd 同步
  */
 export function collectMatchAncestorKeys(root: TreeNodeData, term: string): Set<string> {
     const keys = new Set<string>();
@@ -203,7 +215,7 @@ export function collectMatchAncestorKeys(root: TreeNodeData, term: string): Set<
             ancestors.forEach(k => keys.add(k));
         }
         if (node.children) {
-            const childAncestors = [...ancestors, node.fullPath || node.id];
+            const childAncestors = [...ancestors, nodeKey(node)];
             for (const child of node.children) {
                 walk(child, childAncestors);
             }
@@ -234,7 +246,7 @@ export function toAntNode(data: TreeNodeData, term: string): AntTreeNode {
     }
 
     return {
-        key: data.fullPath || data.id,
+        key: nodeKey(data),
         title: data.name,
         icon: <i className={data._icon as string} style={data._style as React.CSSProperties}/>,
         isLeaf: !isContainer,
@@ -258,6 +270,7 @@ export function buildAntTreeData(root: TreeNodeData | null | undefined, term: st
 
 /**
  * 收集初始展开 key:_forceExpand 标记 或 _level <= expandLevel 的节点(照搬 TreeItem:43 的初始展开判定)。
+ * V6.13.5f:key 用 nodeKey(派生自 fullPath+type),跟 antd 同步
  */
 export function collectInitialExpandedKeys(root: TreeNodeData | null | undefined, expandLevel: number): string[] {
     const keys: string[] = [];
@@ -266,8 +279,8 @@ export function collectInitialExpandedKeys(root: TreeNodeData | null | undefined
         const force = !!node._forceExpand;
         const level = node._level || 1;
         const initiallyExpanded = force || level < expandLevel;
-        if (initiallyExpanded && (node.fullPath || node.id)) {
-            keys.push(node.fullPath || node.id);
+        if (initiallyExpanded) {
+            keys.push(nodeKey(node));
         }
         if (node.children) node.children.forEach(walk);
     };

@@ -1,12 +1,14 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {render, fireEvent, screen, waitFor} from '@testing-library/react';
 import {Provider} from 'react-redux';
-import {createStore} from 'redux';
+import {createStore, applyMiddleware} from 'redux';
+import thunk from 'redux-thunk';
 import FileTree from './FileTree';
 
-/** 构造测试 store:reducer 直接返回固定 state(connect 的 mapStateToProps 读 state.data)。 */
+/** 构造测试 store:reducer 直接返回固定 state(connect 的 mapStateToProps 读 state.data)。
+ *  生产 FileTree 在 antd Tree mount 时会调 loadData 触发 dispatch(thunk),所以测试 store 加 thunk middleware。 */
 function makeStore(data: TreeNodeData | null) {
-    return createStore(() => ({data, publicResource: null}) as unknown);
+    return createStore(() => ({data, publicResource: null}) as unknown, applyMiddleware(thunk));
 }
 
 /** 含项目 + 文件 + contextMenu 的样本树(projA _level=1 < expandLevel 3 → 初始展开,loan 可见)。 */
@@ -91,6 +93,38 @@ describe('FileTree', () => {
         expect(screen.getByText('projA')).toBeTruthy();
     });
 
+    // BUG FIX V6.13.5f:buildData 给 resource 容器和它所有 lib/ruleLib/... 子节点赋同一个 fullPath(同物理路径多虚拟分类)
+    // 6 个 lib 兄弟共享 key → antd 强制 key 唯一,第 2 个起被丢弃 → caret 折叠节点消失 / 状态错位
+    // 修复:toAntNode 用 nodeKey(fullPath, type) 派生唯一 key
+    // 契约:7 个 name 全渲染 + antd 不报"同 key"警告(用 console.error spy)
+    it('V6.13.5f:同 fullPath 不同 type 的兄弟节点 antd key 唯一(resource 容器 + 6 个 lib 不撞 key)', () => {
+        const siblingData = {
+            id: 'root', name: 'root', type: 'root', fullPath: '/',
+            children: [
+                {id: 'r', name: '资源', type: 'resource', fullPath: '/test003', _level: 2},
+                {id: 'l1', name: '库', type: 'lib', fullPath: '/test003', _level: 3},
+                {id: 'l2', name: '决策集', type: 'ruleLib', fullPath: '/test003', _level: 3},
+                {id: 'l3', name: '决策表', type: 'decisionTableLib', fullPath: '/test003', _level: 3},
+                {id: 'l4', name: '决策树', type: 'decisionTreeLib', fullPath: '/test003', _level: 3},
+                {id: 'l5', name: '评分卡', type: 'scorecardLib', fullPath: '/test003', _level: 3},
+                {id: 'l6', name: '决策流', type: 'flowLib', fullPath: '/test003', _level: 3},
+            ],
+        } as unknown as TreeNodeData;
+        const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const {container} = render(<Provider store={makeStore(siblingData)}><FileTree/></Provider>);
+        // 7 个期望 name 全出现(无 antd 兄弟合并丢节点)
+        const titles = Array.from(container.querySelectorAll('.ant-tree-treenode')).map(n => n.textContent || '');
+        ['资源', '库', '决策集', '决策表', '决策树', '评分卡', '决策流'].forEach(name => {
+            expect(titles.some(t => t.includes(name))).toBe(true);
+        });
+        // antd 不应该报 "Same 'key' exist in the Tree" 警告
+        const keyWarn = errSpy.mock.calls.find(args =>
+            typeof args[0] === 'string' && /same.*key/i.test(args[0]),
+        );
+        expect(keyWarn).toBeUndefined();
+        errSpy.mockRestore();
+    });
+
     it('清空搜索:expandedKeys 重置为初始(_level<expandLevel 的节点展开),深层 loan 不可见', async () => {
         // 深层数据:所有 _level >= expandLevel=3,初始都不展开
         const deepData = {
@@ -126,6 +160,49 @@ describe('FileTree', () => {
         fireEvent.change(screen.getByPlaceholderText('搜索文件/项目'), {target: {value: ''}});
         await waitFor(() => {
             expect(nodeExists('loan.rs.xml')).toBe(false);
+        });
+    });
+
+    // V6.13.5f:清空搜索不应重置用户手动 caret 折叠(老 V6.13.5e 行为把"还原初始"当作"清空搜索",
+    // 但用户手点折叠的 caret 也会被还原,违背用户意图)
+    it('V6.13.5f:清空搜索保留用户手动折叠的 caret(projA _level<expandLevel 默认展开,手点折叠后清空搜索应保持折叠)', async () => {
+        // 浅数据:projA _level=1 < 3 → 初始展开;loan _level=2 < 3 → 也展开
+        const shallowData = {
+            id: 'root', name: 'root', type: 'root', fullPath: '/r',
+            children: [
+                {
+                    id: 'p', name: 'projA', type: 'project', fullPath: '/r/p', _level: 1,
+                    children: [{id: 'f', name: 'loan.rs.xml', type: 'rule', fullPath: '/r/p/loan.rs.xml', _level: 2}],
+                },
+            ],
+        } as unknown as TreeNodeData;
+        const {container} = render(<Provider store={makeStore(shallowData)}><FileTree/></Provider>);
+
+        // 初始:loan 可见(projA 展开,loan 跟着渲染)
+        expect(container.textContent).toContain('loan.rs.xml');
+
+        // 模拟用户点 projA caret 折叠 — 找 projA treenode,click 它的 .ant-tree-switcher
+        const projATreenode = Array.from(container.querySelectorAll('.ant-tree-treenode'))
+            .find(n => (n.textContent || '').includes('projA'));
+        expect(projATreenode).toBeTruthy();
+        const projACaret = projATreenode!.querySelector('.ant-tree-switcher') as HTMLElement;
+        fireEvent.click(projACaret);
+
+        // 折叠后 loan 不可见
+        await waitFor(() => {
+            expect(container.textContent).not.toContain('loan.rs.xml');
+        });
+
+        // 搜索 loan → 自动展开 projA 祖先链,loan 再次可见
+        fireEvent.change(screen.getByPlaceholderText('搜索文件/项目'), {target: {value: 'loan'}});
+        await waitFor(() => {
+            expect(container.textContent).toContain('loan.rs.xml');
+        });
+
+        // 清空搜索 → expandedKeys 只去 search 部分,user 手动折叠保留 → loan 不可见
+        fireEvent.change(screen.getByPlaceholderText('搜索文件/项目'), {target: {value: ''}});
+        await waitFor(() => {
+            expect(container.textContent).not.toContain('loan.rs.xml');
         });
     });
 });

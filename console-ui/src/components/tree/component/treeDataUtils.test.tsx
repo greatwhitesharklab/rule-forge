@@ -8,6 +8,7 @@ import {
     matchesSearch,
     hasMatchInSubtree,
     collectMatchAncestorKeys,
+    nodeKey,
     toAntNode,
     buildAntTreeData,
     collectInitialExpandedKeys,
@@ -141,6 +142,23 @@ describe('treeDataUtils', () => {
         });
     });
 
+    describe('nodeKey V6.13.5f', () => {
+        it('有 type → fullPath + # + type', () => {
+            expect(nodeKey(makeNode({name: 'p', type: 'project', fullPath: '/p'}))).toBe('/p#project');
+        });
+        it('无 type → 退化为 fullPath(原行为兜底)', () => {
+            expect(nodeKey(makeNode({name: 'p', fullPath: '/p'}))).toBe('/p');
+        });
+        it('同 fullPath 不同 type → 派生不同 key(resource 容器 vs lib 子节点共享 /test003 不撞)', () => {
+            const resource = nodeKey(makeNode({name: '资源', type: 'resource', fullPath: '/test003'}));
+            const lib = nodeKey(makeNode({name: '库', type: 'lib', fullPath: '/test003'}));
+            const ruleLib = nodeKey(makeNode({name: '决策集', type: 'ruleLib', fullPath: '/test003'}));
+            expect(resource).not.toBe(lib);
+            expect(lib).not.toBe(ruleLib);
+            expect(new Set([resource, lib, ruleLib]).size).toBe(3);
+        });
+    });
+
     describe('matchesSearch', () => {
         it('term 空 → 全匹配', () => {
             expect(matchesSearch(makeNode({name: '任意'}), '')).toBe(true);
@@ -196,9 +214,9 @@ describe('treeDataUtils', () => {
     });
 
     describe('toAntNode', () => {
-        it('文件节点:key=fullPath, isLeaf=true, selectable=true, children=undefined', () => {
+        it('文件节点:key=fullPath#type (V6.13.5f), isLeaf=true, selectable=true, children=undefined', () => {
             const node = toAntNode(makeNode({name: 'x.rs.xml', type: 'rule', fullPath: '/p/x.rs.xml', _icon: 'rf rf-rule'}), '');
-            expect(node.key).toBe('/p/x.rs.xml');
+            expect(node.key).toBe('/p/x.rs.xml#rule');
             expect(node.isLeaf).toBe(true);
             expect(node.selectable).toBe(true);
             expect(node.children).toBeUndefined();
@@ -211,7 +229,8 @@ describe('treeDataUtils', () => {
             expect(node.isLeaf).toBe(false);
             expect(node.selectable).toBe(false);
             expect(node.children).toHaveLength(1);
-            expect(node.children![0].key).toBe('/p/x.rs.xml');
+            expect(node.key).toBe('/p#project');
+            expect(node.children![0].key).toBe('/p/x.rs.xml#rule');
         });
         it('懒加载未加载容器:children=undefined(触发 antd loadData)', () => {
             const node = toAntNode(makeNode({name: 'lib', type: 'lib', fullPath: '/p/lib', _needLazyLoad: true, _childrenLoaded: false}), '');
@@ -239,7 +258,7 @@ describe('treeDataUtils', () => {
             ]});
             const data = buildAntTreeData(root, '');
             expect(data).toHaveLength(2);
-            expect(data[0].key).toBe('/r/a');
+            expect(data[0].key).toBe('/r/a#project');
         });
         it('root=null → []', () => {
             expect(buildAntTreeData(null, '')).toEqual([]);
