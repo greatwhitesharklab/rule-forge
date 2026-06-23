@@ -1,0 +1,124 @@
+/**
+ * V6.13.5b:文件树 antd `<Tree>` 定制样式。
+ *
+ * <p>定制 .ant-tree-* 用 --rf-* token(V5.101 设计系统),跟 PackageNavigator (.pkg-* 同 token)
+ * 同代协调。密度(节点高 28px / 字 13px / 缩进 16px)贴近 VS Code 资源管理器。展开箭头用 antd
+ * caret(色 --rf-text-tertiary),不再用 rf-plus/minus。业务图标(rf iconfont + _style 色)由
+ * titleRender 渲染保留。
+ */
+
+.rf-file-tree-wrap {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.rf-tree-search {
+    margin-bottom: 6px;
+    flex-shrink: 0;
+}
+
+.rf-file-tree.ant-tree {
+    font-size: var(--rf-font-size-sm);
+    background: transparent;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.rf-file-tree.ant-tree .ant-tree-treenode {
+    padding: 0;
+    min-height: 28px;
+    align-items: center;
+}
+
+/* 整行可点 (blockNode) + hover/selected 底色由 antd 给 wrapper,titleRender 节点透明避免双重底色 */
+.rf-file-tree .ant-tree-node-content-wrapper {
+    min-height: 28px;
+    padding: 0 8px;
+    border-radius: var(--rf-radius-sm);
+    transition: background 0.12s;
+    flex: 1;
+}
+
+.rf-file-tree .ant-tree-node-content-wrapper:hover {
+    background: var(--rf-bg-base);
+}
+
+.rf-file-tree .ant-tree-node-selected {
+    background: var(--rf-primary-bg) !important;
+}
+
+.rf-file-tree .ant-tree-indent-unit {
+    width: 16px;
+}
+
+.rf-file-tree .ant-tree-switcher-leaf-line::before,
+.rf-file-tree .ant-tree-switcher-line-icon {
+    border-right-color: var(--rf-border-split);
+}
+
+/* titleRender 节点 (FileTreeNode) */
+.rf-tree-node {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+    background: transparent;
+}
+
+.rf-file-tree .ant-tree-node-selected .rf-tree-node {
+    color: var(--rf-primary);
+}
+
+.rf-tree-node > i {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.rf-tree-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rf-tree-lock {
+    font-size: 10px;
+    color: var(--rf-warning);
+    opacity: 0.6;
+    flex-shrink: 0;
+}
+
+/* hover ⋯ 操作按钮 (VS Code 风:默认隐藏,hover 显示) */
+.rf-tree-actions {
+    opacity: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-text-tertiary);
+    flex-shrink: 0;
+    line-height: 1;
+    transition: opacity 0.12s, background 0.12s;
+}
+
+.rf-tree-node:hover .rf-tree-actions {
+    opacity: 0.7;
+}
+
+.rf-tree-actions:hover {
+    opacity: 1 !important;
+    background: var(--rf-bg-base);
+}
+
+/* 搜索命中高亮 (highlight() 渲染 <mark.rf-tree-match>) */
+.rf-tree-match {
+    background: transparent;
+    color: inherit;
+    font-weight: 600;
+    border-bottom: 1px solid var(--rf-warning);
+}
