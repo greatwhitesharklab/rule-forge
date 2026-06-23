@@ -55,6 +55,11 @@ ruleforge:
     dir: ${RF_REPO_DIR:./data/riskruleforge}
   exec:
     url: ${EXECUTOR_URL:http://localhost:8280}
+  # V6.14.3: console 侧也加载共享 decision 的 FlowDefinitionRepo(@Value ruleforge.console.url)。
+  # decision lib 决策流统一走 HTTP 拉 flow(不直接访问 console storage,保持 lib 纯净),
+  # console 侧指向自己。executor 侧用 EXECUTOR 环境把这里盖掉指向 console。
+  console:
+    url: ${CONSOLE_URL:http://localhost:8180}
   git:
     base: ${GIT_BASE:/opt/data}
     remote-url: ${GIT_REMOTE_URL:}
