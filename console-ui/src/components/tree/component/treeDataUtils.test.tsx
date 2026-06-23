@@ -232,6 +232,12 @@ describe('treeDataUtils', () => {
             expect(node.key).toBe('/p#project');
             expect(node.children![0].key).toBe('/p/x.rs.xml#rule');
         });
+        // V6.13.5g:icon 走 titleRender (FileTreeNode 渲染) — toAntNode.icon 必须 undefined,
+        // 否则 antd 内部用 .ant-tree-iconEle 渲染 + titleRender 也渲染 → 每个节点 icon 重复 2 次
+        it('V6.13.5g:icon=undefined(走 titleRender,避免双层 icon 重复渲染)', () => {
+            const node = toAntNode(makeNode({name: 'x.rs.xml', type: 'rule', fullPath: '/p/x.rs.xml', _icon: 'rf rf-rule'}), '');
+            expect(node.icon).toBeUndefined();
+        });
         it('懒加载未加载容器:children=undefined(触发 antd loadData)', () => {
             const node = toAntNode(makeNode({name: 'lib', type: 'lib', fullPath: '/p/lib', _needLazyLoad: true, _childrenLoaded: false}), '');
             expect(node.isLeaf).toBe(false);

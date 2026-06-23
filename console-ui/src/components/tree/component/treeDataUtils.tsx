@@ -37,7 +37,7 @@ export function nodeKey(data: TreeNodeData): string {
 export interface AntTreeNode {
     key: string;
     title: string;          // titleRender 接管,字段保留防 antd 报警
-    icon: React.ReactNode;  // 同上
+    icon?: React.ReactNode; // V6.13.5g:icon 走 titleRender (FileTreeNode 渲染),此处不设避免双层 icon 重复
     isLeaf: boolean;
     selectable: boolean;
     children?: AntTreeNode[];
@@ -248,7 +248,7 @@ export function toAntNode(data: TreeNodeData, term: string): AntTreeNode {
     return {
         key: nodeKey(data),
         title: data.name,
-        icon: <i className={data._icon as string} style={data._style as React.CSSProperties}/>,
+        // V6.13.5g:icon 走 titleRender (FileTreeNode 内 <i className={_icon}/>),不在此处设避免双层 icon
         isLeaf: !isContainer,
         selectable: isFileNode(data),
         children,
