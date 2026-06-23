@@ -1,7 +1,7 @@
 import {Component} from 'react';
 import {Select, Tag} from 'antd';
 import * as ACTIONS from '@/frame/action.js';
-import Tree from '@/components/tree/component/Tree.jsx';
+import FileTree from '@/components/tree/component/FileTree';
 import {selectProjectName} from '@/frame/reducer.ts';
 import {formPost} from '@/api/client.js';
 
@@ -33,12 +33,12 @@ interface ResourceVersion {
 /**
  * V6.13.1:统一文件树 + 知识包视图。
  *
- * <p>原 FileTreePanel 在 {@code <Tree>} (working tree, 可编辑) 和
+ * <p>原 FileTreePanel 在 {@code <FileTree>} (working tree, 可编辑) 和
  * {@code <PackageNavigator>} (git 历史版本, 只读) 之间 toggle。
  * V6.13.1 合并成单面板,顶部加版本下拉:
  * <ul>
- *   <li>默认 = Working tree → {@code <Tree readOnly={false} draggable={true}/>}</li>
- *   <li>选具体版本 → {@code <Tree readOnly={true} onFileReadOnlyClick=seeFileSource/>},
+ *   <li>默认 = Working tree → {@code <FileTree readOnly={false} draggable={true}/>}</li>
+ *   <li>选具体版本 → {@code <FileTree readOnly={true} onFileReadOnlyClick=seeFileSource/>},
  *       禁编辑菜单,文件 click 弹源码对话框 (走 git snapshot)</li>
  *   <li>切回 Working tree → 恢复可编辑</li>
  * </ul>
@@ -150,7 +150,7 @@ export default class FileTreePanel extends Component<FileTreePanelProps, FileTre
                     />
                 </div>
                 <div className="file-tree-content">
-                    <Tree
+                    <FileTree
                         readOnly={readOnly}
                         draggable={!readOnly}
                         onFileReadOnlyClick={readOnly ? this._onFileReadOnlyClick : undefined}

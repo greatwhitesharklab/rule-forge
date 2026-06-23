@@ -38,7 +38,7 @@ const {treeProps, fireReadOnlyFileClick} = vi.hoisted(() => {
     };
 });
 
-vi.mock('@/components/tree/component/Tree.jsx', () => ({
+vi.mock('@/components/tree/component/FileTree', () => ({
     default: (props: {readOnly?: boolean; onFileReadOnlyClick?: (data: TreeNodeData) => void; treeType?: string}) => {
         treeProps().readOnly = props.readOnly;
         treeProps().onFileReadOnlyClick = props.onFileReadOnlyClick;
