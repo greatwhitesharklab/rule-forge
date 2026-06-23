@@ -38,7 +38,10 @@ class PackageEditor extends Component<PackageEditorProps> {
     currentPackage: ResourcePackage | null = null;
 
     render() {
-        const containerWidth = document.getElementById('container')!.clientWidth;
+        // V6.13.5h:删死代码 `const containerWidth = document.getElementById('container')!.clientWidth`
+        // — 原 MPA iframe (editor.html) 才有 #container 元素,SPA 路由(/app/editor/package)下只有 #root,
+        // getElementById('container') 返 null + `!` 强转 + .clientWidth 抛 TypeError,整个 render 崩 → 空白
+        // 用法:全文件 grep `containerWidth` 0 引用 = 纯死代码,删无副作用
         const {masterData, masterRowData, dispatch, project, packageConfig} = this.props;
         const _this = this;
         const masterGridHeaders = [
