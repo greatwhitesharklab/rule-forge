@@ -1,5 +1,5 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {render, fireEvent, screen} from '@testing-library/react';
+import {render, fireEvent, screen, waitFor} from '@testing-library/react';
 import {Provider} from 'react-redux';
 import {createStore} from 'redux';
 import FileTree from './FileTree';
@@ -89,5 +89,43 @@ describe('FileTree', () => {
         fireEvent.change(screen.getByPlaceholderText('搜索文件/项目'), {target: {value: 'loan.rs.xml'}});
         // projA 是 loan 的祖先,搜索展开祖先后 projA 仍渲染
         expect(screen.getByText('projA')).toBeTruthy();
+    });
+
+    it('清空搜索:expandedKeys 重置为初始(_level<expandLevel 的节点展开),深层 loan 不可见', async () => {
+        // 深层数据:所有 _level >= expandLevel=3,初始都不展开
+        const deepData = {
+            id: 'root', name: 'root', type: 'root', fullPath: '/r',
+            children: [
+                {
+                    id: 'p', name: 'projA', type: 'project', fullPath: '/r/p', _level: 3,
+                    children: [
+                        {id: 'f', name: 'loan.rs.xml', type: 'rule', fullPath: '/r/p/loan.rs.xml', _level: 4},
+                    ],
+                },
+            ],
+        } as unknown as TreeNodeData;
+        const {container} = render(<Provider store={makeStore(deepData)}><FileTree/></Provider>);
+
+        // antd Tree 折叠的子节点不 render DOM。nodeExists = DOM 中能查到该文本的 treenode。
+        const nodeExists = (text: string) => {
+            return Array.from(container.querySelectorAll('.ant-tree-treenode')).some(
+                n => n.textContent === text || n.textContent?.includes(text),
+            );
+        };
+
+        // 初始:loan 不可见(projA 不展开,loan 不 render)
+        expect(nodeExists('loan.rs.xml')).toBe(false);
+
+        // 搜索 loan → projA 展开祖先链,loan 渲染
+        fireEvent.change(screen.getByPlaceholderText('搜索文件/项目'), {target: {value: 'loan'}});
+        await waitFor(() => {
+            expect(nodeExists('loan.rs.xml')).toBe(true);
+        });
+
+        // 清空搜索 → expandedKeys 重置回 _level<3(初始空),projA 收起 → loan 不再渲染
+        fireEvent.change(screen.getByPlaceholderText('搜索文件/项目'), {target: {value: ''}});
+        await waitFor(() => {
+            expect(nodeExists('loan.rs.xml')).toBe(false);
+        });
     });
 });

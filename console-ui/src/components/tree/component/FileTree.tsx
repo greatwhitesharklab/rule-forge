@@ -54,14 +54,17 @@ function FileTreeImpl({data, dispatch, treeType, readOnly, onFileReadOnlyClick, 
         setExpandedKeys(collectInitialExpandedKeys(data, expandLevel));
     }, [data, expandLevel]);
 
-    // 搜索 → 自动展开命中节点的所有祖先(否则命中深层节点看不到)
+    // 搜索 → 重置 expandedKeys 为初始 + 命中祖先(清空搜索时也回到初始 expandLevel 状态,避免遗留全展开)
     useEffect(() => {
-        if (!searchTerm || !data) return;
-        setExpandedKeys((prev) => {
-            const ancestors = collectMatchAncestorKeys(data, searchTerm);
-            return Array.from(new Set([...prev, ...ancestors]));
-        });
-    }, [searchTerm, data]);
+        if (!data) return;
+        if (!searchTerm) {
+            setExpandedKeys(collectInitialExpandedKeys(data, expandLevel));
+            return;
+        }
+        const base = collectInitialExpandedKeys(data, expandLevel);
+        const ancestors = collectMatchAncestorKeys(data, searchTerm);
+        setExpandedKeys(Array.from(new Set([...base, ...ancestors])));
+    }, [searchTerm, data, expandLevel]);
 
     const treeData = useMemo(() => buildAntTreeData(data, searchTerm), [data, searchTerm]);
 
