@@ -1,0 +1,293 @@
+import React from 'react';
+import type {MenuProps} from 'antd';
+
+/**
+ * V6.13.5a:文件树纯函数集 —— 从老 {@link TreeItem} (class 组件) + {@link Menu} 抽出的可单测逻辑,
+ * 供新 {@link FileTree} (antd `<Tree>`) 复用。零 UI 副作用,零 DOM 操作。
+ *
+ * <p>抽离来源:
+ * <ul>
+ *   <li>{@link isFileNode} / {@link isContainerType} ← TreeItem.isFile (121-129) / isContainer (143-144)</li>
+ *   <li>{@link handleFileOpen} ← TreeItem.onClick (168-305) 的 13 type 分支 window.open + readOnly 回调</li>
+ *   <li>{@link contextMenuToAntItems} ← Menu.tsx (22-27) 的 contextMenu → antd items 转换</li>
+ *   <li>{@link matchesSearch} / {@link hasMatchInSubtree} / {@link collectMatchAncestorKeys} /
+ *       {@link buildAntTreeData} / {@link toAntNode} / {@link highlight} ← 新增(搜索 + treeData 转换)</li>
+ * </ul>
+ */
+
+/** 可展开的容器类型(文件夹/库根)。文件类型(rule/decisionTable/.rp 等)不在此列。 */
+const CONTAINER_TYPES = new Set<string>([
+    'root', 'project', 'folder', 'resource', 'all', 'lib',
+    'ruleLib', 'decisionTableLib', 'decisionTreeLib', 'flowLib', 'scorecardLib',
+    'publicResource',
+]);
+
+/** antd `<Tree>` 的节点(转换后),rawData 挂回原始 TreeNodeData 供 titleRender/loadData 用。 */
+export interface AntTreeNode {
+    key: string;
+    title: string;          // titleRender 接管,字段保留防 antd 报警
+    icon: React.ReactNode;  // 同上
+    isLeaf: boolean;
+    selectable: boolean;
+    children?: AntTreeNode[];
+    rawData: TreeNodeData;
+}
+
+export type AntMenuItem = NonNullable<MenuProps['items']>[number];
+
+/**
+ * 是否文件节点(可打开编辑器)。照搬 TreeItem.isFile:有扩展名(.),或特殊名 'ul'/'rp'。
+ * 容器节点(文件夹/库)返回 false。
+ */
+export function isFileNode(data: TreeNodeData): boolean {
+    const name = data.name;
+    return name.indexOf('.') > -1 || name === 'ul' || name === 'rp';
+}
+
+/**
+ * 是否容器节点(可展开)。照搬 TreeItem.isContainer:有 children(含空数组)/ 懒加载未加载 / type 属容器枚举。
+ */
+export function isContainerType(data: TreeNodeData): boolean {
+    const children = data.children;
+    const hasChildren = (!!children && children.length > 0) || Array.isArray(children);
+    const lazyLoadable = !!(data._needLazyLoad && !data._childrenLoaded);
+    return hasChildren || lazyLoadable || CONTAINER_TYPES.has(data.type);
+}
+
+/**
+ * 文件点击行为(原 TreeItem.onClick 168-305)。按 type 分发 window.open SPA 编辑器路由,
+ * readOnly 模式走 onFileReadOnlyClick 回调弹源码。纯逻辑,不含 DOM 选中高亮(新组件用 selectedKeys)。
+ *
+ * @param data              节点
+ * @param treeType          'public' = 公共资源树(文件统一走 resource 编辑器)
+ * @param readOnly          V6.13.1 只读模式(看 git 版本)
+ * @param onFileReadOnlyClick readOnly 模式文件 click 回调(FileTreePanel dispatch seeFileSource)
+ */
+export function handleFileOpen(
+    data: TreeNodeData,
+    treeType: string | undefined,
+    readOnly: boolean,
+    onFileReadOnlyClick?: (data: TreeNodeData) => void,
+): void {
+    if (!isFileNode(data)) return;
+    // V6.13.1 readOnly 模式:走回调弹源码,不开编辑器
+    if (readOnly && onFileReadOnlyClick) {
+        onFileReadOnlyClick(data);
+        return;
+    }
+    if (readOnly) return; // readOnly 且无回调:不开编辑器(看 git 版本,开编辑器无意义)
+
+    const fullPath = typeof data.fullPath === 'string' ? data.fullPath : '';
+    const open = (url: string) => window.open(url, '_blank');
+
+    // ruleset (rule / .rs.xml)
+    if (data.type === 'rule' || fullPath.endsWith('.rs.xml')) {
+        open('/app/editor/ruleset?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // 决策树 (decisionTree / .dtree.xml) — 注意 .dtree.xml ≠ .dt.xml(决策表)
+    if (data.type === 'decisionTree' || fullPath.endsWith('.dtree.xml')) {
+        open('/app/editor/decisiontree?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // 决策表 (decisionTable / .dt.xml)
+    if (data.type === 'decisionTable' || fullPath.endsWith('.dt.xml')) {
+        open('/app/editor/decisiontable?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // 脚本式决策表 (scriptDecisionTable / .sdt.xml)
+    if (data.type === 'scriptDecisionTable' || fullPath.endsWith('.sdt.xml')) {
+        open('/app/editor/scriptdecisiontable?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // 评分卡 (scorecard / .sc.xml)
+    if (data.type === 'scorecard' || fullPath.endsWith('.sc.xml')) {
+        open('/app/editor/scorecard?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // 复杂评分卡 (complexscorecard / .complexscorecard) — toLowerCase 判定(后端 support 一致)
+    if (data.type === 'complexscorecard' || fullPath.toLowerCase().endsWith('.complexscorecard')) {
+        open('/app/editor/complexscorecard?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // 交叉决策表 (crosstab / .ct.xml)
+    if (data.type === 'crosstab' || fullPath.endsWith('.ct.xml')) {
+        open('/app/editor/crosstab?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // 变量/常量/参数/动作库 (双扩展名 .vl.xml/.cl.xml/.pl.xml/.al.xml),按 type 或后缀
+    const libType =
+        data.type === 'variable' ? 'variable'
+        : data.type === 'constant' ? 'constant'
+        : data.type === 'parameter' ? 'parameter'
+        : data.type === 'action' ? 'action'
+        : fullPath.endsWith('.vl.xml') ? 'variable'
+        : fullPath.endsWith('.cl.xml') ? 'constant'
+        : fullPath.endsWith('.pl.xml') ? 'parameter'
+        : fullPath.endsWith('.al.xml') ? 'action'
+        : null;
+    if (libType) {
+        open('/app/editor/' + libType + '?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // 公共资源树 (treeType==='public') → 统一 resource 编辑器
+    if (treeType === 'public') {
+        open('/app/editor/resource?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // 知识包 (resourcePackage, .rp) — file 参数 = packageName.rp(无路径前缀),EditorRoute 内 .replace('.rp','')
+    if (data.type === 'resourcePackage') {
+        const packageName = fullPath.split('/')[1];
+        open('/app/editor/package?file=' + encodeURIComponent(packageName + '.rp'));
+        return;
+    }
+    // 决策流 (flow / .rl.xml)
+    if (data.type === 'flow' || fullPath.endsWith('.rl.xml')) {
+        open('/app/editor/flow?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // 未匹配类型(如 .ul.xml 脚本决策集,无 SPA 路由):原代码保留选中视觉,新组件由 selectedKeys 处理,此处 no-op
+}
+
+/**
+ * contextMenu (ContextMenuItem[]) → antd Menu items。照搬 Menu.tsx:22-27 转换。
+ * key=name(或 index),label=name,icon=字符串→`<i>`,onClick=click(data, dispatch)。
+ */
+export function contextMenuToAntItems(
+    items: ContextMenuItem[] | undefined,
+    data: TreeNodeData,
+    dispatch?: (action: unknown) => void,
+): AntMenuItem[] {
+    if (!items || items.length === 0) return [];
+    return items.map((item, index) => ({
+        key: item.name || String(index),
+        label: item.name,
+        icon: typeof item.icon === 'string' ? <i className={item.icon}/> : null,
+        onClick: () => item.click && item.click(data, dispatch),
+    }));
+}
+
+/**
+ * 节点自身是否匹配搜索(name 或 fullPath 包含 term,大小写不敏感)。term 空 → 全匹配。
+ */
+export function matchesSearch(data: TreeNodeData, term: string): boolean {
+    if (!term) return true;
+    const lower = term.toLowerCase();
+    return data.name.toLowerCase().includes(lower)
+        || (typeof data.fullPath === 'string' && data.fullPath.toLowerCase().includes(lower));
+}
+
+/**
+ * 节点自身或任一后代是否匹配搜索(递归)。用于搜索时保留命中节点的祖先链(否则树会断)。
+ */
+export function hasMatchInSubtree(data: TreeNodeData, term: string): boolean {
+    if (!term) return true;
+    if (matchesSearch(data, term)) return true;
+    if (data.children) {
+        for (const child of data.children) {
+            if (hasMatchInSubtree(child, term)) return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * 收集命中节点的所有祖先 key(用于搜索时自动展开祖先)。递归遍历,ancestors 栈不含当前节点。
+ * 返回的 Set 包含所有"有命中后代"的祖先 key(展开它们才能看到命中节点)。
+ */
+export function collectMatchAncestorKeys(root: TreeNodeData, term: string): Set<string> {
+    const keys = new Set<string>();
+    if (!term) return keys;
+    const walk = (node: TreeNodeData, ancestors: string[]) => {
+        if (matchesSearch(node, term)) {
+            ancestors.forEach(k => keys.add(k));
+        }
+        if (node.children) {
+            const childAncestors = [...ancestors, node.fullPath || node.id];
+            for (const child of node.children) {
+                walk(child, childAncestors);
+            }
+        }
+    };
+    walk(root, []);
+    return keys;
+}
+
+/**
+ * TreeNodeData → antd Tree 节点(递归)。key=fullPath(稳定唯一),isLeaf=!容器,selectable=文件。
+ * 懒加载未加载容器 children=undefined(触发 antd loadData);空容器 children=[]。
+ * 搜索时过滤 children(保留命中 + 祖先链)。
+ */
+export function toAntNode(data: TreeNodeData, term: string): AntTreeNode {
+    const isContainer = isContainerType(data);
+    const hasChildren = !!data.children && data.children.length > 0;
+    const lazyLoadable = !!(data._needLazyLoad && !data._childrenLoaded);
+
+    let children: AntTreeNode[] | undefined;
+    if (hasChildren) {
+        const filtered = data.children!.filter(c => hasMatchInSubtree(c, term));
+        children = filtered.map(c => toAntNode(c, term));
+    } else if (lazyLoadable) {
+        children = undefined; // 触发 antd loadData
+    } else {
+        children = isContainer ? [] : undefined;
+    }
+
+    return {
+        key: data.fullPath || data.id,
+        title: data.name,
+        icon: <i className={data._icon as string} style={data._style as React.CSSProperties}/>,
+        isLeaf: !isContainer,
+        selectable: isFileNode(data),
+        children,
+        rawData: data,
+    };
+}
+
+/**
+ * 构建整棵 antd treeData。跳过 root(跟老 Tree.tsx:26 一致),渲染 root.children。
+ * @param root    Redux 的 state.data 或 state.publicResource
+ * @param term    搜索词(空 = 全树)
+ */
+export function buildAntTreeData(root: TreeNodeData | null | undefined, term: string): AntTreeNode[] {
+    if (!root || !root.children) return [];
+    return root.children
+        .filter(c => hasMatchInSubtree(c, term))
+        .map(c => toAntNode(c, term));
+}
+
+/**
+ * 收集初始展开 key:_forceExpand 标记 或 _level <= expandLevel 的节点(照搬 TreeItem:43 的初始展开判定)。
+ */
+export function collectInitialExpandedKeys(root: TreeNodeData | null | undefined, expandLevel: number): string[] {
+    const keys: string[] = [];
+    if (!root) return keys;
+    const walk = (node: TreeNodeData) => {
+        const force = !!node._forceExpand;
+        const level = node._level || 1;
+        const initiallyExpanded = force || level < expandLevel;
+        if (initiallyExpanded && (node.fullPath || node.id)) {
+            keys.push(node.fullPath || node.id);
+        }
+        if (node.children) node.children.forEach(walk);
+    };
+    if (root.children) root.children.forEach(walk);
+    return keys;
+}
+
+/**
+ * 高亮搜索命中:<mark> 包裹匹配段。term 空 → 原文本。
+ */
+export function highlight(text: string, term: string): React.ReactNode {
+    if (!term) return text;
+    const lower = text.toLowerCase();
+    const idx = lower.indexOf(term.toLowerCase());
+    if (idx === -1) return text;
+    return (
+        <>
+            {text.slice(0, idx)}
+            <mark className="rf-tree-match">{text.slice(idx, idx + term.length)}</mark>
+            {text.slice(idx + term.length)}
+        </>
+    );
+}
