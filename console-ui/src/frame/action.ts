@@ -433,38 +433,12 @@ export function buildType(fileType: string): string {
         case 'al.xml':
             type = '动作库';
             break;
-        case 'rs.xml':
-            type = '向导式决策集';
-            break;
-        case 'rsl.xml':
-            type = '向导式决策库';
-            break;
-        case 'ul':
-            type = '脚本式决策集';
-            break;
-        case 'dt.xml':
-            type = '决策表';
-            break;
-        case 'dts.xml':
-            type = '脚本式决策表';
-            break;
         case 'rl.xml':
             type = '决策流';
             break;
-        case 'dtree.xml':
-            type = '决策树';
-            break;
-        case "sc":
-            type = "评分卡";
-            break;
+        // V6.20.0:DRL 规则
         case "drl":
             type = "DRL 规则";
-            break;
-        case "scc":
-            type = "复杂评分卡";
-            break;
-        case "ct.xml":
-            type = "交叉决策表";
             break;
         case "rp":
             type = 'package';
@@ -626,87 +600,6 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._style = Styles.frameStyle.getVariableIconStyle();
             data.contextMenu = buildFileContextMenu();
             break;
-        case "ruleLib":
-            data._icon = Styles.frameStyle.getRuleLibIcon();
-            data._style = Styles.frameStyle.getRuleLibIconStyle();
-            data.contextMenu = [
-                {
-                    name: '添加目录',
-                    icon: Styles.frameStyle.getFolderIcon(),
-                    click: function (data: TreeNodeData) {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FOLDER_DIALOG, {nodeData: data});
-                    }
-                },
-                {
-                    name: '添加向导式决策集',
-                    icon: Styles.frameStyle.getRuleIcon(),
-                    click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'rs.xml', nodeData: data});
-                    }
-                },
-                {
-                    name: '添加脚本式决策集',
-                    icon: Styles.frameStyle.getUlIcon(),
-                    click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'ul', nodeData: data});
-                    }
-                },
-                {
-                    name: '添加向导式决策库',
-                    icon: Styles.frameStyle.getRuleIcon(),
-                    click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'rsl.xml', nodeData: data});
-                    }
-                }
-            ];
-            break;
-        case "decisionTableLib":
-            data._icon = Styles.frameStyle.getDecisionTableLibIcon();
-            data._style = Styles.frameStyle.getDecisionTableLibIconStyle();
-            data.contextMenu = [
-                {
-                    name: '添加目录',
-                    icon: Styles.frameStyle.getFolderIcon(),
-                    click: function (data: TreeNodeData) {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FOLDER_DIALOG, {nodeData: data});
-                    }
-                },
-                {
-                    name: '添加决策表',
-                    icon: Styles.frameStyle.getDecisionTableIcon(),
-                    click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'dt.xml', nodeData: data});
-                    }
-                },
-                {
-                    name: '添加交叉决策表',
-                    icon: Styles.frameStyle.getCrossDecisionTableIcon(),
-                    click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'ct.xml', nodeData: data});
-                    }
-                }
-            ];
-            break;
-        case "decisionTreeLib":
-            data._icon = Styles.frameStyle.getDecisionTreeLibIcon();
-            data._style = Styles.frameStyle.getDecisionTreeLibIconStyle();
-            data.contextMenu = [
-                {
-                    name: '添加目录',
-                    icon: Styles.frameStyle.getFolderIcon(),
-                    click: function (data: TreeNodeData) {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FOLDER_DIALOG, {nodeData: data});
-                    }
-                },
-                {
-                    name: '添加决策树',
-                    icon: Styles.frameStyle.getDecisionTreeIcon(),
-                    click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'dtree.xml', nodeData: data});
-                    }
-                }
-            ];
-            break;
         case "flowLib":
             data._icon = Styles.frameStyle.getFlowLibIcon();
             data._style = Styles.frameStyle.getFlowLibIconStyle();
@@ -723,33 +616,6 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                     icon: Styles.frameStyle.getFlowIcon(),
                     click: function () {
                         event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'rl.xml', nodeData: data});
-                    }
-                }
-            ];
-            break;
-        case "scorecardLib":
-            data._icon = Styles.frameStyle.getScorecardLibIcon();
-            data._style = Styles.frameStyle.getScorecardLibIconStyle();
-            data.contextMenu = [
-                {
-                    name: '添加目录',
-                    icon: Styles.frameStyle.getFolderIcon(),
-                    click: function (data: TreeNodeData) {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FOLDER_DIALOG, {nodeData: data});
-                    }
-                },
-                {
-                    name: '添加评分卡',
-                    icon: Styles.frameStyle.getScorecardIcon(),
-                    click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'sc', nodeData: data});
-                    }
-                },
-                {
-                    name: "添加复杂评分卡",
-                    icon: Styles.frameStyle.getComplexScorecardIcon(),
-                    click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: "scc", nodeData: data});
                     }
                 }
             ];
@@ -775,34 +641,9 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                 }
             ];
             break;
-        case "decisionTable":
-            data._icon = Styles.frameStyle.getDecisionTableIcon();
-            data._style = Styles.frameStyle.getDecisionTableIconStyle();
-            data.contextMenu = buildFileContextMenu();
-            break;
-        case "scriptDecisionTable":
-            data._icon = Styles.frameStyle.getScriptDecisionTableIcon();
-            data._style = Styles.frameStyle.getScriptDecisionTableIconStyle();
-            data.contextMenu = buildFileContextMenu();
-            break;
-        case "decisionTree":
-            data._icon = Styles.frameStyle.getDecisionTreeIcon();
-            data._style = Styles.frameStyle.getDecisionTreeIconStyle();
-            data.contextMenu = buildFileContextMenu();
-            break;
         case "flow":
             data._icon = Styles.frameStyle.getFlowIcon();
             data._style = Styles.frameStyle.getFlowIconStyle();
-            data.contextMenu = buildFileContextMenu();
-            break;
-        case "scorecard":
-            data._icon = Styles.frameStyle.getScorecardIcon();
-            data._style = Styles.frameStyle.getScorecardIconStyle();
-            data.contextMenu = buildFileContextMenu();
-            break;
-        case "complexscorecard":
-            data._icon = Styles.frameStyle.getComplexScorecardIcon();
-            data._style = Styles.frameStyle.getComplexScorecardIconStyle();
             data.contextMenu = buildFileContextMenu();
             break;
         // V6.20.0:DRL 规则文件(.drl) → 走 DRL 编辑器
@@ -811,17 +652,11 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._style = Styles.frameStyle.getDrlIconStyle();
             data.contextMenu = buildFileContextMenu();
             break;
-        case "crosstab":
-            data._icon = Styles.frameStyle.getCrossDecisionTableIcon();
-            data._style = Styles.frameStyle.getCrossDecisionTableIconStyle();
-            data.contextMenu = buildFileContextMenu();
-            break;
     }
     // Ensure container types have a children array so they render as folders
     if (data.children === null || data.children === undefined) {
         var t = data.type;
-        if (t === 'lib' || t === 'ruleLib' || t === 'decisionTableLib' || t === 'decisionTreeLib'
-            || t === 'scorecardLib' || t === 'flowLib' || t === 'drlLib' || t === 'resource' || t === 'folder') {
+        if (t === 'lib' || t === 'flowLib' || t === 'drlLib' || t === 'resource' || t === 'folder') {
             data.children = [];
         }
     }

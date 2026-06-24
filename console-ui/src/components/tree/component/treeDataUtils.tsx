@@ -18,8 +18,9 @@ import type {MenuProps} from 'antd';
 /** 可展开的容器类型(文件夹/库根)。文件类型(rule/decisionTable/.rp 等)不在此列。 */
 const CONTAINER_TYPES = new Set<string>([
     'root', 'project', 'folder', 'resource', 'all', 'lib',
-    'ruleLib', 'decisionTableLib', 'decisionTreeLib', 'flowLib', 'scorecardLib',
-    'drlLib',  // V6.20.0:DRL 规则库容器
+    // V6.20.0 P2:删老 urule 规则库(ruleLib/decisionTableLib/decisionTreeLib/scorecardLib),
+    // 只留决策流(flowLib,ruleforge-decision 自建)+ DRL 规则(drlLib)。
+    'flowLib', 'drlLib',
     'publicResource',
 ]);
 
@@ -92,44 +93,11 @@ export function handleFileOpen(
     const fullPath = typeof data.fullPath === 'string' ? data.fullPath : '';
     const open = (url: string) => window.open(url, '_blank');
 
-    // ruleset (rule / .rs.xml)
-    if (data.type === 'rule' || fullPath.endsWith('.rs.xml')) {
-        open('/app/editor/ruleset?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // V6.20.0:DRL (.drl) — 走 DRL 编辑器
+    // V6.20.0 P2:删老 urule 规则(.rs.xml/.dt.xml/.dtree.xml/.sdt.xml/.sc.xml/.complexscorecard/.ct.xml)
+// UI 入口,只留 DRL + 4 库 + 决策流 + 知识包 + 公共资源。
+// V6.20.0:DRL (.drl) — 走 DRL 编辑器
     if (data.type === 'drl' || fullPath.endsWith('.drl')) {
         open('/app/editor/drl?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // 决策树 (decisionTree / .dtree.xml) — 注意 .dtree.xml ≠ .dt.xml(决策表)
-    if (data.type === 'decisionTree' || fullPath.endsWith('.dtree.xml')) {
-        open('/app/editor/decisiontree?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // 决策表 (decisionTable / .dt.xml)
-    if (data.type === 'decisionTable' || fullPath.endsWith('.dt.xml')) {
-        open('/app/editor/decisiontable?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // 脚本式决策表 (scriptDecisionTable / .sdt.xml)
-    if (data.type === 'scriptDecisionTable' || fullPath.endsWith('.sdt.xml')) {
-        open('/app/editor/scriptdecisiontable?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // 评分卡 (scorecard / .sc.xml)
-    if (data.type === 'scorecard' || fullPath.endsWith('.sc.xml')) {
-        open('/app/editor/scorecard?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // 复杂评分卡 (complexscorecard / .complexscorecard) — toLowerCase 判定(后端 support 一致)
-    if (data.type === 'complexscorecard' || fullPath.toLowerCase().endsWith('.complexscorecard')) {
-        open('/app/editor/complexscorecard?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // 交叉决策表 (crosstab / .ct.xml)
-    if (data.type === 'crosstab' || fullPath.endsWith('.ct.xml')) {
-        open('/app/editor/crosstab?file=' + encodeURIComponent(fullPath));
         return;
     }
     // 变量/常量/参数/动作库 (双扩展名 .vl.xml/.cl.xml/.pl.xml/.al.xml),按 type 或后缀
@@ -158,12 +126,12 @@ export function handleFileOpen(
         open('/app/editor/package?file=' + encodeURIComponent(packageName + '.rp'));
         return;
     }
-    // 决策流 (flow / .rl.xml)
+    // 决策流 (flow / .rl.xml) — 保留:ruleforge-decision 自建 BPMN 引擎
     if (data.type === 'flow' || fullPath.endsWith('.rl.xml')) {
         open('/app/editor/flow?file=' + encodeURIComponent(fullPath));
         return;
     }
-    // 未匹配类型(如 .ul.xml 脚本决策集,无 SPA 路由):原代码保留选中视觉,新组件由 selectedKeys 处理,此处 no-op
+    // 未匹配类型(如老 .rs.xml/.dt.xml/.ul.xml 等,UI 已移除但 .rp 内已有文件可能仍命中):no-op,不动 window
 }
 
 /**

@@ -1651,23 +1651,8 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
         }
         buildNodes(projectNode, subLib, librarySubTypes, Type.lib, searchFileName);
 
-        // 遍历决策集
-        RepositoryFile rulesLib = buildLibFile(libDir, "决策集", LibType.ruleset);
-        rulesLib.setFullPath(libDir.getFullPath());
-        rulesLib.setType(Type.ruleLib);
-
-        RepositoryFile decisionTableLib = buildLibFile(libDir, "决策表", LibType.decisiontable);
-        decisionTableLib.setFullPath(libDir.getFullPath());
-        decisionTableLib.setType(Type.decisionTableLib);
-
-        RepositoryFile decisionTreeLib = buildLibFile(libDir, "决策树", LibType.decisiontree);
-        decisionTreeLib.setFullPath(libDir.getFullPath());
-        decisionTreeLib.setType(Type.decisionTreeLib);
-
-        RepositoryFile scorecardLib = buildLibFile(libDir, "评分卡", LibType.scorecard);
-        scorecardLib.setFullPath(libDir.getFullPath());
-        scorecardLib.setType(Type.scorecardLib);
-
+        // V6.20.0 P2:删老 urule 规则库(决策集/决策表/决策树/评分卡),只留决策流(ruleforge-decision)
+        // + DRL 规则库(V6.20.0 新增)。
         RepositoryFile flowLib = buildLibFile(libDir, "决策流", LibType.ruleflow);
         flowLib.setFullPath(libDir.getFullPath());
         flowLib.setType(Type.flowLib);
@@ -1677,35 +1662,12 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
         drlLib.setFullPath(libDir.getFullPath());
         drlLib.setType(Type.drlLib);
 
-        libDir.addChild(rulesLib, false);
-        libDir.addChild(decisionTableLib, false);
-        libDir.addChild(decisionTreeLib, false);
-        libDir.addChild(scorecardLib, false);
         libDir.addChild(flowLib, false);
         libDir.addChild(drlLib, false);
-
-        FileType[] libraryRuleTypes = types;
-        if (types == null || types.length == 0) {
-            libraryRuleTypes = new FileType[]{FileType.Ruleset, FileType.RulesetLib, FileType.UL};
-        }
-
-        FileType[] libraryDecisionTypes = types;
-        if (types == null || types.length == 0) {
-            libraryDecisionTypes = new FileType[]{FileType.DecisionTable, FileType.ScriptDecisionTable, FileType.Crosstab};
-        }
-        FileType[] libraryDecisionTreeTypes = types;
-        if (types == null || types.length == 0) {
-            libraryDecisionTreeTypes = new FileType[]{FileType.DecisionTree};
-        }
 
         FileType[] libraryFlowTypes = types;
         if (types == null || types.length == 0) {
             libraryFlowTypes = new FileType[]{FileType.RuleFlow};
-        }
-
-        FileType[] libraryScorecardTypes = types;
-        if (types == null || types.length == 0) {
-            libraryScorecardTypes = new FileType[]{FileType.Scorecard, FileType.ComplexScorecard};
         }
 
         FileType[] libraryDrlTypes = types;
@@ -1713,10 +1675,6 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
             libraryDrlTypes = new FileType[]{FileType.Drl};
         }
 
-        buildNodes(projectNode, rulesLib, libraryRuleTypes, Type.ruleLib, searchFileName);
-        buildNodes(projectNode, decisionTableLib, libraryDecisionTypes, Type.decisionTableLib, searchFileName);
-        buildNodes(projectNode, decisionTreeLib, libraryDecisionTreeTypes, Type.decisionTreeLib, searchFileName);
-        buildNodes(projectNode, scorecardLib, libraryScorecardTypes, Type.scorecardLib, searchFileName);
         buildNodes(projectNode, flowLib, libraryFlowTypes, Type.flowLib, searchFileName);
         buildNodes(projectNode, drlLib, libraryDrlTypes, Type.drlLib, searchFileName);
     }
