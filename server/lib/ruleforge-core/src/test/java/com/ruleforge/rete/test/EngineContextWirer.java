@@ -7,6 +7,8 @@ import com.ruleforge.debug.DebugWriter;
 import com.ruleforge.model.function.FunctionDescriptor;
 import com.ruleforge.model.rete.builder.AndBuilder;
 import com.ruleforge.model.rete.builder.CriteriaBuilder;
+import com.ruleforge.model.rete.builder.CriterionBuilder;
+import com.ruleforge.model.rete.builder.OrBuilder;
 import com.ruleforge.model.rete.builder.ReteBuilder;
 import com.ruleforge.parse.ActionParser;
 import com.ruleforge.parse.CriterionParser;
@@ -52,9 +54,12 @@ public final class EngineContextWirer {
      */
     public static void wire() throws Exception {
         // ReteBuilder 静态字段(V5.46 老 API 退化,生产 Spring 收集,本测试无 Spring 反射)
+        // V7.0.0 加 OrBuilder — CEL 翻译器产 Or junction(||)需要 OrBuilder 支持
+        java.util.List<CriterionBuilder> builders = Arrays.asList(
+                new CriteriaBuilder(), new AndBuilder(), new OrBuilder());
         Field f = ReteBuilder.class.getDeclaredField("criterionBuilders");
         f.setAccessible(true);
-        f.set(null, Arrays.asList(new CriteriaBuilder(), new AndBuilder()));
+        f.set(null, builders);
 
         // 真实 ValueCompute(无状态,public ctor)
         ValueCompute realValueCompute = new ValueCompute();
@@ -85,7 +90,7 @@ public final class EngineContextWirer {
             @Override public Collection<CriterionParser> getCriterionParsers() { return Collections.emptyList(); }
             @Override public Collection<ActionParser> getActionParsers() { return Collections.emptyList(); }
             @Override public Collection<com.ruleforge.model.rete.builder.CriterionBuilder> getCriterionBuilders() {
-                return Arrays.asList(new CriteriaBuilder(), new AndBuilder());
+                return builders;
             }
             @Override public Collection<ResourceBuilder> getResourceBuilders() { return Collections.emptyList(); }
             @Override public Collection<ResourceProvider> getResourceProviders() { return Collections.emptyList(); }
