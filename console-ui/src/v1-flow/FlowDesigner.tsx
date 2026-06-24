@@ -1,4 +1,4 @@
-import {useCallback, useState} from 'react';
+import {useCallback, useState, useMemo} from 'react';
 import {
     ReactFlow,
     Background,
@@ -13,9 +13,10 @@ import {
     type Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {Layout, Menu, Button, Drawer, Input, Space, Typography, theme} from 'antd';
+import {Layout, Menu, Button, Space, Typography, Input, Drawer, theme} from 'antd';
 import {nodeTypes, PALETTE, type V1NodeData} from './FlowNodes';
 import {type RuleAsset, type FlowElement, type V1Node, type NodeType} from './ruleAsset';
+import NodePropertyDrawer from './NodePropertyDrawer';
 
 const {Sider, Content, Header} = Layout;
 const {Text} = Typography;
@@ -23,10 +24,29 @@ const {Text} = Typography;
 let idCounter = 1;
 const genId = (prefix: string) => `${prefix}_${idCounter++}`;
 
-/** ReactFlow node/edge → V1 RuleAsset。不存 ReactFlow JSON,只存自己的模型 + position。 */
-function toRuleAsset(rfNodes: Node<V1NodeData>[], rfEdges: Edge[], schemaName: string): RuleAsset {
+function newNodeDefault(type: NodeType, id: string, schemaName: string): V1Node {
+    switch (type) {
+        case 'Start':
+            return {id, type: 'Start', name: 'Start', schema: schemaName};
+        case 'RuleSet':
+            return {id, type: 'RuleSet', name: 'RuleSet', hitPolicy: 'FIRST_MATCH', rules: []};
+        case 'DecisionTable':
+            return {id, type: 'DecisionTable', name: 'DecisionTable', hitPolicy: 'FIRST', inputs: [], outputs: [], rows: []};
+        case 'ScoreCard':
+            return {id, type: 'ScoreCard', name: 'ScoreCard', output: 'score', aggregation: 'SUM', cards: []};
+        case 'Decision':
+            return {id, type: 'Decision', name: 'Decision', outputs: ['approve', 'review', 'reject'], decisionField: 'decision', defaultOutput: 'review'};
+    }
+}
+
+/** canvas nodes/edges + 节点内容 map → V1 RuleAsset。不存 ReactFlow JSON。 */
+function toRuleAsset(
+    rfNodes: Node<V1NodeData>[],
+    rfEdges: Edge[],
+    nodesMap: Record<string, V1Node>,
+    schemaName: string,
+): RuleAsset {
     const flowElements: FlowElement[] = [];
-    const nodes: Record<string, V1Node> = {};
     const bpmnType: Record<NodeType, FlowElement['type']> = {
         Start: 'startEvent',
         RuleSet: 'serviceTask',
@@ -34,6 +54,7 @@ function toRuleAsset(rfNodes: Node<V1NodeData>[], rfEdges: Edge[], schemaName: s
         ScoreCard: 'serviceTask',
         Decision: 'endEvent',
     };
+    const nodes: Record<string, V1Node> = {};
     for (const n of rfNodes) {
         const data = n.data as V1NodeData;
         flowElements.push({
@@ -43,7 +64,8 @@ function toRuleAsset(rfNodes: Node<V1NodeData>[], rfEdges: Edge[], schemaName: s
             position: {x: Math.round(n.position.x), y: Math.round(n.position.y)},
             implementation: `${data.nodeType}:${n.id}`,
         });
-        nodes[n.id] = newNodeDefault(data.nodeType, n.id, data.name, schemaName);
+        // 用 nodesMap 的完整内容(已被 Drawer 编辑过),fallback 到默认
+        nodes[n.id] = nodesMap[n.id] || newNodeDefault(data.nodeType, n.id, schemaName);
     }
     for (const e of rfEdges) {
         flowElements.push({type: 'sequenceFlow', id: e.id, sourceRef: e.source, targetRef: e.target});
@@ -57,26 +79,13 @@ function toRuleAsset(rfNodes: Node<V1NodeData>[], rfEdges: Edge[], schemaName: s
     };
 }
 
-function newNodeDefault(type: NodeType, id: string, name: string, schemaName: string): V1Node {
-    switch (type) {
-        case 'Start':
-            return {id, type: 'Start', name, schema: schemaName};
-        case 'RuleSet':
-            return {id, type: 'RuleSet', name, hitPolicy: 'FIRST_MATCH', rules: []};
-        case 'DecisionTable':
-            return {id, type: 'DecisionTable', name, hitPolicy: 'FIRST', inputs: [], outputs: [], rows: []};
-        case 'ScoreCard':
-            return {id, type: 'ScoreCard', name, output: 'score', aggregation: 'SUM', cards: []};
-        case 'Decision':
-            return {id, type: 'Decision', name, outputs: ['approve', 'review', 'reject'], decisionField: 'decision', defaultOutput: 'review'};
-    }
-}
-
 export default function FlowDesigner() {
     const {token} = theme.useToken();
     const [nodes, setNodes, onNodesChange] = useNodesState<Node<V1NodeData>>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
     const [schemaName, setSchemaName] = useState('LoanApplication');
+    const [nodesMap, setNodesMap] = useState<Record<string, V1Node>>({});
+    const [selectedId, setSelectedId] = useState<string | null>(null);
     const [exportOpen, setExportOpen] = useState(false);
     const [exported, setExported] = useState('');
 
@@ -88,21 +97,32 @@ export default function FlowDesigner() {
     const addNode = useCallback(
         (type: NodeType) => {
             const id = genId(type.toLowerCase());
-            const newNode: Node<V1NodeData> = {
+            const node: Node<V1NodeData> = {
                 id,
                 type: 'v1',
                 position: {x: 120 + Math.random() * 200, y: 100 + nodes.length * 110},
                 data: {nodeType: type, name: type, implementation: `${type}:${id}`},
             };
-            setNodes((nds: Node<V1NodeData>[]) => nds.concat(newNode));
+            setNodes((nds: Node<V1NodeData>[]) => nds.concat(node));
+            setNodesMap((m) => ({...m, [id]: newNodeDefault(type, id, schemaName)}));
         },
-        [nodes.length, setNodes],
+        [nodes.length, setNodes, schemaName],
     );
 
+    /** Drawer 改节点内容 → 回写 nodesMap + 同步画布节点显示名。 */
+    const onNodeChange = useCallback((updated: V1Node) => {
+        setNodesMap((m) => ({...m, [updated.id]: updated}));
+        setNodes((nds) => nds.map((n) => n.id === updated.id ? {...n, data: {...n.data, name: updated.name}} : n));
+    }, [setNodes]);
+
     const exportJson = useCallback(() => {
-        setExported(JSON.stringify(toRuleAsset(nodes, edges, schemaName), null, 2));
+        setExported(JSON.stringify(toRuleAsset(nodes, edges, nodesMap, schemaName), null, 2));
         setExportOpen(true);
-    }, [nodes, edges, schemaName]);
+    }, [nodes, edges, nodesMap, schemaName]);
+
+    const selectedNode = selectedId ? nodesMap[selectedId] : null;
+
+    const palette = useMemo(() => PALETTE.map((t) => ({key: t, label: `+ ${t}`})), []);
 
     return (
         <Layout style={{height: '100vh'}}>
@@ -117,14 +137,9 @@ export default function FlowDesigner() {
             <Layout>
                 <Sider width={200} style={{background: token.colorBgContainer, padding: 12}}>
                     <Text type='secondary' style={{fontSize: 12}}>节点(MVP 5 种)</Text>
-                    <Menu
-                        mode='inline'
-                        style={{borderInlineEnd: 'none', marginTop: 8}}
-                        items={PALETTE.map((t) => ({key: t, label: `+ ${t}`}))}
-                        onClick={({key}) => addNode(key as NodeType)}
-                    />
+                    <Menu mode='inline' style={{borderInlineEnd: 'none', marginTop: 8}} items={palette} onClick={({key}) => addNode(key as NodeType)}/>
                     <Text type='secondary' style={{fontSize: 11, display: 'block', marginTop: 16}}>
-                        点节点加入画布;从节点底部圆点拖到下一节点顶部圆点连线。
+                        点节点加入画布 → 连线 → 点节点弹属性 Drawer 编辑内容 → 导出。
                     </Text>
                 </Sider>
                 <Content style={{position: 'relative'}}>
@@ -134,6 +149,7 @@ export default function FlowDesigner() {
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}
                         onConnect={onConnect}
+                        onNodeClick={(_, n) => setSelectedId(n.id)}
                         nodeTypes={nodeTypes}
                         fitView
                         data-testid='v1-canvas'
@@ -144,6 +160,12 @@ export default function FlowDesigner() {
                     </ReactFlow>
                 </Content>
             </Layout>
+            <NodePropertyDrawer
+                node={selectedNode}
+                open={selectedId !== null}
+                onClose={() => setSelectedId(null)}
+                onChange={onNodeChange}
+            />
             <Drawer title='RuleAsset JSON(后端可执行)' open={exportOpen} onClose={() => setExportOpen(false)} width={520}>
                 <pre data-testid='v1-export' style={{fontSize: 11, fontFamily: 'monospace', whiteSpace: 'pre-wrap'}}>{exported}</pre>
             </Drawer>
