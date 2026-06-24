@@ -37,12 +37,17 @@ const ScoreCardEditorRoute = lazy(() => import('@/editor/scorecard/react/EditorR
 const ComplexScoreCardEditorRoute = lazy(() => import('@/editor/complexscorecard/react/EditorRoute'));
 const CrosstabEditorRoute = lazy(() => import('@/editor/crosstab/react/EditorRoute'));
 const DecisionTreeEditorRoute = lazy(() => import('@/editor/decisiontree/react/EditorRoute'));
+// V7.0.0:V1 决策流设计器(React Flow + 5 节点 BPMN 子集)。从 console-ui-v1 demo 并进 console-ui。
+const V1FlowDesignerRoute = lazy(() => import('@/v1-flow/EditorRoute'));
 
 createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
         <Routes>
             <Route path="/" element={<Navigate to="/login" replace/>}/>
             <Route path="/login" element={<LoginPage/>}/>
+            {/* V7.0.0:V1 决策流设计器 demo 路由(纯客户端画布,免登录,不调后端)。
+                生产集成(保存到项目树)后再移进 /app RequireAuth 内。 */}
+            <Route path="/v1-flow" element={<Suspense fallback={<div style={{padding: 24}}>加载中…</div>}><V1FlowDesignerRoute/></Suspense>}/>
             <Route path="/app" element={<RequireAuth/>}>
                 <Route index element={<Suspense fallback={<div style={{padding: 24}}>加载中…</div>}><FrameApp/></Suspense>}/>
                 <Route path="editor/ruleset" element={<EditorRoute/>}/>
@@ -64,6 +69,8 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="editor/complexscorecard" element={<ComplexScoreCardEditorRoute/>}/>
                 <Route path="editor/crosstab" element={<CrosstabEditorRoute/>}/>
                 <Route path="editor/decisiontree" element={<DecisionTreeEditorRoute/>}/>
+                {/* V7.0.0:V1 决策流设计器(独立全屏画布,不走 frame) */}
+                <Route path="v1-flow" element={<V1FlowDesignerRoute/>}/>
             </Route>
         </Routes>
     </BrowserRouter>,
