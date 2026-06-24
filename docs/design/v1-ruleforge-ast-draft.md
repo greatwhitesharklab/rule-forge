@@ -471,7 +471,7 @@ JSON 示例:
 
 ## 打包格式 RuleAsset
 
-一个 RuleForge 资产 = 一个 JSON 文件,后缀 **`.ruleflow`**(单扩展名,非 urule 的 `.rf.json` 双扩展名风格;内容是 JSON)。
+一个 RuleForge 资产 = 一个 JSON 文件,后缀直接 **`.json`**(不造 `.rf.json` / `.ruleflow` 等专属后缀,内容靠顶层 `version` 字段自识别;对齐 GoRules/n8n 做法)。
 
 ```typescript
 interface RuleAsset {
@@ -498,7 +498,7 @@ interface RuleAsset {
 
 ## 现金贷示例(端到端)
 
-完整 RuleAsset:`loan_approval.ruleflow`
+完整 RuleAsset:`loan_approval.json`
 
 ```json
 {
@@ -640,7 +640,7 @@ Rete 编译通道是 MVP critical path。若 `cel-java` 接入 + criteria 翻译
 | D5 | Flow 词汇 | **BPMN 子集** | 复用 ruleforge-decision |
 | D6 | 位置信息 | **flow element 可选 position,presentation-only** | 运行时忽略 |
 | D7 | V1 库 | **只 Schema(vl 精简)** | cl/pl/al 留 V1.1+ |
-| **D8** | **资产后缀** | **`.ruleflow`** | 单扩展名,非 urule 双扩展名风格;内容 JSON |
+| **D8** | **资产后缀** | **`.json`** | 不造 `.rf.json` / `.ruleflow` 专属后缀,内容靠顶层 `version` 字段自识别;对齐 GoRules/n8n |
 | **R1** | **MVP 目标用户** | **现金贷风控团队**(已知场景) | Schema 按贷款申请 fact 设计;3 节点够覆盖 |
 | **R2** | **MVP 范围** | **只做"画+编译+执行"** | 陪跑测试/决策日志/版本发布/权限复用现有 RuleForge 基础设施 |
 
@@ -656,13 +656,13 @@ Rete 编译通道是 MVP critical path。若 `cel-java` 接入 + criteria 翻译
 > **分支**:`feature/V7.0.0-v1-mvp`
 > **范围**:3 业务节点(RuleSet + DecisionTable + ScoreCard)+ Start/Decision + Rete 编译 + React Flow 画布;陪跑/日志/发布/权限复用现有基础设施
 > **目标客户**:现金贷风控团队
-> **交付物**:能画一个完整现金贷决策流 → 保存 `.ruleflow` → Rete 编译执行 → 拿到 decision 结果
+> **交付物**:能画一个完整现金贷决策流 → 保存 `.json` → Rete 编译执行 → 拿到 decision 结果
 
 ### Week 1 — 后端:AST + CEL + Rete 编译核心
 
 | 子任务 | 内容 | 验证 |
 |---|---|---|
-| W1-1 | V1 AST Java model:`NodeBase` + 5 节点 + `Flow` + `Schema` + `RuleAsset`;Jackson JSON load/save(`.ruleflow`) | BDD:load `loan_approval.ruleflow` → 各节点字段正确 |
+| W1-1 | V1 AST Java model:`NodeBase` + 5 节点 + `Flow` + `Schema` + `RuleAsset`;Jackson JSON load/save(`.json`) | BDD:load `loan_approval.json` → 各节点字段正确 |
 | W1-2 | `cel-java`(dev.cel,Apache 2.0)接入 + CEL 解析校验(必须返回 boolean,白名单函数) | BDD:`age >= 18` parse OK;`x = 1`(赋值)拒绝 |
 | W1-3 | **CEL → RETE criteria 编译通道**(路径 A:CEL → 老 DSL `Criterion` 中间表示 → 现有 RETE builder) | BDD:CEL expr 编出的 criteria 跟手写 DRL 等价 RETE 一致 |
 | W1-4 | Action → RETE RHS 翻译(5 种:setVariable/addScore/setDecision/reject/flag) | BDD:每个 action 在 fact 上产生预期副作用 |
@@ -679,14 +679,14 @@ Rete 编译通道是 MVP critical path。若 `cel-java` 接入 + criteria 翻译
 | W2-3 | ScoreCard 独立执行器:cards → bands 命中取分 → aggregation(SUM/AVG/MIN/MAX/WEIGHTED_SUM)写 output | BDD:风险分卡 → riskScore 正确 |
 | W2-4 | Decision emit + reject 终止信号(decisionField ∈ outputs 校验) | BDD:reject 终止流程;Decision emit 正确值 |
 | W2-5 | Flow runner:ruleforge-decision BPMN 编排,serviceTask → 节点执行器(RuleSet/DecisionTable 走 Rete 包,ScoreCard 走独立执行器) | BDD:5 节点线性 flow 按序执行 |
-| W2-6 | **端到端集成测试**:`loan_approval.ruleflow` → compile → execute → assert decision("review") | BDD:完整现金贷轨迹 |
+| W2-6 | **端到端集成测试**:`loan_approval.json` → compile → execute → assert decision("review") | BDD:完整现金贷轨迹 |
 
 ### Week 3 — 前端 MVP
 
 | 子任务 | 内容 | 验证 |
 |---|---|---|
 | W3-1 | 脚手架:V1 编辑器路由 + 依赖(`reactflow`/`ag-grid-community`/`react-querybuilder`/`shadcn`) | 依赖装好,空白页 render |
-| W3-2 | React Flow 画布:5 节点(BPMN 子集 icons)+ 连线 + position 持久化 → `.ruleflow` | Vitest:画 5 节点连线 → 序列化 JSON 含 flowElements |
+| W3-2 | React Flow 画布:5 节点(BPMN 子集 icons)+ 连线 + position 持久化 → `.json` | Vitest:画 5 节点连线 → 序列化 JSON 含 flowElements |
 | W3-3 | AG Grid DecisionTable 编辑器:inputs/outputs columns + rows(CEL 单元格) | Vitest:编辑表行 → 存回 DecisionTable node |
 | W3-4 | React Query Builder → CEL(RuleSet condition)+ Monaco CEL 高级模式(切换) | Vitest:可视化条件 → CEL 字符串双向 |
 | W3-5 | shadcn/ui 属性 Drawer:节点选中 → 右侧改配置(name/hitPolicy/rules/cards) | Vitest:选中节点 → Drawer 显示配置 |
