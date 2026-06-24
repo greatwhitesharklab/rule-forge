@@ -60,7 +60,7 @@ describe('PMML EditorRoute V6.20.0 P3', () => {
         expect(pre.textContent).toContain('PMML');
     });
 
-    it('GIVEN mount WHEN render THEN banner 显式提示 "暂不产生规则" + file + project', () => {
+    it('GIVEN mount WHEN render THEN banner 显式标注 PMML 是 "导入格式"(非核心模型)+ 0 rules + file + project', () => {
         render(
             <MemoryRouter initialEntries={['/app/editor/pmml?file=/proj/score.pmml']}>
                 <Routes>
@@ -68,9 +68,10 @@ describe('PMML EditorRoute V6.20.0 P3', () => {
                 </Routes>
             </MemoryRouter>,
         );
-        expect(screen.getByText(/PMML 4\.4 只读查看器/)).toBeTruthy();
-        // "暂不产生规则" 警告 — 防止用户误以为 build 后会触发 PMML 求值
-        expect(screen.getByText(/暂不产生规则/)).toBeTruthy();
+        // 2026-06-24 user 反馈:PMML 是传统银行/SAS 体系遗留标准,本系统只作"导入格式"
+        expect(screen.getByText(/仅作导入格式/)).toBeTruthy();
+        // "不作为核心执行模型" + "0 rules 触发" 双重警告 — 防止用户误以为 build 后会触发 PMML 求值
+        expect(screen.getByText(/0 rules 触发/)).toBeTruthy();
         expect(screen.getByText('/proj/score.pmml')).toBeTruthy();
         expect(screen.getByText('test-project')).toBeTruthy();
     });

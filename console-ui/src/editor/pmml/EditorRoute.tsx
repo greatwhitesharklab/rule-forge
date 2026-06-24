@@ -57,14 +57,17 @@ export default function EditorRoute() {
                     borderRadius: 4,
                 }}
             >
-                <strong>PMML 4.4 只读查看器(暂不产生规则)</strong>
+                <strong>PMML — 仅作导入格式(非核心模型)</strong>
                 &nbsp;·&nbsp;文件:<code>{file || '(未指定)'}</code>
                 &nbsp;·&nbsp;项目:<code>{project}</code>
                 <div style={{marginTop: 4, fontSize: 12, color: '#666'}}>
-                    PMML 后端当前只填充顶层字段(useReasonCodes/initialScore/...),
-                    子结构(cells/rows/树节点)尚未展开 → 知识包构建后此文件 0 rules 触发。
-                    全量规则展开是未来 V5.41.4 PR 的子任务。本文件不可在 UI 内编辑 — 请用外部
-                    PMML 建模工具生成后覆盖本路径。
+                    PMML 是传统银行/SAS 体系遗留的模型交换标准,本系统将其作为<strong>导入格式</strong>:
+                    接收用户从外部 SAS / SPSS / 银行决策平台导出的 PMML,作为参考或迁移起点。
+                    <strong style={{color: '#cf1322'}}>当前不作为核心执行模型</strong> — 后端 dispatcher 仅填充
+                    顶层字段(useReasonCodes/initialScore/...),子结构(cells/rows/树节点)尚未展开,
+                    知识包构建后此文件 0 rules 触发。全量展开留作未来 V5.41.4 子任务。
+                    本文件不可在 UI 内编辑 — 请用外部 PMML 建模工具生成后覆盖本路径。
+                    核心模型请使用 DRL / 决策流(本系统的原生表达)。
                 </div>
             </div>
             {loading && <div>加载中…</div>}
