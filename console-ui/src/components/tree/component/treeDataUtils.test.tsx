@@ -53,6 +53,10 @@ describe('treeDataUtils', () => {
         it('文件节点非容器', () => {
             expect(isContainerType(makeNode({name: 'x.rs.xml', type: 'rule'}))).toBe(false);
         });
+        // V6.20.0:drlLib 容器类型走 CONTAINER_TYPES(可展开 + 不是文件)
+        it('V6.20.0:drlLib 视为容器', () => {
+            expect(isContainerType(makeNode({type: 'drlLib'}))).toBe(true);
+        });
     });
 
     describe('handleFileOpen', () => {
@@ -77,6 +81,8 @@ describe('treeDataUtils', () => {
             {name: 'parameter/.pl.xml → parameter', node: {name: 'p.pl.xml', type: 'parameter', fullPath: '/p/p.pl.xml'}, expectedPath: '/app/editor/parameter'},
             {name: 'action/.al.xml → action', node: {name: 'a.al.xml', type: 'action', fullPath: '/p/a.al.xml'}, expectedPath: '/app/editor/action'},
             {name: 'flow/.rl.xml → flow', node: {name: 'f.rl.xml', type: 'flow', fullPath: '/p/f.rl.xml'}, expectedPath: '/app/editor/flow'},
+            // V6.20.0:DRL 规则(.drl) → DRL 编辑器
+            {name: 'V6.20.0:DRL/.drl → drl', node: {name: 'r.drl', type: 'drl', fullPath: '/p/r.drl'}, expectedPath: '/app/editor/drl'},
         ];
         it.each(cases)('$name', ({node, expectedPath}) => {
             handleFileOpen(makeNode(node), undefined, false);
@@ -253,6 +259,13 @@ describe('treeDataUtils', () => {
             }), 'credit');
             expect(node.children).toHaveLength(1);
             expect(node.children![0].key).toBe('/p/credit.dt.xml');
+        });
+        // V6.20.0:drlLib 容器转换后 isLeaf=false(走 loadData 懒加载)
+        it('V6.20.0:drlLib → isLeaf=false', () => {
+            const node = toAntNode(makeNode({name: 'DRL规则', type: 'drlLib', fullPath: '/p/drl', _needLazyLoad: true, _childrenLoaded: false}), '');
+            expect(node.isLeaf).toBe(false);
+            expect(node.selectable).toBe(false);
+            expect(node.children).toBeUndefined();
         });
     });
 

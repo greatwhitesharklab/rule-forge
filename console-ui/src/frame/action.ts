@@ -754,6 +754,27 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                 }
             ];
             break;
+        // V6.20.0:DRL 规则库(新分类,跟老 决策集/决策表 并列)
+        case "drlLib":
+            data._icon = Styles.frameStyle.getDrlLibIcon();
+            data._style = Styles.frameStyle.getDrlLibIconStyle();
+            data.contextMenu = [
+                {
+                    name: '添加目录',
+                    icon: Styles.frameStyle.getFolderIcon(),
+                    click: function (data: TreeNodeData) {
+                        event.eventEmitter.emit(event.OPEN_CREATE_FOLDER_DIALOG, {nodeData: data});
+                    }
+                },
+                {
+                    name: '添加 DRL 规则',
+                    icon: Styles.frameStyle.getDrlIcon(),
+                    click: function () {
+                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'drl', nodeData: data});
+                    }
+                }
+            ];
+            break;
         case "decisionTable":
             data._icon = Styles.frameStyle.getDecisionTableIcon();
             data._style = Styles.frameStyle.getDecisionTableIconStyle();
@@ -784,6 +805,12 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._style = Styles.frameStyle.getComplexScorecardIconStyle();
             data.contextMenu = buildFileContextMenu();
             break;
+        // V6.20.0:DRL 规则文件(.drl) → 走 DRL 编辑器
+        case "drl":
+            data._icon = Styles.frameStyle.getDrlIcon();
+            data._style = Styles.frameStyle.getDrlIconStyle();
+            data.contextMenu = buildFileContextMenu();
+            break;
         case "crosstab":
             data._icon = Styles.frameStyle.getCrossDecisionTableIcon();
             data._style = Styles.frameStyle.getCrossDecisionTableIconStyle();
@@ -794,7 +821,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
     if (data.children === null || data.children === undefined) {
         var t = data.type;
         if (t === 'lib' || t === 'ruleLib' || t === 'decisionTableLib' || t === 'decisionTreeLib'
-            || t === 'scorecardLib' || t === 'flowLib' || t === 'resource' || t === 'folder') {
+            || t === 'scorecardLib' || t === 'flowLib' || t === 'drlLib' || t === 'resource' || t === 'folder') {
             data.children = [];
         }
     }

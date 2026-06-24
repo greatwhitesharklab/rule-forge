@@ -19,6 +19,7 @@ import type {MenuProps} from 'antd';
 const CONTAINER_TYPES = new Set<string>([
     'root', 'project', 'folder', 'resource', 'all', 'lib',
     'ruleLib', 'decisionTableLib', 'decisionTreeLib', 'flowLib', 'scorecardLib',
+    'drlLib',  // V6.20.0:DRL 规则库容器
     'publicResource',
 ]);
 
@@ -94,6 +95,11 @@ export function handleFileOpen(
     // ruleset (rule / .rs.xml)
     if (data.type === 'rule' || fullPath.endsWith('.rs.xml')) {
         open('/app/editor/ruleset?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // V6.20.0:DRL (.drl) — 走 DRL 编辑器
+    if (data.type === 'drl' || fullPath.endsWith('.drl')) {
+        open('/app/editor/drl?file=' + encodeURIComponent(fullPath));
         return;
     }
     // 决策树 (decisionTree / .dtree.xml) — 注意 .dtree.xml ≠ .dt.xml(决策表)
