@@ -97,7 +97,7 @@ public class FrameController extends BaseController {
                         types = new FileType[]{FileType.VariableLibrary, FileType.ConstantLibrary, FileType.ParameterLibrary, FileType.ActionLibrary};
                         break;
                     case "rule":
-                        types = new FileType[]{FileType.Ruleset, FileType.UL, FileType.RulesetLib};
+                        types = new FileType[]{FileType.Ruleset, FileType.UL, FileType.RulesetLib, FileType.Drl};
                         break;
                     case "table":
                         types = new FileType[]{FileType.DecisionTable, FileType.ScriptDecisionTable, FileType.ComplexScorecard};
@@ -347,6 +347,12 @@ public class FrameController extends BaseController {
             content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
             content.append("<").append(name).append(">");
             content.append("</").append(name).append(">");
+        } else if (fileType.equals(FileType.Drl)) {
+            // V6.20.0:DRL 新建文件初始模板 — 最小可编译骨架
+            content.append("rule \"rule01\"\n");
+            content.append("when\n");
+            content.append("then\n");
+            content.append("end");
         } else {
             String name = getRootTagName(fileType);
             content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
@@ -373,6 +379,9 @@ public class FrameController extends BaseController {
             newFileInfo.setType(Type.rule);
         } else if (fileType.equals(FileType.UL)) {
             newFileInfo.setType(Type.ul);
+        } else if (fileType.equals(FileType.Drl)) {
+            // V6.20.0:DRL 文件 → Type.drl(树 buildData drl case 渲染)
+            newFileInfo.setType(Type.drl);
         } else if (fileType.equals(FileType.DecisionTree)) {
             newFileInfo.setType(Type.decisionTree);
         } else if (fileType.equals(FileType.RuleFlow)) {

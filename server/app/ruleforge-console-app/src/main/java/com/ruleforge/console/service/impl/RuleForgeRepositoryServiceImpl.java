@@ -1672,11 +1672,17 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
         flowLib.setFullPath(libDir.getFullPath());
         flowLib.setType(Type.flowLib);
 
+        // V6.20.0:DRL 规则库 — 新增分类,与 DRL 编辑器配套
+        RepositoryFile drlLib = buildLibFile(libDir, "DRL规则", LibType.drl);
+        drlLib.setFullPath(libDir.getFullPath());
+        drlLib.setType(Type.drlLib);
+
         libDir.addChild(rulesLib, false);
         libDir.addChild(decisionTableLib, false);
         libDir.addChild(decisionTreeLib, false);
         libDir.addChild(scorecardLib, false);
         libDir.addChild(flowLib, false);
+        libDir.addChild(drlLib, false);
 
         FileType[] libraryRuleTypes = types;
         if (types == null || types.length == 0) {
@@ -1702,11 +1708,17 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
             libraryScorecardTypes = new FileType[]{FileType.Scorecard, FileType.ComplexScorecard};
         }
 
+        FileType[] libraryDrlTypes = types;
+        if (types == null || types.length == 0) {
+            libraryDrlTypes = new FileType[]{FileType.Drl};
+        }
+
         buildNodes(projectNode, rulesLib, libraryRuleTypes, Type.ruleLib, searchFileName);
         buildNodes(projectNode, decisionTableLib, libraryDecisionTypes, Type.decisionTableLib, searchFileName);
         buildNodes(projectNode, decisionTreeLib, libraryDecisionTreeTypes, Type.decisionTreeLib, searchFileName);
         buildNodes(projectNode, scorecardLib, libraryScorecardTypes, Type.scorecardLib, searchFileName);
         buildNodes(projectNode, flowLib, libraryFlowTypes, Type.flowLib, searchFileName);
+        buildNodes(projectNode, drlLib, libraryDrlTypes, Type.drlLib, searchFileName);
     }
 
     private RepositoryFile buildLibFile(RepositoryFile libraryDir, String name, LibType libType) {
