@@ -35,6 +35,7 @@ public class FileTypeUtils {
         EXTENSION_MAP.put(".scc", FileType.ComplexScorecard);
         EXTENSION_MAP.put(".csc.xml", FileType.ComplexScorecard);
         EXTENSION_MAP.put(".rl.xml", FileType.RuleFlow);
+        EXTENSION_MAP.put(".drl", FileType.Drl);
     }
 
     /**
@@ -90,6 +91,8 @@ public class FileTypeUtils {
             case Ruleset:
             case RulesetLib:
                 return Type.rule;
+            case Drl:
+                return Type.drl;
             case DecisionTable:
                 return Type.decisionTable;
             case ScriptDecisionTable:

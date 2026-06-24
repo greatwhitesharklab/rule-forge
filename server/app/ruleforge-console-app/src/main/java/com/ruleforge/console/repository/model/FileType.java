@@ -2,7 +2,7 @@ package com.ruleforge.console.repository.model;
 
 public enum FileType {
     Ruleset, RulesetLib, UL, DecisionTable, ScriptDecisionTable, Crosstab,
-    RuleFlow, DecisionTree, Scorecard, ComplexScorecard,
+    RuleFlow, DecisionTree, Scorecard, ComplexScorecard, Drl,
     VariableLibrary, ParameterLibrary, ConstantLibrary, ActionLibrary,
     DIR, Package;
 
