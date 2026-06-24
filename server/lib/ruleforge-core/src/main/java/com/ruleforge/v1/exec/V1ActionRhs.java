@@ -80,14 +80,23 @@ public final class V1ActionRhs {
         }
     }
 
-    /** 把 matchedObject 当 Map 操作(GeneralEntity/HashMap;不支持 POJO,V1 fact 必须是 Map)。 */
+    /** 把 matchedObject 解析成 fact Map。
+     *  RETE 引擎(ActivationImpl.execute)传 objectCriteriaMap.keySet()(fact 集合)给 action,
+     *  非 fact 本身;W1-4 单测直接传 fact。两种都兼容:直接 Map 或 Collection 里取首个 Map。 */
     @SuppressWarnings("unchecked")
     private static Map<String, Object> asMap(Object matchedObject) {
-        if (!(matchedObject instanceof Map)) {
-            throw new RuleException("V1 action 要求 fact 是 Map(GeneralEntity/HashMap),实际: "
-                    + (matchedObject == null ? "null" : matchedObject.getClass().getName()));
+        if (matchedObject instanceof Map) {
+            return (Map<String, Object>) matchedObject;
         }
-        return (Map<String, Object>) matchedObject;
+        if (matchedObject instanceof java.util.Collection) {
+            for (Object o : (java.util.Collection<?>) matchedObject) {
+                if (o instanceof Map) {
+                    return (Map<String, Object>) o;
+                }
+            }
+        }
+        throw new RuleException("V1 action 要求 fact 是 Map(GeneralEntity/HashMap)或 fact 集合,实际: "
+                + (matchedObject == null ? "null" : matchedObject.getClass().getName()));
     }
 
     /** 取 action 的值:字面量 value 或 ref 字段引用(只读 fact[ref])。 */
