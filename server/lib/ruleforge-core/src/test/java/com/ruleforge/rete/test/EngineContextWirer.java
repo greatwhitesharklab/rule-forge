@@ -59,13 +59,24 @@ public final class EngineContextWirer {
         // 真实 ValueCompute(无状态,public ctor)
         ValueCompute realValueCompute = new ValueCompute();
 
-        // 真实 AssertorEvaluator + 反射灌 EqualsAssertor(单 assertor 覆盖 ==)
+        // 真实 AssertorEvaluator + 反射灌全比较运算 assertor 集。
+        // V5.81 原版只注册 EqualsAssertor(单 assertor 覆盖 ==,perf bench 够用)。
+        // V7.0.0 扩全比较运算(==/!=/</<=/>/>= / in / notIn)— CEL 条件翻译器
+        // (CelCriteriaTranslator)产出的 Op 全在这 8 个内。加 assertor 只增派发能力,
+        // 不破坏现有 Equals bench(Op 派发按 enum,加别的 Op 的 assertor 不动 == 路径)。
+        Collection<Assertor> realAssertors = Arrays.asList(
+                new EqualsAssertor(),
+                new com.ruleforge.runtime.assertor.NotEqualsAssertor(),
+                new com.ruleforge.runtime.assertor.LessThenAssertor(),
+                new com.ruleforge.runtime.assertor.LessThenEqualsAssertor(),
+                new com.ruleforge.runtime.assertor.GreaterThenAssertor(),
+                new com.ruleforge.runtime.assertor.GreaterThenEqualsAssertor(),
+                new com.ruleforge.runtime.assertor.InAssertor(),
+                new com.ruleforge.runtime.assertor.NotInAssertor());
         AssertorEvaluator realEvaluator = new AssertorEvaluator();
         Field aef = AssertorEvaluator.class.getDeclaredField("assertors");
         aef.setAccessible(true);
-        aef.set(realEvaluator, Collections.singletonList(new EqualsAssertor()));
-
-        Collection<Assertor> realAssertors = Collections.singletonList(new EqualsAssertor());
+        aef.set(realEvaluator, realAssertors);
         Collection<FunctionDescriptor> noFunctions = Collections.emptyList();
         Collection<DebugWriter> noDebugWriters = Collections.emptyList();
 
