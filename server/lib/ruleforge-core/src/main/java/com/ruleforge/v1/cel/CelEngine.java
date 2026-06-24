@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class CelEngine {
 
-    /** schema name → 编译好的 Cel(声明该 schema 全部字段)。 */
+    /** schema 签名(name + 字段集)→ 编译好的 Cel。key 含字段集避免同名不同字段的 schema 碰撞。 */
     private static final ConcurrentHashMap<String, Cel> CEL_BY_SCHEMA = new ConcurrentHashMap<>();
 
     private CelEngine() {
@@ -52,7 +52,21 @@ public final class CelEngine {
         if (schema == null || schema.getName() == null) {
             return CelFactory.standardCelBuilder().build();
         }
-        return CEL_BY_SCHEMA.computeIfAbsent(schema.getName(), k -> buildCel(schema));
+        return CEL_BY_SCHEMA.computeIfAbsent(schemaSignature(schema), k -> buildCel(schema));
+    }
+
+    /** schema 签名:name + sorted field names(避免同名不同字段的 schema 碰撞缓存)。 */
+    private static String schemaSignature(Schema schema) {
+        StringBuilder sb = new StringBuilder(schema.getName());
+        if (schema.getFields() != null) {
+            java.util.List<String> names = new java.util.ArrayList<>();
+            for (SchemaField f : schema.getFields()) {
+                names.add(f.getName() + ":" + f.getType());
+            }
+            java.util.Collections.sort(names);
+            sb.append("[").append(String.join(",", names)).append("]");
+        }
+        return sb.toString();
     }
 
     private static Cel buildCel(Schema schema) {
@@ -72,7 +86,10 @@ public final class CelEngine {
         }
         switch (type) {
             case NUMBER:
-                return dynType();
+                // INT64(非 DYN):CEL 严格无 int↔double 自动转换,统一 int64 让
+                // field(int64) op int字面量(int64) overload 匹配。cash loan 数值(年龄/
+                // 分数/收入/风险分)都是整数。小数阈值 MVP 不支持(文档注明)。
+                return Type.newBuilder().setPrimitive(Type.PrimitiveType.INT64).build();
             case STRING:
                 return Type.newBuilder().setPrimitive(Type.PrimitiveType.STRING).build();
             case BOOLEAN:
@@ -121,15 +138,16 @@ public final class CelEngine {
     }
 
     /**
-     * 求 CEL boolean 表达式值(按 schema 变量类型)。NUMBER 用 DYN,bindings 直接传
-     * (Integer/Long/Double 运行时统一数值比较)。
+     * 求 CEL boolean 表达式值(按 schema 变量类型)。NUMBER 用 DYN。
+     * bindings 里数值 coerce:Integer/Short/Byte → Long,Float → Double
+     * (CEL int64=Long,double=Double;Java Integer 直接传会 less_int64 overload 失配)。
      */
     public static boolean evalBoolean(String expr, Map<String, Object> bindings, Schema schema) {
         try {
             Cel cel = celFor(schema);
             CelAbstractSyntaxTree ast = compileBoolean(expr, schema);
             CelRuntime.Program program = cel.createProgram(ast);
-            Object result = program.eval(bindings == null ? ImmutableMap.of() : bindings);
+            Object result = program.eval(coerceNumericBindings(bindings));
             if (!(result instanceof Boolean)) {
                 throw new CelConditionException("CEL 求值非 boolean: " + expr + " → " + result);
             }
@@ -139,6 +157,24 @@ public final class CelEngine {
         } catch (Exception e) {
             throw new CelConditionException("CEL 求值失败: " + expr + " — " + e.getMessage(), e);
         }
+    }
+
+    /** bindings 数值 coerce:所有 Number→Long(NUMBER 声明 INT64,CEL int64=Long)。
+     *  Double 也截断成 Long — cash loan 数值都是整数;小数见 v1TypeToCel 注。 */
+    private static Map<String, ?> coerceNumericBindings(Map<String, Object> bindings) {
+        if (bindings == null) {
+            return ImmutableMap.of();
+        }
+        Map<String, Object> coerced = new HashMap<>();
+        for (Map.Entry<String, Object> e : bindings.entrySet()) {
+            Object v = e.getValue();
+            if (v instanceof Number && !(v instanceof Long)) {
+                coerced.put(e.getKey(), ((Number) v).longValue());
+            } else {
+                coerced.put(e.getKey(), v);
+            }
+        }
+        return coerced;
     }
 
     /** POJO fact → CEL bindings Map(Jackson convertValue)。 */
