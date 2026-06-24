@@ -36,6 +36,9 @@ public class FileTypeUtils {
         EXTENSION_MAP.put(".csc.xml", FileType.ComplexScorecard);
         EXTENSION_MAP.put(".rl.xml", FileType.RuleFlow);
         EXTENSION_MAP.put(".drl", FileType.Drl);
+        // V6.20.0 P3:DMN 1.3 / PMML 4.4 标准决策模型(只读/导入)
+        EXTENSION_MAP.put(".dmn", FileType.Dmn);
+        EXTENSION_MAP.put(".pmml", FileType.Pmml);
     }
 
     /**
@@ -109,6 +112,11 @@ public class FileTypeUtils {
                 return Type.scorecard;
             case ComplexScorecard:
                 return Type.complexscorecard;
+            // V6.20.0 P3:DMN/PMML 文件 → Type.dmn/pmml(树 buildData 渲染)
+            case Dmn:
+                return Type.dmn;
+            case Pmml:
+                return Type.pmml;
             default:
                 return null;
         }

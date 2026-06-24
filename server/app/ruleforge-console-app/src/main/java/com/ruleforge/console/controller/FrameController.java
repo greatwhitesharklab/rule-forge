@@ -252,6 +252,38 @@ public class FrameController extends BaseController {
             content.append("when\n");
             content.append("then\n");
             content.append("end");
+        } else if (fileType.equals(FileType.Dmn)) {
+            // V6.20.0 P3:DMN 1.3 最小可被 Kie DMNCompiler 编译的骨架
+            // (definitions + single decision table) — UI 创建占位,后续用户从外部导入覆盖
+            content.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+            content.append("<definitions xmlns=\"https://www.omg.org/spec/DMN/20191111/MODEL/\"\n");
+            content.append("             xmlns:dmndi=\"https://www.omg.org/spec/DMN/20191111/DMNDI/\"\n");
+            content.append("             xmlns:dc=\"http://www.omg.org/spec/DMN/20180521/DC/\"\n");
+            content.append("             id=\"definitions_stub\"\n");
+            content.append("             name=\"stub\"\n");
+            content.append("             namespace=\"stub\">\n");
+            content.append("  <decision id=\"decision_stub\" name=\"stub\">\n");
+            content.append("    <decisionTable id=\"decisionTable_stub\" hitPolicy=\"FIRST\">\n");
+            content.append("      <input id=\"input1\"><inputExpression typeRef=\"string\"><text>stub</text></inputExpression></input>\n");
+            content.append("      <output id=\"output1\"/>\n");
+            content.append("    </decisionTable>\n");
+            content.append("  </decision>\n");
+            content.append("</definitions>\n");
+        } else if (fileType.equals(FileType.Pmml)) {
+            // V6.20.0 P3:PMML 4.4 最小 Scorecard 骨架(pmml4s 1.5.6 可解析)
+            // (PMML 顶层字段已填,子结构留空 = 0 rules emitted,但 dispatcher 不抛错)
+            content.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+            content.append("<PMML xmlns=\"http://www.dmg.org/PMML-4_4\" version=\"4.4\">\n");
+            content.append("  <Header copyright=\"\" description=\"stub\"/>\n");
+            content.append("  <DataDictionary>\n");
+            content.append("    <DataField name=\"stub\" dataType=\"string\" optype=\"categorical\"/>\n");
+            content.append("  </DataDictionary>\n");
+            content.append("  <Scorecard modelName=\"stub\" useReasonCodes=\"false\" initialScore=\"0\" baselineMethod=\"0\" reasonCodeAlgorithm=\"pointsBelow\">\n");
+            content.append("    <MiningSchema>\n");
+            content.append("      <MiningField name=\"stub\" usageType=\"active\"/>\n");
+            content.append("    </MiningSchema>\n");
+            content.append("  </Scorecard>\n");
+            content.append("</PMML>\n");
         } else {
             String name = getRootTagName(fileType);
             content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
@@ -275,6 +307,12 @@ public class FrameController extends BaseController {
             newFileInfo.setType(Type.drl);
         } else if (fileType.equals(FileType.RuleFlow)) {
             newFileInfo.setType(Type.flow);
+        } else if (fileType.equals(FileType.Dmn)) {
+            // V6.20.0 P3:DMN 文件 → Type.dmn(树 buildData dmn case 渲染)
+            newFileInfo.setType(Type.dmn);
+        } else if (fileType.equals(FileType.Pmml)) {
+            // V6.20.0 P3:PMML 文件 → Type.pmml(树 buildData pmml case 渲染)
+            newFileInfo.setType(Type.pmml);
         }
         try {
             this.ruleforgeRepositoryService.createFile(path, content.toString(), user);

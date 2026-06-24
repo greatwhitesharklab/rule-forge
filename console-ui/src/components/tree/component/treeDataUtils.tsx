@@ -100,6 +100,15 @@ export function handleFileOpen(
         open('/app/editor/drl?file=' + encodeURIComponent(fullPath));
         return;
     }
+    // V6.20.0 P3:DMN / PMML 标准决策模型 — 走只读查看器(无 UI 编辑器,纯源文本展示)
+    if (data.type === 'dmn' || fullPath.endsWith('.dmn')) {
+        open('/app/editor/dmn?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    if (data.type === 'pmml' || fullPath.endsWith('.pmml')) {
+        open('/app/editor/pmml?file=' + encodeURIComponent(fullPath));
+        return;
+    }
     // 变量/常量/参数/动作库 (双扩展名 .vl.xml/.cl.xml/.pl.xml/.al.xml),按 type 或后缀
     const libType =
         data.type === 'variable' ? 'variable'

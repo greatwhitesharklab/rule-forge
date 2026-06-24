@@ -237,7 +237,11 @@ public class CommonController extends BaseController {
                 || lower.endsWith(".scc")
                 || lower.endsWith(".csc.xml")
                 || lower.endsWith(".ct.xml")
-                || lower.endsWith(".dtree.xml");
+                || lower.endsWith(".dtree.xml")
+                // V6.20.0 P3:DMN/PMML 标准决策模型(只读编辑器消费原文,
+                // 后端 core/ir/ dispatcher 不通过此 path 流转,直接透传避免 parseXml 抛 namespace 错)
+                || lower.endsWith(".dmn")
+                || lower.endsWith(".pmml");
     }
 
     @GetMapping("/loadFunctions")

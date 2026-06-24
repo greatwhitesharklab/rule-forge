@@ -77,6 +77,9 @@ describe('treeDataUtils', () => {
             {name: 'flow/.rl.xml → flow', node: {name: 'f.rl.xml', type: 'flow', fullPath: '/p/f.rl.xml'}, expectedPath: '/app/editor/flow'},
             // V6.20.0:DRL 规则(.drl) → DRL 编辑器
             {name: 'V6.20.0:DRL/.drl → drl', node: {name: 'r.drl', type: 'drl', fullPath: '/p/r.drl'}, expectedPath: '/app/editor/drl'},
+            // V6.20.0 P3:DMN/PMML 标准决策模型 → 只读源查看器
+            {name: 'V6.20.0 P3:DMN/.dmn → dmn', node: {name: 'd.dmn', type: 'dmn', fullPath: '/p/d.dmn'}, expectedPath: '/app/editor/dmn'},
+            {name: 'V6.20.0 P3:PMML/.pmml → pmml', node: {name: 'm.pmml', type: 'pmml', fullPath: '/p/m.pmml'}, expectedPath: '/app/editor/pmml'},
         ];
         it.each(cases)('$name', ({node, expectedPath}) => {
             handleFileOpen(makeNode(node), undefined, false);

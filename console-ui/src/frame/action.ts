@@ -412,6 +412,8 @@ const FILE_TYPE_MAP: Record<string, string> = {
     'dtree.xml': 'DecisionTree', 'sc': 'Scorecard', 'scc': 'ComplexScorecard',
     'rl.xml': 'RuleFlow',
     'drl': 'Drl',
+    // V6.20.0 P3:DMN / PMML(只读/导入,FileTypeUtils 后端识别 .dmn/.pmml)
+    'dmn': 'Dmn', 'pmml': 'Pmml',
 };
 
 export function buildType(fileType: string): string {
@@ -439,6 +441,13 @@ export function buildType(fileType: string): string {
         // V6.20.0:DRL 规则
         case "drl":
             type = "DRL 规则";
+            break;
+        // V6.20.0 P3:DMN / PMML 标准决策模型
+        case "dmn":
+            type = "DMN 决策表(只读)";
+            break;
+        case "pmml":
+            type = "PMML 模型(只读)";
             break;
         case "rp":
             type = 'package';
@@ -650,6 +659,18 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
         case "drl":
             data._icon = Styles.frameStyle.getDrlIcon();
             data._style = Styles.frameStyle.getDrlIconStyle();
+            data.contextMenu = buildFileContextMenu();
+            break;
+        // V6.20.0 P3:DMN 标准决策模型文件(.dmn) → 只读查看器
+        case "dmn":
+            data._icon = 'rf rf-table'; // 复用 table 图标(无专属 DMN icon,先沿用)
+            data._style = '';
+            data.contextMenu = buildFileContextMenu();
+            break;
+        // V6.20.0 P3:PMML 标准模型文件(.pmml) → 只读查看器
+        case "pmml":
+            data._icon = 'rf rf-scorecard'; // 复用 scorecard 图标
+            data._style = '';
             data.contextMenu = buildFileContextMenu();
             break;
     }

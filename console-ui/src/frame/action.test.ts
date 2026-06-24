@@ -166,6 +166,15 @@ describe('Frame Module - buildType Pure Function', () => {
         expect(ACTIONS.buildType('drl')).toBe('DRL 规则');
     });
 
+    // V6.20.0 P3:DMN / PMML 标准决策模型
+    it('GIVEN dmn WHEN buildType is called THEN it should return DMN 决策表(只读)', () => {
+        expect(ACTIONS.buildType('dmn')).toBe('DMN 决策表(只读)');
+    });
+
+    it('GIVEN pmml WHEN buildType is called THEN it should return PMML 模型(只读)', () => {
+        expect(ACTIONS.buildType('pmml')).toBe('PMML 模型(只读)');
+    });
+
     it('GIVEN rp WHEN buildType is called THEN it should return package', () => {
         expect(ACTIONS.buildType('rp')).toBe('package');
     });
