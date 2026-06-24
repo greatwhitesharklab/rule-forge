@@ -28,7 +28,8 @@ jobs:
           cache: 'maven'
 
       - name: Run unit tests (exclude perf tag)
-        run: mvn -B -ntp -pl server -am test -Dgroups='!perf'
+        # server/ 是 Maven 多模块根,模块路径相对 reactor(不是相对 repo root)
+        run: cd server && mvn -B -ntp -am test -Dgroups='!perf'
 
       - name: Upload surefire reports on failure
         if: failure()
@@ -53,7 +54,8 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: console-ui/package-lock.json
+          # cwd 已是 console-ui(见 defaults.run.working-directory),用相对路径
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
