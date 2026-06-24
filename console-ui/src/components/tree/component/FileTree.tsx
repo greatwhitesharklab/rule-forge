@@ -52,10 +52,19 @@ function FileTreeImpl({data, dispatch, treeType, readOnly, onFileReadOnlyClick, 
     const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
 
-    // data 变化(loadData 增量 / project 切换)→ 重算 user 初始展开(_forceExpand / _level < expandLevel)
+    // V6.13.5i:projectId = 顶层 children fullPath join。只在 project 切换(LOAD_END 整体替换,顶层 fullPath
+    // 变)时重算 user 初始展开,不在 loadChildren 增量时重算。
+    // 老 bug:effect 依赖 [data] 整个对象引用。loadChildren 增量 dispatch LOAD_CHILDREN_END,reducer 用
+    // Object.assign({}, state.data) 浅拷贝 root → state.data 新引用 → effect 跑 → 重算
+    // collectInitialExpandedKeys(只含 _forceExpand/_level<expandLevel)→ 用户手动展开的 _level>=expandLevel
+    // 懒加载节点 key 被移除 → expandedKeys 丢该节点 → antd 折叠回去 → "点一下闪一下"。
+    // 改依赖 projectId:loadChildren 只填某深层节点 children,顶层 children fullPath 不变 → projectId 不变 →
+    // effect 不跑 → 用户展开保留。project 切换顶层 fullPath 变 → projectId 变 → effect 重算(重置)。
+    const projectId = (data?.children || []).map(c => c.fullPath).join('|');
     useEffect(() => {
         setUserExpandedKeys(collectInitialExpandedKeys(data, expandLevel));
-    }, [data, expandLevel]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectId, expandLevel]);
 
     // 搜索词变化 → 重算 search 自动展开祖先(term 空 → [])
     useEffect(() => {
