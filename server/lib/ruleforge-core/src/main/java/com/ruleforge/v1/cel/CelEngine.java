@@ -79,7 +79,7 @@ public final class CelEngine {
         // V7.4:声明库 namespace(DYN 通配,让 CEL checker 过 param.xxx / const.xxx 字段访问;
         // 运行时由会话参数/常量注入 binding)。DYN 选型同 NUMBER 取舍 —— 弱化类型检查换通过率。
         builder.addVar("param", dynType());
-        builder.addVar("const", dynType());
+        builder.addVar("constant", dynType());
         return builder.build();
     }
 

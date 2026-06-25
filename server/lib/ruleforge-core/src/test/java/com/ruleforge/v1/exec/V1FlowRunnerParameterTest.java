@@ -76,4 +76,20 @@ class V1FlowRunnerParameterTest {
         assertThat(V1FlowRunner.execute(asset, fact(50), params(55)).decision).isEqualTo("review");
         assertThat(V1FlowRunner.execute(asset, fact(50), params(45)).decision).isEqualTo("approve");
     }
+
+    // Given 常量库 const.minScore(选项 A:cl 复用 pl 参数通道) When riskScore=60/40 Then 60>=50 命中 approve / 40 不命中 review
+    @Test
+    @DisplayName("const.minScore 动态右值(常量库,复用 param 参数通道)")
+    void 常量库_const_动态右值() throws Exception {
+        RuleAsset constAsset;
+        try (InputStream in = V1FlowRunnerParameterTest.class.getResourceAsStream(
+                "/com/ruleforge/v1/ast/const_loan.json")) {
+            assertThat(in).as("const_loan.json 测试资源存在").isNotNull();
+            constAsset = RuleAssetIO.read(in);
+        }
+        Map<String, Object> p = new HashMap<>();
+        p.put("minScore", 50);
+        assertThat(V1FlowRunner.execute(constAsset, fact(60), p).decision).isEqualTo("approve");
+        assertThat(V1FlowRunner.execute(constAsset, fact(40), p).decision).isEqualTo("review");
+    }
 }

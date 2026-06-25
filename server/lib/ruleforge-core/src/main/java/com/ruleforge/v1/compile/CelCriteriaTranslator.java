@@ -139,17 +139,23 @@ public final class CelCriteriaTranslator {
             // 字段在右:翻转运算符(18 <= age → age >= 18)
             return buildCriteria(rightExpr.ident().name(), flipOp(mapOp(op)), leftExpr.constant(), schema);
         }
-        // V7.4:字段 op param.xxx(动态右值 — ParameterValue 走会话参数通道,非 fact 字段)
+        // V7.4:字段 op param.xxx / const.xxx(动态右值 — ParameterValue 走会话参数通道,非 fact 字段)
         if (fieldOnLeft && rightExpr.getKind() == Kind.SELECT) {
-            String paramField = selectParamField(rightExpr);
-            if (paramField != null) {
-                return buildCriteriaWithParam(leftExpr.ident().name(), mapOp(op), paramField, schema);
+            String libField = selectLibField(rightExpr, "param");
+            if (libField == null) {
+                libField = selectLibField(rightExpr, "constant");
+            }
+            if (libField != null) {
+                return buildCriteriaWithParam(leftExpr.ident().name(), mapOp(op), libField, schema);
             }
         }
         if (fieldOnRight && leftExpr.getKind() == Kind.SELECT) {
-            String paramField = selectParamField(leftExpr);
-            if (paramField != null) {
-                return buildCriteriaWithParam(rightExpr.ident().name(), flipOp(mapOp(op)), paramField, schema);
+            String libField = selectLibField(leftExpr, "param");
+            if (libField == null) {
+                libField = selectLibField(leftExpr, "constant");
+            }
+            if (libField != null) {
+                return buildCriteriaWithParam(rightExpr.ident().name(), flipOp(mapOp(op)), libField, schema);
             }
         }
         throw new CelConditionException(
@@ -157,10 +163,11 @@ public final class CelCriteriaTranslator {
                         + describe(leftExpr) + " " + op + " " + describe(rightExpr));
     }
 
-    /** SELECT expr 是 param.{field}?返 field 名,否则 null(仅 pl 参数库动态右值;cl/vl 留后续)。 */
-    private static String selectParamField(CelExpr selectExpr) {
+    /** SELECT expr 是 {ns}.{field}?返 field 名,否则 null。param(pl)/const(cl)都走 ParameterValue
+     * (选项 A:cl 复用 pl 参数通道,绕过全局 PropertyConfigurer;agent 调研 V7.4 结论)。 */
+    private static String selectLibField(CelExpr selectExpr, String ns) {
         CelExpr operand = selectExpr.select().operand();
-        if (operand.getKind() == Kind.IDENT && "param".equals(operand.ident().name())) {
+        if (operand.getKind() == Kind.IDENT && ns.equals(operand.ident().name())) {
             return selectExpr.select().field();
         }
         return null;
