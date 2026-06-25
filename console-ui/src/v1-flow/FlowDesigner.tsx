@@ -27,6 +27,7 @@ const {Text} = Typography;
 let idCounter = 1;
 const genId = (prefix: string) => `${prefix}_${idCounter++}`;
 
+/** 5 业务节点的默认内容。Gateway 不走(它是 flow element,非 nodes{} 业务节点)。 */
 function newNodeDefault(type: NodeType, id: string, schemaName: string): V1Node {
     switch (type) {
         case 'Start':
@@ -39,10 +40,14 @@ function newNodeDefault(type: NodeType, id: string, schemaName: string): V1Node 
             return {id, type: 'ScoreCard', name: 'ScoreCard', output: 'score', aggregation: 'SUM', cards: []};
         case 'Decision':
             return {id, type: 'Decision', name: 'Decision', outputs: ['approve', 'review', 'reject'], decisionField: 'decision', defaultOutput: 'review'};
+        default:
+            throw new Error(`Gateway 是 flow element(非 nodes{} 业务节点),不走 newNodeDefault`);
     }
 }
 
-/** canvas nodes/edges + 节点内容 map → V1 RuleAsset。不存 ReactFlow JSON。 */
+/** canvas nodes/edges + 节点内容 map → V1 RuleAsset。不存 ReactFlow JSON。
+ *  Gateway(exclusiveGateway)是纯流程元素:无 implementation,不进 nodes{},
+ *  带 defaultFlow(兜底出边 id);出边 conditionExpression 从 edge.data 回写。 */
 function toRuleAsset(
     rfNodes: Node<V1NodeData>[],
     rfEdges: Edge[],
@@ -56,22 +61,36 @@ function toRuleAsset(
         DecisionTable: 'serviceTask',
         ScoreCard: 'serviceTask',
         Decision: 'endEvent',
+        Gateway: 'exclusiveGateway',
     };
     const nodes: Record<string, V1Node> = {};
     for (const n of rfNodes) {
         const data = n.data as V1NodeData;
-        flowElements.push({
+        const isGateway = data.nodeType === 'Gateway';
+        const fe: FlowElement = {
             type: bpmnType[data.nodeType],
             id: n.id,
             name: data.name,
             position: {x: Math.round(n.position.x), y: Math.round(n.position.y)},
-            implementation: `${data.nodeType}:${n.id}`,
-        });
-        // 用 nodesMap 的完整内容(已被 Drawer 编辑过),fallback 到默认
-        nodes[n.id] = nodesMap[n.id] || newNodeDefault(data.nodeType, n.id, schemaName);
+        };
+        if (isGateway) {
+            if (data.defaultFlow) {
+                fe.defaultFlow = data.defaultFlow;
+            }
+        } else {
+            fe.implementation = `${data.nodeType}:${n.id}`;
+            // 用 nodesMap 的完整内容(已被 Drawer 编辑过),fallback 到默认
+            nodes[n.id] = nodesMap[n.id] || newNodeDefault(data.nodeType, n.id, schemaName);
+        }
+        flowElements.push(fe);
     }
     for (const e of rfEdges) {
-        flowElements.push({type: 'sequenceFlow', id: e.id, sourceRef: e.source, targetRef: e.target});
+        const fe: FlowElement = {type: 'sequenceFlow', id: e.id, sourceRef: e.source, targetRef: e.target};
+        const cond = (e.data as {conditionExpression?: string} | undefined)?.conditionExpression;
+        if (cond) {
+            fe.conditionExpression = cond;
+        }
+        flowElements.push(fe);
     }
     return {
         version: '1.0',
@@ -118,14 +137,18 @@ export default function FlowDesigner({file}: {file?: string}) {
     const addNode = useCallback(
         (type: NodeType) => {
             const id = genId(type.toLowerCase());
+            const isGateway = type === 'Gateway';
             const node: Node<V1NodeData> = {
                 id,
                 type: 'v1',
                 position: {x: 120 + Math.random() * 200, y: 100 + nodes.length * 110},
-                data: {nodeType: type, name: type, implementation: `${type}:${id}`},
+                data: {nodeType: type, name: type, implementation: isGateway ? '' : `${type}:${id}`},
             };
             setNodes((nds: Node<V1NodeData>[]) => nds.concat(node));
-            setNodesMap((m) => ({...m, [id]: newNodeDefault(type, id, schemaName)}));
+            // Gateway 是 flow element,不进 nodesMap(无业务定义);其余 5 业务节点建默认内容
+            if (!isGateway) {
+                setNodesMap((m) => ({...m, [id]: newNodeDefault(type, id, schemaName)}));
+            }
         },
         [nodes.length, setNodes, schemaName],
     );
@@ -141,7 +164,8 @@ export default function FlowDesigner({file}: {file?: string}) {
         setExportOpen(true);
     }, [nodes, edges, nodesMap, schemaName]);
 
-    const selectedNode = selectedId ? nodesMap[selectedId] : null;
+    // Gateway 是 flow element 不在 nodesMap → selectedNode null → Drawer 不开(V7.1-2b 再加 Gateway 编辑器)
+    const selectedNode = selectedId && nodesMap[selectedId] ? nodesMap[selectedId] : null;
 
     /** 导入 RuleAsset JSON(paste)→ canvas state。 */
     const doImport = useCallback(() => {
@@ -200,10 +224,11 @@ export default function FlowDesigner({file}: {file?: string}) {
             </Header>
             <Layout>
                 <Sider width={200} style={{background: token.colorBgContainer, padding: 12}}>
-                    <Text type='secondary' style={{fontSize: 12}}>节点(MVP 5 种)</Text>
+                    <Text type='secondary' style={{fontSize: 12}}>节点(5 业务 + Gateway)</Text>
                     <Menu mode='inline' style={{borderInlineEnd: 'none', marginTop: 8}} items={palette} onClick={({key}) => addNode(key as NodeType)}/>
                     <Text type='secondary' style={{fontSize: 11, display: 'block', marginTop: 16}}>
-                        点节点加入画布 → 连线 → 点节点弹属性 Drawer 编辑内容 → 导出。
+                        点节点加入画布 → 连线 → 点业务节点弹属性 Drawer 编辑 → 导出。
+                        Gateway 出边条件编辑在 V7.1-2b。
                     </Text>
                 </Sider>
                 <Content style={{position: 'relative'}}>
@@ -226,7 +251,7 @@ export default function FlowDesigner({file}: {file?: string}) {
             </Layout>
             <NodePropertyDrawer
                 node={selectedNode}
-                open={selectedId !== null}
+                open={selectedNode !== null}
                 onClose={() => setSelectedId(null)}
                 onChange={onNodeChange}
             />

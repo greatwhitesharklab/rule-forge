@@ -7,7 +7,7 @@
  */
 
 export type V1DataType = 'NUMBER' | 'STRING' | 'BOOLEAN' | 'LIST';
-export type NodeType = 'Start' | 'RuleSet' | 'DecisionTable' | 'ScoreCard' | 'Decision';
+export type NodeType = 'Start' | 'RuleSet' | 'DecisionTable' | 'ScoreCard' | 'Decision' | 'Gateway';
 export type HitPolicy = 'FIRST_MATCH' | 'ALL_MATCH' | 'PRIORITY';
 export type TableHitPolicy = 'FIRST' | 'UNIQUE' | 'PRIORITY' | 'ANY' | 'COLLECT';
 export type ScoreAggregation = 'SUM' | 'AVG' | 'MIN' | 'MAX' | 'WEIGHTED_SUM';
