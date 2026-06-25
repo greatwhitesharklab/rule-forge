@@ -13,10 +13,13 @@ import {
     type Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {Layout, Menu, Button, Space, Typography, Input, Drawer, theme} from 'antd';
+import {Layout, Menu, Button, Space, Typography, Input, Drawer, Modal, message, theme} from 'antd';
+import {UploadOutlined, SaveOutlined, FolderOpenOutlined} from '@ant-design/icons';
+import {formPost} from '@/api/client';
 import {nodeTypes, PALETTE, type V1NodeData} from './FlowNodes';
 import {type RuleAsset, type FlowElement, type V1Node, type NodeType} from './ruleAsset';
 import NodePropertyDrawer from './NodePropertyDrawer';
+import {fromRuleAsset} from './fromRuleAsset';
 
 const {Sider, Content, Header} = Layout;
 const {Text} = Typography;
@@ -88,6 +91,9 @@ export default function FlowDesigner() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [exportOpen, setExportOpen] = useState(false);
     const [exported, setExported] = useState('');
+    const [importOpen, setImportOpen] = useState(false);
+    const [importText, setImportText] = useState('');
+    const [filePath, setFilePath] = useState('');
 
     const onConnect = useCallback(
         (params: Connection) => setEdges((eds: Edge[]) => addEdge({...params, markerEnd: {type: MarkerType.ArrowClosed}} as Edge, eds)),
@@ -122,6 +128,45 @@ export default function FlowDesigner() {
 
     const selectedNode = selectedId ? nodesMap[selectedId] : null;
 
+    /** 导入 RuleAsset JSON(paste)→ canvas state。 */
+    const doImport = useCallback(() => {
+        try {
+            const asset = JSON.parse(importText) as RuleAsset;
+            const st = fromRuleAsset(asset);
+            setNodes(st.nodes);
+            setEdges(st.edges);
+            setNodesMap(st.nodesMap);
+            setSchemaName(st.schemaName);
+            setImportOpen(false);
+            setImportText('');
+            message.success(`导入成功:${st.nodes.length} 节点`);
+        } catch (e) {
+            message.error('JSON 解析失败:' + String(e));
+        }
+    }, [importText, setNodes, setEdges, setNodesMap, setSchemaName]);
+
+    /** 保存到后端(POST /common/saveFile,需后端 8180 在跑)。 */
+    const saveToBackend = useCallback(() => {
+        if (!filePath) { message.warning('先填文件路径,如 /projA/loan.json'); return; }
+        const json = JSON.stringify(toRuleAsset(nodes, edges, nodesMap, schemaName), null, 2);
+        formPost('/common/saveFile', {file: filePath, content: json})
+            .then(() => message.success('已保存到 ' + filePath))
+            .catch(() => message.error('保存失败(后端未运行或路径无效)'));
+    }, [filePath, nodes, edges, nodesMap, schemaName]);
+
+    /** 从后端加载(POST /frame/fileSource → RuleAsset → canvas)。 */
+    const loadFromBackend = useCallback(() => {
+        if (!filePath) { message.warning('先填文件路径'); return; }
+        formPost<{content: string}>('/frame/fileSource', {path: filePath})
+            .then((res) => {
+                const asset = JSON.parse(res.content) as RuleAsset;
+                const st = fromRuleAsset(asset);
+                setNodes(st.nodes); setEdges(st.edges); setNodesMap(st.nodesMap); setSchemaName(st.schemaName);
+                message.success(`加载成功:${st.nodes.length} 节点`);
+            })
+            .catch(() => message.error('加载失败(后端未运行或文件不存在)'));
+    }, [filePath, setNodes, setEdges, setNodesMap, setSchemaName]);
+
     const palette = useMemo(() => PALETTE.map((t) => ({key: t, label: `+ ${t}`})), []);
 
     return (
@@ -130,7 +175,11 @@ export default function FlowDesigner() {
                 <Text strong style={{fontSize: 16}}>RuleForge · V1 决策流设计器</Text>
                 <Space>
                     <Text type='secondary' style={{fontSize: 12}}>Schema:</Text>
-                    <Input size='small' value={schemaName} onChange={(e) => setSchemaName(e.target.value)} style={{width: 160}}/>
+                    <Input size='small' value={schemaName} onChange={(e) => setSchemaName(e.target.value)} style={{width: 140}}/>
+                    <Button size='small' icon={<UploadOutlined/>} onClick={() => setImportOpen(true)}>导入</Button>
+                    <Input size='small' placeholder='后端路径 /proj/x.json' value={filePath} onChange={(e) => setFilePath(e.target.value)} style={{width: 180}}/>
+                    <Button size='small' icon={<FolderOpenOutlined/>} onClick={loadFromBackend}>加载</Button>
+                    <Button size='small' icon={<SaveOutlined/>} onClick={saveToBackend}>保存</Button>
                     <Button size='small' type='primary' onClick={exportJson}>导出 .json</Button>
                 </Space>
             </Header>
@@ -169,6 +218,16 @@ export default function FlowDesigner() {
             <Drawer title='RuleAsset JSON(后端可执行)' open={exportOpen} onClose={() => setExportOpen(false)} width={520}>
                 <pre data-testid='v1-export' style={{fontSize: 11, fontFamily: 'monospace', whiteSpace: 'pre-wrap'}}>{exported}</pre>
             </Drawer>
+            <Modal title='导入 RuleAsset JSON' open={importOpen} onCancel={() => setImportOpen(false)} onOk={doImport} okText='导入' width={620}>
+                <Input.TextArea
+                    data-testid='v1-import-text'
+                    value={importText}
+                    onChange={(e) => setImportText(e.target.value)}
+                    rows={18}
+                    placeholder='粘贴 RuleAsset JSON(version 1.0 + flow + nodes)…'
+                    style={{fontFamily: 'monospace', fontSize: 11}}
+                />
+            </Modal>
         </Layout>
     );
 }

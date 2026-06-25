@@ -96,4 +96,29 @@ test.describe('V1 决策流设计器', () => {
         const asset = await exportJson(page);
         expect(asset.nodes['ruleset_1'].hitPolicy).toBe('ALL_MATCH');
     });
+
+    test('导入 RuleAsset JSON → 画布渲染节点(client-side round-trip)', async ({page}) => {
+        const asset = {
+            version: '1.0', id: 'loan', name: 'Loan',
+            flow: {id: 'f', name: 'F', version: '1.0', flowElements: [
+                {type: 'startEvent', id: 'start', name: '开始', implementation: 'Start:start', position: {x: 50, y: 50}},
+                {type: 'serviceTask', id: 'pre', name: '准入', implementation: 'RuleSet:pre', position: {x: 50, y: 180}},
+                {type: 'endEvent', id: 'end', name: '决策', implementation: 'Decision:end', position: {x: 50, y: 310}},
+                {type: 'sequenceFlow', id: 'e1', sourceRef: 'start', targetRef: 'pre'},
+                {type: 'sequenceFlow', id: 'e2', sourceRef: 'pre', targetRef: 'end'},
+            ]},
+            nodes: {
+                start: {id: 'start', type: 'Start', name: '开始', schema: 'LoanApplication'},
+                pre: {id: 'pre', type: 'RuleSet', name: '准入', hitPolicy: 'FIRST_MATCH', rules: []},
+                end: {id: 'end', type: 'Decision', name: '决策', outputs: ['approve', 'reject']},
+            },
+        };
+        await page.getByRole('button', {name: /导入/}).first().click();
+        await page.locator('[data-testid="v1-import-text"]').fill(JSON.stringify(asset));
+        await page.getByRole('button', {name: '导 入'}).click();
+        // 3 节点出现在画布(implementation 权威路由:startEvent→Start, serviceTask RuleSet:→RuleSet, endEvent→Decision)
+        await expect(page.locator('[data-testid="v1-node-Start"]')).toBeVisible();
+        await expect(page.locator('[data-testid="v1-node-RuleSet"]')).toBeVisible();
+        await expect(page.locator('[data-testid="v1-node-Decision"]')).toBeVisible();
+    });
 });
