@@ -297,6 +297,9 @@ public class FrameController extends BaseController {
             content.append("\"start\":{\"id\":\"start\",\"type\":\"Start\",\"name\":\"Start\",\"schema\":\"Fact\"},");
             content.append("\"decision\":{\"id\":\"decision\",\"type\":\"Decision\",\"name\":\"Decision\",\"outputs\":[\"approve\",\"reject\"],\"decisionField\":\"decision\",\"defaultOutput\":\"reject\"}");
             content.append("}}");
+        } else if (fileType.equals(FileType.V1Library)) {
+            // V7.4:V1 库最小骨架(.v1lib.json,默认 PARAMETER 参数库;前端可改 type 为 CONSTANT/VARIABLE)
+            content.append("{\"type\":\"PARAMETER\",\"name\":\"未命名参数库\",\"entries\":[]}");
         } else {
             String name = getRootTagName(fileType);
             content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
@@ -329,6 +332,9 @@ public class FrameController extends BaseController {
         } else if (fileType.equals(FileType.V1Flow)) {
             // V7.0.0:V1 决策流 → Type.v1flow(树 buildData v1flow case + handleFileOpen 开画布)
             newFileInfo.setType(Type.v1flow);
+        } else if (fileType.equals(FileType.V1Library)) {
+            // V7.4:V1 库 → Type.v1library(树 buildData v1library + handleFileOpen 开库编辑器)
+            newFileInfo.setType(Type.v1library);
         }
         try {
             this.ruleforgeRepositoryService.createFile(path, content.toString(), user);

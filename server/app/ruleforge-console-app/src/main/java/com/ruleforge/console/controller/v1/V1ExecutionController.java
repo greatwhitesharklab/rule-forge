@@ -25,7 +25,8 @@ public class V1ExecutionController {
 
     @PostMapping("/execute")
     public V1ExecutionResponse execute(@RequestBody V1ExecutionRequest request) {
-        V1FlowRunner.FlowResult result = V1FlowRunner.execute(request.getAsset(), request.getFact());
+        V1FlowRunner.FlowResult result = V1FlowRunner.execute(
+                request.getAsset(), request.getFact(), request.getParameters());
         return new V1ExecutionResponse(result);
     }
 }

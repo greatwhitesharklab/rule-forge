@@ -111,6 +111,8 @@ public class PermissionServiceImpl implements PermissionService {
             case Dmn, Pmml -> write ? config.isWriteRuleFile() : config.isReadRuleFile();
             // V7.0.0:V1 决策流,借 rule 权限位
             case V1Flow -> write ? config.isWriteRuleFile() : config.isReadRuleFile();
+            // V7.4:V1 库,借 rule 权限位
+            case V1Library -> write ? config.isWriteRuleFile() : config.isReadRuleFile();
             case DIR, Package -> true;
         };
     }

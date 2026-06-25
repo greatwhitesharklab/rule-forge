@@ -42,22 +42,28 @@ public class FileTypeUtils {
         // V7.0.0:V1 决策流(.json,React Flow 画布资产)。RuleForge 项目 .json 罕见,
         // 故 .json 统一归 V1Flow(内容靠顶层 version 自识别,非 V1 的 .json 打开时报错)。
         EXTENSION_MAP.put(".json", FileType.V1Flow);
+        // V7.4:V1 库(.v1lib.json,双后缀避免跟 V1Flow .json 冲突;getFileTypeByFileName 长后缀优先)
+        EXTENSION_MAP.put(".v1lib.json", FileType.V1Library);
     }
 
     /**
-     * 根据文件名获取 FileType
+     * 根据文件名获取 FileType(长后缀优先:.v1lib.json 先于 .json 匹配,避免 HashMap 遍历序不定)。
      */
     public static FileType getFileTypeByFileName(String name) {
         if (name == null || name.isEmpty()) {
             return null;
         }
         String lower = name.toLowerCase();
+        FileType best = null;
+        int bestLen = 0;
         for (Map.Entry<String, FileType> entry : EXTENSION_MAP.entrySet()) {
-            if (lower.endsWith(entry.getKey())) {
-                return entry.getValue();
+            String key = entry.getKey();
+            if (lower.endsWith(key) && key.length() > bestLen) {
+                best = entry.getValue();
+                bestLen = key.length();
             }
         }
-        return null;
+        return best;
     }
 
     /**
@@ -123,6 +129,9 @@ public class FileTypeUtils {
             // V7.0.0:V1 决策流文件 → Type.v1flow(树 buildData 渲染 + handleFileOpen 开画布)
             case V1Flow:
                 return Type.v1flow;
+            // V7.4:V1 库 → Type.v1library(树 buildData v1library + handleFileOpen 开库编辑器)
+            case V1Library:
+                return Type.v1library;
             default:
                 return null;
         }

@@ -1689,6 +1689,17 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
         buildNodes(projectNode, flowLib, libraryFlowTypes, Type.flowLib, searchFileName);
         buildNodes(projectNode, drlLib, libraryDrlTypes, Type.drlLib, searchFileName);
         buildNodes(projectNode, v1FlowLib, libraryV1FlowTypes, Type.v1flowLib, searchFileName);
+
+        // V7.4:V1 库(.v1lib.json,vl/cl/pl 四库,pl/cl 动态右值)
+        RepositoryFile v1LibLib = buildLibFile(libDir, "V1库", LibType.v1library);
+        v1LibLib.setFullPath(libDir.getFullPath());
+        v1LibLib.setType(Type.v1libraryLib);
+        libDir.addChild(v1LibLib, false);
+        FileType[] libraryV1LibTypes = types;
+        if (types == null || types.length == 0) {
+            libraryV1LibTypes = new FileType[]{FileType.V1Library};
+        }
+        buildNodes(projectNode, v1LibLib, libraryV1LibTypes, Type.v1libraryLib, searchFileName);
     }
 
     private RepositoryFile buildLibFile(RepositoryFile libraryDir, String name, LibType libType) {

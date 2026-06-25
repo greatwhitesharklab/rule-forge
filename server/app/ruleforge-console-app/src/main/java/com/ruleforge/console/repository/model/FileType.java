@@ -8,6 +8,8 @@ public enum FileType {
     Dmn, Pmml,
     // V7.0.0:V1 决策流(.json,React Flow 画布资产,后端 V1FlowRunner 可执行)
     V1Flow,
+    // V7.4:V1 库(.v1lib.json,vl/cl/pl 四库,pl/cl 动态右值)
+    V1Library,
     DIR, Package;
 
     public static FileType parse(String type) {
