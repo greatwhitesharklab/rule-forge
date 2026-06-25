@@ -284,6 +284,19 @@ public class FrameController extends BaseController {
             content.append("    </MiningSchema>\n");
             content.append("  </Scorecard>\n");
             content.append("</PMML>\n");
+        } else if (fileType.equals(FileType.V1Flow)) {
+            // V7.0.0:V1 决策流最小 RuleAsset 骨架(.json)。
+            // Start + Decision 两节点线性流,后端 V1FlowRunner 可直接执行;前端画布可加载编辑。
+            content.append("{\"version\":\"1.0\",\"id\":\"untitled\",\"name\":\"未命名决策流\",");
+            content.append("\"flow\":{\"id\":\"f1\",\"name\":\"Flow\",\"version\":\"1.0\",\"flowElements\":[");
+            content.append("{\"type\":\"startEvent\",\"id\":\"start\",\"name\":\"Start\",\"implementation\":\"Start:start\",\"position\":{\"x\":80,\"y\":200}},");
+            content.append("{\"type\":\"endEvent\",\"id\":\"decision\",\"name\":\"Decision\",\"implementation\":\"Decision:decision\",\"position\":{\"x\":400,\"y\":200}},");
+            content.append("{\"type\":\"sequenceFlow\",\"id\":\"f1\",\"sourceRef\":\"start\",\"targetRef\":\"decision\"}");
+            content.append("]},");
+            content.append("\"nodes\":{");
+            content.append("\"start\":{\"id\":\"start\",\"type\":\"Start\",\"name\":\"Start\",\"schema\":\"Fact\"},");
+            content.append("\"decision\":{\"id\":\"decision\",\"type\":\"Decision\",\"name\":\"Decision\",\"outputs\":[\"approve\",\"reject\"],\"decisionField\":\"decision\",\"defaultOutput\":\"reject\"}");
+            content.append("}}");
         } else {
             String name = getRootTagName(fileType);
             content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
@@ -313,6 +326,9 @@ public class FrameController extends BaseController {
         } else if (fileType.equals(FileType.Pmml)) {
             // V6.20.0 P3:PMML 文件 → Type.pmml(树 buildData pmml case 渲染)
             newFileInfo.setType(Type.pmml);
+        } else if (fileType.equals(FileType.V1Flow)) {
+            // V7.0.0:V1 决策流 → Type.v1flow(树 buildData v1flow case + handleFileOpen 开画布)
+            newFileInfo.setType(Type.v1flow);
         }
         try {
             this.ruleforgeRepositoryService.createFile(path, content.toString(), user);

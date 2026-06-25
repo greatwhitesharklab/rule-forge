@@ -100,6 +100,11 @@ export function handleFileOpen(
         open('/app/editor/drl?file=' + encodeURIComponent(fullPath));
         return;
     }
+    // V7.0.0:V1 决策流 (.json) — 走 V1 画布
+    if (data.type === 'v1flow' || fullPath.endsWith('.json')) {
+        open('/app/v1-flow?file=' + encodeURIComponent(fullPath));
+        return;
+    }
     // V6.20.0 P3:DMN / PMML 标准决策模型 — 走只读查看器(无 UI 编辑器,纯源文本展示)
     if (data.type === 'dmn' || fullPath.endsWith('.dmn')) {
         open('/app/editor/dmn?file=' + encodeURIComponent(fullPath));

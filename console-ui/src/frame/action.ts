@@ -414,6 +414,8 @@ const FILE_TYPE_MAP: Record<string, string> = {
     'drl': 'Drl',
     // V6.20.0 P3:DMN / PMML(只读/导入,FileTypeUtils 后端识别 .dmn/.pmml)
     'dmn': 'Dmn', 'pmml': 'Pmml',
+    // V7.0.0:V1 决策流(.json,React Flow 画布,后端 V1FlowRunner 可执行)
+    'json': 'V1Flow',
 };
 
 export function buildType(fileType: string): string {
@@ -448,6 +450,10 @@ export function buildType(fileType: string): string {
             break;
         case "pmml":
             type = "PMML 模型(只读)";
+            break;
+        // V7.0.0:V1 决策流
+        case "json":
+            type = "V1 决策流";
             break;
         case "rp":
             type = 'package';
@@ -650,6 +656,27 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                 }
             ];
             break;
+        // V7.0.0:V1 决策流库(新分类,.json 画布资产)
+        case "v1flowLib":
+            data._icon = Styles.frameStyle.getFlowIcon();
+            data._style = Styles.frameStyle.getFlowIconStyle();
+            data.contextMenu = [
+                {
+                    name: '添加目录',
+                    icon: Styles.frameStyle.getFolderIcon(),
+                    click: function (data: TreeNodeData) {
+                        event.eventEmitter.emit(event.OPEN_CREATE_FOLDER_DIALOG, {nodeData: data});
+                    }
+                },
+                {
+                    name: '添加 V1 决策流',
+                    icon: Styles.frameStyle.getFlowIcon(),
+                    click: function () {
+                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'json', nodeData: data});
+                    }
+                }
+            ];
+            break;
         case "flow":
             data._icon = Styles.frameStyle.getFlowIcon();
             data._style = Styles.frameStyle.getFlowIconStyle();
@@ -659,6 +686,12 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
         case "drl":
             data._icon = Styles.frameStyle.getDrlIcon();
             data._style = Styles.frameStyle.getDrlIconStyle();
+            data.contextMenu = buildFileContextMenu();
+            break;
+        // V7.0.0:V1 决策流文件(.json) → 走 V1 画布(handleFileOpen → /app/v1-flow)
+        case "v1flow":
+            data._icon = Styles.frameStyle.getFlowIcon();
+            data._style = Styles.frameStyle.getFlowIconStyle();
             data.contextMenu = buildFileContextMenu();
             break;
         // V6.20.0 P3:DMN 标准决策模型文件(.dmn) → 只读查看器
@@ -677,7 +710,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
     // Ensure container types have a children array so they render as folders
     if (data.children === null || data.children === undefined) {
         var t = data.type;
-        if (t === 'lib' || t === 'flowLib' || t === 'drlLib' || t === 'resource' || t === 'folder') {
+        if (t === 'lib' || t === 'flowLib' || t === 'drlLib' || t === 'v1flowLib' || t === 'resource' || t === 'folder') {
             data.children = [];
         }
     }

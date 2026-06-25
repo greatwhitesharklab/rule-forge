@@ -55,4 +55,17 @@ class FileTypeUtilsTest {
     void nullReturnsNull() {
         assertThat(FileTypeUtils.getFileTypeByFileName(null)).isNull();
     }
+
+    // V7.0.0:V1 决策流(.json)→ FileType.V1Flow / Type.v1flow(树发现 + handleFileOpen 开画布)
+    @Test
+    @DisplayName("V7.0.0:getFileTypeByFileName(\"loan.json\") == FileType.V1Flow")
+    void jsonExtensionMapsToFileTypeV1Flow() {
+        assertThat(FileTypeUtils.getFileTypeByFileName("loan_approval.json")).isEqualTo(FileType.V1Flow);
+    }
+
+    @Test
+    @DisplayName("V7.0.0:mapFileNameToType(\"loan.json\") == Type.v1flow")
+    void jsonExtensionMapsToTypeV1Flow() {
+        assertThat(FileTypeUtils.mapFileNameToType("/proj/loan_approval.json")).isEqualTo(Type.v1flow);
+    }
 }

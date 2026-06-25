@@ -1662,8 +1662,14 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
         drlLib.setFullPath(libDir.getFullPath());
         drlLib.setType(Type.drlLib);
 
+        // V7.0.0:V1 决策流库 — React Flow 画布资产(.json,后端 V1FlowRunner 可执行)
+        RepositoryFile v1FlowLib = buildLibFile(libDir, "V1决策流", LibType.v1flow);
+        v1FlowLib.setFullPath(libDir.getFullPath());
+        v1FlowLib.setType(Type.v1flowLib);
+
         libDir.addChild(flowLib, false);
         libDir.addChild(drlLib, false);
+        libDir.addChild(v1FlowLib, false);
 
         FileType[] libraryFlowTypes = types;
         if (types == null || types.length == 0) {
@@ -1675,8 +1681,14 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
             libraryDrlTypes = new FileType[]{FileType.Drl};
         }
 
+        FileType[] libraryV1FlowTypes = types;
+        if (types == null || types.length == 0) {
+            libraryV1FlowTypes = new FileType[]{FileType.V1Flow};
+        }
+
         buildNodes(projectNode, flowLib, libraryFlowTypes, Type.flowLib, searchFileName);
         buildNodes(projectNode, drlLib, libraryDrlTypes, Type.drlLib, searchFileName);
+        buildNodes(projectNode, v1FlowLib, libraryV1FlowTypes, Type.v1flowLib, searchFileName);
     }
 
     private RepositoryFile buildLibFile(RepositoryFile libraryDir, String name, LibType libType) {

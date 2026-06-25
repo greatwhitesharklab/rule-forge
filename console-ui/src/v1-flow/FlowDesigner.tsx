@@ -1,4 +1,4 @@
-import {useCallback, useState, useMemo} from 'react';
+import {useCallback, useState, useMemo, useEffect} from 'react';
 import {
     ReactFlow,
     Background,
@@ -82,7 +82,7 @@ function toRuleAsset(
     };
 }
 
-export default function FlowDesigner() {
+export default function FlowDesigner({file}: {file?: string}) {
     const {token} = theme.useToken();
     const [nodes, setNodes, onNodesChange] = useNodesState<Node<V1NodeData>>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -93,7 +93,22 @@ export default function FlowDesigner() {
     const [exported, setExported] = useState('');
     const [importOpen, setImportOpen] = useState(false);
     const [importText, setImportText] = useState('');
-    const [filePath, setFilePath] = useState('');
+    const [filePath, setFilePath] = useState(file || '');
+
+    /** 挂载时若有 file(从项目树进入),按 file 加载 RuleAsset → 画布。 */
+    useEffect(() => {
+        if (!file) return;
+        setFilePath(file);
+        formPost<{content: string}>('/frame/fileSource', {path: file})
+            .then((res) => {
+                const asset = JSON.parse(res.content) as RuleAsset;
+                const st = fromRuleAsset(asset);
+                setNodes(st.nodes); setEdges(st.edges); setNodesMap(st.nodesMap); setSchemaName(st.schemaName);
+                message.success(`加载 ${file}:${st.nodes.length} 节点`);
+            })
+            .catch(() => message.error('加载失败(后端未运行或文件不存在)'));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [file]);
 
     const onConnect = useCallback(
         (params: Connection) => setEdges((eds: Edge[]) => addEdge({...params, markerEnd: {type: MarkerType.ArrowClosed}} as Edge, eds)),
