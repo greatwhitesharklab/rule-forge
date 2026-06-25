@@ -105,6 +105,11 @@ export function handleFileOpen(
         open('/app/v1-flow?file=' + encodeURIComponent(fullPath));
         return;
     }
+    // V7.4:V1 库 (.v1lib.json) — 走库编辑器
+    if (data.type === 'v1library' || fullPath.endsWith('.v1lib.json')) {
+        open('/app/v1-library?file=' + encodeURIComponent(fullPath));
+        return;
+    }
     // V6.20.0 P3:DMN / PMML 标准决策模型 — 走只读查看器(无 UI 编辑器,纯源文本展示)
     if (data.type === 'dmn' || fullPath.endsWith('.dmn')) {
         open('/app/editor/dmn?file=' + encodeURIComponent(fullPath));

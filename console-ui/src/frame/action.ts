@@ -694,6 +694,33 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._style = Styles.frameStyle.getFlowIconStyle();
             data.contextMenu = buildFileContextMenu();
             break;
+        // V7.4:V1 库容器(.v1lib.json,vl/cl/pl 四库)
+        case "v1libraryLib":
+            data._icon = Styles.frameStyle.getFlowIcon();
+            data._style = Styles.frameStyle.getFlowIconStyle();
+            data.contextMenu = [
+                {
+                    name: '添加目录',
+                    icon: Styles.frameStyle.getFolderIcon(),
+                    click: function (data: TreeNodeData) {
+                        event.eventEmitter.emit(event.OPEN_CREATE_FOLDER_DIALOG, {nodeData: data});
+                    }
+                },
+                {
+                    name: '添加 V1 库',
+                    icon: Styles.frameStyle.getFlowIcon(),
+                    click: function () {
+                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'V1Library', nodeData: data});
+                    }
+                }
+            ];
+            break;
+        // V7.4:V1 库文件(.v1lib.json) → 走库编辑器(handleFileOpen → /app/v1-library)
+        case "v1library":
+            data._icon = Styles.frameStyle.getFlowIcon();
+            data._style = Styles.frameStyle.getFlowIconStyle();
+            data.contextMenu = buildFileContextMenu();
+            break;
         // V6.20.0 P3:DMN 标准决策模型文件(.dmn) → 只读查看器
         case "dmn":
             data._icon = 'rf rf-table'; // 复用 table 图标(无专属 DMN icon,先沿用)
@@ -710,7 +737,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
     // Ensure container types have a children array so they render as folders
     if (data.children === null || data.children === undefined) {
         var t = data.type;
-        if (t === 'lib' || t === 'flowLib' || t === 'drlLib' || t === 'v1flowLib' || t === 'resource' || t === 'folder') {
+        if (t === 'lib' || t === 'flowLib' || t === 'drlLib' || t === 'v1flowLib' || t === 'v1libraryLib' || t === 'resource' || t === 'folder') {
             data.children = [];
         }
     }
