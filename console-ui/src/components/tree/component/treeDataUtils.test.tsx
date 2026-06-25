@@ -47,11 +47,15 @@ describe('treeDataUtils', () => {
         });
         it('容器 type 枚举视为容器(无 children)', () => {
             expect(isContainerType(makeNode({type: 'lib'}))).toBe(true);
-            expect(isContainerType(makeNode({type: 'ruleLib'}))).toBe(true);
+            // V6.20.0 P2:ruleLib 不再是前端容器类型(老 urule 规则库已删)
             expect(isContainerType(makeNode({type: 'folder'}))).toBe(true);
         });
         it('文件节点非容器', () => {
             expect(isContainerType(makeNode({name: 'x.rs.xml', type: 'rule'}))).toBe(false);
+        });
+        // V6.20.0:drlLib 容器类型走 CONTAINER_TYPES(可展开 + 不是文件)
+        it('V6.20.0:drlLib 视为容器', () => {
+            expect(isContainerType(makeNode({type: 'drlLib'}))).toBe(true);
         });
     });
 
@@ -62,21 +66,20 @@ describe('treeDataUtils', () => {
         });
         afterEach(() => openSpy.mockRestore());
 
-        // Given 文件 type/后缀 When handleFileOpen Then window.open 对应 SPA 路由
+        // V6.20.0 P2:删老 urule 规则 UI 入口(.rs.xml/.dt.xml/.dtree.xml/.sdt.xml/.sc.xml/.complexscorecard/.ct.xml)。
+        // 只留 DRL + 4 库 + 决策流 + 知识包。
         // (name 必须含扩展名,isFileNode 才判 true;真实节点 name 就是文件名带后缀)
         const cases: Array<{name: string; node: Partial<TreeNodeData>; expectedPath: string}> = [
-            {name: 'rule/.rs.xml → ruleset', node: {name: 'x.rs.xml', type: 'rule', fullPath: '/p/x.rs.xml'}, expectedPath: '/app/editor/ruleset'},
-            {name: 'decisionTree/.dtree.xml → decisiontree', node: {name: 't.dtree.xml', type: 'decisionTree', fullPath: '/p/t.dtree.xml'}, expectedPath: '/app/editor/decisiontree'},
-            {name: 'decisionTable/.dt.xml → decisiontable', node: {name: 'd.dt.xml', type: 'decisionTable', fullPath: '/p/d.dt.xml'}, expectedPath: '/app/editor/decisiontable'},
-            {name: 'scriptDecisionTable/.sdt.xml → scriptdecisiontable', node: {name: 's.sdt.xml', type: 'scriptDecisionTable', fullPath: '/p/s.sdt.xml'}, expectedPath: '/app/editor/scriptdecisiontable'},
-            {name: 'scorecard/.sc.xml → scorecard', node: {name: 's.sc.xml', type: 'scorecard', fullPath: '/p/s.sc.xml'}, expectedPath: '/app/editor/scorecard'},
-            {name: 'complexscorecard → complexscorecard', node: {name: 'c.complexscorecard', type: 'complexscorecard', fullPath: '/p/c.complexscorecard'}, expectedPath: '/app/editor/complexscorecard'},
-            {name: 'crosstab/.ct.xml → crosstab', node: {name: 'c.ct.xml', type: 'crosstab', fullPath: '/p/c.ct.xml'}, expectedPath: '/app/editor/crosstab'},
             {name: 'variable/.vl.xml → variable', node: {name: 'v.vl.xml', type: 'variable', fullPath: '/p/v.vl.xml'}, expectedPath: '/app/editor/variable'},
             {name: 'constant/.cl.xml → constant', node: {name: 'c.cl.xml', type: 'constant', fullPath: '/p/c.cl.xml'}, expectedPath: '/app/editor/constant'},
             {name: 'parameter/.pl.xml → parameter', node: {name: 'p.pl.xml', type: 'parameter', fullPath: '/p/p.pl.xml'}, expectedPath: '/app/editor/parameter'},
             {name: 'action/.al.xml → action', node: {name: 'a.al.xml', type: 'action', fullPath: '/p/a.al.xml'}, expectedPath: '/app/editor/action'},
             {name: 'flow/.rl.xml → flow', node: {name: 'f.rl.xml', type: 'flow', fullPath: '/p/f.rl.xml'}, expectedPath: '/app/editor/flow'},
+            // V6.20.0:DRL 规则(.drl) → DRL 编辑器
+            {name: 'V6.20.0:DRL/.drl → drl', node: {name: 'r.drl', type: 'drl', fullPath: '/p/r.drl'}, expectedPath: '/app/editor/drl'},
+            // V6.20.0 P3:DMN/PMML 标准决策模型 → 只读源查看器
+            {name: 'V6.20.0 P3:DMN/.dmn → dmn', node: {name: 'd.dmn', type: 'dmn', fullPath: '/p/d.dmn'}, expectedPath: '/app/editor/dmn'},
+            {name: 'V6.20.0 P3:PMML/.pmml → pmml', node: {name: 'm.pmml', type: 'pmml', fullPath: '/p/m.pmml'}, expectedPath: '/app/editor/pmml'},
         ];
         it.each(cases)('$name', ({node, expectedPath}) => {
             handleFileOpen(makeNode(node), undefined, false);
@@ -102,13 +105,14 @@ describe('treeDataUtils', () => {
 
         it('readOnly + onFileReadOnlyClick → 调回调,不开窗', () => {
             const cb = vi.fn();
-            handleFileOpen(makeNode({name: 'x.rs.xml', type: 'rule', fullPath: '/p/x.rs.xml'}), undefined, true, cb);
-            expect(cb).toHaveBeenCalledWith(expect.objectContaining({fullPath: '/p/x.rs.xml'}));
+            handleFileOpen(makeNode({name: 'v.vl.xml', type: 'variable', fullPath: '/p/v.vl.xml'}), undefined, true, cb);
+            expect(cb).toHaveBeenCalledWith(expect.objectContaining({fullPath: '/p/v.vl.xml'}));
             expect(openSpy).not.toHaveBeenCalled();
         });
 
-        it('无 SPA 路由类型(.ul.xml)→ no-op,window.open 不调', () => {
-            handleFileOpen(makeNode({name: 's.ul.xml', fullPath: '/p/s.ul.xml'}), undefined, false);
+        it('V6.20.0 P2:无 SPA 路由老 type(.rs.xml)→ no-op,window.open 不调', () => {
+            // 老 urule 规则类型 UI 入口已删,handleFileOpen 命中后 no-op
+            handleFileOpen(makeNode({name: 'x.rs.xml', type: 'rule', fullPath: '/p/x.rs.xml'}), undefined, false);
             expect(openSpy).not.toHaveBeenCalled();
         });
 
@@ -215,8 +219,8 @@ describe('treeDataUtils', () => {
 
     describe('toAntNode', () => {
         it('文件节点:key=fullPath#type (V6.13.5f), isLeaf=true, selectable=true, children=undefined', () => {
-            const node = toAntNode(makeNode({name: 'x.rs.xml', type: 'rule', fullPath: '/p/x.rs.xml', _icon: 'rf rf-rule'}), '');
-            expect(node.key).toBe('/p/x.rs.xml#rule');
+            const node = toAntNode(makeNode({name: 'r.drl', type: 'drl', fullPath: '/p/r.drl', _icon: 'rf rf-rule'}), '');
+            expect(node.key).toBe('/p/r.drl#drl');
             expect(node.isLeaf).toBe(true);
             expect(node.selectable).toBe(true);
             expect(node.children).toBeUndefined();
@@ -224,13 +228,13 @@ describe('treeDataUtils', () => {
         it('容器有 children:isLeaf=false, selectable=false, children 递归', () => {
             const node = toAntNode(makeNode({
                 name: 'proj', type: 'project', fullPath: '/p', _icon: 'rf rf-project',
-                children: [makeNode({name: 'x.rs.xml', type: 'rule', fullPath: '/p/x.rs.xml'})],
+                children: [makeNode({name: 'r.drl', type: 'drl', fullPath: '/p/r.drl'})],
             }), '');
             expect(node.isLeaf).toBe(false);
             expect(node.selectable).toBe(false);
             expect(node.children).toHaveLength(1);
             expect(node.key).toBe('/p#project');
-            expect(node.children![0].key).toBe('/p/x.rs.xml#rule');
+            expect(node.children![0].key).toBe('/p/r.drl#drl');
         });
         // V6.13.5g:icon 走 titleRender (FileTreeNode 渲染) — toAntNode.icon 必须 undefined,
         // 否则 antd 内部用 .ant-tree-iconEle 渲染 + titleRender 也渲染 → 每个节点 icon 重复 2 次
@@ -253,6 +257,13 @@ describe('treeDataUtils', () => {
             }), 'credit');
             expect(node.children).toHaveLength(1);
             expect(node.children![0].key).toBe('/p/credit.dt.xml');
+        });
+        // V6.20.0:drlLib 容器转换后 isLeaf=false(走 loadData 懒加载)
+        it('V6.20.0:drlLib → isLeaf=false', () => {
+            const node = toAntNode(makeNode({name: 'DRL规则', type: 'drlLib', fullPath: '/p/drl', _needLazyLoad: true, _childrenLoaded: false}), '');
+            expect(node.isLeaf).toBe(false);
+            expect(node.selectable).toBe(false);
+            expect(node.children).toBeUndefined();
         });
     });
 

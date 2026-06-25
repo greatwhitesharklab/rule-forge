@@ -61,6 +61,19 @@ Styles.frameStyle = {
     getRuleIconStyle: function () {
         return _getStyle("ruleIconStyle", {color: 'rgb(31, 90, 163)'});
     },
+    // V6.20.0:DRL 规则图标 — 复用 rf-rule 类,Docker 蓝区分老 .rs.xml
+    getDrlIcon: function () {
+        return _getStyle("drlIcon", "rf rf-rule");
+    },
+    getDrlIconStyle: function () {
+        return _getStyle("drlIconStyle", {color: 'rgb(31, 90, 163)'});
+    },
+    getDrlLibIcon: function () {
+        return _getStyle("drlLibIcon", "rf rf-rule");
+    },
+    getDrlLibIconStyle: function () {
+        return _getStyle("drlLibIconStyle", {color: 'rgb(31, 90, 163)'});
+    },
     getUlIcon: function () {
         return _getStyle("ulIcon", "rf rf-script");
     },

@@ -31,7 +31,8 @@ jobs:
       - name: Run @Tag("perf") tests
         # parent/pom.xml 的 <profile>perf</profile> 配置 surefire groups=perf +
         # 显式 include EvalBenchmark.java(它不带 Test 后缀)。
-        run: mvn -B -ntp -pl server/lib/ruleforge-core -am test -Pperf -Dgroups=perf
+        # server/ 是 Maven 多模块根,模块相对 reactor 是 lib/ruleforge-core(不带 server/ 前缀)
+        run: cd server && mvn -B -ntp -pl lib/ruleforge-core -am test -Pperf -Dgroups=perf
 
       - name: Upload perf results
         if: always()

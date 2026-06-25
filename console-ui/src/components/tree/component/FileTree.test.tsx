@@ -11,7 +11,8 @@ function makeStore(data: TreeNodeData | null) {
     return createStore(() => ({data, publicResource: null}) as unknown, applyMiddleware(thunk));
 }
 
-/** 含项目 + 文件 + contextMenu 的样本树(projA _level=1 < expandLevel 3 → 初始展开,loan 可见)。 */
+/** 含项目 + 文件 + contextMenu 的样本树(projA _level=1 < expandLevel 3 → 初始展开,loan 可见)。
+ *  V6.20.0 P2:老 .rs.xml (rule) → DRL .drl (drl)。 */
 const sampleData = {
     id: 'root', name: 'root', type: 'root', fullPath: '/r',
     children: [
@@ -19,7 +20,7 @@ const sampleData = {
             id: 'p', name: 'projA', type: 'project', fullPath: '/r/p', _level: 1, _icon: 'rf rf-project',
             contextMenu: [{name: '删除项目', icon: 'rf rf-remove'}],
             children: [
-                {id: 'f', name: 'loan.rs.xml', type: 'rule', fullPath: '/r/p/loan.rs.xml', _level: 2, _icon: 'rf rf-rule'},
+                {id: 'f', name: 'loan.drl', type: 'drl', fullPath: '/r/p/loan.drl', _level: 2, _icon: 'rf rf-rule'},
             ],
         },
     ],
@@ -35,7 +36,7 @@ describe('FileTree', () => {
     it('渲染节点(projA _level<expandLevel 初始展开 → loan 可见)', () => {
         render(<Provider store={makeStore(sampleData)}><FileTree/></Provider>);
         expect(screen.getByText('projA')).toBeTruthy();
-        expect(screen.getByText('loan.rs.xml')).toBeTruthy();
+        expect(screen.getByText('loan.drl')).toBeTruthy();
     });
 
     it('data=null → 不渲染节点(不崩)', () => {
@@ -47,7 +48,7 @@ describe('FileTree', () => {
         const {container} = render(<Provider store={makeStore(sampleData)}><FileTree/></Provider>);
         fireEvent.change(screen.getByPlaceholderText('搜索文件/项目'), {target: {value: 'loan'}});
         // highlight 把命中拆 <mark>,用 textContent 而非 getByText 精确匹配
-        expect(container.textContent).toContain('loan.rs.xml');
+        expect(container.textContent).toContain('loan.drl');
     });
 
     it('搜索命中高亮 <mark>', () => {
@@ -58,11 +59,12 @@ describe('FileTree', () => {
         expect(mark?.textContent).toBe('loan');
     });
 
-    it('点文件 → window.open ruleset 编辑器(onSelect→handleFileOpen)', () => {
+    // V6.20.0 P2:点 .drl 文件 → /app/editor/drl(老 /app/editor/ruleset 已删)
+    it('点文件 → window.open DRL 编辑器(onSelect→handleFileOpen)', () => {
         render(<Provider store={makeStore(sampleData)}><FileTree/></Provider>);
-        fireEvent.click(screen.getByText('loan.rs.xml'));
+        fireEvent.click(screen.getByText('loan.drl'));
         expect(openSpy).toHaveBeenCalledWith(
-            expect.stringContaining('/app/editor/ruleset'),
+            expect.stringContaining('/app/editor/drl'),
             '_blank',
         );
     });
@@ -81,40 +83,38 @@ describe('FileTree', () => {
     it('readOnly 模式:点文件 → 走 onFileReadOnlyClick 回调,不开窗', () => {
         const onReadOnly = vi.fn();
         render(<Provider store={makeStore(sampleData)}><FileTree readOnly onFileReadOnlyClick={onReadOnly}/></Provider>);
-        fireEvent.click(screen.getByText('loan.rs.xml'));
+        fireEvent.click(screen.getByText('loan.drl'));
         expect(onReadOnly).toHaveBeenCalled();
         expect(openSpy).not.toHaveBeenCalled();
     });
 
     it('搜索展开祖先:匹配深层文件 → projA 仍可见', () => {
         render(<Provider store={makeStore(sampleData)}><FileTree/></Provider>);
-        fireEvent.change(screen.getByPlaceholderText('搜索文件/项目'), {target: {value: 'loan.rs.xml'}});
+        fireEvent.change(screen.getByPlaceholderText('搜索文件/项目'), {target: {value: 'loan.drl'}});
         // projA 是 loan 的祖先,搜索展开祖先后 projA 仍渲染
         expect(screen.getByText('projA')).toBeTruthy();
     });
 
     // BUG FIX V6.13.5f:buildData 给 resource 容器和它所有 lib/ruleLib/... 子节点赋同一个 fullPath(同物理路径多虚拟分类)
-    // 6 个 lib 兄弟共享 key → antd 强制 key 唯一,第 2 个起被丢弃 → caret 折叠节点消失 / 状态错位
+    // 兄弟节点共享 key → antd 强制 key 唯一,第 2 个起被丢弃 → caret 折叠节点消失 / 状态错位
     // 修复:toAntNode 用 nodeKey(fullPath, type) 派生唯一 key
-    // 契约:7 个 name 全渲染 + antd 不报"同 key"警告(用 console.error spy)
-    it('V6.13.5f:同 fullPath 不同 type 的兄弟节点 antd key 唯一(resource 容器 + 6 个 lib 不撞 key)', () => {
+    // V6.20.0 P2:只 4 类库容器 (lib/flowLib/drlLib/resource),用 5 个不同 type 兄弟测契约
+    it('V6.13.5f:同 fullPath 不同 type 的兄弟节点 antd key 唯一(resource + 4 个 lib 不撞 key)', () => {
         const siblingData = {
             id: 'root', name: 'root', type: 'root', fullPath: '/',
             children: [
                 {id: 'r', name: '资源', type: 'resource', fullPath: '/test003', _level: 2},
                 {id: 'l1', name: '库', type: 'lib', fullPath: '/test003', _level: 3},
-                {id: 'l2', name: '决策集', type: 'ruleLib', fullPath: '/test003', _level: 3},
-                {id: 'l3', name: '决策表', type: 'decisionTableLib', fullPath: '/test003', _level: 3},
-                {id: 'l4', name: '决策树', type: 'decisionTreeLib', fullPath: '/test003', _level: 3},
-                {id: 'l5', name: '评分卡', type: 'scorecardLib', fullPath: '/test003', _level: 3},
-                {id: 'l6', name: '决策流', type: 'flowLib', fullPath: '/test003', _level: 3},
+                {id: 'l2', name: 'DRL规则', type: 'drlLib', fullPath: '/test003', _level: 3},
+                {id: 'l3', name: '决策流', type: 'flowLib', fullPath: '/test003', _level: 3},
+                {id: 'l4', name: '公共', type: 'publicResource', fullPath: '/test003', _level: 3},
             ],
         } as unknown as TreeNodeData;
         const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         const {container} = render(<Provider store={makeStore(siblingData)}><FileTree/></Provider>);
-        // 7 个期望 name 全出现(无 antd 兄弟合并丢节点)
+        // 5 个期望 name 全出现(无 antd 兄弟合并丢节点)
         const titles = Array.from(container.querySelectorAll('.ant-tree-treenode')).map(n => n.textContent || '');
-        ['资源', '库', '决策集', '决策表', '决策树', '评分卡', '决策流'].forEach(name => {
+        ['资源', '库', 'DRL规则', '决策流', '公共'].forEach(name => {
             expect(titles.some(t => t.includes(name))).toBe(true);
         });
         // antd 不应该报 "Same 'key' exist in the Tree" 警告
@@ -133,7 +133,7 @@ describe('FileTree', () => {
                 {
                     id: 'p', name: 'projA', type: 'project', fullPath: '/r/p', _level: 3,
                     children: [
-                        {id: 'f', name: 'loan.rs.xml', type: 'rule', fullPath: '/r/p/loan.rs.xml', _level: 4},
+                        {id: 'f', name: 'loan.drl', type: 'drl', fullPath: '/r/p/loan.drl', _level: 4},
                     ],
                 },
             ],
@@ -148,18 +148,18 @@ describe('FileTree', () => {
         };
 
         // 初始:loan 不可见(projA 不展开,loan 不 render)
-        expect(nodeExists('loan.rs.xml')).toBe(false);
+        expect(nodeExists('loan.drl')).toBe(false);
 
         // 搜索 loan → projA 展开祖先链,loan 渲染
         fireEvent.change(screen.getByPlaceholderText('搜索文件/项目'), {target: {value: 'loan'}});
         await waitFor(() => {
-            expect(nodeExists('loan.rs.xml')).toBe(true);
+            expect(nodeExists('loan.drl')).toBe(true);
         });
 
         // 清空搜索 → expandedKeys 重置回 _level<3(初始空),projA 收起 → loan 不再渲染
         fireEvent.change(screen.getByPlaceholderText('搜索文件/项目'), {target: {value: ''}});
         await waitFor(() => {
-            expect(nodeExists('loan.rs.xml')).toBe(false);
+            expect(nodeExists('loan.drl')).toBe(false);
         });
     });
 
@@ -172,14 +172,14 @@ describe('FileTree', () => {
             children: [
                 {
                     id: 'p', name: 'projA', type: 'project', fullPath: '/r/p', _level: 1,
-                    children: [{id: 'f', name: 'loan.rs.xml', type: 'rule', fullPath: '/r/p/loan.rs.xml', _level: 2}],
+                    children: [{id: 'f', name: 'loan.drl', type: 'drl', fullPath: '/r/p/loan.drl', _level: 2}],
                 },
             ],
         } as unknown as TreeNodeData;
         const {container} = render(<Provider store={makeStore(shallowData)}><FileTree/></Provider>);
 
         // 初始:loan 可见(projA 展开,loan 跟着渲染)
-        expect(container.textContent).toContain('loan.rs.xml');
+        expect(container.textContent).toContain('loan.drl');
 
         // 模拟用户点 projA caret 折叠 — 找 projA treenode,click 它的 .ant-tree-switcher
         const projATreenode = Array.from(container.querySelectorAll('.ant-tree-treenode'))
@@ -190,19 +190,19 @@ describe('FileTree', () => {
 
         // 折叠后 loan 不可见
         await waitFor(() => {
-            expect(container.textContent).not.toContain('loan.rs.xml');
+            expect(container.textContent).not.toContain('loan.drl');
         });
 
         // 搜索 loan → 自动展开 projA 祖先链,loan 再次可见
         fireEvent.change(screen.getByPlaceholderText('搜索文件/项目'), {target: {value: 'loan'}});
         await waitFor(() => {
-            expect(container.textContent).toContain('loan.rs.xml');
+            expect(container.textContent).toContain('loan.drl');
         });
 
         // 清空搜索 → expandedKeys 只去 search 部分,user 手动折叠保留 → loan 不可见
         fireEvent.change(screen.getByPlaceholderText('搜索文件/项目'), {target: {value: ''}});
         await waitFor(() => {
-            expect(container.textContent).not.toContain('loan.rs.xml');
+            expect(container.textContent).not.toContain('loan.drl');
         });
     });
 });

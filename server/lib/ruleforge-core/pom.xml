@@ -23,6 +23,17 @@
             <artifactId>antlr4-runtime</artifactId>
             <version>4.13.2</version>
         </dependency>
+        <!--
+          V7.0.0: Google CEL (Common Expression Language) — V1 条件表达式语言。
+          只进 condition 字段(返回 boolean,白名单函数,禁赋值/副作用/循环)。
+          用于 RuleSet.rules[].condition / DecisionTable rows / ScoreCard bands / gateway 出边。
+          all-in-one artifact(compile + runtime):解析 + 校验 + 求值。
+        -->
+        <dependency>
+            <groupId>dev.cel</groupId>
+            <artifactId>cel</artifactId>
+            <version>0.13.0</version>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>

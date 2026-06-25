@@ -96,15 +96,8 @@ public class FrameController extends BaseController {
                     case "lib":
                         types = new FileType[]{FileType.VariableLibrary, FileType.ConstantLibrary, FileType.ParameterLibrary, FileType.ActionLibrary};
                         break;
-                    case "rule":
-                        types = new FileType[]{FileType.Ruleset, FileType.UL, FileType.RulesetLib};
-                        break;
-                    case "table":
-                        types = new FileType[]{FileType.DecisionTable, FileType.ScriptDecisionTable, FileType.ComplexScorecard};
-                        break;
-                    case "tree":
-                        types = new FileType[]{FileType.DecisionTree};
-                        break;
+                    // V6.20.0 P2:删老 urule 类别(rule/table/tree),只留 lib + flow;
+                    // DRL 不分类(用户按需搜)。
                     case "flow":
                         types = new FileType[]{FileType.RuleFlow};
                         break;
@@ -250,103 +243,60 @@ public class FrameController extends BaseController {
             throw new RuleException("Unknown file type: " + type);
         }
         StringBuilder content = new StringBuilder();
-        if (fileType.equals(FileType.UL)) {
-            content.append("rule \"rule01\"");
-            content.append("\n");
-            content.append("if");
-            content.append("\r\n");
-            content.append("then");
-            content.append("\r\n");
+        // V6.20.0 P2:UI 老 urule 规则类型(.rs.xml/.dt.xml/.dtree.xml/.sdt.xml/.sc/.scc/.ct.xml/.ul.xml)
+        // 入口已移除。前端不再传这些 FileType,所以这里不再需要初始模板分支。
+        // 后端 FileType 枚举值保留(老 .rp 内已有文件仍能 loadXml 解析)。
+        if (fileType.equals(FileType.Drl)) {
+            // V6.20.0:DRL 新建文件初始模板 — 最小可编译骨架
+            content.append("rule \"rule01\"\n");
+            content.append("when\n");
+            content.append("then\n");
             content.append("end");
-        } else if (fileType.equals(FileType.DecisionTable)) {
-            content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-            content.append("<decision-table>");
-            content.append("<cell row=\"0\" col=\"2\" rowspan=\"1\"></cell>");
-            content.append("<cell row=\"0\" col=\"1\" rowspan=\"1\">");
-            content.append("<joint type=\"and\"/>");
-            content.append("</cell>");
-            content.append("<cell row=\"0\" col=\"0\" rowspan=\"1\">");
-            content.append("<joint type=\"and\"/>");
-            content.append("</cell>");
-            content.append("<cell row=\"1\" col=\"2\" rowspan=\"1\">");
-            content.append("</cell>");
-            content.append("<cell row=\"1\" col=\"1\" rowspan=\"1\">");
-            content.append("<joint type=\"and\"/>");
-            content.append("</cell>");
-            content.append("<cell row=\"1\" col=\"0\" rowspan=\"1\">");
-            content.append("<joint type=\"and\"/>");
-            content.append("</cell>");
-            content.append("<row num=\"0\" height=\"40\"/>");
-            content.append("<row num=\"1\" height=\"40\"/>");
-            content.append("<col num=\"0\" width=\"120\" type=\"Criteria\"/>");
-            content.append("<col num=\"1\" width=\"120\" type=\"Criteria\"/>");
-            content.append("<col num=\"2\" width=\"200\" type=\"Assignment\"/>");
-            content.append("</decision-table>");
-        } else if (fileType.equals(FileType.DecisionTree)) {
-            content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-            content.append("<decision-tree>");
-            content.append("<variable-tree-node></variable-tree-node>");
-            content.append("</decision-tree>");
-        } else if (fileType.equals(FileType.ScriptDecisionTable)) {
-            content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-            content.append("<script-decision-table>");
-            content.append("<script-cell row=\"0\" col=\"2\" rowspan=\"1\"></script-cell>");
-            content.append("<script-cell row=\"0\" col=\"1\" rowspan=\"1\"></script-cell>");
-            content.append("<script-cell row=\"0\" col=\"0\" rowspan=\"1\"></script-cell>");
-            content.append("<script-cell row=\"1\" col=\"2\" rowspan=\"1\"></script-cell>");
-            content.append("<script-cell row=\"1\" col=\"1\" rowspan=\"1\"></script-cell>");
-            content.append("<script-cell row=\"1\" col=\"0\" rowspan=\"1\"></script-cell>");
-            content.append("<row num=\"0\" height=\"40\"/>");
-            content.append("<row num=\"1\" height=\"40\"/>");
-            content.append("<col num=\"0\" width=\"120\" type=\"Criteria\"/>");
-            content.append("<col num=\"1\" width=\"120\" type=\"Criteria\"/>");
-            content.append("<col num=\"2\" width=\"200\" type=\"Assignment\"/>");
-            content.append("</script-decision-table>");
-        } else if (fileType.equals(FileType.Crosstab)) {
-            content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-            content.append("<crosstab>");
-            content.append("<header>LEFT &amp;&amp; TOP</header>");
-            content.append("<row number=\"1\" type=\"top\"/>");
-            content.append("<column number=\"1\" type=\"left\"/>");
-            content.append("<column number=\"2\" type=\"top\"/>");
-            content.append("<row number=\"2\" type=\"left\"/>");
-            content.append("<condition-cell row=\"1\" col=\"2\"/>");
-            content.append("<condition-cell row=\"2\" col=\"1\"/>");
-            content.append("<value-cell row=\"2\" col=\"2\"/>");
-            content.append("</crosstab>");
-        } else if (fileType.equals(FileType.Scorecard)) {
-            content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-            content.append("<scorecard scoring-type=\"sum\" assign-target-type=\"none\">");
-            content.append("</scorecard>");
-        } else if (fileType.equals(FileType.ComplexScorecard)) {
-            content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-            content.append("<complex-scorecard scoring-type=\"sum\" assign-target-type=\"none\">");
-            content.append("<cell row=\"0\" col=\"2\" rowspan=\"1\"></cell>");
-            content.append("<cell row=\"0\" col=\"1\" rowspan=\"1\">");
-            content.append("<joint type=\"and\"/>");
-            content.append("</cell>");
-            content.append("<cell row=\"0\" col=\"0\" rowspan=\"1\">");
-            content.append("<joint type=\"and\"/>");
-            content.append("</cell>");
-            content.append("<cell row=\"1\" col=\"2\" rowspan=\"1\">");
-            content.append("</cell>");
-            content.append("<cell row=\"1\" col=\"1\" rowspan=\"1\">");
-            content.append("<joint type=\"and\"/>");
-            content.append("</cell>");
-            content.append("<cell row=\"1\" col=\"0\" rowspan=\"1\">");
-            content.append("<joint type=\"and\"/>");
-            content.append("</cell>");
-            content.append("<row num=\"0\" height=\"40\"/>");
-            content.append("<row num=\"1\" height=\"40\"/>");
-            content.append("<col num=\"0\" width=\"150\" type=\"Criteria\"/>");
-            content.append("<col num=\"1\" width=\"150\" type=\"Criteria\"/>");
-            content.append("<col num=\"2\" width=\"120\" type=\"Score\"/>");
-            content.append("</complex-scorecard>");
-        } else if (fileType.equals(FileType.Ruleset)) {
-            String name = getRootTagName(fileType);
-            content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-            content.append("<").append(name).append(">");
-            content.append("</").append(name).append(">");
+        } else if (fileType.equals(FileType.Dmn)) {
+            // V6.20.0 P3:DMN 1.3 最小可被 Kie DMNCompiler 编译的骨架
+            // (definitions + single decision table) — UI 创建占位,后续用户从外部导入覆盖
+            content.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+            content.append("<definitions xmlns=\"https://www.omg.org/spec/DMN/20191111/MODEL/\"\n");
+            content.append("             xmlns:dmndi=\"https://www.omg.org/spec/DMN/20191111/DMNDI/\"\n");
+            content.append("             xmlns:dc=\"http://www.omg.org/spec/DMN/20180521/DC/\"\n");
+            content.append("             id=\"definitions_stub\"\n");
+            content.append("             name=\"stub\"\n");
+            content.append("             namespace=\"stub\">\n");
+            content.append("  <decision id=\"decision_stub\" name=\"stub\">\n");
+            content.append("    <decisionTable id=\"decisionTable_stub\" hitPolicy=\"FIRST\">\n");
+            content.append("      <input id=\"input1\"><inputExpression typeRef=\"string\"><text>stub</text></inputExpression></input>\n");
+            content.append("      <output id=\"output1\"/>\n");
+            content.append("    </decisionTable>\n");
+            content.append("  </decision>\n");
+            content.append("</definitions>\n");
+        } else if (fileType.equals(FileType.Pmml)) {
+            // V6.20.0 P3:PMML 4.4 最小 Scorecard 骨架(pmml4s 1.5.6 可解析)
+            // (PMML 顶层字段已填,子结构留空 = 0 rules emitted,但 dispatcher 不抛错)
+            content.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+            content.append("<PMML xmlns=\"http://www.dmg.org/PMML-4_4\" version=\"4.4\">\n");
+            content.append("  <Header copyright=\"\" description=\"stub\"/>\n");
+            content.append("  <DataDictionary>\n");
+            content.append("    <DataField name=\"stub\" dataType=\"string\" optype=\"categorical\"/>\n");
+            content.append("  </DataDictionary>\n");
+            content.append("  <Scorecard modelName=\"stub\" useReasonCodes=\"false\" initialScore=\"0\" baselineMethod=\"0\" reasonCodeAlgorithm=\"pointsBelow\">\n");
+            content.append("    <MiningSchema>\n");
+            content.append("      <MiningField name=\"stub\" usageType=\"active\"/>\n");
+            content.append("    </MiningSchema>\n");
+            content.append("  </Scorecard>\n");
+            content.append("</PMML>\n");
+        } else if (fileType.equals(FileType.V1Flow)) {
+            // V7.0.0:V1 决策流最小 RuleAsset 骨架(.json)。
+            // Start + Decision 两节点线性流,后端 V1FlowRunner 可直接执行;前端画布可加载编辑。
+            content.append("{\"version\":\"1.0\",\"id\":\"untitled\",\"name\":\"未命名决策流\",");
+            content.append("\"flow\":{\"id\":\"f1\",\"name\":\"Flow\",\"version\":\"1.0\",\"flowElements\":[");
+            content.append("{\"type\":\"startEvent\",\"id\":\"start\",\"name\":\"Start\",\"implementation\":\"Start:start\",\"position\":{\"x\":80,\"y\":200}},");
+            content.append("{\"type\":\"endEvent\",\"id\":\"decision\",\"name\":\"Decision\",\"implementation\":\"Decision:decision\",\"position\":{\"x\":400,\"y\":200}},");
+            content.append("{\"type\":\"sequenceFlow\",\"id\":\"f1\",\"sourceRef\":\"start\",\"targetRef\":\"decision\"}");
+            content.append("]},");
+            content.append("\"nodes\":{");
+            content.append("\"start\":{\"id\":\"start\",\"type\":\"Start\",\"name\":\"Start\",\"schema\":\"Fact\"},");
+            content.append("\"decision\":{\"id\":\"decision\",\"type\":\"Decision\",\"name\":\"Decision\",\"outputs\":[\"approve\",\"reject\"],\"decisionField\":\"decision\",\"defaultOutput\":\"reject\"}");
+            content.append("}}");
         } else {
             String name = getRootTagName(fileType);
             content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
@@ -365,24 +315,20 @@ public class FrameController extends BaseController {
             newFileInfo.setType(Type.constant);
         } else if (fileType.equals(FileType.ParameterLibrary)) {
             newFileInfo.setType(Type.parameter);
-        } else if (fileType.equals(FileType.DecisionTable)) {
-            newFileInfo.setType(Type.decisionTable);
-        } else if (fileType.equals(FileType.ScriptDecisionTable)) {
-            newFileInfo.setType(Type.scriptDecisionTable);
-        } else if (fileType.equals(FileType.Ruleset) || fileType.equals(FileType.RulesetLib)) {
-            newFileInfo.setType(Type.rule);
-        } else if (fileType.equals(FileType.UL)) {
-            newFileInfo.setType(Type.ul);
-        } else if (fileType.equals(FileType.DecisionTree)) {
-            newFileInfo.setType(Type.decisionTree);
+        } else if (fileType.equals(FileType.Drl)) {
+            // V6.20.0:DRL 文件 → Type.drl(树 buildData drl case 渲染)
+            newFileInfo.setType(Type.drl);
         } else if (fileType.equals(FileType.RuleFlow)) {
             newFileInfo.setType(Type.flow);
-        } else if (fileType.equals(FileType.Scorecard)) {
-            newFileInfo.setType(Type.scorecard);
-        } else if (fileType.equals(FileType.ComplexScorecard)) {
-            newFileInfo.setType(Type.complexscorecard);
-        } else if (fileType.equals(FileType.Crosstab)) {
-            newFileInfo.setType(Type.crosstab);
+        } else if (fileType.equals(FileType.Dmn)) {
+            // V6.20.0 P3:DMN 文件 → Type.dmn(树 buildData dmn case 渲染)
+            newFileInfo.setType(Type.dmn);
+        } else if (fileType.equals(FileType.Pmml)) {
+            // V6.20.0 P3:PMML 文件 → Type.pmml(树 buildData pmml case 渲染)
+            newFileInfo.setType(Type.pmml);
+        } else if (fileType.equals(FileType.V1Flow)) {
+            // V7.0.0:V1 决策流 → Type.v1flow(树 buildData v1flow case + handleFileOpen 开画布)
+            newFileInfo.setType(Type.v1flow);
         }
         try {
             this.ruleforgeRepositoryService.createFile(path, content.toString(), user);

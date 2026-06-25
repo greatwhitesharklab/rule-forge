@@ -105,8 +105,12 @@ public class PermissionServiceImpl implements PermissionService {
             case DecisionTree -> write ? config.isWriteDecisionTreeFile() : config.isReadDecisionTreeFile();
             case ParameterLibrary -> write ? config.isWriteParameterFile() : config.isReadParameterFile();
             case RuleFlow -> write ? config.isWriteFlowFile() : config.isReadFlowFile();
-            case Ruleset, RulesetLib, UL -> write ? config.isWriteRuleFile() : config.isReadRuleFile();
+            case Ruleset, RulesetLib, UL, Drl -> write ? config.isWriteRuleFile() : config.isReadRuleFile();
             case Scorecard, ComplexScorecard -> write ? config.isWriteScorecardFile() : config.isReadScorecardFile();
+            // V6.20.0 P3:DMN/PMML 标准决策模型(只读/导入),借 rule 权限位,UI 无编辑器故写权限未触达
+            case Dmn, Pmml -> write ? config.isWriteRuleFile() : config.isReadRuleFile();
+            // V7.0.0:V1 决策流,借 rule 权限位
+            case V1Flow -> write ? config.isWriteRuleFile() : config.isReadRuleFile();
             case DIR, Package -> true;
         };
     }

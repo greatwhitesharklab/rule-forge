@@ -157,53 +157,42 @@ describe('Frame Module - buildType Pure Function', () => {
         expect(ACTIONS.buildType('al.xml')).toBe('动作库');
     });
 
-    it('GIVEN rs.xml WHEN buildType is called THEN it should return 向导式决策集', () => {
-        expect(ACTIONS.buildType('rs.xml')).toBe('向导式决策集');
-    });
-
-    it('GIVEN rsl.xml WHEN buildType is called THEN it should return 向导式决策库', () => {
-        expect(ACTIONS.buildType('rsl.xml')).toBe('向导式决策库');
-    });
-
-    it('GIVEN ul WHEN buildType is called THEN it should return 脚本式决策集', () => {
-        expect(ACTIONS.buildType('ul')).toBe('脚本式决策集');
-    });
-
-    it('GIVEN dt.xml WHEN buildType is called THEN it should return 决策表', () => {
-        expect(ACTIONS.buildType('dt.xml')).toBe('决策表');
-    });
-
-    it('GIVEN dts.xml WHEN buildType is called THEN it should return 脚本式决策表', () => {
-        expect(ACTIONS.buildType('dts.xml')).toBe('脚本式决策表');
-    });
-
     it('GIVEN rl.xml WHEN buildType is called THEN it should return 决策流', () => {
         expect(ACTIONS.buildType('rl.xml')).toBe('决策流');
     });
 
-    it('GIVEN dtree.xml WHEN buildType is called THEN it should return 决策树', () => {
-        expect(ACTIONS.buildType('dtree.xml')).toBe('决策树');
+    // V6.20.0:DRL 规则
+    it('GIVEN drl WHEN buildType is called THEN it should return DRL 规则', () => {
+        expect(ACTIONS.buildType('drl')).toBe('DRL 规则');
     });
 
-    it('GIVEN sc WHEN buildType is called THEN it should return 评分卡', () => {
-        expect(ACTIONS.buildType('sc')).toBe('评分卡');
+    // V6.20.0 P3:DMN / PMML 标准决策模型
+    it('GIVEN dmn WHEN buildType is called THEN it should return DMN 决策表(只读)', () => {
+        expect(ACTIONS.buildType('dmn')).toBe('DMN 决策表(只读)');
     });
 
-    it('GIVEN scc WHEN buildType is called THEN it should return 复杂评分卡', () => {
-        expect(ACTIONS.buildType('scc')).toBe('复杂评分卡');
-    });
-
-    it('GIVEN ct.xml WHEN buildType is called THEN it should return 交叉决策表', () => {
-        expect(ACTIONS.buildType('ct.xml')).toBe('交叉决策表');
+    it('GIVEN pmml WHEN buildType is called THEN it should return PMML 模型(只读)', () => {
+        expect(ACTIONS.buildType('pmml')).toBe('PMML 模型(只读)');
     });
 
     it('GIVEN rp WHEN buildType is called THEN it should return package', () => {
         expect(ACTIONS.buildType('rp')).toBe('package');
     });
 
+    // V6.20.0 P2:删老 urule 规则类型 — buildType 不再识别它们
+    // 老入口已被 DRL/DMN/PMML 取代,前端创建菜单已无这些扩展名,buildType 抛错防误用
+    it.each(['rs.xml', 'rsl.xml', 'ul', 'dt.xml', 'dts.xml', 'dtree.xml', 'sc', 'scc', 'ct.xml'])(
+        'V6.20.0 P2:GIVEN 已删 type %s WHEN buildType THEN throws',
+        (deletedType) => {
+            const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+            expect(() => ACTIONS.buildType(deletedType)).toThrow('Unknow file type :' + deletedType);
+            alertSpy.mockRestore();
+        },
+    );
+
     it('GIVEN file type with colon WHEN buildType is called THEN it should extract Type before colon', () => {
-        expect(ACTIONS.buildType('rs.xml:subtype')).toBe('向导式决策集');
-        expect(ACTIONS.buildType('ul:variant')).toBe('脚本式决策集');
+        expect(ACTIONS.buildType('drl:subtype')).toBe('DRL 规则');
+        expect(ACTIONS.buildType('vl.xml:v')).toBe('变量库');
     });
 
     it('GIVEN unknown file type WHEN buildType is called THEN it should alert and throw error', () => {

@@ -182,70 +182,10 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                             //   / action (.al.xml) → 对应 /app/editor/<type>
                             // - public 资源 (treeType==='public',原 /html/editor.html?type=resource)
                             //   → /app/editor/resource
-                            const isRuleset = data.type === 'rule'
-                                || (typeof data.fullPath === 'string' && data.fullPath.endsWith('.rs.xml'));
-                            if (isRuleset) {
-                                window.open('/app/editor/ruleset?file=' + encodeURIComponent(data.fullPath), '_blank');
-                                return;
-                            }
-
-                            // 决策树 (decisionTree / .dtree.xml) → /app/editor/decisiontree
-                            // React 重写,替代原 iframe + Raphael 画布 editor.html?type=decisiontree。
-                            // 注意:.dtree.xml 是决策树,.dt.xml 是决策表(不同扩展名)。
-                            const isDecisionTree = data.type === 'decisionTree'
-                                || (typeof data.fullPath === 'string' && data.fullPath.endsWith('.dtree.xml'));
-                            if (isDecisionTree) {
-                                window.open('/app/editor/decisiontree?file=' + encodeURIComponent(data.fullPath), '_blank');
-                                return;
-                            }
-
-                            // 决策表 (decisionTable / .dt.xml) → /app/editor/decisiontable
-                            // React 重写,替代原 iframe editor.html?type=decisionTable。
-                            const isDecisionTable = data.type === 'decisionTable'
-                                || (typeof data.fullPath === 'string' && data.fullPath.endsWith('.dt.xml'));
-                            if (isDecisionTable) {
-                                window.open('/app/editor/decisiontable?file=' + encodeURIComponent(data.fullPath), '_blank');
-                                return;
-                            }
-
-                            // 脚本式决策表 (scriptDecisionTable / .sdt.xml) → /app/editor/scriptdecisiontable
-                            // React 重写,替代原 iframe editor.html?type=scriptdecisiontable。
-                            // 与决策表共享列/行/库结构,单元格内容是 UL 脚本(CDATA)。
-                            const isScriptDecisionTable = data.type === 'scriptDecisionTable'
-                                || (typeof data.fullPath === 'string' && data.fullPath.endsWith('.sdt.xml'));
-                            if (isScriptDecisionTable) {
-                                window.open('/app/editor/scriptdecisiontable?file=' + encodeURIComponent(data.fullPath), '_blank');
-                                return;
-                            }
-
-                            // 评分卡 (scorecard / .sc.xml) → /app/editor/scorecard
-                            // React 重写,替代原 iframe editor.html?type=scorecard。
-                            const isScoreCard = data.type === 'scorecard'
-                                || (typeof data.fullPath === 'string' && data.fullPath.endsWith('.sc.xml'));
-                            if (isScoreCard) {
-                                window.open('/app/editor/scorecard?file=' + encodeURIComponent(data.fullPath), '_blank');
-                                return;
-                            }
-
-                            // 复杂评分卡 (complexscorecard / .complexscorecard) → /app/editor/complexscorecard
-                            // React 重写,替代原 iframe editor.html?type=complexscorecard。
-                            // 文件后缀 = FileType.ComplexScorecard.toString().toLowerCase() = "complexscorecard"
-                            // (后端 ComplexScorecardFileRefactor.support 用 path.toLowerCase().endsWith("complexscorecard") 判定)。
-                            const isComplexScoreCard = data.type === 'complexscorecard'
-                                || (typeof data.fullPath === 'string' && data.fullPath.toLowerCase().endsWith('.complexscorecard'));
-                            if (isComplexScoreCard) {
-                                window.open('/app/editor/complexscorecard?file=' + encodeURIComponent(data.fullPath), '_blank');
-                                return;
-                            }
-
-                            // 交叉决策表 (crosstab / .ct.xml) → /app/editor/crosstab
-                            // React 重写,替代原 iframe editor.html?type=crosstab。
-                            const isCrosstab = data.type === 'crosstab'
-                                || (typeof data.fullPath === 'string' && data.fullPath.endsWith('.ct.xml'));
-                            if (isCrosstab) {
-                                window.open('/app/editor/crosstab?file=' + encodeURIComponent(data.fullPath), '_blank');
-                                return;
-                            }
+                            // V7.0.0 item ④:老 7 编辑器(ruleset/decisiontree/decisiontable/
+                            // scriptdecisiontable/scorecard/complexscorecard/crosstab)已物理删除,
+                            // 其 window.open 路由分支随之移除。V1 画布接管 RuleSet/DecisionTable/ScoreCard;
+                            // 4 弃类决策(树/脚本表/复杂评分卡/交叉表)已下线。详见 main.tsx。
 
                             // 变量库 / 常量库 / 参数库 / 动作库:按 data.type + 完整文件后缀双判定
                             // (注意是 .vl.xml / .cl.xml / .pl.xml / .al.xml 这种双扩展名)
