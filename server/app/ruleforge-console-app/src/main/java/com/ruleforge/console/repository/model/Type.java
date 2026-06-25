@@ -8,5 +8,7 @@ public enum Type {
     // V6.20.0 P3:DMN/PMML 文件分类
     dmn, pmml,
     // V7.0.0:V1 决策流文件分类(.json,画布资产)
-    v1flow, v1flowLib
+    v1flow, v1flowLib,
+    // V7.4:V1 库文件分类(.v1lib.json,vl/cl/pl 四库)
+    v1library, v1libraryLib
 }
