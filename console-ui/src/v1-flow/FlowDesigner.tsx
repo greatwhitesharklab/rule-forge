@@ -19,6 +19,7 @@ import {formPost} from '@/api/client';
 import {nodeTypes, PALETTE, type V1NodeData} from './FlowNodes';
 import {type RuleAsset, type FlowElement, type V1Node, type NodeType} from './ruleAsset';
 import NodePropertyDrawer from './NodePropertyDrawer';
+import GatewayEditor from './GatewayEditor';
 import {fromRuleAsset} from './fromRuleAsset';
 
 const {Sider, Content, Header} = Layout;
@@ -164,8 +165,22 @@ export default function FlowDesigner({file}: {file?: string}) {
         setExportOpen(true);
     }, [nodes, edges, nodesMap, schemaName]);
 
-    // Gateway 是 flow element 不在 nodesMap → selectedNode null → Drawer 不开(V7.1-2b 再加 Gateway 编辑器)
-    const selectedNode = selectedId && nodesMap[selectedId] ? nodesMap[selectedId] : null;
+    // 选中 Gateway(flow element)→ 弹 GatewayEditor 编辑出边条件;业务节点 → NodePropertyDrawer
+    const selectedRfNode = selectedId ? nodes.find((n) => n.id === selectedId) : null;
+    const isGatewaySelected = selectedRfNode?.data.nodeType === 'Gateway';
+    const selectedNode = !isGatewaySelected && selectedId && nodesMap[selectedId] ? nodesMap[selectedId] : null;
+
+    /** Gateway 出边 CEL 条件编辑 → 回写 edge.data.conditionExpression。 */
+    const updateEdgeCondition = useCallback((edgeId: string, condition: string) => {
+        setEdges((es) => es.map((e) => e.id === edgeId
+            ? {...e, data: {...(e.data as Record<string, unknown> | undefined), conditionExpression: condition}}
+            : e));
+    }, [setEdges]);
+    /** 设 Gateway default 兜底出边 → 回写 rfNode.data.defaultFlow。 */
+    const setGatewayDefault = useCallback((edgeId: string) => {
+        if (!selectedId) return;
+        setNodes((ns) => ns.map((n) => n.id === selectedId ? {...n, data: {...n.data, defaultFlow: edgeId}} : n));
+    }, [selectedId, setNodes]);
 
     /** 导入 RuleAsset JSON(paste)→ canvas state。 */
     const doImport = useCallback(() => {
@@ -254,6 +269,16 @@ export default function FlowDesigner({file}: {file?: string}) {
                 open={selectedNode !== null}
                 onClose={() => setSelectedId(null)}
                 onChange={onNodeChange}
+            />
+            <GatewayEditor
+                open={isGatewaySelected}
+                gatewayId={isGatewaySelected ? selectedId : null}
+                edges={edges}
+                nodes={nodes}
+                defaultFlow={selectedRfNode?.data.defaultFlow}
+                onUpdateEdge={updateEdgeCondition}
+                onSetDefault={setGatewayDefault}
+                onClose={() => setSelectedId(null)}
             />
             <Drawer title='RuleAsset JSON(后端可执行)' open={exportOpen} onClose={() => setExportOpen(false)} width={520}>
                 <pre data-testid='v1-export' style={{fontSize: 11, fontFamily: 'monospace', whiteSpace: 'pre-wrap'}}>{exported}</pre>
