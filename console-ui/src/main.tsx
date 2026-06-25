@@ -17,7 +17,6 @@ import {RequireAuth} from '@/router/RequireAuth';
  * <p>{@code login.html}/{@code frame.html} 仍可独立访问(MPA 回退,editor 阶段 3 前必需)。
  */
 const FrameApp = lazy(() => import('@/frame'));
-const EditorRoute = lazy(() => import('@/editor/ruleforge/react/EditorRoute'));
 const VariableEditorRoute = lazy(() => import('@/variable/EditorRoute'));
 const ConstantEditorRoute = lazy(() => import('@/constant/EditorRoute'));
 const ParameterEditorRoute = lazy(() => import('@/parameter/EditorRoute'));
@@ -31,13 +30,9 @@ const FlowEditorRoute = lazy(() => import('@/flow-bpmn/EditorRoute'));
 // V6.20.0 P3:DMN / PMML 只读源查看器
 const DmnEditorRoute = lazy(() => import('@/editor/dmn/EditorRoute'));
 const PmmlEditorRoute = lazy(() => import('@/editor/pmml/EditorRoute'));
-const DecisionTableEditorRoute = lazy(() => import('@/editor/decisiontable/react/EditorRoute'));
-const ScriptDecisionTableEditorRoute = lazy(() => import('@/editor/scriptdecisiontable/react/EditorRoute'));
-const ScoreCardEditorRoute = lazy(() => import('@/editor/scorecard/react/EditorRoute'));
-const ComplexScoreCardEditorRoute = lazy(() => import('@/editor/complexscorecard/react/EditorRoute'));
-const CrosstabEditorRoute = lazy(() => import('@/editor/crosstab/react/EditorRoute'));
-const DecisionTreeEditorRoute = lazy(() => import('@/editor/decisiontree/react/EditorRoute'));
-// V7.0.0:V1 决策流设计器(React Flow + 5 节点 BPMN 子集)。从 console-ui-v1 demo 并进 console-ui。
+// V7.0.0 item ④:老 7 编辑器(ruleset/decisiontable/scriptdecisiontable/scorecard/
+// complexscorecard/crosstab/decisiontree)已下线 — V6.20.0 P2 从文件树入口移除,
+// V1 画布接管 RuleSet/DecisionTable/ScoreCard,其余 4 类决策已弃。物理删除目录见本 commit。
 const V1FlowDesignerRoute = lazy(() => import('@/v1-flow/EditorRoute'));
 
 createRoot(document.getElementById('root')!).render(
@@ -50,7 +45,6 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/v1-flow" element={<Suspense fallback={<div style={{padding: 24}}>加载中…</div>}><V1FlowDesignerRoute/></Suspense>}/>
             <Route path="/app" element={<RequireAuth/>}>
                 <Route index element={<Suspense fallback={<div style={{padding: 24}}>加载中…</div>}><FrameApp/></Suspense>}/>
-                <Route path="editor/ruleset" element={<EditorRoute/>}/>
                 <Route path="editor/variable" element={<VariableEditorRoute/>}/>
                 <Route path="editor/constant" element={<ConstantEditorRoute/>}/>
                 <Route path="editor/parameter" element={<ParameterEditorRoute/>}/>
@@ -63,12 +57,6 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="editor/flow" element={<FlowEditorRoute/>}/>
                 <Route path="editor/dmn" element={<DmnEditorRoute/>}/>
                 <Route path="editor/pmml" element={<PmmlEditorRoute/>}/>
-                <Route path="editor/decisiontable" element={<DecisionTableEditorRoute/>}/>
-                <Route path="editor/scriptdecisiontable" element={<ScriptDecisionTableEditorRoute/>}/>
-                <Route path="editor/scorecard" element={<ScoreCardEditorRoute/>}/>
-                <Route path="editor/complexscorecard" element={<ComplexScoreCardEditorRoute/>}/>
-                <Route path="editor/crosstab" element={<CrosstabEditorRoute/>}/>
-                <Route path="editor/decisiontree" element={<DecisionTreeEditorRoute/>}/>
                 {/* V7.0.0:V1 决策流设计器(独立全屏画布,不走 frame) */}
                 <Route path="v1-flow" element={<V1FlowDesignerRoute/>}/>
             </Route>
