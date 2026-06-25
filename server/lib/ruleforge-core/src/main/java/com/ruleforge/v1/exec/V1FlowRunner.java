@@ -59,7 +59,13 @@ public final class V1FlowRunner {
     /** 执行整个 RuleAsset flow。输入 fact Map(会原地修改并加决策结果)。返回 FlowResult。 */
     public static FlowResult execute(RuleAsset asset, Map<String, Object> inputFact) {
         String schemaName = asset.getSchema() != null ? asset.getSchema().getName() : "Fact";
-        Map<String, Object> fact = inputFact != null ? inputFact : new GeneralEntity(schemaName);
+        // fact 必须是 GeneralEntity(schemaName) —— RETE ObjectTypeNode 按 fact className 匹配
+        // category clazz(= schemaName)。REST/Jackson 传入的 LinkedHashMap 不匹配 → RuleSet 不 fire。
+        // 包成 GeneralEntity 再灌入字段(BDD 直接传 GeneralEntity,putAll 等价)。
+        Map<String, Object> fact = new GeneralEntity(schemaName);
+        if (inputFact != null) {
+            fact.putAll(inputFact);
+        }
 
         boolean rejected = traverse(asset, fact);
 

@@ -15,7 +15,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import {Layout, Menu, Button, Space, Typography, Input, Drawer, Modal, message, theme} from 'antd';
 import {UploadOutlined, SaveOutlined, FolderOpenOutlined} from '@ant-design/icons';
-import {formPost} from '@/api/client';
+import {formPost, jsonPost} from '@/api/client';
 import {nodeTypes, PALETTE, type V1NodeData} from './FlowNodes';
 import {type RuleAsset, type FlowElement, type V1Node, type NodeType} from './ruleAsset';
 import NodePropertyDrawer from './NodePropertyDrawer';
@@ -27,6 +27,15 @@ const {Text} = Typography;
 
 let idCounter = 1;
 const genId = (prefix: string) => `${prefix}_${idCounter++}`;
+
+/** V1 执行端点响应(POST /v1/execute)。 */
+interface V1ExecutionResponse {
+    decision: string;
+    rejected: boolean;
+    rejectReason: string | null;
+    flags: unknown[];
+    fact: Record<string, unknown>;
+}
 
 /** 5 业务节点的默认内容。Gateway 不走(它是 flow element,非 nodes{} 业务节点)。 */
 function newNodeDefault(type: NodeType, id: string, schemaName: string): V1Node {
@@ -114,6 +123,9 @@ export default function FlowDesigner({file}: {file?: string}) {
     const [importOpen, setImportOpen] = useState(false);
     const [importText, setImportText] = useState('');
     const [filePath, setFilePath] = useState(file || '');
+    const [runOpen, setRunOpen] = useState(false);
+    const [runFact, setRunFact] = useState('{\n  "age": 30\n}');
+    const [runResult, setRunResult] = useState<V1ExecutionResponse | null>(null);
 
     /** 挂载时若有 file(从项目树进入),按 file 加载 RuleAsset → 画布。 */
     useEffect(() => {
@@ -221,6 +233,21 @@ export default function FlowDesigner({file}: {file?: string}) {
             .catch(() => message.error('加载失败(后端未运行或文件不存在)'));
     }, [filePath, setNodes, setEdges, setNodesMap, setSchemaName]);
 
+    /** 运行 flow:画布 toRuleAsset + fact → POST /v1/execute → 显示 decision(需后端 + 登录态)。 */
+    const runFlow = useCallback(() => {
+        let fact: Record<string, unknown>;
+        try {
+            fact = JSON.parse(runFact);
+        } catch (e) {
+            message.error('fact JSON 解析失败:' + String(e));
+            return;
+        }
+        const asset = toRuleAsset(nodes, edges, nodesMap, schemaName);
+        jsonPost<V1ExecutionResponse>('/v1/execute', {asset, fact})
+            .then((res) => { setRunResult(res); message.success('decision: ' + res.decision); })
+            .catch(() => message.error('运行失败(后端未运行或未登录;demo 页 /v1-flow 无 session,用 /app/v1-flow)'));
+    }, [runFact, nodes, edges, nodesMap, schemaName]);
+
     const palette = useMemo(() => PALETTE.map((t) => ({key: t, label: `+ ${t}`})), []);
 
     return (
@@ -235,6 +262,7 @@ export default function FlowDesigner({file}: {file?: string}) {
                     <Button size='small' icon={<FolderOpenOutlined/>} onClick={loadFromBackend}>加载</Button>
                     <Button size='small' icon={<SaveOutlined/>} onClick={saveToBackend}>保存</Button>
                     <Button size='small' type='primary' onClick={exportJson}>导出 .json</Button>
+                    <Button size='small' color='green' variant='solid' onClick={() => { setRunResult(null); setRunOpen(true); }}>运行</Button>
                 </Space>
             </Header>
             <Layout>
@@ -292,6 +320,30 @@ export default function FlowDesigner({file}: {file?: string}) {
                     placeholder='粘贴 RuleAsset JSON(version 1.0 + flow + nodes)…'
                     style={{fontFamily: 'monospace', fontSize: 11}}
                 />
+            </Modal>
+            <Modal title='运行决策流(填输入 fact → POST /v1/execute)' open={runOpen} onCancel={() => setRunOpen(false)} footer={<Button size='small' onClick={() => setRunOpen(false)}>关闭</Button>} width={620}>
+                <Text type='secondary' style={{fontSize: 12}}>输入 fact(JSON,字段对齐 Schema):</Text>
+                <Input.TextArea
+                    data-testid='v1-run-fact'
+                    value={runFact}
+                    onChange={(e) => setRunFact(e.target.value)}
+                    rows={8}
+                    placeholder='{"age":30, "income":8000}'
+                    style={{fontFamily: 'monospace', fontSize: 12, marginTop: 4}}
+                />
+                <Space style={{marginTop: 8}}>
+                    <Button size='small' type='primary' data-testid='v1-run-btn' onClick={runFlow}>运行</Button>
+                    {runResult && (
+                        <Text strong style={{color: runResult.rejected ? '#ff4d4f' : '#52c41a'}}>
+                            decision: {runResult.decision}{runResult.rejected ? `(rejected: ${runResult.rejectReason})` : ''}
+                        </Text>
+                    )}
+                </Space>
+                {runResult && (
+                    <pre data-testid='v1-run-result' style={{marginTop: 8, fontSize: 11, fontFamily: 'monospace', whiteSpace: 'pre-wrap', background: '#fafafa', padding: 8, borderRadius: 4, maxHeight: 240, overflow: 'auto'}}>
+                        {JSON.stringify(runResult.fact, null, 2)}
+                    </pre>
+                )}
             </Modal>
         </Layout>
     );
