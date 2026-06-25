@@ -14,6 +14,8 @@ import java.util.Map;
 public class V1ExecutionRequest {
     private RuleAsset asset;
     private Map<String, Object> fact;
+    /** 参数库(pl)值:规则 CEL param.xxx 引用(V7.4),V1FlowRunner fireRules 注入会话参数。 */
+    private Map<String, Object> parameters;
 
     public RuleAsset getAsset() {
         return asset;
@@ -29,5 +31,13 @@ public class V1ExecutionRequest {
 
     public void setFact(Map<String, Object> fact) {
         this.fact = fact;
+    }
+
+    public Map<String, Object> getParameters() {
+        return parameters;
+    }
+
+    public void setParameters(Map<String, Object> parameters) {
+        this.parameters = parameters;
     }
 }
