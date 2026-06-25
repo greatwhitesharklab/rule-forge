@@ -121,4 +121,51 @@ test.describe('V1 决策流设计器', () => {
         await expect(page.locator('[data-testid="v1-node-RuleSet"]')).toBeVisible();
         await expect(page.locator('[data-testid="v1-node-Decision"]')).toBeVisible();
     });
+
+    test('Gateway 导入 → 画布渲染 + GatewayEditor 出边条件编辑 + 导出 round-trip', async ({page}) => {
+        const asset = {
+            version: '1.0', id: 'gw_e2e', name: '网关流',
+            flow: {id: 'gf', name: 'GF', version: '1.0', flowElements: [
+                {type: 'startEvent', id: 'start', name: '开始', implementation: 'Start:start', position: {x: 50, y: 200}},
+                {type: 'exclusiveGateway', id: 'gw', name: '网关', defaultFlow: 'f_low', position: {x: 250, y: 200}},
+                {type: 'serviceTask', id: 'approve', name: '通过', implementation: 'RuleSet:approve', position: {x: 450, y: 80}},
+                {type: 'serviceTask', id: 'reject', name: '拒绝', implementation: 'RuleSet:reject', position: {x: 450, y: 320}},
+                {type: 'endEvent', id: 'end', name: '决策', implementation: 'Decision:end', position: {x: 680, y: 200}},
+                {type: 'sequenceFlow', id: 'f1', sourceRef: 'start', targetRef: 'gw'},
+                {type: 'sequenceFlow', id: 'f_high', sourceRef: 'gw', targetRef: 'approve', conditionExpression: 'score >= 50'},
+                {type: 'sequenceFlow', id: 'f_low', sourceRef: 'gw', targetRef: 'reject'},
+                {type: 'sequenceFlow', id: 'f2', sourceRef: 'approve', targetRef: 'end'},
+                {type: 'sequenceFlow', id: 'f3', sourceRef: 'reject', targetRef: 'end'},
+            ]},
+            nodes: {
+                start: {id: 'start', type: 'Start', name: '开始', schema: 'LoanApplication'},
+                approve: {id: 'approve', type: 'RuleSet', name: '通过', hitPolicy: 'FIRST_MATCH', rules: []},
+                reject: {id: 'reject', type: 'RuleSet', name: '拒绝', hitPolicy: 'FIRST_MATCH', rules: []},
+                end: {id: 'end', type: 'Decision', name: '决策', outputs: ['approve', 'reject']},
+            },
+        };
+        await page.getByRole('button', {name: /导入/}).first().click();
+        await page.locator('[data-testid="v1-import-text"]').fill(JSON.stringify(asset));
+        await page.getByRole('button', {name: '导 入'}).click();
+
+        // Gateway 渲染在画布(exclusiveGateway → nodeType=Gateway)
+        await expect(page.locator('[data-testid="v1-node-Gateway"]')).toBeVisible();
+
+        // 点 Gateway → GatewayEditor 开,出边条件显示
+        await page.locator('[data-testid="v1-node-Gateway"]').click();
+        await expect(page.getByText('出边分流条件')).toBeVisible();
+        await expect(page.locator('[data-testid="gw-cond-f_high"]')).toHaveValue('score >= 50');
+
+        // 改条件
+        await page.locator('[data-testid="gw-cond-f_high"]').fill('score >= 60');
+        await page.keyboard.press('Escape'); // 关 GatewayEditor
+
+        // 导出 → condition 反映改动 + defaultFlow 保留(Gateway 不进 nodes{})
+        const exported = await exportJson(page);
+        const gw = exported.flow.flowElements.find((e: any) => e.type === 'exclusiveGateway');
+        expect(gw.defaultFlow).toBe('f_low');
+        const fHigh = exported.flow.flowElements.find((e: any) => e.id === 'f_high');
+        expect(fHigh.conditionExpression).toBe('score >= 60');
+        expect(exported.nodes['gw']).toBeUndefined(); // Gateway 是 flow element 不进 nodes
+    });
 });
