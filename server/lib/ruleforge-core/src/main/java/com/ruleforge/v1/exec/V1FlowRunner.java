@@ -58,6 +58,14 @@ public final class V1FlowRunner {
 
     /** 执行整个 RuleAsset flow。输入 fact Map(会原地修改并加决策结果)。返回 FlowResult。 */
     public static FlowResult execute(RuleAsset asset, Map<String, Object> inputFact) {
+        return execute(asset, inputFact, null);
+    }
+
+    /**
+     * 执行 flow + 参数库(pl)parameters。规则 CEL {@code param.xxx} 引用参数(ParameterValue
+     * 走会话参数通道),{@link V1FlowRunner} 把 parameters 喂 {@code KnowledgeSession.fireRules}。
+     */
+    public static FlowResult execute(RuleAsset asset, Map<String, Object> inputFact, Map<String, Object> parameters) {
         String schemaName = asset.getSchema() != null ? asset.getSchema().getName() : "Fact";
         // fact 必须是 GeneralEntity(schemaName) —— RETE ObjectTypeNode 按 fact className 匹配
         // category clazz(= schemaName)。REST/Jackson 传入的 LinkedHashMap 不匹配 → RuleSet 不 fire。
@@ -67,7 +75,7 @@ public final class V1FlowRunner {
             fact.putAll(inputFact);
         }
 
-        boolean rejected = traverse(asset, fact);
+        boolean rejected = traverse(asset, fact, parameters);
 
         // Decision emit:找 endEvent 的 DecisionNode
         String decision = emitDecision(asset, fact);
@@ -80,7 +88,7 @@ public final class V1FlowRunner {
      * 图遍历执行:startEvent 起,沿出边走。遇 ServiceTask 执行 + reject 检查;遇 ExclusiveGateway
      * 评估出边条件选边;遇 EndEvent 停。返回是否因 reject 终止。
      */
-    private static boolean traverse(RuleAsset asset, Map<String, Object> fact) {
+    private static boolean traverse(RuleAsset asset, Map<String, Object> fact, Map<String, Object> parameters) {
         if (asset.getFlow() == null || asset.getFlow().getFlowElements() == null) {
             return false;
         }
@@ -97,7 +105,7 @@ public final class V1FlowRunner {
                 String nodeId = parseNodeId(((ServiceTask) el).getImplementation());
                 NodeBase node = asset.getNodes() == null ? null : asset.getNodes().get(nodeId);
                 if (node != null) {
-                    executeNode(node, asset, fact);
+                    executeNode(node, asset, fact, parameters);
                 }
                 if (Boolean.TRUE.equals(fact.get(V1ActionRhs.REJECTED_FLAG))) {
                     return true;
@@ -185,7 +193,7 @@ public final class V1FlowRunner {
     }
 
     /** 分发执行单个节点。 */
-    private static void executeNode(NodeBase node, RuleAsset asset, Map<String, Object> fact) {
+    private static void executeNode(NodeBase node, RuleAsset asset, Map<String, Object> fact, Map<String, Object> parameters) {
         if (node instanceof RuleSetNode) {
             RuleSetNode rs = (RuleSetNode) node;
             List<Rule> rules = RuleSetCompiler.compile(rs, asset.getSchema());
@@ -193,7 +201,7 @@ public final class V1FlowRunner {
             KnowledgePackage kp = V1KnowledgeBuilder.build(asset.getSchema(), rules);
             KnowledgeSessionImpl session = new KnowledgeSessionImpl(kp);
             session.insert(fact);
-            session.fireRules();
+            session.fireRules(parameters);
         } else if (node instanceof DecisionTableNode) {
             DecisionTableExecutor.execute((DecisionTableNode) node, asset.getSchema(), fact);
         } else if (node instanceof ScoreCardNode) {

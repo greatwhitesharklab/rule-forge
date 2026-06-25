@@ -4,6 +4,7 @@ import dev.cel.common.ast.CelExpr;
 import dev.cel.common.ast.CelExpr.ExprKind.Kind;
 import dev.cel.common.ast.CelConstant;
 import com.ruleforge.model.rule.Op;
+import com.ruleforge.model.rule.ParameterValue;
 import com.ruleforge.model.rule.SimpleValue;
 import com.ruleforge.model.rule.lhs.And;
 import com.ruleforge.model.rule.lhs.Criteria;
@@ -126,7 +127,7 @@ public final class CelCriteriaTranslator {
         }
     }
 
-    /** 翻译字段 op 字面量 比较。要求左=字段(ident),右=字面量(constant)。 */
+    /** 翻译字段 op 字面量/param.xxx 比较。左=字段(ident),右=字面量(constant)或 param.xxx(SELECT)。 */
     private static Criterion translateComparison(String op, CelExpr leftExpr, CelExpr rightExpr, Schema schema) {
         // 支持字段在左 或 在右(翻转运算符)
         boolean fieldOnLeft = leftExpr.getKind() == Kind.IDENT;
@@ -138,9 +139,50 @@ public final class CelCriteriaTranslator {
             // 字段在右:翻转运算符(18 <= age → age >= 18)
             return buildCriteria(rightExpr.ident().name(), flipOp(mapOp(op)), leftExpr.constant(), schema);
         }
+        // V7.4:字段 op param.xxx(动态右值 — ParameterValue 走会话参数通道,非 fact 字段)
+        if (fieldOnLeft && rightExpr.getKind() == Kind.SELECT) {
+            String paramField = selectParamField(rightExpr);
+            if (paramField != null) {
+                return buildCriteriaWithParam(leftExpr.ident().name(), mapOp(op), paramField, schema);
+            }
+        }
+        if (fieldOnRight && leftExpr.getKind() == Kind.SELECT) {
+            String paramField = selectParamField(leftExpr);
+            if (paramField != null) {
+                return buildCriteriaWithParam(rightExpr.ident().name(), flipOp(mapOp(op)), paramField, schema);
+            }
+        }
         throw new CelConditionException(
-                "CEL 比较必须 字段 op 字面量(如 age >= 18),不支持算术/嵌套: "
+                "CEL 比较必须 字段 op 字面量/param.xxx(如 age >= 18 或 riskScore >= param.threshold): "
                         + describe(leftExpr) + " " + op + " " + describe(rightExpr));
+    }
+
+    /** SELECT expr 是 param.{field}?返 field 名,否则 null(仅 pl 参数库动态右值;cl/vl 留后续)。 */
+    private static String selectParamField(CelExpr selectExpr) {
+        CelExpr operand = selectExpr.select().operand();
+        if (operand.getKind() == Kind.IDENT && "param".equals(operand.ident().name())) {
+            return selectExpr.select().field();
+        }
+        return null;
+    }
+
+    /** 构造 Criteria(field op param.{paramName}),右值 ParameterValue(运行时从会话参数取)。 */
+    private static Criteria buildCriteriaWithParam(String fieldName, Op op, String paramName, Schema schema) {
+        Criteria c = new Criteria();
+        Left left = new Left();
+        left.setType(LeftType.variable);
+        VariableLeftPart part = new VariableLeftPart();
+        part.setVariableCategory(schema.getName());
+        part.setVariableName(fieldName);
+        part.setVariableLabel(fieldName);
+        left.setLeftPart(part);
+        c.setLeft(left);
+        c.setOp(op);
+        ParameterValue pv = new ParameterValue();
+        pv.setVariableName(paramName);
+        pv.setVariableLabel(paramName);
+        c.setValue(pv);
+        return c;
     }
 
     /** 构造 Criteria(field, op, literalValue)。datatype 不设(留 null)→ Criteria.evaluate
