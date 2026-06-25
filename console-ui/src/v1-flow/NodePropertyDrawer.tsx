@@ -6,7 +6,7 @@ import 'ag-grid-community/styles/ag-theme-quartz.css';
 import {type V1Node, type RuleSetNode, type Rule, type Action, type ActionType,
     type DecisionTableNode, type ScoreCardNode, type Card,
     type DecisionNode, type StartNode} from './ruleAsset';
-import CelEditor from './CelEditor';
+import ConditionEditor from './ConditionEditor';
 
 const {Text} = Typography;
 const ACTION_TYPES: ActionType[] = ['SET_VARIABLE', 'ADD_SCORE', 'SET_DECISION', 'REJECT', 'FLAG'];
@@ -75,8 +75,8 @@ function RuleSetEditor({node, update}: {node: RuleSetNode; update: (p: Partial<V
                             <Button size='small' danger icon={<DeleteOutlined/>} onClick={() => setRules(rules.filter((_, j) => j !== i))}/>
                         </Space>
                     </Space>
-                    <div style={{marginTop: 6}}><Text type='secondary' style={{fontSize: 11}}>condition(CEL,返回 boolean)</Text></div>
-                    <CelEditor value={r.condition} onChange={(v) => {const nr = [...rules]; nr[i] = {...r, condition: v}; setRules(nr);}}/>
+                    <div style={{marginTop: 6}}><Text type='secondary' style={{fontSize: 11}}>condition(返回 boolean,可视化或 CEL)</Text></div>
+                    <ConditionEditor value={r.condition} onChange={(v) => {const nr = [...rules]; nr[i] = {...r, condition: v}; setRules(nr);}}/>
                     <ActionsEditor actions={r.actions || []} onChange={(actions) => {const nr = [...rules]; nr[i] = {...r, actions}; setRules(nr);}}/>
                 </div>
             ))}
@@ -172,7 +172,7 @@ function ScoreCardEditor({node, update}: {node: ScoreCardNode; update: (p: Parti
                     {(c.bands || []).map((b, j) => (
                         <Space key={b.id} style={{display: 'flex', marginTop: 4}} size={4}>
                             <Text type='secondary' style={{fontSize: 11}}>band</Text>
-                            <div style={{flex: 1}}><CelEditor value={b.condition} height={40} onChange={(v) => {const nc = [...cards]; const nb = [...c.bands!]; nb[j] = {...b, condition: v}; nc[i] = {...c, bands: nb}; setCards(nc);}}/></div>
+                            <div style={{flex: 1}}><ConditionEditor value={b.condition} onChange={(v) => {const nc = [...cards]; const nb = [...c.bands!]; nb[j] = {...b, condition: v}; nc[i] = {...c, bands: nb}; setCards(nc);}}/></div>
                             <InputNumber placeholder='分' value={b.score} style={{width: 70}}
                                 onChange={(v) => {const nc = [...cards]; const nb = [...c.bands!]; nb[j] = {...b, score: v ?? 0}; nc[i] = {...c, bands: nb}; setCards(nc);}}/>
                             <Button size='small' danger icon={<DeleteOutlined/>} onClick={() => {const nc = [...cards]; nc[i] = {...c, bands: c.bands!.filter((_, k) => k !== j)}; setCards(nc);}}/>
