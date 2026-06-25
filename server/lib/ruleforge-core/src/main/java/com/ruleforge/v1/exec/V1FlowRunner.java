@@ -6,39 +6,50 @@ import com.ruleforge.runtime.KnowledgePackage;
 import com.ruleforge.runtime.KnowledgeSessionImpl;
 import com.ruleforge.v1.ast.DecisionNode;
 import com.ruleforge.v1.ast.DecisionTableNode;
+import com.ruleforge.v1.ast.EndEvent;
+import com.ruleforge.v1.ast.ExclusiveGateway;
 import com.ruleforge.v1.ast.FlowElement;
 import com.ruleforge.v1.ast.NodeBase;
 import com.ruleforge.v1.ast.RuleAsset;
 import com.ruleforge.v1.ast.RuleSetNode;
+import com.ruleforge.v1.ast.Schema;
 import com.ruleforge.v1.ast.ScoreCardNode;
 import com.ruleforge.v1.ast.SequenceFlow;
 import com.ruleforge.v1.ast.ServiceTask;
 import com.ruleforge.v1.ast.StartEvent;
+import com.ruleforge.v1.cel.CelEngine;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * V1 Flow 执行器(W2-4 + W2-5)。按 flow 编排执行节点,处理 REJECT 终止 + Decision emit。
+ * V1 Flow 执行器(W2-4 + W2-5 + V7.1 gateway 分流)。按 flow 编排执行节点,处理 REJECT 终止 +
+ * Decision emit + <b>exclusiveGateway 分流</b>。
  *
- * <p><b>不接 ruleforge-decision BPMN 引擎</b>(MVP 线性流程足够,接 BPMN 是 V1 完整版的事)。
- * 本执行器自己按 sequenceFlow 链式遍历:startEvent → serviceTask* → endEvent(Decision)。
+ * <p><b>不接 ruleforge-decision BPMN 引擎</b>(自建图遍历足够覆盖 V1 子集:线性 + 排他网关;
+ * 接完整 BPMN 引擎是更后期的事)。本执行器按 sequenceFlow 遍历:startEvent → serviceTask*
+ * →(exclusiveGateway)*→ endEvent(Decision)。
  *
- * <p>执行语义:
+ * <p>执行语义(图遍历,非预排序线性链):
  * <ol>
  *   <li>fact = GeneralEntity(schemaName),填入输入</li>
- *   <li>按顺序执行节点(MVP 线性,无 gateway):
+ *   <li>从 startEvent 起沿出边遍历,每个元素:
  *     <ul>
- *       <li>RuleSetNode → RuleSetCompiler + RETE fire(actions 改 fact)</li>
- *       <li>DecisionTableNode → DecisionTableExecutor(线性 CEL)</li>
- *       <li>ScoreCardNode → ScoreCardExecutor(线性 CEL bands)</li>
+ *       <li>ServiceTask → 执行对应节点(RuleSet/DecisionTable 走 RETE,ScoreCard 走独立执行器)</li>
+ *       <li>ExclusiveGateway → 评估出边 {@code conditionExpression}(CEL)<b>首个命中</b>选边;
+ *           全不命中走 {@code defaultFlow} 兜底</li>
+ *       <li>EndEvent → 停止</li>
  *     </ul>
  *   </li>
- *   <li>每节点后检查 fact[_rejected]==true → 终止后续节点(W2-4 reject 终止)</li>
+ *   <li>每 ServiceTask 后检查 fact[_rejected]==true → 终止后续(W2-4 reject 终止)</li>
  *   <li>到 endEvent(Decision):读 decisionField,∈ outputs 校验,emit(W2-4 decision emit)</li>
  * </ol>
+ *
+ * <p>防环:visited 集合记录已访问元素 id,重复访问即停(支持网关分支汇合到同一 endEvent,
+ * 但 endEvent 在首次到达时 break,不会二次执行)。
  */
 public final class V1FlowRunner {
 
@@ -50,19 +61,7 @@ public final class V1FlowRunner {
         String schemaName = asset.getSchema() != null ? asset.getSchema().getName() : "Fact";
         Map<String, Object> fact = inputFact != null ? inputFact : new GeneralEntity(schemaName);
 
-        // 按顺序遍历节点
-        List<String> nodeOrder = orderNodes(asset);
-        Map<String, NodeBase> nodes = asset.getNodes();
-        boolean rejected = false;
-        for (String nodeId : nodeOrder) {
-            NodeBase node = nodes.get(nodeId);
-            if (node == null) continue;
-            executeNode(node, asset, fact);
-            if (Boolean.TRUE.equals(fact.get(V1ActionRhs.REJECTED_FLAG))) {
-                rejected = true;
-                break;
-            }
-        }
+        boolean rejected = traverse(asset, fact);
 
         // Decision emit:找 endEvent 的 DecisionNode
         String decision = emitDecision(asset, fact);
@@ -71,38 +70,87 @@ public final class V1FlowRunner {
                 fact.containsKey(V1ActionRhs.DEFAULT_FLAGS_FIELD) ? (List<Object>) fact.get(V1ActionRhs.DEFAULT_FLAGS_FIELD) : new ArrayList<>());
     }
 
-    /** 按 sequenceFlow 链推节点执行顺序(startEvent 起始)。MVP 线性,取首条链。 */
-    private static List<String> orderNodes(RuleAsset asset) {
-        List<String> order = new ArrayList<>();
+    /**
+     * 图遍历执行:startEvent 起,沿出边走。遇 ServiceTask 执行 + reject 检查;遇 ExclusiveGateway
+     * 评估出边条件选边;遇 EndEvent 停。返回是否因 reject 终止。
+     */
+    private static boolean traverse(RuleAsset asset, Map<String, Object> fact) {
         if (asset.getFlow() == null || asset.getFlow().getFlowElements() == null) {
-            return order;
+            return false;
         }
-        // 索引 sequenceFlow by sourceRef
-        Map<String, String> flowNext = new LinkedHashMap<>();
-        String startId = null;
-        for (FlowElement e : asset.getFlow().getFlowElements()) {
-            if (e instanceof StartEvent) {
-                startId = parseNodeId(((StartEvent) e).getImplementation());
-            } else if (e instanceof SequenceFlow) {
-                SequenceFlow sf = (SequenceFlow) e;
-                flowNext.put(sf.getSourceRef(), sf.getTargetRef());
+        Schema schema = asset.getSchema();
+        Set<String> visited = new HashSet<>();
+        String curId = firstStartElementId(asset);
+        while (curId != null && !visited.contains(curId)) {
+            visited.add(curId);
+            FlowElement el = findElement(asset, curId);
+            if (el == null) {
+                break;
             }
-        }
-        // 从 startEvent 元素开始遍历 flow element id 链,解析每步的 nodeId
-        // startEvent id → first serviceTask ...
-        if (startId == null && asset.getFlow().getFlowElements().stream().noneMatch(e -> e instanceof StartEvent)) {
-            return order;
-        }
-        // 遍历 flow element 链(按 element id)
-        String curElementId = firstStartElementId(asset);
-        while (curElementId != null) {
-            FlowElement el = findElement(asset, curElementId);
             if (el instanceof ServiceTask) {
-                order.add(parseNodeId(((ServiceTask) el).getImplementation()));
+                String nodeId = parseNodeId(((ServiceTask) el).getImplementation());
+                NodeBase node = asset.getNodes() == null ? null : asset.getNodes().get(nodeId);
+                if (node != null) {
+                    executeNode(node, asset, fact);
+                }
+                if (Boolean.TRUE.equals(fact.get(V1ActionRhs.REJECTED_FLAG))) {
+                    return true;
+                }
+            } else if (el instanceof EndEvent) {
+                break;
             }
-            curElementId = flowNext.get(curElementId);
+            curId = chooseNext(asset, el, fact, schema);
         }
-        return order;
+        return false;
+    }
+
+    /**
+     * 选下一条出边的 targetRef。
+     * <ul>
+     *   <li>ExclusiveGateway:遍历出边(按 flowElements 顺序),首个带 conditionExpression 且 CEL 命中
+     *       的出边即返回其 target;全不命中 → {@link ExclusiveGateway#getDefaultFlow()} 指向的出边 target;
+     *       无 default → null(终止)</li>
+     *   <li>其他元素(普通单出边):取第一条出边 target</li>
+     * </ul>
+     */
+    private static String chooseNext(RuleAsset asset, FlowElement el, Map<String, Object> fact, Schema schema) {
+        boolean isGateway = el instanceof ExclusiveGateway;
+        for (SequenceFlow sf : flowsFrom(asset, el.getId())) {
+            if (!isGateway) {
+                return sf.getTargetRef();
+            }
+            String cond = sf.getConditionExpression();
+            if (cond != null && !cond.isBlank() && CelEngine.evalBoolean(cond, fact, schema)) {
+                return sf.getTargetRef();
+            }
+        }
+        if (isGateway) {
+            ExclusiveGateway gw = (ExclusiveGateway) el;
+            if (gw.getDefaultFlow() != null) {
+                FlowElement defaultEl = findElement(asset, gw.getDefaultFlow());
+                if (defaultEl instanceof SequenceFlow) {
+                    return ((SequenceFlow) defaultEl).getTargetRef();
+                }
+            }
+        }
+        return null;
+    }
+
+    /** 列出 sourceRef == sourceId 的所有 sequenceFlow(按 flowElements 顺序)。 */
+    private static List<SequenceFlow> flowsFrom(RuleAsset asset, String sourceId) {
+        List<SequenceFlow> out = new ArrayList<>();
+        if (asset.getFlow() == null || sourceId == null) {
+            return out;
+        }
+        for (FlowElement e : asset.getFlow().getFlowElements()) {
+            if (e instanceof SequenceFlow) {
+                SequenceFlow sf = (SequenceFlow) e;
+                if (sourceId.equals(sf.getSourceRef())) {
+                    out.add(sf);
+                }
+            }
+        }
+        return out;
     }
 
     private static String firstStartElementId(RuleAsset asset) {
