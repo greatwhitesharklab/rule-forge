@@ -721,6 +721,87 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._style = Styles.frameStyle.getFlowIconStyle();
             data.contextMenu = buildFileContextMenu();
             break;
+        // V7.5:V1 规则集容器 → 添加规则集文件
+        case "v1rulesetLib":
+            data._icon = Styles.frameStyle.getFlowIcon();
+            data._style = Styles.frameStyle.getFlowIconStyle();
+            data.contextMenu = [
+                {
+                    name: '添加目录',
+                    icon: Styles.frameStyle.getFolderIcon(),
+                    click: function (data: TreeNodeData) {
+                        event.eventEmitter.emit(event.OPEN_CREATE_FOLDER_DIALOG, {nodeData: data});
+                    }
+                },
+                {
+                    name: '添加 V1 规则集',
+                    icon: Styles.frameStyle.getFlowIcon(),
+                    click: function () {
+                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'V1RuleSet', nodeData: data});
+                    }
+                }
+            ];
+            break;
+        // V7.5:V1 规则集文件(.v1rs.json) → 走规则集编辑器(handleFileOpen → /app/v1-ruleset)
+        case "v1ruleset":
+            data._icon = Styles.frameStyle.getRuleIcon();
+            data._style = Styles.frameStyle.getRuleIconStyle();
+            data.contextMenu = buildFileContextMenu();
+            break;
+        // V7.5:V1 决策表容器 → 添加决策表文件
+        case "v1decisiontableLib":
+            data._icon = Styles.frameStyle.getTableIcon();
+            data._style = Styles.frameStyle.getTableIconStyle();
+            data.contextMenu = [
+                {
+                    name: '添加目录',
+                    icon: Styles.frameStyle.getFolderIcon(),
+                    click: function (data: TreeNodeData) {
+                        event.eventEmitter.emit(event.OPEN_CREATE_FOLDER_DIALOG, {nodeData: data});
+                    }
+                },
+                {
+                    name: '添加 V1 决策表',
+                    icon: Styles.frameStyle.getTableIcon(),
+                    click: function () {
+                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'V1DecisionTable', nodeData: data});
+                    }
+                }
+            ];
+            break;
+        // V7.5:V1 决策表文件(.v1dt.json) → 走决策表编辑器(handleFileOpen → /app/v1-decisiontable)
+        case "v1decisiontable":
+            data._icon = Styles.frameStyle.getTableIcon();
+            data._style = Styles.frameStyle.getTableIconStyle();
+            data.contextMenu = buildFileContextMenu();
+            break;
+        // V7.5:V1 评分卡容器 → 添加评分卡文件
+        case "v1scorecardLib":
+            data._icon = Styles.frameStyle.getScorecardIcon();
+            data._style = Styles.frameStyle.getScorecardIconStyle();
+            data.contextMenu = [
+                {
+                    name: '添加目录',
+                    icon: Styles.frameStyle.getFolderIcon(),
+                    click: function (data: TreeNodeData) {
+                        event.eventEmitter.emit(event.OPEN_CREATE_FOLDER_DIALOG, {nodeData: data});
+                    }
+                },
+                {
+                    name: '添加 V1 评分卡',
+                    icon: Styles.frameStyle.getScorecardIcon(),
+                    click: function () {
+                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'V1ScoreCard', nodeData: data});
+                    }
+                }
+            ];
+            break;
+        // V7.5:V1 评分卡文件(.v1sc.json) → 走评分卡编辑器(handleFileOpen → /app/v1-scorecard)
+        case "v1scorecard":
+            data._icon = Styles.frameStyle.getScorecardIcon();
+            data._style = Styles.frameStyle.getScorecardIconStyle();
+            data.contextMenu = buildFileContextMenu();
+            break;
         // V6.20.0 P3:DMN 标准决策模型文件(.dmn) → 只读查看器
         case "dmn":
             data._icon = 'rf rf-table'; // 复用 table 图标(无专属 DMN icon,先沿用)
@@ -737,7 +818,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
     // Ensure container types have a children array so they render as folders
     if (data.children === null || data.children === undefined) {
         var t = data.type;
-        if (t === 'lib' || t === 'flowLib' || t === 'drlLib' || t === 'v1flowLib' || t === 'v1libraryLib' || t === 'resource' || t === 'folder') {
+        if (t === 'lib' || t === 'flowLib' || t === 'drlLib' || t === 'v1flowLib' || t === 'v1libraryLib' || t === 'v1rulesetLib' || t === 'v1decisiontableLib' || t === 'v1scorecardLib' || t === 'resource' || t === 'folder') {
             data.children = [];
         }
     }

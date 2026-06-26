@@ -10,5 +10,7 @@ public enum Type {
     // V7.0.0:V1 决策流文件分类(.json,画布资产)
     v1flow, v1flowLib,
     // V7.4:V1 库文件分类(.v1lib.json,vl/cl/pl 四库)
-    v1library, v1libraryLib
+    v1library, v1libraryLib,
+    // V7.5:V1 规则独立文件分类(.v1rs.json/.v1dt.json/.v1sc.json)
+    v1ruleset, v1rulesetLib, v1decisiontable, v1decisiontableLib, v1scorecard, v1scorecardLib
 }

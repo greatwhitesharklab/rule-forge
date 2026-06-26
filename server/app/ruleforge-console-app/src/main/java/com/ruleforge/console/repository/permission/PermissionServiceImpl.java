@@ -103,6 +103,9 @@ public class PermissionServiceImpl implements PermissionStore, PermissionService
         }
         String extName = path.substring(pointPos + 1, path.length());
         FileType type = FileType.parse(extName);
+        if (type == null) {
+            return false;
+        }
         switch (type) {
             case VariableLibrary:
                 if (permissionType == 0) {
@@ -170,6 +173,12 @@ public class PermissionServiceImpl implements PermissionStore, PermissionService
                 } else {
                     return config.isWriteRuleFile();
                 }
+            case Crosstab:
+                if (permissionType == 0) {
+                    return config.isReadDecisionTableFile();
+                } else {
+                    return config.isWriteDecisionTableFile();
+                }
             case Scorecard:
                 if (permissionType == 0) {
                     return config.isReadScorecardFile();
@@ -181,6 +190,51 @@ public class PermissionServiceImpl implements PermissionStore, PermissionService
                     return config.isReadScorecardFile();
                 } else {
                     return config.isWriteScorecardFile();
+                }
+            // V7.5:V1 规则独立文件借规则权限位
+            case V1RuleSet:
+            case V1DecisionTable:
+            case V1ScoreCard:
+                if (permissionType == 0) {
+                    return config.isReadRuleFile();
+                } else {
+                    return config.isWriteRuleFile();
+                }
+            // V6.20.0 P3:DMN/PMML 标准决策模型借规则权限位
+            case Dmn:
+            case Pmml:
+                if (permissionType == 0) {
+                    return config.isReadRuleFile();
+                } else {
+                    return config.isWriteRuleFile();
+                }
+            // V6.20.0:DRL 规则借规则权限位
+            case Drl:
+                if (permissionType == 0) {
+                    return config.isReadRuleFile();
+                } else {
+                    return config.isWriteRuleFile();
+                }
+            // V7.0.0:V1 决策流借流程权限位
+            case V1Flow:
+                if (permissionType == 0) {
+                    return config.isReadFlowFile();
+                } else {
+                    return config.isWriteFlowFile();
+                }
+            // V7.4:V1 库借规则权限位
+            case V1Library:
+                if (permissionType == 0) {
+                    return config.isReadRuleFile();
+                } else {
+                    return config.isWriteRuleFile();
+                }
+            case Package:
+                // Package 文件借流程权限位
+                if (permissionType == 0) {
+                    return config.isReadFlowFile();
+                } else {
+                    return config.isWriteFlowFile();
                 }
             case DIR:
                 return true;

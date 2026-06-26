@@ -1700,6 +1700,37 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
             libraryV1LibTypes = new FileType[]{FileType.V1Library};
         }
         buildNodes(projectNode, v1LibLib, libraryV1LibTypes, Type.v1libraryLib, searchFileName);
+
+        // V7.5:V1 规则独立文件(.v1rs.json/.v1dt.json/.v1sc.json,决策流引用)
+        RepositoryFile v1RuleSetLib = buildLibFile(libDir, "V1规则集", LibType.v1ruleset);
+        v1RuleSetLib.setFullPath(libDir.getFullPath());
+        v1RuleSetLib.setType(Type.v1rulesetLib);
+        libDir.addChild(v1RuleSetLib, false);
+        FileType[] libraryV1RuleSetTypes = types;
+        if (types == null || types.length == 0) {
+            libraryV1RuleSetTypes = new FileType[]{FileType.V1RuleSet};
+        }
+        buildNodes(projectNode, v1RuleSetLib, libraryV1RuleSetTypes, Type.v1rulesetLib, searchFileName);
+
+        RepositoryFile v1DecisionTableLib = buildLibFile(libDir, "V1决策表", LibType.v1decisiontable);
+        v1DecisionTableLib.setFullPath(libDir.getFullPath());
+        v1DecisionTableLib.setType(Type.v1decisiontableLib);
+        libDir.addChild(v1DecisionTableLib, false);
+        FileType[] libraryV1DecisionTableTypes = types;
+        if (types == null || types.length == 0) {
+            libraryV1DecisionTableTypes = new FileType[]{FileType.V1DecisionTable};
+        }
+        buildNodes(projectNode, v1DecisionTableLib, libraryV1DecisionTableTypes, Type.v1decisiontableLib, searchFileName);
+
+        RepositoryFile v1ScoreCardLib = buildLibFile(libDir, "V1评分卡", LibType.v1scorecard);
+        v1ScoreCardLib.setFullPath(libDir.getFullPath());
+        v1ScoreCardLib.setType(Type.v1scorecardLib);
+        libDir.addChild(v1ScoreCardLib, false);
+        FileType[] libraryV1ScoreCardTypes = types;
+        if (types == null || types.length == 0) {
+            libraryV1ScoreCardTypes = new FileType[]{FileType.V1ScoreCard};
+        }
+        buildNodes(projectNode, v1ScoreCardLib, libraryV1ScoreCardTypes, Type.v1scorecardLib, searchFileName);
     }
 
     private RepositoryFile buildLibFile(RepositoryFile libraryDir, String name, LibType libType) {

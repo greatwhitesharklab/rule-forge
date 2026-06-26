@@ -21,6 +21,10 @@ const CONTAINER_TYPES = new Set<string>([
     // V6.20.0 P2:删老 urule 规则库(ruleLib/decisionTableLib/decisionTreeLib/scorecardLib),
     // 只留决策流(flowLib,ruleforge-decision 自建)+ DRL 规则(drlLib)。
     'flowLib', 'drlLib',
+    // V7.4:V1 库容器
+    'v1libraryLib',
+    // V7.5:V1 规则独立文件容器
+    'v1rulesetLib', 'v1decisiontableLib', 'v1scorecardLib',
     'publicResource',
 ]);
 
@@ -108,6 +112,21 @@ export function handleFileOpen(
     // V7.4:V1 库 (.v1lib.json) — 走库编辑器
     if (data.type === 'v1library' || fullPath.endsWith('.v1lib.json')) {
         open('/app/v1-library?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // V7.5:V1 规则集 (.v1rs.json) — 走规则集编辑器
+    if (data.type === 'v1ruleset' || fullPath.endsWith('.v1rs.json')) {
+        open('/app/v1-ruleset?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // V7.5:V1 决策表 (.v1dt.json) — 走决策表编辑器
+    if (data.type === 'v1decisiontable' || fullPath.endsWith('.v1dt.json')) {
+        open('/app/v1-decisiontable?file=' + encodeURIComponent(fullPath));
+        return;
+    }
+    // V7.5:V1 评分卡 (.v1sc.json) — 走评分卡编辑器
+    if (data.type === 'v1scorecard' || fullPath.endsWith('.v1sc.json')) {
+        open('/app/v1-scorecard?file=' + encodeURIComponent(fullPath));
         return;
     }
     // V6.20.0 P3:DMN / PMML 标准决策模型 — 走只读查看器(无 UI 编辑器,纯源文本展示)

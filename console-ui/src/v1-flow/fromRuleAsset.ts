@@ -64,6 +64,8 @@ export function fromRuleAsset(asset: RuleAsset): CanvasState {
                 implementation: impl || `${nodeType}:${nodeId}`,
                 // Gateway default 兜底出边 id(exclusiveGateway.defaultFlow)
                 ...(el.type === 'exclusiveGateway' && el.defaultFlow ? {defaultFlow: el.defaultFlow} : {}),
+                // V7.5:规则节点从 nodesMap 还原 ruleRef(如果有)
+                ...((nodeType === 'RuleSet' || nodeType === 'DecisionTable' || nodeType === 'ScoreCard') && nodesMap[nodeId]?.ruleRef ? {ruleRef: (nodesMap[nodeId] as {ruleRef?: string}).ruleRef} : {}),
             },
         });
     }

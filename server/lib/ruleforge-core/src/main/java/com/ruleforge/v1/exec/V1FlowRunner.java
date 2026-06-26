@@ -78,6 +78,30 @@ public final class V1FlowRunner {
     }
 
     /**
+     * 执行 flow + 四库 + 规则文件(V7.5)。ruleFiles: ruleRef → 规则节点内容(独立规则文件加载)。
+     * 决策流节点 ruleRef 引用 → 从 ruleFiles 取规则(RuleSet/DecisionTable/ScoreCard);无 ruleRef 用内嵌。
+     */
+    public static FlowResult execute(RuleAsset asset, Map<String, Object> inputFact, Libraries libraries,
+                                     Map<String, NodeBase> ruleFiles) {
+        if (libraries != null && libraries.getVl() != null && asset.getSchemaRef() != null) {
+            asset.setSchema(V1LibraryResolver.deriveSchema(libraries.getVl()));
+        }
+        Map<String, Object> parameters = V1LibraryResolver.deriveParameters(
+                libraries == null ? null : libraries.getPl(),
+                libraries == null ? null : libraries.getCl());
+        String schemaName = asset.getSchema() != null ? asset.getSchema().getName() : "Fact";
+        Map<String, Object> fact = new GeneralEntity(schemaName);
+        if (inputFact != null) {
+            fact.putAll(inputFact);
+        }
+        boolean rejected = traverse(asset, fact, parameters, ruleFiles);
+        String decision = emitDecision(asset, fact);
+        return new FlowResult(decision, fact, rejected,
+                fact.containsKey(V1ActionRhs.REJECT_REASON) ? (String) fact.get(V1ActionRhs.REJECT_REASON) : null,
+                fact.containsKey(V1ActionRhs.DEFAULT_FLAGS_FIELD) ? (List<Object>) fact.get(V1ActionRhs.DEFAULT_FLAGS_FIELD) : new ArrayList<>());
+    }
+
+    /**
      * 执行 flow + 参数库(pl)parameters。规则 CEL {@code param.xxx} 引用参数(ParameterValue
      * 走会话参数通道),{@link V1FlowRunner} 把 parameters 喂 {@code KnowledgeSession.fireRules}。
      */
@@ -91,7 +115,7 @@ public final class V1FlowRunner {
             fact.putAll(inputFact);
         }
 
-        boolean rejected = traverse(asset, fact, parameters);
+        boolean rejected = traverse(asset, fact, parameters, null);
 
         // Decision emit:找 endEvent 的 DecisionNode
         String decision = emitDecision(asset, fact);
@@ -104,7 +128,8 @@ public final class V1FlowRunner {
      * 图遍历执行:startEvent 起,沿出边走。遇 ServiceTask 执行 + reject 检查;遇 ExclusiveGateway
      * 评估出边条件选边;遇 EndEvent 停。返回是否因 reject 终止。
      */
-    private static boolean traverse(RuleAsset asset, Map<String, Object> fact, Map<String, Object> parameters) {
+    private static boolean traverse(RuleAsset asset, Map<String, Object> fact, Map<String, Object> parameters,
+                                    Map<String, NodeBase> ruleFiles) {
         if (asset.getFlow() == null || asset.getFlow().getFlowElements() == null) {
             return false;
         }
@@ -121,7 +146,7 @@ public final class V1FlowRunner {
                 String nodeId = parseNodeId(((ServiceTask) el).getImplementation());
                 NodeBase node = asset.getNodes() == null ? null : asset.getNodes().get(nodeId);
                 if (node != null) {
-                    executeNode(node, asset, fact, parameters);
+                    executeNode(node, asset, fact, parameters, ruleFiles);
                 }
                 if (Boolean.TRUE.equals(fact.get(V1ActionRhs.REJECTED_FLAG))) {
                     return true;
@@ -209,7 +234,15 @@ public final class V1FlowRunner {
     }
 
     /** 分发执行单个节点。 */
-    private static void executeNode(NodeBase node, RuleAsset asset, Map<String, Object> fact, Map<String, Object> parameters) {
+    private static void executeNode(NodeBase node, RuleAsset asset, Map<String, Object> fact,
+                                   Map<String, Object> parameters, Map<String, NodeBase> ruleFiles) {
+        // V7.5:ruleRef 引用独立规则文件 → 从 ruleFiles 取规则内容(向后兼容:无 ruleRef 用内嵌 node)
+        if (node.getRuleRef() != null && ruleFiles != null) {
+            NodeBase resolved = ruleFiles.get(node.getRuleRef());
+            if (resolved != null) {
+                node = resolved;
+            }
+        }
         if (node instanceof RuleSetNode) {
             RuleSetNode rs = (RuleSetNode) node;
             List<Rule> rules = RuleSetCompiler.compile(rs, asset.getSchema());

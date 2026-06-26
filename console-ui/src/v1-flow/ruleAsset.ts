@@ -18,6 +18,8 @@ export interface NodeBase {
     type: NodeType;
     name: string;
     description?: string;
+    /** V7.5:规则独立文件引用(RuleSet/DecisionTable/ScoreCard)。有值时规则内容从独立文件加载,不内嵌。 */
+    ruleRef?: string;
 }
 
 export interface StartNode extends NodeBase {

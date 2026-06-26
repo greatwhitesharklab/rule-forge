@@ -27,6 +27,10 @@ public abstract class NodeBase {
     private String id;
     private String name;
     private String description;
+    /** V7.5:规则文件引用(RuleSet/DecisionTable/ScoreCard 节点指向独立规则文件,
+     *  如 "precheck" → V1规则集/precheck.v1rs.json)。设了执行时从 ruleFiles 加载规则内容,
+     *  不内嵌 rules/inputs/outputs/cards(跨流程复用 + 独立 git diff)。Start/Decision 不用。 */
+    private String ruleRef;
 
     /** Jackson discriminator 常量,子类返回自己的 NodeType 名。 */
     public abstract String getType();
@@ -53,5 +57,13 @@ public abstract class NodeBase {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getRuleRef() {
+        return ruleRef;
+    }
+
+    public void setRuleRef(String ruleRef) {
+        this.ruleRef = ruleRef;
     }
 }

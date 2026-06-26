@@ -25,10 +25,15 @@ public class V1ExecutionController {
 
     @PostMapping("/execute")
     public V1ExecutionResponse execute(@RequestBody V1ExecutionRequest request) {
-        // V7.4.1:libraries(vl/pl/cl/al)优先;无则用 parameters(V7.4-1b 兼容)
-        V1FlowRunner.FlowResult result = request.getLibraries() != null
-                ? V1FlowRunner.execute(request.getAsset(), request.getFact(), request.getLibraries())
-                : V1FlowRunner.execute(request.getAsset(), request.getFact(), request.getParameters());
+        // V7.5:ruleFiles(V1 规则独立文件)优先,无则用 libraries(V7.4.1 四库),再无则用 parameters(V7.4 兼容)
+        V1FlowRunner.FlowResult result;
+        if (request.getRuleFiles() != null && request.getLibraries() != null) {
+            result = V1FlowRunner.execute(request.getAsset(), request.getFact(), request.getLibraries(), request.getRuleFiles());
+        } else if (request.getLibraries() != null) {
+            result = V1FlowRunner.execute(request.getAsset(), request.getFact(), request.getLibraries());
+        } else {
+            result = V1FlowRunner.execute(request.getAsset(), request.getFact(), request.getParameters());
+        }
         return new V1ExecutionResponse(result);
     }
 }

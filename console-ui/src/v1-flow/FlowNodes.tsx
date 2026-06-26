@@ -18,6 +18,8 @@ export interface V1NodeData {
     implementation: string;
     /** Gateway default 出边 id(exclusiveGateway.defaultFlow);仅 Gateway 用。 */
     defaultFlow?: string;
+    /** V7.5:规则独立文件引用(RuleSet/DecisionTable/ScoreCard)。有值 → 点节点跳独立编辑器,不弹 Drawer。 */
+    ruleRef?: string;
     [key: string]: unknown;
 }
 

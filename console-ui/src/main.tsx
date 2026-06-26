@@ -35,6 +35,10 @@ const PmmlEditorRoute = lazy(() => import('@/editor/pmml/EditorRoute'));
 // V1 画布接管 RuleSet/DecisionTable/ScoreCard,其余 4 类决策已弃。物理删除目录见本 commit。
 const V1FlowDesignerRoute = lazy(() => import('@/v1-flow/EditorRoute'));
 const V1LibraryEditorRoute = lazy(() => import('@/v1-flow/LibraryEditorRoute'));
+// V7.5:V1 规则独立文件编辑器(RuleSet/DecisionTable/ScoreCard,从项目树分类进入)
+const V1RuleSetEditorRoute = lazy(() => import('@/v1-flow/RuleSetRoute'));
+const V1DecisionTableEditorRoute = lazy(() => import('@/v1-flow/DecisionTableRoute'));
+const V1ScoreCardEditorRoute = lazy(() => import('@/v1-flow/ScoreCardRoute'));
 
 createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
@@ -62,6 +66,10 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="v1-flow" element={<V1FlowDesignerRoute/>}/>
                 {/* V7.4:V1 库编辑器(vl/cl/pl 四库,从项目树"V1库"分类进入) */}
                 <Route path="v1-library" element={<V1LibraryEditorRoute/>}/>
+                {/* V7.5:V1 规则独立文件编辑器(决策流引用) */}
+                <Route path="v1-ruleset" element={<V1RuleSetEditorRoute/>}/>
+                <Route path="v1-decisiontable" element={<V1DecisionTableEditorRoute/>}/>
+                <Route path="v1-scorecard" element={<V1ScoreCardEditorRoute/>}/>
             </Route>
         </Routes>
     </BrowserRouter>,
