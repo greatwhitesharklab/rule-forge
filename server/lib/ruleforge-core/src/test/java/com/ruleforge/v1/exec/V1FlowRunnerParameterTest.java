@@ -120,4 +120,30 @@ class V1FlowRunnerParameterTest {
         assertThat(V1FlowRunner.execute(asset, fact(60), libs).decision).isEqualTo("approve");
         assertThat(V1FlowRunner.execute(asset, fact(50), libs).decision).isEqualTo("review");
     }
+
+    // Given al 测试 bean(calcBean.compute)注册 + 规则 INVOKE When riskScore=60 param.threshold=50 Then
+    // 命中 → INVOKE calcBean.compute(60)=70 → 写回 fact[adjustedScore]=70
+    @Test
+    @DisplayName("al INVOKE 调 bean 方法(calcBean.compute)写回 target")
+    void al_invoke_调bean方法() throws Exception {
+        EngineContextWirer.registerTestBean("calcBean", new TestCalcBean());
+        RuleAsset alAsset;
+        try (InputStream in = V1FlowRunnerParameterTest.class.getResourceAsStream(
+                "/com/ruleforge/v1/ast/al_loan.json")) {
+            assertThat(in).as("al_loan.json 测试资源存在").isNotNull();
+            alAsset = RuleAssetIO.read(in);
+        }
+        Map<String, Object> p = new HashMap<>();
+        p.put("threshold", 50);
+        V1FlowRunner.FlowResult r = V1FlowRunner.execute(alAsset, fact(60), p);
+        // condition riskScore(60)>=param.threshold(50) 命中 → INVOKE compute(60)=70 → adjustedScore=70
+        assertThat(r.fact.get("adjustedScore")).isEqualTo(70);
+    }
+
+    /** al 测试 bean:compute(x)=x+10(模拟 @ActionBean Spring bean 方法,生产用 @Service 注册)。 */
+    public static class TestCalcBean {
+        public int compute(int x) {
+            return x + 10;
+        }
+    }
 }

@@ -26,6 +26,8 @@ public class Action {
     private String ref;
     /** 审计理由(SET_DECISION / REJECT / FLAG 常用)。 */
     private String reason;
+    /** V7.4.1b:INVOKE 参数(al 动作库);每项 ref(字段引用)/value(字面量)。 */
+    private java.util.List<Arg> args;
 
     public Action() {
     }
@@ -72,5 +74,13 @@ public class Action {
 
     public void setReason(String reason) {
         this.reason = reason;
+    }
+
+    public java.util.List<Arg> getArgs() {
+        return args;
+    }
+
+    public void setArgs(java.util.List<Arg> args) {
+        this.args = args;
     }
 }

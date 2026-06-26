@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "id": "al_loan",
+  "name": "动作库审批",
+  "schema": {
+    "name": "LoanApplication",
+    "fields": [
+      { "name": "riskScore", "type": "NUMBER", "label": "风险分" },
+      { "name": "adjustedScore", "type": "NUMBER", "label": "调整后分数" },
+      { "name": "decision", "type": "STRING", "label": "决策" }
+    ]
+  },
+  "flow": {
+    "id": "al_flow",
+    "name": "AL Flow",
+    "version": "1.0",
+    "flowElements": [
+      { "type": "startEvent",  "id": "s", "name": "开始", "implementation": "Start:s" },
+      { "type": "serviceTask", "id": "t", "name": "动作规则", "implementation": "RuleSet:r" },
+      { "type": "endEvent",    "id": "e", "name": "决策", "implementation": "Decision:d" },
+      { "type": "sequenceFlow", "id": "f1", "sourceRef": "s", "targetRef": "t" },
+      { "type": "sequenceFlow", "id": "f2", "sourceRef": "t", "targetRef": "e" }
+    ]
+  },
+  "nodes": {
+    "s": { "id": "s", "type": "Start", "name": "贷款申请", "schema": "LoanApplication" },
+    "r": {
+      "id": "r", "type": "RuleSet", "name": "动作规则", "hitPolicy": "FIRST_MATCH",
+      "rules": [
+        { "id": "r1", "condition": "riskScore >= param.threshold",
+          "actions": [
+            { "type": "INVOKE", "ref": "calcBean.compute", "args": [ { "ref": "riskScore" } ], "target": "adjustedScore" }
+          ]
+        }
+      ]
+    },
+    "d": {
+      "id": "d", "type": "Decision", "name": "最终决策",
+      "decisionField": "decision",
+      "outputs": ["approve", "review"],
+      "defaultOutput": "review"
+    }
+  }
+}
