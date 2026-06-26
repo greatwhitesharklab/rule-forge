@@ -414,7 +414,8 @@ const FILE_TYPE_MAP: Record<string, string> = {
     'drl': 'Drl',
     // V6.20.0 P3:DMN / PMML(只读/导入,FileTypeUtils 后端识别 .dmn/.pmml)
     'dmn': 'Dmn', 'pmml': 'Pmml',
-    // V7.0.0:V1 决策流(.json,React Flow 画布,后端 V1FlowRunner 可执行)
+    // V7.0.0→V7.5.1:V1 决策流(.v1flow.json 统一后缀;.json 兼容旧)
+    'v1flow.json': 'V1Flow',
     'json': 'V1Flow',
 };
 
@@ -672,7 +673,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                     name: '添加 V1 决策流',
                     icon: Styles.frameStyle.getFlowIcon(),
                     click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'json', nodeData: data});
+                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'v1flow.json', nodeData: data});
                     }
                 }
             ];

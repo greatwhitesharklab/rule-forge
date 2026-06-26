@@ -39,8 +39,9 @@ public class FileTypeUtils {
         // V6.20.0 P3:DMN 1.3 / PMML 4.4 标准决策模型(只读/导入)
         EXTENSION_MAP.put(".dmn", FileType.Dmn);
         EXTENSION_MAP.put(".pmml", FileType.Pmml);
-        // V7.0.0:V1 决策流(.json,React Flow 画布资产)。RuleForge 项目 .json 罕见,
-        // 故 .json 统一归 V1Flow(内容靠顶层 version 自识别,非 V1 的 .json 打开时报错)。
+        // V7.0.0→V7.5.1:V1 决策流后缀统一 .v1flow.json(跟其他 V1 文件 .v1xx.json 一致)。
+        // 保留 .json 兼容旧文件(loan_approval.json 等)。
+        EXTENSION_MAP.put(".v1flow.json", FileType.V1Flow);
         EXTENSION_MAP.put(".json", FileType.V1Flow);
         // V7.4:V1 库(.v1lib.json,双后缀避免跟 V1Flow .json 冲突;getFileTypeByFileName 长后缀优先)
         EXTENSION_MAP.put(".v1lib.json", FileType.V1Library);

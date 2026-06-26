@@ -104,8 +104,8 @@ export function handleFileOpen(
         open('/app/editor/drl?file=' + encodeURIComponent(fullPath));
         return;
     }
-    // V7.0.0:V1 决策流 (.json) — 走 V1 画布
-    if (data.type === 'v1flow' || fullPath.endsWith('.json')) {
+    // V7.0.0→V7.5.1:V1 决策流 (.v1flow.json 统一后缀;.json 兼容旧文件)
+    if (data.type === 'v1flow' || fullPath.endsWith('.v1flow.json') || fullPath.endsWith('.json')) {
         open('/app/v1-flow?file=' + encodeURIComponent(fullPath));
         return;
     }
