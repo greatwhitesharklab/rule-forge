@@ -89,8 +89,14 @@ function toRuleAsset(
             }
         } else {
             fe.implementation = `${data.nodeType}:${n.id}`;
-            // 用 nodesMap 的完整内容(已被 Drawer 编辑过),fallback 到默认
-            nodes[n.id] = nodesMap[n.id] || newNodeDefault(data.nodeType, n.id, schemaName);
+            // V7.5:规则节点(RuleSet/DecisionTable/ScoreCard)有 ruleRef → 只存 {type, name, ruleRef},不内嵌规则
+            const hasRuleRef = data.ruleRef && data.ruleRef.trim() !== '';
+            if (hasRuleRef && (data.nodeType === 'RuleSet' || data.nodeType === 'DecisionTable' || data.nodeType === 'ScoreCard')) {
+                nodes[n.id] = {id: n.id, type: data.nodeType, name: data.name, ruleRef: data.ruleRef} as V1Node;
+            } else {
+                // 用 nodesMap 的完整内容(已被 Drawer 编辑过),fallback 到默认
+                nodes[n.id] = nodesMap[n.id] || newNodeDefault(data.nodeType, n.id, schemaName);
+            }
         }
         flowElements.push(fe);
     }
@@ -281,7 +287,18 @@ export default function FlowDesigner({file}: {file?: string}) {
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}
                         onConnect={onConnect}
-                        onNodeClick={(_, n) => setSelectedId(n.id)}
+                        onNodeClick={(_, n) => {
+                            // V7.5:规则节点(RuleSet/DecisionTable/ScoreCard)有 ruleRef → 跳独立编辑器,不弹 Drawer
+                            const data = n.data as V1NodeData;
+                            const ruleRef = data.ruleRef;
+                            if (ruleRef && ruleRef.trim() !== '' && (data.nodeType === 'RuleSet' || data.nodeType === 'DecisionTable' || data.nodeType === 'ScoreCard')) {
+                                const editorMap: Record<string, string> = {RuleSet: 'v1-ruleset', DecisionTable: 'v1-decisiontable', ScoreCard: 'v1-scorecard'};
+                                const editor = editorMap[data.nodeType];
+                                window.open(`/app/${editor}?file=${encodeURIComponent(ruleRef)}`, '_blank');
+                            } else {
+                                setSelectedId(n.id);
+                            }
+                        }}
                         nodeTypes={nodeTypes}
                         fitView
                         data-testid='v1-canvas'
