@@ -1,6 +1,7 @@
 package com.ruleforge.console.controller.v1;
 
 import com.ruleforge.v1.ast.RuleAsset;
+import com.ruleforge.v1.ast.library.Libraries;
 
 import java.util.Map;
 
@@ -16,6 +17,8 @@ public class V1ExecutionRequest {
     private Map<String, Object> fact;
     /** 参数库(pl)值:规则 CEL param.xxx 引用(V7.4),V1FlowRunner fireRules 注入会话参数。 */
     private Map<String, Object> parameters;
+    /** 四库(V7.4.1):vl 派生 schema,pl/cl 参数,al 动作。设了优先于 parameters。 */
+    private Libraries libraries;
 
     public RuleAsset getAsset() {
         return asset;
@@ -39,5 +42,13 @@ public class V1ExecutionRequest {
 
     public void setParameters(Map<String, Object> parameters) {
         this.parameters = parameters;
+    }
+
+    public Libraries getLibraries() {
+        return libraries;
+    }
+
+    public void setLibraries(Libraries libraries) {
+        this.libraries = libraries;
     }
 }

@@ -26,6 +26,8 @@ public class RuleAsset {
     private Flow flow;
     private Map<String, NodeBase> nodes;
     private Schema schema;
+    /** V7.4.1:vl 库引用(跨流程共享 fact schema);设了运行时从 vl 库派生 schema 覆盖内嵌。 */
+    private String schemaRef;
     private AssetMetadata metadata;
 
     public String getVersion() {
@@ -74,6 +76,14 @@ public class RuleAsset {
 
     public void setSchema(Schema schema) {
         this.schema = schema;
+    }
+
+    public String getSchemaRef() {
+        return schemaRef;
+    }
+
+    public void setSchemaRef(String schemaRef) {
+        this.schemaRef = schemaRef;
     }
 
     public AssetMetadata getMetadata() {

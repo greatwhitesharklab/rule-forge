@@ -4,6 +4,11 @@ import com.ruleforge.model.GeneralEntity;
 import com.ruleforge.rete.test.EngineContextWirer;
 import com.ruleforge.v1.ast.RuleAsset;
 import com.ruleforge.v1.ast.RuleAssetIO;
+import com.ruleforge.v1.ast.V1DataType;
+import com.ruleforge.v1.ast.library.Library;
+import com.ruleforge.v1.ast.library.LibraryEntry;
+import com.ruleforge.v1.ast.library.LibraryType;
+import com.ruleforge.v1.ast.library.Libraries;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -91,5 +96,28 @@ class V1FlowRunnerParameterTest {
         p.put("minScore", 50);
         assertThat(V1FlowRunner.execute(constAsset, fact(60), p).decision).isEqualTo("approve");
         assertThat(V1FlowRunner.execute(constAsset, fact(40), p).decision).isEqualTo("review");
+    }
+
+    // Given vl 库(字段定义)+ pl 库(阈值)+ RuleAsset.schemaRef When 执行 Then vl 派生 schema(非内嵌)+ pl 引用
+    @Test
+    @DisplayName("vl 真共享:schemaRef 从 vl 库派生 fact schema(清内嵌 schema,字段来自 vl)")
+    void vl_真共享_派生schema() {
+        Library vl = new Library();
+        vl.setType(LibraryType.VARIABLE);
+        vl.setName("LoanApplication");
+        vl.setEntries(java.util.Arrays.asList(
+                new LibraryEntry("riskScore", null, V1DataType.NUMBER, "风险分"),
+                new LibraryEntry("decision", null, V1DataType.STRING, "决策")));
+        Library pl = new Library();
+        pl.setType(LibraryType.PARAMETER);
+        pl.setEntries(java.util.Arrays.asList(new LibraryEntry("riskThreshold", 55, V1DataType.NUMBER, "阈值")));
+        Libraries libs = new Libraries();
+        libs.setVl(vl);
+        libs.setPl(pl);
+        // 清内嵌 schema,强制 vl 派生(模拟跨流程共享 vl,RuleAsset 只有 schemaRef)
+        asset.setSchema(null);
+        asset.setSchemaRef("vl_loan");
+        assertThat(V1FlowRunner.execute(asset, fact(60), libs).decision).isEqualTo("approve");
+        assertThat(V1FlowRunner.execute(asset, fact(50), libs).decision).isEqualTo("review");
     }
 }
