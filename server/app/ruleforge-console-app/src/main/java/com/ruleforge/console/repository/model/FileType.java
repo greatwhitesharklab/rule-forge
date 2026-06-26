@@ -10,6 +10,8 @@ public enum FileType {
     V1Flow,
     // V7.4:V1 库(.v1lib.json,vl/cl/pl 四库,pl/cl 动态右值)
     V1Library,
+    // V7.5:V1 规则独立文件(.v1rs.json/.v1dt.json/.v1sc.json,决策流引用)
+    V1RuleSet, V1DecisionTable, V1ScoreCard,
     DIR, Package;
 
     public static FileType parse(String type) {

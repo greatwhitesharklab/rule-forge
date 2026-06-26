@@ -300,6 +300,15 @@ public class FrameController extends BaseController {
         } else if (fileType.equals(FileType.V1Library)) {
             // V7.4:V1 库最小骨架(.v1lib.json,默认 PARAMETER 参数库;前端可改 type 为 CONSTANT/VARIABLE)
             content.append("{\"type\":\"PARAMETER\",\"name\":\"未命名参数库\",\"entries\":[]}");
+        } else if (fileType.equals(FileType.V1RuleSet)) {
+            // V7.5:V1 规则集最小骨架(.v1rs.json,hitPolicy=FIRST,空规则列表)
+            content.append("{\"id\":\"ruleset01\",\"type\":\"RuleSet\",\"name\":\"未命名规则集\",\"hitPolicy\":\"FIRST\",\"rules\":[]}");
+        } else if (fileType.equals(FileType.V1DecisionTable)) {
+            // V7.5:V1 决策表最小骨架(.v1dt.json,空 inputs/outputs/rows)
+            content.append("{\"id\":\"dt01\",\"type\":\"DecisionTable\",\"name\":\"未命名决策表\",\"inputs\":[],\"outputs\":[],\"rows\":[]}");
+        } else if (fileType.equals(FileType.V1ScoreCard)) {
+            // V7.5:V1 评分卡最小骨架(.v1sc.json,空 cards/bands,aggregation=SUM)
+            content.append("{\"id\":\"sc01\",\"type\":\"ScoreCard\",\"name\":\"未命名评分卡\",\"cards\":[],\"bands\":[],\"aggregation\":\"SUM\"}");
         } else {
             String name = getRootTagName(fileType);
             content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
@@ -335,6 +344,15 @@ public class FrameController extends BaseController {
         } else if (fileType.equals(FileType.V1Library)) {
             // V7.4:V1 库 → Type.v1library(树 buildData v1library + handleFileOpen 开库编辑器)
             newFileInfo.setType(Type.v1library);
+        } else if (fileType.equals(FileType.V1RuleSet)) {
+            // V7.5:V1 规则集 → Type.v1ruleset(树 buildData v1ruleset + handleFileOpen 开规则集编辑器)
+            newFileInfo.setType(Type.v1ruleset);
+        } else if (fileType.equals(FileType.V1DecisionTable)) {
+            // V7.5:V1 决策表 → Type.v1decisiontable(树 buildData v1decisiontable + handleFileOpen 开决策表编辑器)
+            newFileInfo.setType(Type.v1decisiontable);
+        } else if (fileType.equals(FileType.V1ScoreCard)) {
+            // V7.5:V1 评分卡 → Type.v1scorecard(树 buildData v1scorecard + handleFileOpen 开评分卡编辑器)
+            newFileInfo.setType(Type.v1scorecard);
         }
         try {
             this.ruleforgeRepositoryService.createFile(path, content.toString(), user);

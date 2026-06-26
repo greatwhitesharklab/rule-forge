@@ -113,6 +113,8 @@ public class PermissionServiceImpl implements PermissionService {
             case V1Flow -> write ? config.isWriteRuleFile() : config.isReadRuleFile();
             // V7.4:V1 库,借 rule 权限位
             case V1Library -> write ? config.isWriteRuleFile() : config.isReadRuleFile();
+            // V7.5:V1 规则独立文件,借 rule 权限位
+            case V1RuleSet, V1DecisionTable, V1ScoreCard -> write ? config.isWriteRuleFile() : config.isReadRuleFile();
             case DIR, Package -> true;
         };
     }

@@ -44,6 +44,10 @@ public class FileTypeUtils {
         EXTENSION_MAP.put(".json", FileType.V1Flow);
         // V7.4:V1 库(.v1lib.json,双后缀避免跟 V1Flow .json 冲突;getFileTypeByFileName 长后缀优先)
         EXTENSION_MAP.put(".v1lib.json", FileType.V1Library);
+        // V7.5:V1 规则独立文件(.v1rs.json/.v1dt.json/.v1sc.json,决策流引用)
+        EXTENSION_MAP.put(".v1rs.json", FileType.V1RuleSet);
+        EXTENSION_MAP.put(".v1dt.json", FileType.V1DecisionTable);
+        EXTENSION_MAP.put(".v1sc.json", FileType.V1ScoreCard);
     }
 
     /**
@@ -132,6 +136,13 @@ public class FileTypeUtils {
             // V7.4:V1 库 → Type.v1library(树 buildData v1library + handleFileOpen 开库编辑器)
             case V1Library:
                 return Type.v1library;
+            // V7.5:V1 规则独立文件 → Type.v1ruleset/v1decisiontable/v1scorecard(树 buildData 渲染 + handleFileOpen 开编辑器)
+            case V1RuleSet:
+                return Type.v1ruleset;
+            case V1DecisionTable:
+                return Type.v1decisiontable;
+            case V1ScoreCard:
+                return Type.v1scorecard;
             default:
                 return null;
         }

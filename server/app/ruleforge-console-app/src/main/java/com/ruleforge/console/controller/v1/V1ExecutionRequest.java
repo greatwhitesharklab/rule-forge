@@ -1,6 +1,7 @@
 package com.ruleforge.console.controller.v1;
 
 import com.ruleforge.v1.ast.RuleAsset;
+import com.ruleforge.v1.ast.NodeBase;
 import com.ruleforge.v1.ast.library.Libraries;
 
 import java.util.Map;
@@ -19,6 +20,12 @@ public class V1ExecutionRequest {
     private Map<String, Object> parameters;
     /** 四库(V7.4.1):vl 派生 schema,pl/cl 参数,al 动作。设了优先于 parameters。 */
     private Libraries libraries;
+    /**
+     * V7.5:规则独立文件(ruleRef → NodeBase 映射)。
+     * 决策流节点设了 ruleRef 时,用此 Map 中的规则文件内容替代内嵌节点。
+     * Key = 规则文件路径(如 "/proj/V1规则集/precheck.v1rs.json"),Value = 规则文件顶层 NodeBase。
+     */
+    private Map<String, NodeBase> ruleFiles;
 
     public RuleAsset getAsset() {
         return asset;
@@ -50,5 +57,13 @@ public class V1ExecutionRequest {
 
     public void setLibraries(Libraries libraries) {
         this.libraries = libraries;
+    }
+
+    public Map<String, NodeBase> getRuleFiles() {
+        return ruleFiles;
+    }
+
+    public void setRuleFiles(Map<String, NodeBase> ruleFiles) {
+        this.ruleFiles = ruleFiles;
     }
 }

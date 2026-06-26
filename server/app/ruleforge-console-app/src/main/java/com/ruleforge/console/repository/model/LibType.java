@@ -7,5 +7,7 @@ public enum LibType {
     // V7.0.0:V1 决策流(.json,React Flow 画布)
     v1flow,
     // V7.4:V1 库(.v1lib.json,vl/cl/pl 四库容器)
-    v1library
+    v1library,
+    // V7.5:V1 规则独立文件容器
+    v1ruleset, v1decisiontable, v1scorecard
 }
