@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "id": "rule_ref_loan",
+  "name": "规则引用审批",
+  "schema": {
+    "name": "LoanApplication",
+    "fields": [
+      { "name": "age", "type": "NUMBER", "label": "年龄" },
+      { "name": "decision", "type": "STRING", "label": "决策" }
+    ]
+  },
+  "flow": {
+    "id": "rf",
+    "name": "RF",
+    "version": "1.0",
+    "flowElements": [
+      { "type": "startEvent",  "id": "s", "implementation": "Start:s" },
+      { "type": "serviceTask", "id": "t", "implementation": "RuleSet:t" },
+      { "type": "endEvent",    "id": "e", "implementation": "Decision:d" },
+      { "type": "sequenceFlow", "id": "f1", "sourceRef": "s", "targetRef": "t" },
+      { "type": "sequenceFlow", "id": "f2", "sourceRef": "t", "targetRef": "e" }
+    ]
+  },
+  "nodes": {
+    "s": { "id": "s", "type": "Start", "name": "开始", "schema": "LoanApplication" },
+    "t": { "id": "t", "type": "RuleSet", "name": "准入", "ruleRef": "precheck" },
+    "d": { "id": "d", "type": "Decision", "name": "决策",
+           "decisionField": "decision", "outputs": ["approve", "reject"], "defaultOutput": "approve" }
+  }
+}
