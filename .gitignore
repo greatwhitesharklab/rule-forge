@@ -1,1 +1,29 @@
 /*.png
+
+# === Java/Maven 构建产物 ===
+target/
+**/.flattened-pom.xml
+
+# === Node/npm ===
+node_modules/
+dist/
+
+# === V1 dev 运行(dev-lan.sh:日志/pid/环境变量)===
+.dev-logs/
+.dev-pids/
+.env
+.playwright-mcp/
+
+# === 测试产物 ===
+test-results/
+**/test-results/
+**/e2e/screenshots/
+
+# === Python(cli / model-service)===
+__pycache__/
+*.pyc
+.venv/
+
+# === Java class(root 误生成兜底)===
+*.class
+
