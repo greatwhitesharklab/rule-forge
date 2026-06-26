@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "id": "loan_approval_rule_ref",
+  "name": "贷款审批流程(规则引用版)",
+  "schema": {
+    "name": "LoanApplication",
+    "fields": [
+      { "name": "age", "type": "NUMBER", "label": "年龄" },
+      { "name": "income", "type": "NUMBER", "label": "月收入" },
+      { "name": "score", "type": "NUMBER", "label": "征信分" },
+      { "name": "blacklisted", "type": "BOOLEAN", "label": "黑名单" },
+      { "name": "riskScore", "type": "NUMBER", "label": "风险分" },
+      { "name": "decision", "type": "STRING", "label": "决策" },
+      { "name": "flags", "type": "LIST", "label": "风险标记" }
+    ]
+  },
+  "flow": {
+    "id": "loan_approval_flow",
+    "name": "Loan Approval",
+    "version": "1.0",
+    "flowElements": [
+      { "type": "startEvent",  "id": "start",  "name": "开始", "implementation": "Start:start", "position": { "x": 50, "y": 200 } },
+      { "type": "serviceTask", "id": "t_pre",  "name": "准入", "implementation": "RuleSet:precheck", "position": { "x": 220, "y": 200 } },
+      { "type": "serviceTask", "id": "t_risk", "name": "风险评分", "implementation": "ScoreCard:risk", "position": { "x": 400, "y": 200 } },
+      { "type": "serviceTask", "id": "t_dt",   "name": "定价", "implementation": "DecisionTable:pricing", "position": { "x": 580, "y": 200 } },
+      { "type": "endEvent",    "id": "end",    "name": "决策", "implementation": "Decision:decision", "position": { "x": 760, "y": 200 } },
+      { "type": "sequenceFlow", "id": "f1", "sourceRef": "start",  "targetRef": "t_pre" },
+      { "type": "sequenceFlow", "id": "f2", "sourceRef": "t_pre",  "targetRef": "t_risk" },
+      { "type": "sequenceFlow", "id": "f3", "sourceRef": "t_risk", "targetRef": "t_dt" },
+      { "type": "sequenceFlow", "id": "f4", "sourceRef": "t_dt",   "targetRef": "end" }
+    ]
+  },
+  "nodes": {
+    "start": { "id": "start", "type": "Start", "name": "贷款申请", "schema": "LoanApplication" },
+    "precheck": { "id": "precheck", "type": "RuleSet", "name": "准入规则", "ruleRef": "precheck.v1rs.json" },
+    "risk": { "id": "risk", "type": "ScoreCard", "name": "风险评分卡", "ruleRef": "risk.v1sc.json" },
+    "pricing": { "id": "pricing", "type": "DecisionTable", "name": "定价矩阵", "ruleRef": "pricing.v1dt.json" },
+    "decision": {
+      "id": "decision", "type": "Decision", "name": "最终决策",
+      "decisionField": "decision",
+      "outputs": ["approve", "review", "reject"],
+      "defaultOutput": "review"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "precheck",
+  "type": "RuleSet",
+  "name": "准入规则",
+  "hitPolicy": "FIRST",
+  "rules": [
+    {
+      "id": "blacklist",
+      "name": "黑名单检查",
+      "priority": 100,
+      "condition": "blacklisted == true",
+      "actions": [
+        { "type": "REJECT", "reason": "BLACKLIST" }
+      ]
+    },
+    {
+      "id": "underage",
+      "name": "年龄检查",
+      "priority": 90,
+      "condition": "age < 18",
+      "actions": [
+        { "type": "REJECT", "reason": "UNDERAGE" }
+      ]
+    },
+    {
+      "id": "pass_income",
+      "name": "收入通过",
+      "priority": 0,
+      "condition": "income >= 3000",
+      "actions": [
+        { "type": "SET_VARIABLE", "target": "flags", "value": "INCOME_OK" }
+      ]
+    }
+  ]
+}

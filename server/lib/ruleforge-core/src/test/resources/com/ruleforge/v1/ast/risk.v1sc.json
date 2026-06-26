@@ -1,0 +1,75 @@
+{
+  "id": "risk",
+  "type": "ScoreCard",
+  "name": "风险评分卡",
+  "output": "riskScore",
+  "aggregation": "SUM",
+  "cards": [
+    {
+      "id": "age_card",
+      "field": "age",
+      "weight": 1.0,
+      "bands": [
+        {
+          "id": "b1",
+          "condition": "age < 25",
+          "score": 20
+        },
+        {
+          "id": "b2",
+          "condition": "age >= 25 && age < 40",
+          "score": 40
+        },
+        {
+          "id": "b3",
+          "condition": "age >= 40",
+          "score": 30
+        }
+      ]
+    },
+    {
+      "id": "income_card",
+      "field": "income",
+      "weight": 1.0,
+      "bands": [
+        {
+          "id": "b1",
+          "condition": "income < 2000",
+          "score": -20
+        },
+        {
+          "id": "b2",
+          "condition": "income >= 2000 && income < 5000",
+          "score": 10
+        },
+        {
+          "id": "b3",
+          "condition": "income >= 5000",
+          "score": 30
+        }
+      ]
+    },
+    {
+      "id": "score_card",
+      "field": "score",
+      "weight": 1.0,
+      "bands": [
+        {
+          "id": "b1",
+          "condition": "score < 600",
+          "score": -10
+        },
+        {
+          "id": "b2",
+          "condition": "score >= 600 && score < 750",
+          "score": 10
+        },
+        {
+          "id": "b3",
+          "condition": "score >= 750",
+          "score": 20
+        }
+      ]
+    }
+  ]
+}

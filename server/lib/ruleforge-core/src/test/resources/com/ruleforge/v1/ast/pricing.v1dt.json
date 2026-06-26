@@ -1,0 +1,25 @@
+{
+  "id": "pricing",
+  "type": "DecisionTable",
+  "name": "定价矩阵",
+  "hitPolicy": "FIRST",
+  "inputs": [
+    { "name": "riskScore", "dataType": "NUMBER", "direction": "INPUT" },
+    { "name": "score", "dataType": "NUMBER", "direction": "INPUT" }
+  ],
+  "outputs": [
+    { "name": "decision", "dataType": "STRING", "direction": "OUTPUT" }
+  ],
+  "rows": [
+    {
+      "id": "r1",
+      "conditions": ["riskScore < 30", "*"],
+      "outputs": ["approve"]
+    },
+    {
+      "id": "r2",
+      "conditions": ["*", "*"],
+      "outputs": ["review"]
+    }
+  ]
+}
