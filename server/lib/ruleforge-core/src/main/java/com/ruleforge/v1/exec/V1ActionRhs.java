@@ -4,6 +4,7 @@ import com.ruleforge.action.AbstractAction;
 import com.ruleforge.action.ActionType;
 import com.ruleforge.action.ActionValue;
 import com.ruleforge.engine.Context;
+import com.ruleforge.engine.EngineContext;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.v1.ast.Action;
 import com.ruleforge.v1.ast.Schema;
@@ -75,6 +76,8 @@ public final class V1ActionRhs {
                 return new RejectAction(v1, decisionField);
             case FLAG:
                 return new FlagAction(v1, flagsField);
+            case INVOKE:
+                return new InvokeAction(v1);
             default:
                 throw new RuleException("未知 V1 action 类型: " + v1.getType());
         }
@@ -179,6 +182,60 @@ public final class V1ActionRhs {
                     ? (List<Object>) existing : new ArrayList<>();
             flags.add(v1.getReason());
             fact.put(flagsField, flags);
+            return null;
+        }
+        @Override public ActionType getActionType() { return ActionType.VariableAssign; }
+    }
+
+    /** INVOKE(al 动作库,V7.4.1b):ref="beanId.method" → 反射调 Spring bean 方法;args(字段引用/字面量)
+     *  作参数;target 可选写回 return 值。走 EngineContext.getBean(静态桥),复用老引擎 bean 注册。
+     *  自己反射(不依赖 ExecuteMethodAction values 机制),跟 V1 其他 action 一致(AbstractAction)。 */
+    private static final class InvokeAction extends AbstractAction {
+        private final Action v1;
+        private final String beanId;
+        private final String methodName;
+        InvokeAction(Action v1) {
+            this.v1 = v1;
+            String ref = v1.getRef() == null ? "" : v1.getRef();
+            int dot = ref.indexOf('.');
+            this.beanId = dot > 0 ? ref.substring(0, dot) : ref;
+            this.methodName = dot > 0 ? ref.substring(dot + 1) : "";
+        }
+        @Override public ActionValue execute(Context context, Object matchedObject, List<Object> all) {
+            Map<String, Object> fact = asMap(matchedObject);
+            Object bean = EngineContext.getBean(beanId);
+            if (bean == null) {
+                throw new RuleException("al: bean [" + beanId + "] 未注册(EngineContext.getBean 返 null)");
+            }
+            List<com.ruleforge.v1.ast.Arg> args = v1.getArgs();
+            Object[] values = new Object[args == null ? 0 : args.size()];
+            if (args != null) {
+                for (int i = 0; i < args.size(); i++) {
+                    com.ruleforge.v1.ast.Arg a = args.get(i);
+                    values[i] = a.getRef() != null ? fact.get(a.getRef()) : a.getValue();
+                }
+            }
+            try {
+                java.lang.reflect.Method method = null;
+                for (java.lang.reflect.Method m : bean.getClass().getMethods()) {
+                    if (m.getName().equals(methodName) && m.getParameterCount() == values.length) {
+                        method = m;
+                        break;
+                    }
+                }
+                if (method == null) {
+                    throw new RuleException("al: " + beanId + "." + methodName + "(" + values.length + " args) 未找到");
+                }
+                Object ret = method.invoke(bean, values);
+                if (v1.getTarget() != null && ret != null) {
+                    fact.put(v1.getTarget(), ret);
+                }
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                Throwable cause = e.getTargetException();
+                throw new RuleException(cause instanceof Exception ? (Exception) cause : new RuntimeException(cause));
+            } catch (Exception e) {
+                throw new RuleException(e);
+            }
             return null;
         }
         @Override public ActionType getActionType() { return ActionType.VariableAssign; }

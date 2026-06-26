@@ -17,5 +17,7 @@ public enum ActionType {
     ADD_SCORE,
     SET_DECISION,
     REJECT,
-    FLAG
+    FLAG,
+    /** V7.4.1b:al 动作库 — 调 Spring bean 方法(ref="beanId.method",args=参数,target 可选写回 return)。 */
+    INVOKE
 }

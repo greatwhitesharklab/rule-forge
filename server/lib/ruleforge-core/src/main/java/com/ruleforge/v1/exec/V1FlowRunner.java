@@ -17,6 +17,8 @@ import com.ruleforge.v1.ast.ScoreCardNode;
 import com.ruleforge.v1.ast.SequenceFlow;
 import com.ruleforge.v1.ast.ServiceTask;
 import com.ruleforge.v1.ast.StartEvent;
+import com.ruleforge.v1.ast.library.Libraries;
+import com.ruleforge.v1.ast.library.V1LibraryResolver;
 import com.ruleforge.v1.cel.CelEngine;
 
 import java.util.ArrayList;
@@ -58,7 +60,21 @@ public final class V1FlowRunner {
 
     /** 执行整个 RuleAsset flow。输入 fact Map(会原地修改并加决策结果)。返回 FlowResult。 */
     public static FlowResult execute(RuleAsset asset, Map<String, Object> inputFact) {
-        return execute(asset, inputFact, null);
+        return execute(asset, inputFact, (Map<String, Object>) null);
+    }
+
+    /**
+     * 执行 flow + 四库(V7.4.1)。vl 库按 {@link RuleAsset#getSchemaRef()} 派生 Schema(真共享),
+     * pl/cl 库 → 会话参数 Map(喂 fireRules);al 留 V7.4.1 al 实施。
+     */
+    public static FlowResult execute(RuleAsset asset, Map<String, Object> inputFact, Libraries libraries) {
+        if (libraries != null && libraries.getVl() != null && asset.getSchemaRef() != null) {
+            asset.setSchema(V1LibraryResolver.deriveSchema(libraries.getVl()));
+        }
+        Map<String, Object> parameters = V1LibraryResolver.deriveParameters(
+                libraries == null ? null : libraries.getPl(),
+                libraries == null ? null : libraries.getCl());
+        return execute(asset, inputFact, parameters);
     }
 
     /**

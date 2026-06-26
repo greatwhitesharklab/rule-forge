@@ -4,6 +4,11 @@ import com.ruleforge.model.GeneralEntity;
 import com.ruleforge.rete.test.EngineContextWirer;
 import com.ruleforge.v1.ast.RuleAsset;
 import com.ruleforge.v1.ast.RuleAssetIO;
+import com.ruleforge.v1.ast.V1DataType;
+import com.ruleforge.v1.ast.library.Library;
+import com.ruleforge.v1.ast.library.LibraryEntry;
+import com.ruleforge.v1.ast.library.LibraryType;
+import com.ruleforge.v1.ast.library.Libraries;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -91,5 +96,54 @@ class V1FlowRunnerParameterTest {
         p.put("minScore", 50);
         assertThat(V1FlowRunner.execute(constAsset, fact(60), p).decision).isEqualTo("approve");
         assertThat(V1FlowRunner.execute(constAsset, fact(40), p).decision).isEqualTo("review");
+    }
+
+    // Given vl 库(字段定义)+ pl 库(阈值)+ RuleAsset.schemaRef When 执行 Then vl 派生 schema(非内嵌)+ pl 引用
+    @Test
+    @DisplayName("vl 真共享:schemaRef 从 vl 库派生 fact schema(清内嵌 schema,字段来自 vl)")
+    void vl_真共享_派生schema() {
+        Library vl = new Library();
+        vl.setType(LibraryType.VARIABLE);
+        vl.setName("LoanApplication");
+        vl.setEntries(java.util.Arrays.asList(
+                new LibraryEntry("riskScore", null, V1DataType.NUMBER, "风险分"),
+                new LibraryEntry("decision", null, V1DataType.STRING, "决策")));
+        Library pl = new Library();
+        pl.setType(LibraryType.PARAMETER);
+        pl.setEntries(java.util.Arrays.asList(new LibraryEntry("riskThreshold", 55, V1DataType.NUMBER, "阈值")));
+        Libraries libs = new Libraries();
+        libs.setVl(vl);
+        libs.setPl(pl);
+        // 清内嵌 schema,强制 vl 派生(模拟跨流程共享 vl,RuleAsset 只有 schemaRef)
+        asset.setSchema(null);
+        asset.setSchemaRef("vl_loan");
+        assertThat(V1FlowRunner.execute(asset, fact(60), libs).decision).isEqualTo("approve");
+        assertThat(V1FlowRunner.execute(asset, fact(50), libs).decision).isEqualTo("review");
+    }
+
+    // Given al 测试 bean(calcBean.compute)注册 + 规则 INVOKE When riskScore=60 param.threshold=50 Then
+    // 命中 → INVOKE calcBean.compute(60)=70 → 写回 fact[adjustedScore]=70
+    @Test
+    @DisplayName("al INVOKE 调 bean 方法(calcBean.compute)写回 target")
+    void al_invoke_调bean方法() throws Exception {
+        EngineContextWirer.registerTestBean("calcBean", new TestCalcBean());
+        RuleAsset alAsset;
+        try (InputStream in = V1FlowRunnerParameterTest.class.getResourceAsStream(
+                "/com/ruleforge/v1/ast/al_loan.json")) {
+            assertThat(in).as("al_loan.json 测试资源存在").isNotNull();
+            alAsset = RuleAssetIO.read(in);
+        }
+        Map<String, Object> p = new HashMap<>();
+        p.put("threshold", 50);
+        V1FlowRunner.FlowResult r = V1FlowRunner.execute(alAsset, fact(60), p);
+        // condition riskScore(60)>=param.threshold(50) 命中 → INVOKE compute(60)=70 → adjustedScore=70
+        assertThat(r.fact.get("adjustedScore")).isEqualTo(70);
+    }
+
+    /** al 测试 bean:compute(x)=x+10(模拟 @ActionBean Spring bean 方法,生产用 @Service 注册)。 */
+    public static class TestCalcBean {
+        public int compute(int x) {
+            return x + 10;
+        }
     }
 }

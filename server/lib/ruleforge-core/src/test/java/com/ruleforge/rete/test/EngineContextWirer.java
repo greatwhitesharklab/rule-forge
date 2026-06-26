@@ -45,7 +45,15 @@ import java.util.Collections;
  */
 public final class EngineContextWirer {
 
+    /** V7.4.1b:测试 bean registry(al INVOKE 用);测试 registerTestBean,生产走 Spring @ActionBean 自动注册。 */
+    private static final java.util.Map<String, Object> TEST_BEANS = new java.util.HashMap<>();
+
     private EngineContextWirer() {
+    }
+
+    /** 注册测试 bean(al INVOKE 的 EngineContext.getBean 取)。 */
+    public static void registerTestBean(String id, Object bean) {
+        TEST_BEANS.put(id, bean);
     }
 
     /**
@@ -99,7 +107,7 @@ public final class EngineContextWirer {
             @Override public Collection<DebugWriter> getDebugWriters() { return noDebugWriters; }
             @Override public AssertorEvaluator getAssertorEvaluator() { return realEvaluator; }
             @Override public ValueCompute getValueCompute() { return realValueCompute; }
-            @Override public Object getBean(String beanId) { return null; }
+            @Override public Object getBean(String beanId) { return TEST_BEANS.get(beanId); }
         };
         EngineContext.init(registry);
     }
