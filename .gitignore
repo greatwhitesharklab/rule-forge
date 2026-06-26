@@ -23,6 +23,8 @@ test-results/
 __pycache__/
 *.pyc
 .venv/
+# model-service 运行数据(test 模型/metadata,运行生成)
+model-service/data/
 
 # === Java class(root 误生成兜底)===
 *.class
