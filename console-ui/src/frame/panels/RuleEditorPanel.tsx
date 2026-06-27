@@ -63,7 +63,7 @@ export default class RuleEditorPanel extends Component<RuleEditorPanelProps, Rul
 
     _selectProject(name: string) {
         this.props.store.dispatch(ACTIONS.setProjectName(name));
-        this.setState({selectedProject: name});
+        this.setState({selectedProject: name, dropdownOpen: false});
         (this.props.store.dispatch as Function)(ACTIONS.loadData(true, name));
         this.props.eventObj.eventEmitter.emit(this.props.eventObj.PROJECT_FILTER_CHANGE, name);
     }
