@@ -1,7 +1,7 @@
 package com.ruleforge.console.controller.v1;
 
 import com.ruleforge.console.app.v1.V1PublishService;
-import com.ruleforge.console.app.v1.V1PublishedBundle;
+import com.ruleforge.v1.exec.V1PublishedBundle;
 import com.ruleforge.console.model.User;
 import com.ruleforge.console.util.EnvironmentUtils;
 import org.springframework.http.ResponseEntity;

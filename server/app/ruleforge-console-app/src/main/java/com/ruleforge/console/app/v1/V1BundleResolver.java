@@ -2,6 +2,7 @@ package com.ruleforge.console.app.v1;
 
 import com.ruleforge.console.entity.FileEntity;
 import com.ruleforge.console.entity.ProjectEntity;
+import com.ruleforge.v1.exec.V1PublishedBundle;
 import com.ruleforge.console.repository.data.FileRepository;
 import com.ruleforge.console.repository.data.ProjectRepository;
 import com.ruleforge.console.service.RuleForgeRepositoryService;
