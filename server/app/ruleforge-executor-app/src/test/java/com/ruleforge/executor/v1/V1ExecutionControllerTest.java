@@ -74,7 +74,7 @@ class V1ExecutionControllerTest {
             V1ExecutionController controller = new V1ExecutionController(provider);
 
             assertThatThrownBy(() -> controller.exec("/p/x.v1flow.json", new HashMap<>()))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
                     .hasMessageContaining("未发布");
         }
 

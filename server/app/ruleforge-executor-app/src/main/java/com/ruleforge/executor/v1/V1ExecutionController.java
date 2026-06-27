@@ -2,6 +2,8 @@ package com.ruleforge.executor.v1;
 
 import com.ruleforge.v1.exec.V1FlowRunner;
 import com.ruleforge.v1.exec.V1PublishedBundle;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,7 +39,9 @@ public class V1ExecutionController {
                                          @RequestBody(required = false) Map<String, Object> fact) {
         V1PublishedBundle bundle = resourceProvider.fetchBundle(flow);
         if (bundle == null) {
-            throw new IllegalArgumentException("决策流未发布或拉取失败 [" + flow + "] — 先在 console 发布");
+            // 4xx(非 500):未发布是客户端可纠正状态(去 console 发布),非服务端故障
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "决策流未发布或拉取失败 [" + flow + "] — 先在 console 发布");
         }
         return V1FlowRunner.execute(bundle.getAsset(), fact, bundle.getLibraries(), bundle.getRuleFiles());
     }
