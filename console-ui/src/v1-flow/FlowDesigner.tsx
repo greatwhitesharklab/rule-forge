@@ -14,8 +14,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {Layout, Menu, Button, Space, Typography, Input, Drawer, Modal, message, theme} from 'antd';
-import {UploadOutlined, SaveOutlined, FolderOpenOutlined} from '@ant-design/icons';
-import {formPost, jsonPost} from '@/api/client';
+import {UploadOutlined, SaveOutlined, FolderOpenOutlined, CloudUploadOutlined} from '@ant-design/icons';
+import {formPost, jsonPost, httpGet} from '@/api/client';
 import {nodeTypes, PALETTE, type V1NodeData} from './FlowNodes';
 import {type RuleAsset, type FlowElement, type V1Node, type NodeType} from './ruleAsset';
 import NodePropertyDrawer from './NodePropertyDrawer';
@@ -132,6 +132,33 @@ export default function FlowDesigner({file}: {file?: string}) {
     const [runOpen, setRunOpen] = useState(false);
     const [runFact, setRunFact] = useState('{\n  "age": 30\n}');
     const [runResult, setRunResult] = useState<V1ExecutionResponse | null>(null);
+    /** V7.6:当前决策流的已发布版本号(null = 草稿/未发布)。加载/发布后刷新。 */
+    const [publishedVersion, setPublishedVersion] = useState<string | null>(null);
+
+    /** V7.6:刷新决策流的已发布状态(GET /v1/publish/status → publishedVersion)。 */
+    const refreshPublishStatus = useCallback((flow: string) => {
+        if (!flow) {
+            setPublishedVersion(null);
+            return;
+        }
+        httpGet<{ status: string; currentVersion: string | null }>('/v1/publish/status?flow=' + encodeURIComponent(flow))
+            .then((res) => setPublishedVersion(res.status === 'published' ? res.currentVersion : null))
+            .catch(() => setPublishedVersion(null));
+    }, []);
+
+    /** V7.6:发布决策流(POST /v1/publish → 后端冻结闭包 bundle + git tag)。 */
+    const publishFlow = useCallback(() => {
+        if (!filePath) {
+            message.error('先加载或输入决策流路径(顶部路径框)');
+            return;
+        }
+        formPost<{ version: string; status: string }>('/v1/publish', {flow: filePath})
+            .then((res) => {
+                setPublishedVersion(res.version);
+                message.success(`已发布 v${res.version}`);
+            })
+            .catch(() => message.error('发布失败(后端未运行/未登录,或闭包解析失败 — 检查 ruleRef/库文件)'));
+    }, [filePath]);
 
     /** 挂载时若有 file(从项目树进入),按 file 加载 RuleAsset → 画布。 */
     useEffect(() => {
@@ -142,6 +169,7 @@ export default function FlowDesigner({file}: {file?: string}) {
                 const asset = JSON.parse(res.content) as RuleAsset;
                 const st = fromRuleAsset(asset);
                 setNodes(st.nodes); setEdges(st.edges); setNodesMap(st.nodesMap); setSchemaName(st.schemaName);
+                refreshPublishStatus(file);
                 message.success(`加载 ${file}:${st.nodes.length} 节点`);
             })
             .catch(() => message.error('加载失败(后端未运行或文件不存在)'));
@@ -267,6 +295,10 @@ export default function FlowDesigner({file}: {file?: string}) {
                     <Input size='small' placeholder='后端路径 /proj/x.json' value={filePath} onChange={(e) => setFilePath(e.target.value)} style={{width: 180}}/>
                     <Button size='small' icon={<FolderOpenOutlined/>} onClick={loadFromBackend}>加载</Button>
                     <Button size='small' icon={<SaveOutlined/>} onClick={saveToBackend}>保存</Button>
+                    <Button size='small' color='blue' variant='solid' icon={<CloudUploadOutlined/>} onClick={publishFlow} data-testid='v1-publish-btn'>发布</Button>
+                    {publishedVersion
+                        ? <Text type='success' style={{fontSize: 12}} data-testid='v1-published-tag'>已发布 v{publishedVersion}</Text>
+                        : <Text type='secondary' style={{fontSize: 12}}>草稿</Text>}
                     <Button size='small' type='primary' onClick={exportJson}>导出 .json</Button>
                     <Button size='small' color='green' variant='solid' onClick={() => { setRunResult(null); setRunOpen(true); }}>运行</Button>
                 </Space>

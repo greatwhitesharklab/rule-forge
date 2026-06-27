@@ -478,9 +478,6 @@ let _getState: Function = () => ({ui: {}});
 // 这避免了把临时剪贴板状态挂在 window 全局对象上。
 let _cutFileData: TreeNodeData | null = null;
 let _copyFileData: TreeNodeData | null = null;
-// Track whether the current buildData invocation has a user argument
-let _hasUser: boolean = false;
-
 function buildData(data: TreeNodeData, level: number): void;
 function buildData(data: TreeNodeData, level: number, user: { import: boolean; export: boolean }): void;
 function buildData(data: TreeNodeData, level: number, user?: { import: boolean; export: boolean }): void {
@@ -751,8 +748,8 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             break;
         // V7.5:V1 决策表容器 → 添加决策表文件
         case "v1decisiontableLib":
-            data._icon = Styles.frameStyle.getTableIcon();
-            data._style = Styles.frameStyle.getTableIconStyle();
+            data._icon = Styles.frameStyle.getDecisionTableIcon();
+            data._style = Styles.frameStyle.getDecisionTableIconStyle();
             data.contextMenu = [
                 {
                     name: '添加目录',
@@ -763,7 +760,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                 },
                 {
                     name: '添加 V1 决策表',
-                    icon: Styles.frameStyle.getTableIcon(),
+                    icon: Styles.frameStyle.getDecisionTableIcon(),
                     click: function () {
                         event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'V1DecisionTable', nodeData: data});
                     }
@@ -772,8 +769,8 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             break;
         // V7.5:V1 决策表文件(.v1dt.json) → 走决策表编辑器(handleFileOpen → /app/v1-decisiontable)
         case "v1decisiontable":
-            data._icon = Styles.frameStyle.getTableIcon();
-            data._style = Styles.frameStyle.getTableIconStyle();
+            data._icon = Styles.frameStyle.getDecisionTableIcon();
+            data._style = Styles.frameStyle.getDecisionTableIconStyle();
             data.contextMenu = buildFileContextMenu();
             break;
         // V7.5:V1 评分卡容器 → 添加评分卡文件

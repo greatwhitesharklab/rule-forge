@@ -27,7 +27,9 @@ import javax.sql.DataSource;
         "com.ruleforge.console.app.draft",
         // V5.53: Agent audit mapper(nd_agent_audit)— V5.22 写的 mapper 类
         //   AgentAuditService / ToolExecutor 都强依赖,scan 不进来 Spring context refresh fail
-        "com.ruleforge.console.app.agent.audit"
+        "com.ruleforge.console.app.agent.audit",
+        // V7.6: V1 原生发布 mapper(rf_v1_publish)
+        "com.ruleforge.console.app.v1"
 }, sqlSessionFactoryRef = "ruleforgeSqlSessionFactory")
 public class MybatisPlusConfig {
 
