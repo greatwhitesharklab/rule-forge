@@ -2,6 +2,7 @@ package com.ruleforge.console.app.v1;
 
 import com.ruleforge.console.app.v1.V1PublishEntity;
 import com.ruleforge.console.storage.GitStorageService;
+import com.ruleforge.v1.exec.V1PublishedBundle;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.v1.ast.RuleAssetIO;
 import org.slf4j.Logger;
