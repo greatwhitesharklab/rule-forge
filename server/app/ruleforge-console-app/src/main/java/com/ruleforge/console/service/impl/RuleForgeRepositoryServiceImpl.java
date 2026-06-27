@@ -1706,6 +1706,7 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
 
         List<FileEntity> fileEntityList = this.fileRepository.findChildrenByAncestor(parentFile.getId());
         fileEntityList.forEach(fileNode -> {
+            if (fileNode == null) return;
             if (fileNode.getFileType() < 0) {
                 FileType detected = FileTypeUtils.getFileTypeByFileName(fileNode.getName());
                 if (detected != null) {
