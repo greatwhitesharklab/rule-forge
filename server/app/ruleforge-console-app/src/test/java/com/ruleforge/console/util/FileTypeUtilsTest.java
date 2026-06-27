@@ -68,4 +68,65 @@ class FileTypeUtilsTest {
     void jsonExtensionMapsToTypeV1Flow() {
         assertThat(FileTypeUtils.mapFileNameToType("/proj/loan_approval.json")).isEqualTo(Type.v1flow);
     }
+
+    // ---- V7.7.1:isV1JsonAsset(/common/saveFile 跳过 XML 校验用)----
+
+    @Test
+    @DisplayName("isV1JsonAsset:V1 双后缀文件 → true")
+    void v1DoubleSuffixJsonAssets() {
+        assertThat(FileTypeUtils.isV1JsonAsset("/p/V1决策流/loan.v1flow.json")).isTrue();
+        assertThat(FileTypeUtils.isV1JsonAsset("/p/V1库/lib.v1lib.json")).isTrue();
+        assertThat(FileTypeUtils.isV1JsonAsset("/p/V1规则集/pre.v1rs.json")).isTrue();
+        assertThat(FileTypeUtils.isV1JsonAsset("/p/V1决策表/dt.v1dt.json")).isTrue();
+        assertThat(FileTypeUtils.isV1JsonAsset("/p/V1评分卡/sc.v1sc.json")).isTrue();
+    }
+
+    @Test
+    @DisplayName("isV1JsonAsset:.json 兼容旧 → true")
+    void bareJsonCompatTrue() {
+        assertThat(FileTypeUtils.isV1JsonAsset("/proj/loan_approval.json")).isTrue();
+    }
+
+    @Test
+    @DisplayName("isV1JsonAsset:老 XML 规则文件 → false(仍走 XML 校验)")
+    void oldXmlRuleFilesFalse() {
+        assertThat(FileTypeUtils.isV1JsonAsset("/p/x.rs.xml")).isFalse();
+        assertThat(FileTypeUtils.isV1JsonAsset("/p/x.dt.xml")).isFalse();
+        assertThat(FileTypeUtils.isV1JsonAsset("/p/x.sc")).isFalse();
+        assertThat(FileTypeUtils.isV1JsonAsset("/p/r.drl")).isFalse();
+    }
+
+    // ---- V7.7.1:isJsonContent(V1 文件 createFile 落 DB 无后缀,补 content sniff)----
+
+    @Test
+    @DisplayName("isJsonContent:JSON 对象字面量 → true")
+    void jsonObjectLiteral() {
+        assertThat(FileTypeUtils.isJsonContent("{\"id\":\"demo\"}")).isTrue();
+    }
+
+    @Test
+    @DisplayName("isJsonContent:JSON 数组字面量 → true")
+    void jsonArrayLiteral() {
+        assertThat(FileTypeUtils.isJsonContent("[1,2,3]")).isTrue();
+    }
+
+    @Test
+    @DisplayName("isJsonContent:前导空白 → true")
+    void jsonWithLeadingWhitespace() {
+        assertThat(FileTypeUtils.isJsonContent("  \n\t{\"a\":1}")).isTrue();
+    }
+
+    @Test
+    @DisplayName("isJsonContent:XML 头 → false")
+    void xmlContentFalse() {
+        assertThat(FileTypeUtils.isJsonContent("<?xml version=\"1.0\"?>")).isFalse();
+        assertThat(FileTypeUtils.isJsonContent("<rule-set/>")).isFalse();
+    }
+
+    @Test
+    @DisplayName("isJsonContent:null/空 → false")
+    void jsonNullOrEmpty() {
+        assertThat(FileTypeUtils.isJsonContent(null)).isFalse();
+        assertThat(FileTypeUtils.isJsonContent("")).isFalse();
+    }
 }

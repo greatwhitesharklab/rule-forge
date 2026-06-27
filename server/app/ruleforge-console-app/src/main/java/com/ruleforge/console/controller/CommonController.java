@@ -32,6 +32,7 @@ import com.ruleforge.console.storage.GitStorageService;
 import com.ruleforge.console.util.CompareUtils;
 import com.ruleforge.console.util.EnvironmentUtils;
 import com.ruleforge.console.util.FileUploadUtils;
+import com.ruleforge.console.util.FileTypeUtils;
 import com.ruleforge.console.util.VersionUtils;
 import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
@@ -420,7 +421,16 @@ public class CommonController extends BaseController {
             // dslRuleSetBuilder.support() / .build() 校验 .ul 老格式语法。
             // .ul 资源跟 .xml 老格式一样,fall through 到 deserializer 链(无 match
             // 静默跳过 — 跟 V5.43 行为一致,不抛错)。
-            {
+            //
+            // V7.7.1:V1 JSON 资产(.v1flow.json/.v1lib.json/.v1rs.json/.v1dt.json/.v1sc.json,含 .json 兼容)
+            // 跳过 parseXml + deserializer XML 校验 —— JSON 走 parseXml 必抛错,老 catch 会返
+            // status:false 永不存(V7.7 E2E 发现:V1 画布保存静默失败,发布 bundle 是模板非编辑)。
+            // V1 文件直接存,XML 校验只对老 .rs.xml/.dt.xml 等规则格式生效。
+            //
+            // V1 文件 createFile 落 DB 时**不带后缀**(`/proj/demo` 而非 `/proj/demo.v1flow.json`),
+            // 纯靠路径识别不全,补 content sniff:content 头是 `{` 或 `[` 即 JSON → 跳 XML。
+            boolean skipXml = FileTypeUtils.isV1JsonAsset(file) || FileTypeUtils.isJsonContent(content);
+            if (!skipXml) {
                 InputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
                 Element element = parseXml(inputStream);
                 for (Deserializer<?> des : deserializers) {
