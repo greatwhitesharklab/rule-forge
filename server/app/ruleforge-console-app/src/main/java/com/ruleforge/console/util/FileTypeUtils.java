@@ -72,6 +72,42 @@ public class FileTypeUtils {
     }
 
     /**
+     * 是否 V1 JSON 资产(`.v1flow.json`/`.v1lib.json`/`.v1rs.json`/`.v1dt.json`/`.v1sc.json`,含 `.json` 兼容旧)。
+     *
+     * <p>V1 文件是 JSON(非老 XML 规则),{@code /common/saveFile} 的 {@code parseXml} + deserializer
+     * XML 校验对 JSON 必抛错 → 静默不存(V7.7 E2E 发现的 bug)。V1 文件经此判定后跳过 XML 校验直接存。
+     */
+    public static boolean isV1JsonAsset(String name) {
+        FileType ft = getFileTypeByFileName(name);
+        return ft == FileType.V1Flow || ft == FileType.V1Library
+                || ft == FileType.V1RuleSet || ft == FileType.V1DecisionTable
+                || ft == FileType.V1ScoreCard;
+    }
+
+    /**
+     * 是否 JSON 内容(以 {@code {} 或 [] 开头,空白后第一个非空字符是 {@code {} 或 {@code [})。
+     *
+     * <p>V7.7.1 {@link #isV1JsonAsset(String)} 只看路径后缀;但 V1 文件存在 createFile 落 DB
+     * 时**不带后缀**(`/proj/demo` 而非 `/proj/demo.v1flow.json`)— 后端 createFile
+     * 不会补 {@code .json}。前端 saveFile 传的 path 也常无后缀。靠路径识别不全,补一道
+     * content sniff:V1 资产都是 JSON,JSON 头必是 {@code {} 或 {@code [}。
+     * {@code /common/saveFile} 遇到 JSON 内容直接跳过 XML 校验。
+     */
+    public static boolean isJsonContent(String content) {
+        if (content == null || content.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < content.length(); i++) {
+            char c = content.charAt(i);
+            if (Character.isWhitespace(c)) {
+                continue;
+            }
+            return c == '{' || c == '[';
+        }
+        return false;
+    }
+
+    /**
      * 根据文件名映射到对应的文件类型
      *
      * @param name 文件名
