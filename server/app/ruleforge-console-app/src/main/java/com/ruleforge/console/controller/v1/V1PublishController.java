@@ -7,9 +7,13 @@ import com.ruleforge.console.util.EnvironmentUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * V1 原生发布 REST 端点(V7.6)— 替代老 .rp 知识包发布管线。
@@ -55,5 +59,17 @@ public class V1PublishController {
     @GetMapping("/status")
     public V1PublishService.PublishStatus status(@RequestParam("flow") String flow) {
         return publishService.status(flow);
+    }
+
+    /**
+     * V7.7.2:批量查发布状态(树节点 published 徽标用)。
+     * POST body: {@code ["path1","path2",...]} → 返 {@code Map<flowPath, PublishStatus>}。
+     * 单 SQL 查全项目 V1 节点状态,避免每个节点单独调 GET /status 的 N+1。
+     */
+    @PostMapping("/status-batch")
+    public Map<String, V1PublishService.PublishStatus> statusBatch(
+            @RequestParam("project") String project,
+            @RequestBody List<String> flowPaths) {
+        return publishService.statusBatch(project, flowPaths);
     }
 }

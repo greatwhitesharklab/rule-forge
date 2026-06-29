@@ -22,7 +22,7 @@ const ConstantEditorRoute = lazy(() => import('@/constant/EditorRoute'));
 const ParameterEditorRoute = lazy(() => import('@/parameter/EditorRoute'));
 const ActionEditorRoute = lazy(() => import('@/action/EditorRoute'));
 const ResourceEditorRoute = lazy(() => import('@/resource/EditorRoute'));
-const PackageEditorRoute = lazy(() => import('@/package/EditorRoute'));
+// V7.7.2:PackageEditorRoute 删除 — 老 .rp 知识包编辑器废弃,V1 决策流走 V1FlowDesigner。
 const ClientEditorRoute = lazy(() => import('@/client/EditorRoute'));
 const PermissionEditorRoute = lazy(() => import('@/permission/EditorRoute'));
 const DrlEditorRoute = lazy(() => import('@/editor/drleditor/EditorRoute'));
@@ -55,7 +55,7 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="editor/parameter" element={<ParameterEditorRoute/>}/>
                 <Route path="editor/action" element={<ActionEditorRoute/>}/>
                 <Route path="editor/resource" element={<ResourceEditorRoute/>}/>
-                <Route path="editor/package" element={<PackageEditorRoute/>}/>
+                {/* V7.7.2:editor/package 路由删除(.rp 废弃) */}
                 <Route path="editor/client" element={<ClientEditorRoute/>}/>
                 <Route path="editor/permission" element={<PermissionEditorRoute/>}/>
                 <Route path="editor/drl" element={<DrlEditorRoute/>}/>

@@ -15,4 +15,14 @@ public interface V1PublishMapper extends BaseMapper<V1PublishEntity> {
 
     @Select("SELECT * FROM rf_v1_publish WHERE project = #{project} AND flow_path = #{flowPath} LIMIT 1")
     V1PublishEntity selectByFlow(@Param("project") String project, @Param("flowPath") String flowPath);
+
+    /**
+     * V7.7.2:批量查发布状态(树节点徽标用,避免 N+1)。
+     * MyBatis foreach 在 @Select 注解里展开成 IN (...) 子句。
+     */
+    @Select("<script>SELECT * FROM rf_v1_publish WHERE project = #{project} AND flow_path IN " +
+            "<foreach collection='flowPaths' item='p' open='(' separator=',' close=')'>" +
+            "#{p}</foreach></script>")
+    java.util.List<V1PublishEntity> selectByFlows(@Param("project") String project,
+                                                   @Param("flowPaths") java.util.List<String> flowPaths);
 }

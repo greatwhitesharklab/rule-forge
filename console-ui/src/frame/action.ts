@@ -1,5 +1,5 @@
 import Styles from '../Styles.js';
-import {formPost, apiBase} from '../api/client.js';
+import {formPost, jsonPost, apiBase} from '../api/client.js';
 import * as event from './event.js';
 import * as componentEvent from '../components/componentEvent.js';
 
@@ -313,6 +313,41 @@ export function loadData(classify?: boolean | null, projectName?: string | null,
             dispatch({data: treeData, publicResource: publicResource, type: LOAD_END});
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
 
+            // V7.7.2:树节点 published 徽标 — 收集项目下所有 V1 节点 fullPath,
+            // 单次 POST /v1/publish/status-batch 拿发布状态,回填 _publishedVersion /
+            // _publishedStatus,FileTreeNode 据此渲染 "已发布 vX.X.X" 徽标。
+            // 非 V1 节点忽略。
+            const v1Types = new Set(['v1flow', 'v1library', 'v1ruleset', 'v1decisiontable', 'v1scorecard']);
+            const v1Paths: string[] = [];
+            function collectV1Paths(node: TreeNodeData | null) {
+                if (!node) return;
+                if (v1Types.has(node.type)) v1Paths.push(node.fullPath);
+                if (node.children) node.children.forEach(collectV1Paths);
+            }
+            collectV1Paths(treeData);
+            if (targetProject && v1Paths.length > 0) {
+                jsonPost<Record<string, {status: string; currentVersion: string | null; publishTime: string | null}>>(
+                    '/v1/publish/status-batch?project=' + encodeURIComponent(targetProject),
+                    v1Paths
+                ).then((statusMap) => {
+                    if (requestId !== _loadDataRequestId) return;
+                    if (!statusMap) return;
+                    function enrich(node: TreeNodeData | null) {
+                        if (!node) return;
+                        if (v1Types.has(node.type)) {
+                            const s = statusMap[node.fullPath];
+                            if (s) {
+                                node._publishedStatus = s.status;
+                                node._publishedVersion = s.currentVersion;
+                            }
+                        }
+                        if (node.children) node.children.forEach(enrich);
+                    }
+                    enrich(treeData);
+                    dispatch({data: treeData, publicResource: publicResource, type: LOAD_END});
+                }).catch(() => { /* ignore: published 徽标 best-effort,失败不阻塞树 */ });
+            }
+
             // 控制所有节点显示
             const spanEl = document.getElementById('node-' + rootFile.id);
             if (spanEl) {
@@ -456,9 +491,7 @@ export function buildType(fileType: string): string {
         case "json":
             type = "V1 决策流";
             break;
-        case "rp":
-            type = 'package';
-            break;
+        // V7.7.2:"rp" case 删除 — 老 .rp 知识包废弃
     }
     if (!type) {
         const info = "Unknow file type :" + fileType;
@@ -565,29 +598,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._style = Styles.frameStyle.getFolderIconStyle();
             data.contextMenu = buildFullContextMenu(true, data.folderType);
             break;
-        case "resourcePackage":
-            data._icon = Styles.frameStyle.getResourcePackageIcon();
-            data._style = Styles.frameStyle.getResourcePackageIconStyle();
-            data.contextMenu = [
-                {
-                    name: '查看源码',
-                    icon: 'rf rf-code',
-                    click: function (data: TreeNodeData, dispatch: Function) {
-                        // V5.74.3:seeFileSource 是 thunk,需 dispatch 触发(getState 读 currentGitTag)
-                        dispatch(seeFileSource(data));
-                    }
-                },
-                {
-                    name: '查看版本信息',
-                    icon: 'rf rf-version',
-                    click: function (data: TreeNodeData) {
-                        data['rpp'] = data['fullPath'].split('/')[1];
-                        data['page'] = 1;
-                        seeFileVersions(data);
-                    }
-                }
-            ];
-            break;
+        // V7.7.2:"resourcePackage" case 删除 — 老 .rp 知识包节点废弃
         case "lib":
             data._icon = Styles.frameStyle.getLibIcon();
             data._style = Styles.frameStyle.getLibIconStyle();
