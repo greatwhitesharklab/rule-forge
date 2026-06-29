@@ -1,5 +1,5 @@
 import React from 'react';
-import {Dropdown} from 'antd';
+import {Dropdown, Tag} from 'antd';
 import {EllipsisOutlined} from '@ant-design/icons';
 import {contextMenuToAntItems, highlight} from './treeDataUtils';
 
@@ -33,6 +33,12 @@ export default function FileTreeNode({data, dispatch, readOnly, searchTerm}: Fil
         <div className="rf-tree-node" title={data.lock ? data.lockInfo : undefined}>
             <i className={data._icon as string} style={data._style as React.CSSProperties}/>
             <span className="rf-tree-label">{highlight(data.name, searchTerm)}</span>
+            {/* V7.7.2:已发布 V1 节点绿色徽标(单 SQL 批量查,V1 publish 后状态回填) */}
+            {data._publishedStatus === 'published' && data._publishedVersion && (
+                <Tag color="green" className="rf-tree-published-badge">
+                    {`已发布 v${String(data._publishedVersion)}`}
+                </Tag>
+            )}
             {data.lock && <i className="rf rf-lock rf-tree-lock"/>}
             {hasMenu && (
                 <Dropdown trigger={['click']} menu={menuProps}>

@@ -28,7 +28,6 @@ import com.ruleforge.model.scorecard.runtime.ScoreRule;
 import com.ruleforge.model.table.DecisionTable;
 import com.ruleforge.model.table.ScriptDecisionTable;
 import com.ruleforge.engine.KnowledgePackageWrapper;
-import com.ruleforge.runtime.service.KnowledgePackageService;
 import lombok.Setter;
 import org.dom4j.Element;
 
@@ -77,17 +76,8 @@ public class KnowledgeBuilder extends AbstractBuilder {
     }
 
     public KnowledgeBase buildKnowledgeBase(ResourceBase resourceBase) throws RuleException {
-        KnowledgePackageService knowledgePackageService = null;
-        try {
-            knowledgePackageService = (KnowledgePackageService) this.pluginRegistry.getBean("ruleforgeKnowledgePackageService");
-        } catch (Exception ignored) {
-        }
-        if (knowledgePackageService == null) {
-            try {
-                knowledgePackageService = (KnowledgePackageService) this.pluginRegistry.getBean("ruleforge.knowledgePackageService");
-            } catch (Exception ignored) {
-            }
-        }
+        // V7.7.2:KnowledgePackageService plugin lookup 删除 — 老 .rp 包构建已废弃,
+        // V1 决策流走自己的 V1FlowRunner,不走 KnowledgeBuilder 路径。
         List<Rule> rules = new ArrayList<>();
         Map<String, Library> libMap = new HashMap<>();
 

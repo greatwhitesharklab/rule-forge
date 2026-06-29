@@ -93,6 +93,34 @@ public class V1PublishService {
         return new PublishStatus("published", row.getCurrentVersion(), row.getPublishTime());
     }
 
+    /**
+     * 批量发布状态查询(V7.7.2)— 树节点 published 徽标用,避免 N+1 调用。
+     *
+     * <p>对每个 flowPath 返 {@link PublishStatus}:已发布的返 {@code status=published, currentVersion=...},
+     * 未发布的返 {@code status=draft, currentVersion=null}。flowPaths 为空返空 Map。
+     *
+     * <p>单 SQL 查所有路径,前端一次性拿到全项目 V1 节点状态。
+     */
+    public java.util.Map<String, PublishStatus> statusBatch(String project, java.util.List<String> flowPaths) {
+        if (flowPaths == null || flowPaths.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        java.util.List<V1PublishEntity> rows = publishMapper.selectByFlows(project, flowPaths);
+        java.util.Map<String, PublishStatus> result = new java.util.HashMap<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (V1PublishEntity r : rows) {
+            result.put(r.getFlowPath(),
+                    new PublishStatus("published", r.getCurrentVersion(), r.getPublishTime()));
+            seen.add(r.getFlowPath());
+        }
+        for (String p : flowPaths) {
+            if (!seen.contains(p)) {
+                result.put(p, new PublishStatus("draft", null, null));
+            }
+        }
+        return result;
+    }
+
     /** 版本号:首次 1.0.0;再发布 fix 位 +1(1.0.0 → 1.0.1)。格式不符重置 1.0.0。 */
     static String nextVersion(V1PublishEntity existing) {
         if (existing == null || existing.getCurrentVersion() == null) {

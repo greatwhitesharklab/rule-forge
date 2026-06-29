@@ -1,130 +1,34 @@
 package com.ruleforge.console.app.service.impl;
 
 import com.ruleforge.console.ExternalProcessService;
-import com.ruleforge.console.entity.ApprovalTaskEntity;
-import com.ruleforge.console.entity.ProjectEntity;
-import com.ruleforge.console.repository.data.ApprovalRepository;
-import com.ruleforge.console.repository.data.ProjectRepository;
-import com.ruleforge.console.util.EnvironmentUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestTemplate;
-
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 /**
- * @author Fred
- * 2019-12-27 3:50 PM
+ * V7.7.2:ExternalProcessService stub 实现 — .rp 知识包审批流水线已废弃。
+ * 保留为 no-op 实现以维持 controller 编译。前端调用 startApprovalProcess /
+ * updateFileInUseVersion 这两个 endpoint 会立即收到"已废弃"响应。
+ *
+ * <p>V1 决策流审批已废,V1 走 V1PublishController 内部 publish(直接发布即生效)。
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ExternalProcessServiceImpl implements ExternalProcessService {
 
-    private final RestTemplate execRestTemplate;
-    private final EnvironmentUtils environmentUtils;
-    private final ApprovalRepository approvalRepository;
-    private final ProjectRepository projectRepository;
-
-    @Value("${ruleforge.approval.mode:auto}")
-    private String approvalMode;
-
     @Override
-    public void syncExec(String fullPackageId, String env, String username, Integer proportion, Date start, Date end) {
-        log.info("syncExec {} {} {}", fullPackageId, env, proportion);
-        try {
-            String url = "/test/knowledge";
-            Map<String, String> params = new HashMap<>();
-            params.put("packageId", fullPackageId);
-            params.put("env", env);
-            this.execRestTemplate.postForObject(url, params, Void.class);
-            log.info("Successfully notified executor for package [{}]", fullPackageId);
-        } catch (Exception e) {
-            log.error("Failed to notify executor for package [{}]: {}", fullPackageId, e.getMessage());
-        }
+    public String start(String project, String title, String version, String targetVersion,
+                        String remark, String explain, String fileName, String filePath,
+                        String passRateEffect, Double passRateRange,
+                        String badDebtRateEffect, Double badDebtRateRange) {
+        log.warn("ExternalProcessService.start called for project [{}] but .rp approval flow is deprecated (V7.7.2)", project);
+        return null; // null processId → caller returns {status:false}
     }
 
     @Override
-    public String start(String project,
-                        String title,
-                        String nowVersion,
-                        String version,
-                        String explain,
-                        String remark,
-                        String fileName,
-                        String filePath,
-                        String passRateEffect,
-                        Double passRateRange,
-                        String badDebtRateEffect,
-                        Double badDebtRateRange) throws Exception {
-        log.info("{} ,{}, {}, {}, {}", project, version, explain, fileName, filePath);
-        if (StringUtils.isEmpty("")) {
-        }
-
-        ProjectEntity projectEntity = projectRepository.findByName(project);
-        String processId = UUID.randomUUID().toString();
-
-        ApprovalTaskEntity task = new ApprovalTaskEntity();
-        task.setProjectId(projectEntity != null ? projectEntity.getId() : null);
-        task.setTitle(title);
-        task.setProjectVersion(version);
-        task.setExecEnv("prod");
-        task.setApprovalType("deploy");
-        task.setExplainText(explain);
-        task.setRemark(remark);
-        task.setRequester(environmentUtils.getLoginUser(null) != null
-                ? environmentUtils.getLoginUser(null).getUsername() : null);
-
-        if ("manual".equalsIgnoreCase(approvalMode)) {
-            task.setStatus("pending");
-            task.setProcessId(processId);
-            approvalRepository.insertTask(task);
-            log.info("Manual approval mode: created pending task [{}] for project [{}]", processId, project);
-            return processId;
-        } else {
-            task.setStatus("approved");
-            task.setProcessId("autoProcess");
-            approvalRepository.insertTask(task);
-            log.info("Auto approval mode: auto-approved task for project [{}]", project);
-            return "autoProcess";
-        }
-    }
-
-    @Override
-    public String testStart(String title, String project, String fileName, Date startTime, Date endTime,
-                            String version, Integer testRate, String remark, String explain) throws Exception {
-        ProjectEntity projectEntity = projectRepository.findByName(project);
-        String processId = UUID.randomUUID().toString();
-
-        ApprovalTaskEntity task = new ApprovalTaskEntity();
-        task.setProjectId(projectEntity != null ? projectEntity.getId() : null);
-        task.setTitle(title);
-        task.setProjectVersion(version);
-        task.setExecEnv("test");
-        task.setApprovalType("test_deploy");
-        task.setExplainText(explain);
-        task.setRemark(remark);
-        task.setRequester(environmentUtils.getLoginUser(null) != null
-                ? environmentUtils.getLoginUser(null).getUsername() : null);
-
-        if ("manual".equalsIgnoreCase(approvalMode)) {
-            task.setStatus("pending");
-            task.setProcessId(processId);
-            approvalRepository.insertTask(task);
-            log.info("Manual approval mode: created pending test task [{}] for project [{}]", processId, project);
-            return processId;
-        } else {
-            task.setStatus("approved");
-            task.setProcessId("autoProcess");
-            approvalRepository.insertTask(task);
-            log.info("Auto approval mode: auto-approved test task for project [{}]", project);
-            return "autoProcess";
-        }
+    public void syncExec(String packageId, String env, String username,
+                         String passRateEffect, String passRateRange,
+                         String badDebtRateEffect) {
+        log.warn("ExternalProcessService.syncExec called for package [{}] but .rp flow is deprecated (V7.7.2)", packageId);
+        // no-op
     }
 }

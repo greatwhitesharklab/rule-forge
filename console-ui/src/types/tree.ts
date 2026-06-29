@@ -18,6 +18,10 @@ export interface TreeNodeData {
     folderType?: string;
     project?: string;
     _forceExpand?: boolean;
+    // V7.7.2:树节点 published 徽标用 — loadData 后置 enrichment(POST /v1/publish/status-batch)回填。
+    // _publishedStatus === 'published' 时 FileTreeNode 渲染 <Tag color="green">已发布 v{_publishedVersion}</Tag>
+    _publishedStatus?: 'draft' | 'published';
+    _publishedVersion?: string | null;
     [key: string]: unknown;
 }
 
@@ -28,7 +32,7 @@ export type TreeNodeType =
     | 'resource'
     | 'all'
     | 'folder'
-    | 'resourcePackage'
+    // V7.7.2:'resourcePackage' 删除 — 老 .rp 知识包节点类型废弃
     | 'lib'
     | 'action'
     | 'parameter'

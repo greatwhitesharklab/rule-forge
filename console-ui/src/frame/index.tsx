@@ -24,9 +24,7 @@ import SimulationPanel from '@/simulation/index.tsx';
 import AgentPanel from '@/agent/index.tsx';
 import UserManagementPanel from '@/admin/UserManagementPanel.tsx';
 import Loading from '@/components/loading/component/Loading.tsx';
-// V5.8.0: 挂在 frame 顶层而不是 PackageEditor 里,这样从任何 panel
-// (FlowEditor / DatasourcePanel / ...) 触发 OPEN_BATCH_TEST_DIALOG 都能开
-import BatchTestDialog from '@/package/components/BatchTestDialog.tsx';
+// V7.7.2:BatchTestDialog 删除 — 老 .rp 知识包批测废弃,V1 决策流不走批测
 import * as event from '@/frame/event.js';
 import {connect} from 'react-redux';
 import {Store} from 'redux';
@@ -163,8 +161,7 @@ export default function FrameApp() {
                     <ActivityBar/>
                     <AppBodyConnected store={store} eventObj={event}/>
                 </div>
-                {/* V5.8.0:全局 BatchTestDialog,任意 panel 触发 OPEN_BATCH_TEST_DIALOG 都能弹 */}
-                <BatchTestDialog/>
+                {/* V7.7.2:BatchTestDialog 删除(.rp 废弃) */}
             </Provider>
         </div>
     );

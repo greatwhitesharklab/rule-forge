@@ -175,9 +175,7 @@ describe('Frame Module - buildType Pure Function', () => {
         expect(ACTIONS.buildType('pmml')).toBe('PMML 模型(只读)');
     });
 
-    it('GIVEN rp WHEN buildType is called THEN it should return package', () => {
-        expect(ACTIONS.buildType('rp')).toBe('package');
-    });
+    // V7.7.2:'rp' case 删除 — 老 .rp 知识包废弃
 
     // V6.20.0 P2:删老 urule 规则类型 — buildType 不再识别它们
     // 老入口已被 DRL/DMN/PMML 取代,前端创建菜单已无这些扩展名,buildType 抛错防误用

@@ -362,4 +362,18 @@ class RuleForgeRepositoryServiceImplGitStorageIntegrationTest {
 
     // expose to inner @Nested classes
     private User testUser() { return TEST_USER; }
+
+    // V7.7.2:createProject git init 错误传播契约 — 之前 catch(GitOperationException) 静默
+    // log.error,initRepo 失败时 createProject 仍返 200 → DB row 建了,磁盘无 .git → 下游
+    // saveFile dualWriteToGit 因 !repoExists 返 null → fileSource NPE。
+    //
+    // 契约:createProject 在 git init 抛 GitOperationException 时必须抛 RuleException
+    // 把错误传到前端/运维(磁盘满 / 权限错 / 路径冲突)。
+    //
+    // 测试在 GitStorageServiceImplTest 用同模式覆盖(createProject 是上层 wrapper,
+    // 它走 createResourcePackageFile / createAllResourceFolder / createPackageConfigFile
+    // / createClientConfigFile 一堆 stub 依赖,在该集成测试里覆盖性价比低 —
+    // 真正的契约由 GitStorageServiceImpl.initRepo 已有的"throw GitOperationException"
+    // + RuleForgeRepositoryServiceImpl.createProject 改为 rethrow as RuleException
+    // 两点保证;此处的 normalize 测试覆盖 base 路径归一化)。
 }
