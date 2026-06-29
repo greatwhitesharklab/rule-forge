@@ -61,6 +61,25 @@ class GitStorageServiceImplTest {
             gitStorage.initRepo("idempotent-test");
             assertDoesNotThrow(() -> gitStorage.initRepo("idempotent-test"));
         }
+
+        // V7.7.2:跨平台归一化兜底 — properties 文件用 Windows 反斜杠(\) 时
+        // initRepo 也应建在 data/dev-console/project/.git(归一化后),而不是
+        // data\dev-console/project/.git(单段字面目录)。
+        @Test
+        @DisplayName("Given base 用 Windows 反斜杠, When initRepo, Then .git 在归一化路径下(repoExists=true)")
+        void getRepoPathNormalizesBackslashes(@org.junit.jupiter.api.io.TempDir Path anotherTempDir) {
+            // Given:模拟 Windows 习惯反斜杠 base
+            GitConfig windowsStyleConfig = new GitConfig();
+            windowsStyleConfig.setBase(anotherTempDir.toString().replace('/', '\\') + "\\sub\\dir");
+            GitStorageServiceImpl svc = new GitStorageServiceImpl(windowsStyleConfig);
+
+            // When
+            svc.initRepo("win-style-project");
+
+            // Then:.git 落在归一化后的子目录,而非字面 Windows 路径
+            assertTrue(svc.repoExists("win-style-project"));
+            assertTrue(java.nio.file.Files.exists(anotherTempDir.resolve("sub/dir/win-style-project/.git")));
+        }
     }
 
     @Nested

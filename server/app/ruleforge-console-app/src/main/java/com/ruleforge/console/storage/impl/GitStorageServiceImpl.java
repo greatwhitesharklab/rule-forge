@@ -463,7 +463,12 @@ public class GitStorageServiceImpl implements GitStorageService {
     // ========== Private helpers ==========
 
     private Path getRepoPath(String projectName) {
-        return Paths.get(gitConfig.getBase(), projectName);
+        // V7.7.2:跨平台归一化 — properties 文件偶用 Windows 反斜杠(\) 在 Linux/macOS
+        // 上会被 Paths.get 当字面字符,initRepo 建在 data\dev-console/.git 但
+        // repoExists 查 data/dev-console/project/.git → 假阴性 → saveFile dualWriteToGit
+        // 返 null → fileSource NPE。归一化兜底,即便 properties 写错平台也能跑。
+        String base = gitConfig.getBase().replace('\\', '/');
+        return Paths.get(base, projectName);
     }
 
     private ObjectId resolve(Git git, String revision) throws IOException {

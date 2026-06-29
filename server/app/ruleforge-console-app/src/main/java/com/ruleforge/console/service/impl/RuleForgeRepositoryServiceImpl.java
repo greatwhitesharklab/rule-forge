@@ -242,12 +242,20 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
         createClientConfigFile(projectName, user);
 
         // Initialize Git repository for the new project
+        // V7.7.2:失败从静默 log.error 改为抛 RuleException — git 是 V1 决策流 content
+        // primary store,init 失败后续 saveFile dualWriteToGit 全静默返 null → fileSource NPE。
+        // 必须让前端/运维拿到具体错误信息(磁盘满/权限错/路径冲突)而不是假 200。
         try {
             gitStorageService.initRepo(projectName);
             gitStorageService.addRemote(projectName, gitConfig.getRemoteUrl());
             log.info("Initialized Git repo for new project [{}]", projectName);
         } catch (GitOperationException e) {
-            log.error("Failed to initialize Git repo for project [{}]", projectName, e);
+            throw new RuleException("Failed to initialize Git repo for project [" + projectName + "]: " + e.getMessage());
+        }
+        // V7.7.2:兜底自检 — initRepo 偶发 silent 成功但 repoExists 仍假(平台差异/fs 异常),
+        // createProject 返回前再 check 一次,失败抛错暴露而非静默到下游。
+        if (!gitStorageService.repoExists(projectName)) {
+            throw new RuleException("Git repo init reported success but .git not present for project [" + projectName + "]");
         }
 
         return buildProjectFile(project, null, classify, null);
