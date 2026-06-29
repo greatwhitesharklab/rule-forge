@@ -52,7 +52,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static com.ruleforge.console.repository.BaseRepositoryService.CLIENT_CONFIG_FILE;
-import static com.ruleforge.console.repository.BaseRepositoryService.RES_PACKGE_FILE;
 import static com.ruleforge.console.storage.RuleForgeBaseRepositoryService.PACKAGE_CONFIG_FILE;
 import static com.ruleforge.console.storage.RuleForgeBaseRepositoryService.RES_PACKAGE_FILE;
 import static com.ruleforge.console.storage.impl.DatabaseProjectStorageServiceImpl.SNAPSHOT_VERSION;
@@ -114,99 +113,17 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
         return readFile(path, null);
     }
 
+        // V7.7.2:loadProjectResourcePackages stub — 老 .rp 资源包加载已废弃(V1 决策流走
+    // V1 原生发布),接口保留为 empty 实现以维持 RepositoryReader/ProjectStorageService
+    // 接口契约。新代码不应调用。
     @Override
-    public List<ResourcePackage> loadProjectResourcePackages(String project) throws Exception {
-        return loadProjectResourcePackages(project, null);
+    public List<com.ruleforge.console.repository.model.ResourcePackage> loadProjectResourcePackages(String project) throws Exception {
+        return new ArrayList<>();
     }
 
     @Override
-    public List<ResourcePackage> loadProjectResourcePackages(String project, String env) throws Exception {
-        String[] projectArray = project.split(":");
-        String version = null;
-        ProjectEntity projectEntity = this.projectRepository.findByName(projectArray[0]);
-        if (projectEntity == null) {
-            log.warn("loadProjectResourcePackages: project [{}] not found, return empty list", projectArray[0]);
-            return new ArrayList<>();
-        }
-
-        if (projectArray.length > 1) {
-            project = projectArray[0];
-            version = projectArray[1];
-        } else if (org.springframework.util.StringUtils.hasText(env)) {
-            ProjectRuntimeConfigEntity projectRuntime = this.runtimeRepository.findConfigByProjectIdAndEnv(projectEntity.getId(), env);
-            if (projectRuntime != null) {
-                version = projectRuntime.getProjectVersion();
-            }
-        }
-
-        String filePath = processPath(project) + "/" + RES_PACKAGE_FILE;
-        InputStream inputStream = readFile(filePath, version);
-        if (inputStream == null) {
-            log.warn("loadProjectResourcePackages: res-package file [{}] version [{}] not found, return empty list", filePath, version);
-            return new ArrayList<>();
-        }
-        String content = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-        inputStream.close();
-
-        // todo
-        List<ProjectRuntimeConfigEntity> projectRuntimeConfigEntityList = this.runtimeRepository.findConfigsByProjectId(projectEntity.getId());
-        Map<String, String> packageRuntimeMap = new HashMap<>();
-        for (ProjectRuntimeConfigEntity projectRuntimeConfigEntity : projectRuntimeConfigEntityList) {
-            packageRuntimeMap.put(projectRuntimeConfigEntity.getPackageId() + "_" + projectRuntimeConfigEntity.getExecEnv(), projectRuntimeConfigEntity.getProjectVersion());
-        }
-
-        if (content == null || content.trim().isEmpty()) {
-            log.warn("loadProjectResourcePackages: res-package file [{}] is empty, return empty list", filePath);
-            return new ArrayList<>();
-        }
-        Document document;
-        try {
-            document = DocumentHelper.parseText(content);
-        } catch (org.dom4j.DocumentException e) {
-            log.warn("loadProjectResourcePackages: failed to parse res-package file [{}]: {}, return empty list", filePath, e.getMessage());
-            return new ArrayList<>();
-        }
-        Element rootElement = document.getRootElement();
-        SimpleDateFormat sd = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        List<ResourcePackage> packages = new ArrayList<>();
-        for (Object obj : rootElement.elements()) {
-            if (!(obj instanceof Element)) {
-                continue;
-            }
-            Element element = (Element) obj;
-            if (!element.getName().equals("res-package")) {
-                continue;
-            }
-            ResourcePackage p = new ResourcePackage();
-            String dateStr = element.attributeValue("create_date");
-            if (dateStr != null) {
-                p.setCreateDate(sd.parse(dateStr));
-            }
-            p.setId(element.attributeValue("id"));
-            p.setName(element.attributeValue("name"));
-            p.setVersion(packageRuntimeMap.get(p.getId() + "_" + "prod"));
-            p.setTestVersion(packageRuntimeMap.get(p.getId() + "_" + "test"));
-            p.setProject(project);
-            List<ResourceItem> items = new ArrayList<>();
-            for (Object o : element.elements()) {
-                if (!(o instanceof Element)) {
-                    continue;
-                }
-                Element ele = (Element) o;
-                if (!ele.getName().equals("res-package-item")) {
-                    continue;
-                }
-                ResourceItem item = new ResourceItem();
-                item.setName(ele.attributeValue("name"));
-                item.setPackageId(p.getId());
-                item.setPath(ele.attributeValue("path"));
-                item.setVersion(ele.attributeValue("version"));
-                items.add(item);
-            }
-            p.setResourceItems(items);
-            packages.add(p);
-        }
-        return packages;
+    public List<com.ruleforge.console.repository.model.ResourcePackage> loadProjectResourcePackages(String project, String env) throws Exception {
+        return new ArrayList<>();
     }
 
     @Override
@@ -236,7 +153,6 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
         project.setCreateTime(new Date());
         this.projectRepository.insert(project);
 
-        createResourcePackageFile(project.getId(), projectName, user);
         createAllResourceFolder(project.getId(), projectRootPath);
         createPackageConfigFile(projectName, user);
         createClientConfigFile(projectName, user);
@@ -276,36 +192,6 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
         fileRelation.setDistance(1);
         fileRelation.setProjectId(projectId);
         this.fileRepository.insertRelation(fileRelation);
-    }
-
-    private void createResourcePackageFile(Long projectId, String project, User user) throws Exception {
-        String filePath = processPath(project) + "/" + RES_PACKGE_FILE;
-        if (!fileExistCheck(filePath)) {
-            FileEntity file = new FileEntity();
-            file.setName("知识包.rp");
-            file.setFileType(Type.resourcePackage.ordinal());
-            file.setProjectId(projectId);
-            file.setFilePath(filePath);
-            file.setCreateTime(new Date());
-            this.fileRepository.insert(file);
-
-            FileVersionEntity fileVersionEntity = new FileVersionEntity();
-            fileVersionEntity.setFilePath(filePath);
-            fileVersionEntity.setFileName(filePath);
-            fileVersionEntity.setFileContent("<?xml version=\"1.0\" encoding=\"utf-8\"?><res-packages></res-packages>");
-            fileVersionEntity.setVersionNum("latest");
-            fileVersionEntity.setProjectId(projectId);
-            fileVersionEntity.setCreateUser(user.getUsername());
-            fileVersionEntity.setCreateDate(new Date());
-            this.fileRepository.insert(fileVersionEntity);
-
-            FileRelationEntity fileRelation = new FileRelationEntity();
-            fileRelation.setAncestor(projectId);
-            fileRelation.setDescendant(file.getId());
-            fileRelation.setDistance(1);
-            fileRelation.setProjectId(projectId);
-            this.fileRepository.insertRelation(fileRelation);
-        }
     }
 
     private void createPackageConfigFile(String project, User user) throws Exception {
