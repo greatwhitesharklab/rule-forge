@@ -35,21 +35,19 @@ public final class RuleSetCompiler {
     private RuleSetCompiler() {
     }
 
-    /** RuleSetNode + schema → RETE rules。schema 供 CEL 翻译器声明变量。 */
+    /** RuleSetNode + schema → RETE rules(仅条件规则)。schema 供 CEL 翻译器声明变量。
+     *  <p>无条件规则(空 / "true" condition)不进 RETE —— {@code __*__} ObjectTypeNode 不匹配
+     *  GeneralEntity fact(见 {@code ObjectTypeActivity.support}),由 {@link RuleSetExecutor}
+     *  经 {@link #extractUnconditionalRules} 取回并按 hitPolicy 应用。 */
     public static List<Rule> compile(RuleSetNode node, com.ruleforge.v1.ast.Schema schema) {
         List<Rule> rules = new ArrayList<>();
-        if (node.getRules() == null) {
-            return rules;
-        }
+        List<com.ruleforge.v1.ast.Rule> enabled = enabledRules(node);
         HitPolicy policy = node.getHitPolicy() == null ? HitPolicy.FIRST_MATCH : node.getHitPolicy();
-        int n = node.getRules().size();
+        int n = enabled.size();
         for (int i = 0; i < n; i++) {
-            com.ruleforge.v1.ast.Rule v1Rule = node.getRules().get(i);
-            if (v1Rule.getEnabled() != null && !v1Rule.getEnabled()) {
-                continue; // 禁用规则跳过
-            }
-            if (v1Rule.getCondition() == null || v1Rule.getCondition().isEmpty()) {
-                continue; // 无条件规则跳过(或当 always-true?MVP 跳过)
+            com.ruleforge.v1.ast.Rule v1Rule = enabled.get(i);
+            if (isUnconditional(v1Rule.getCondition())) {
+                continue; // 无条件规则不进 RETE,由 RuleSetExecutor 应用
             }
             Rule reteRule = new Rule();
             String ruleName = node.getId() + "." + (v1Rule.getId() != null ? v1Rule.getId() : "rule" + i);
@@ -62,6 +60,42 @@ public final class RuleSetCompiler {
             rules.add(reteRule);
         }
         return rules;
+    }
+
+    /** 启用规则(排除 disabled),原序。compile 与 extractUnconditionalRules 共用遍历。 */
+    private static List<com.ruleforge.v1.ast.Rule> enabledRules(RuleSetNode node) {
+        List<com.ruleforge.v1.ast.Rule> out = new ArrayList<>();
+        if (node.getRules() == null) {
+            return out;
+        }
+        for (com.ruleforge.v1.ast.Rule r : node.getRules()) {
+            if (r.getEnabled() != null && !r.getEnabled()) {
+                continue; // 禁用规则跳过
+            }
+            out.add(r);
+        }
+        return out;
+    }
+
+    /** 无条件规则(空 condition / "true"),原序,排除 disabled。不进 RETE,由 {@link RuleSetExecutor}
+     *  按 hitPolicy 应用:ALL_MATCH 始终应用(base/setup),FIRST_MATCH/PRIORITY 作 catch-all(else)。 */
+    public static List<com.ruleforge.v1.ast.Rule> extractUnconditionalRules(RuleSetNode node) {
+        List<com.ruleforge.v1.ast.Rule> out = new ArrayList<>();
+        for (com.ruleforge.v1.ast.Rule r : enabledRules(node)) {
+            if (isUnconditional(r.getCondition())) {
+                out.add(r);
+            }
+        }
+        return out;
+    }
+
+    /** condition 为 null / 空白 / "true"(忽略大小写)→ 无条件(always-true)。 */
+    private static boolean isUnconditional(String condition) {
+        if (condition == null) {
+            return true;
+        }
+        String t = condition.trim();
+        return t.isEmpty() || t.equalsIgnoreCase("true");
     }
 
     /** hitPolicy → RETE salience(数字大先评估)。 */

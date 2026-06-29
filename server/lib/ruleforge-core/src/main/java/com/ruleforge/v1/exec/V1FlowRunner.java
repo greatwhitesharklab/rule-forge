@@ -1,9 +1,6 @@
 package com.ruleforge.v1.exec;
 
 import com.ruleforge.model.GeneralEntity;
-import com.ruleforge.model.rule.Rule;
-import com.ruleforge.runtime.KnowledgePackage;
-import com.ruleforge.runtime.KnowledgeSessionImpl;
 import com.ruleforge.v1.ast.DecisionNode;
 import com.ruleforge.v1.ast.DecisionTableNode;
 import com.ruleforge.v1.ast.EndEvent;
@@ -244,13 +241,8 @@ public final class V1FlowRunner {
             }
         }
         if (node instanceof RuleSetNode) {
-            RuleSetNode rs = (RuleSetNode) node;
-            List<Rule> rules = RuleSetCompiler.compile(rs, asset.getSchema());
-            if (rules.isEmpty()) return;
-            KnowledgePackage kp = V1KnowledgeBuilder.build(asset.getSchema(), rules);
-            KnowledgeSessionImpl session = new KnowledgeSessionImpl(kp);
-            session.insert(fact);
-            session.fireRules(parameters);
+            // V7.8:条件规则走 RETE + 无条件规则(空/"true" condition)按 hitPolicy 应用(catch-all / base)
+            RuleSetExecutor.execute((RuleSetNode) node, asset.getSchema(), fact, parameters);
         } else if (node instanceof DecisionTableNode) {
             DecisionTableExecutor.execute((DecisionTableNode) node, asset.getSchema(), fact);
         } else if (node instanceof ScoreCardNode) {
