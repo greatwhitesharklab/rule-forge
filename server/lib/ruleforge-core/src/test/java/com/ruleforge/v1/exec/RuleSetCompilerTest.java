@@ -115,6 +115,30 @@ class RuleSetCompilerTest {
     }
 
     @Test
+    @DisplayName("extractUnconditionalRules → 空 condition 与 'true' condition 按序返回,排除 disabled")
+    void extractUnconditionalRules_空condition与true_按序返回_排除disabled() {
+        // Given RuleSet 4 条:空 cond + "true" cond + disabled 空 cond + 条件 cond
+        RuleSetNode node = new RuleSetNode();
+        node.setId("mix");
+        node.setHitPolicy(HitPolicy.ALL_MATCH);
+        com.ruleforge.v1.ast.Rule rUnconditional = new com.ruleforge.v1.ast.Rule();
+        rUnconditional.setId("base"); rUnconditional.setCondition(""); rUnconditional.setActions(Collections.emptyList());
+        com.ruleforge.v1.ast.Rule rTrue = new com.ruleforge.v1.ast.Rule();
+        rTrue.setId("alwaystrue"); rTrue.setCondition("true"); rTrue.setActions(Collections.emptyList());
+        com.ruleforge.v1.ast.Rule rDisabled = new com.ruleforge.v1.ast.Rule();
+        rDisabled.setId("disabled"); rDisabled.setCondition(""); rDisabled.setEnabled(false); rDisabled.setActions(Collections.emptyList());
+        com.ruleforge.v1.ast.Rule rConditional = new com.ruleforge.v1.ast.Rule();
+        rConditional.setId("cond"); rConditional.setCondition("age >= 18"); rConditional.setActions(Collections.emptyList());
+        node.setRules(Arrays.asList(rUnconditional, rTrue, rDisabled, rConditional));
+        // When extract unconditional
+        List<com.ruleforge.v1.ast.Rule> unconditional = RuleSetCompiler.extractUnconditionalRules(node);
+        // Then 返回前两条原序(空 cond + true cond),disabled 与条件规则不在内
+        assertThat(unconditional).hasSize(2);
+        assertThat(unconditional.get(0).getId()).isEqualTo("base");
+        assertThat(unconditional.get(1).getId()).isEqualTo("alwaystrue");
+    }
+
+    @Test
     @DisplayName("ALL_MATCH 多条命中 → actions 全执行(SET_VARIABLE)")
     void ALL_MATCH_多条命中_全执行() {
         // Given RuleSet ALL_MATCH 2 条 SET_VARIABLE + 都命中 When fire Then 两字段都设
