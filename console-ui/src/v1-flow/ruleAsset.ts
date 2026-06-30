@@ -11,7 +11,14 @@ export type NodeType = 'Start' | 'RuleSet' | 'DecisionTable' | 'ScoreCard' | 'De
 export type HitPolicy = 'FIRST_MATCH' | 'ALL_MATCH' | 'PRIORITY';
 export type TableHitPolicy = 'FIRST' | 'UNIQUE' | 'PRIORITY' | 'ANY' | 'COLLECT';
 export type ScoreAggregation = 'SUM' | 'AVG' | 'MIN' | 'MAX' | 'WEIGHTED_SUM';
-export type ActionType = 'SET_VARIABLE' | 'ADD_SCORE' | 'SET_DECISION' | 'REJECT' | 'FLAG';
+export type ActionType = 'SET_VARIABLE' | 'ADD_SCORE' | 'SET_DECISION' | 'REJECT' | 'FLAG' | 'INVOKE';
+
+/** V7.9 al 动作库(V7.4.1b 后端)action 参数项:可字面量(value)或字段引用(ref)。name = 形参名。 */
+export interface Arg {
+    name: string;
+    value?: unknown;
+    ref?: string;
+}
 
 export interface NodeBase {
     id: string;
@@ -99,6 +106,8 @@ export interface Action {
     value?: unknown;
     ref?: string;
     reason?: string;
+    /** V7.9 al 动作库:仅 INVOKE 使用,每个 arg = {name, value|字面量|ref 字段引用} */
+    args?: Arg[];
 }
 
 export interface SchemaField {
