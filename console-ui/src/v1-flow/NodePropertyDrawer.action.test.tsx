@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent, screen } from '@testing-library/react';
-import { ActionsEditor } from './NodePropertyDrawer';
+import { ActionsEditor } from './ActionEditor';
 import type { Action } from './ruleAsset';
 
 // antd CSS 重, jsdom 不需要实际样式, mock 掉避免警告 + 加速

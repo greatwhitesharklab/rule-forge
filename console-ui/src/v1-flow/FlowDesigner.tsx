@@ -14,13 +14,15 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {Layout, Menu, Button, Space, Typography, Input, Drawer, Modal, message, theme} from 'antd';
-import {UploadOutlined, SaveOutlined, FolderOpenOutlined, CloudUploadOutlined} from '@ant-design/icons';
+import {UploadOutlined, SaveOutlined, FolderOpenOutlined, CloudUploadOutlined, UndoOutlined, RedoOutlined, PartitionOutlined} from '@ant-design/icons';
 import {formPost, jsonPost, httpGet} from '@/api/client';
 import {nodeTypes, PALETTE, type V1NodeData} from './FlowNodes';
 import {type RuleAsset, type FlowElement, type V1Node, type NodeType} from './ruleAsset';
 import NodePropertyDrawer from './NodePropertyDrawer';
 import GatewayEditor from './GatewayEditor';
 import {fromRuleAsset} from './fromRuleAsset';
+import {validateRuleAsset, type ValidationIssue} from './validation';
+import {autoLayout} from './layout';
 
 const {Sider, Content, Header} = Layout;
 const {Text} = Typography;
@@ -146,10 +148,16 @@ export default function FlowDesigner({file}: {file?: string}) {
             .catch(() => setPublishedVersion(null));
     }, []);
 
-    /** V7.6:发布决策流(POST /v1/publish → 后端冻结闭包 bundle + git tag)。 */
+    /** V7.6:发布决策流(POST /v1/publish → 后端冻结闭包 bundle + git tag)。V7.11 发布前 gate 校验(error 禁发)。 */
     const publishFlow = useCallback(() => {
         if (!filePath) {
             message.error('先加载或输入决策流路径(顶部路径框)');
+            return;
+        }
+        const issues = runValidation();
+        const errors = issues.filter((i) => i.level === 'error');
+        if (errors.length > 0) {
+            message.error(`校验未通过:${errors.length} 个 error(点"校验"按钮查看详情)`);
             return;
         }
         formPost<{ version: string; status: string }>('/v1/publish', {flow: filePath})
@@ -160,7 +168,93 @@ export default function FlowDesigner({file}: {file?: string}) {
             .catch(() => message.error('发布失败(后端未运行/未登录,或闭包解析失败 — 检查 ruleRef/库文件)'));
     }, [filePath]);
 
-    /** 挂载时若有 file(从项目树进入),按 file 加载 RuleAsset → 画布。 */
+    /** V7.11 校验状态 + 弹窗控制。 */
+    const [validationOpen, setValidationOpen] = useState(false);
+    const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
+
+    /** 跑画布校验 → 写 issues + 开 Modal。返回 issues(供 publish gate)。 */
+    const runValidation = useCallback((): ValidationIssue[] => {
+        const asset = toRuleAsset(nodes, edges, nodesMap, schemaName);
+        const issues = validateRuleAsset(asset);
+        setValidationIssues(issues);
+        setValidationOpen(true);
+        return issues;
+    }, [nodes, edges, nodesMap, schemaName]);
+
+    /** V7.13 undo/redo 栈 — 粗粒度 mutation 推快照(addNode/connect/drag/delete/layout)。
+     *  抽屉实时编辑(每键)不推 → 抽屉 undo 留未来;抽屉内 Input 浏览器原生 Ctrl+Z 兜底。 */
+    const MAX_HISTORY = 50;
+    type Snapshot = {nodes: typeof nodes; edges: typeof edges; nodesMap: typeof nodesMap; schemaName: string};
+    const [history, setHistory] = useState<Snapshot[]>([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
+
+    /** 推当前 state 到历史(在 mutation 前调)。truncate redo + 限长。 */
+    const pushHistory = useCallback(() => {
+        setHistory((h) => {
+            const base = h.slice(0, historyIndex + 1);
+            const snap: Snapshot = {nodes, edges, nodesMap, schemaName};
+            const next = [...base, snap];
+            return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
+        });
+        setHistoryIndex((i) => Math.min(i + 1, MAX_HISTORY - 1));
+    }, [historyIndex, nodes, edges, nodesMap, schemaName]);
+
+    /** 加载/导入新流 → 重置 history(防止跨流 undo 出怪状态)。 */
+    const resetHistory = useCallback(() => {
+        setHistory([]);
+        setHistoryIndex(-1);
+    }, []);
+
+    const undo = useCallback(() => {
+        if (historyIndex <= 0) return;
+        const snap = history[historyIndex - 1];
+        setNodes(snap.nodes); setEdges(snap.edges); setNodesMap(snap.nodesMap); setSchemaName(snap.schemaName);
+        setHistoryIndex(historyIndex - 1);
+    }, [history, historyIndex, setNodes, setEdges, setNodesMap, setSchemaName]);
+
+    const redo = useCallback(() => {
+        if (historyIndex < 0 || historyIndex >= history.length - 1) return;
+        const snap = history[historyIndex + 1];
+        setNodes(snap.nodes); setEdges(snap.edges); setNodesMap(snap.nodesMap); setSchemaName(snap.schemaName);
+        setHistoryIndex(historyIndex + 1);
+    }, [history, historyIndex, setNodes, setEdges, setNodesMap, setSchemaName]);
+
+    /** V7.13 dagre 自动布局 → 重置所有节点 position。 */
+    const runAutoLayout = useCallback(() => {
+        pushHistory();
+        setNodes((nds) => autoLayout(nds, edges) as Node<V1NodeData>[]);
+    }, [pushHistory, edges, setNodes]);
+
+    /** V7.13 drag start → 推 pre-drag 快照(让 undo 回到拖前位置)。 */
+    const onNodeDragStart = useCallback(() => {
+        pushHistory();
+    }, [pushHistory]);
+
+    /** V7.13 节点删除 → 重建 pre-delete 快照(把 deleted 节点插回当前 nodes 推入 history)。 */
+    const onNodesDelete = useCallback((deleted: Node[]) => {
+        if (!deleted || deleted.length === 0) return;
+        const restored = [...nodes, ...deleted] as Node<V1NodeData>[];
+        setHistory((h) => {
+            const base = h.slice(0, historyIndex + 1);
+            const next = [...base, {nodes: restored, edges, nodesMap, schemaName}];
+            return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
+        });
+        setHistoryIndex((i) => Math.min(i + 1, MAX_HISTORY - 1));
+    }, [nodes, edges, nodesMap, schemaName, historyIndex]);
+
+    /** V7.13 边删除 → 重建 pre-delete 快照。 */
+    const onEdgesDelete = useCallback((deleted: Edge[]) => {
+        if (!deleted || deleted.length === 0) return;
+        const restored = [...edges, ...deleted];
+        setHistory((h) => {
+            const base = h.slice(0, historyIndex + 1);
+            const next = [...base, {nodes, edges: restored, nodesMap, schemaName}];
+            return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
+        });
+        setHistoryIndex((i) => Math.min(i + 1, MAX_HISTORY - 1));
+    }, [nodes, edges, nodesMap, schemaName, historyIndex]);
+
+    /** 挂载时若有 file(从项目树进入),按 file 加载 RuleAsset → 画布。V7.13:加载新流重置 history。 */
     useEffect(() => {
         if (!file) return;
         setFilePath(file);
@@ -169,6 +263,7 @@ export default function FlowDesigner({file}: {file?: string}) {
                 const asset = JSON.parse(res.content) as RuleAsset;
                 const st = fromRuleAsset(asset);
                 setNodes(st.nodes); setEdges(st.edges); setNodesMap(st.nodesMap); setSchemaName(st.schemaName);
+                resetHistory();
                 refreshPublishStatus(file);
                 message.success(`加载 ${file}:${st.nodes.length} 节点`);
             })
@@ -177,8 +272,11 @@ export default function FlowDesigner({file}: {file?: string}) {
     }, [file]);
 
     const onConnect = useCallback(
-        (params: Connection) => setEdges((eds: Edge[]) => addEdge({...params, markerEnd: {type: MarkerType.ArrowClosed}} as Edge, eds)),
-        [setEdges],
+        (params: Connection) => {
+            pushHistory();
+            setEdges((eds: Edge[]) => addEdge({...params, markerEnd: {type: MarkerType.ArrowClosed}} as Edge, eds));
+        },
+        [pushHistory, setEdges],
     );
 
     const addNode = useCallback(
@@ -191,13 +289,14 @@ export default function FlowDesigner({file}: {file?: string}) {
                 position: {x: 120 + Math.random() * 200, y: 100 + nodes.length * 110},
                 data: {nodeType: type, name: type, implementation: isGateway ? '' : `${type}:${id}`},
             };
+            pushHistory();
             setNodes((nds: Node<V1NodeData>[]) => nds.concat(node));
             // Gateway 是 flow element,不进 nodesMap(无业务定义);其余 5 业务节点建默认内容
             if (!isGateway) {
                 setNodesMap((m) => ({...m, [id]: newNodeDefault(type, id, schemaName)}));
             }
         },
-        [nodes.length, setNodes, schemaName],
+        [pushHistory, nodes.length, setNodes, schemaName],
     );
 
     /** Drawer 改节点内容 → 回写 nodesMap + 同步画布节点显示名。 */
@@ -254,7 +353,7 @@ export default function FlowDesigner({file}: {file?: string}) {
             .catch(() => message.error('保存失败(后端未运行或路径无效)'));
     }, [filePath, nodes, edges, nodesMap, schemaName]);
 
-    /** 从后端加载(POST /frame/fileSource → RuleAsset → canvas)。 */
+    /** 从后端加载(POST /frame/fileSource → RuleAsset → canvas)。V7.13:加载新流重置 history。 */
     const loadFromBackend = useCallback(() => {
         if (!filePath) { message.warning('先填文件路径'); return; }
         formPost<{content: string}>('/frame/fileSource', {path: filePath})
@@ -262,10 +361,11 @@ export default function FlowDesigner({file}: {file?: string}) {
                 const asset = JSON.parse(res.content) as RuleAsset;
                 const st = fromRuleAsset(asset);
                 setNodes(st.nodes); setEdges(st.edges); setNodesMap(st.nodesMap); setSchemaName(st.schemaName);
+                resetHistory();
                 message.success(`加载成功:${st.nodes.length} 节点`);
             })
             .catch(() => message.error('加载失败(后端未运行或文件不存在)'));
-    }, [filePath, setNodes, setEdges, setNodesMap, setSchemaName]);
+    }, [filePath, resetHistory, setNodes, setEdges, setNodesMap, setSchemaName]);
 
     /** 运行 flow:画布 toRuleAsset + fact → POST /v1/execute → 显示 decision(需后端 + 登录态)。 */
     const runFlow = useCallback(() => {
@@ -291,6 +391,10 @@ export default function FlowDesigner({file}: {file?: string}) {
                 <Space>
                     <Text type='secondary' style={{fontSize: 12}}>Schema:</Text>
                     <Input size='small' value={schemaName} onChange={(e) => setSchemaName(e.target.value)} style={{width: 140}}/>
+                    <Button size='small' icon={<UndoOutlined/>} onClick={undo} disabled={historyIndex <= 0} data-testid='v1-undo-btn' title='撤销'>撤销</Button>
+                    <Button size='small' icon={<RedoOutlined/>} onClick={redo} disabled={historyIndex < 0 || historyIndex >= history.length - 1} data-testid='v1-redo-btn' title='重做'>重做</Button>
+                    <Button size='small' icon={<PartitionOutlined/>} onClick={runAutoLayout} data-testid='v1-autolayout-btn' title='dagre 自动布局(TB)'>整理</Button>
+                    <Button size='small' onClick={runValidation} data-testid='v1-validate-btn'>校验{validationIssues.length > 0 ? ` (${validationIssues.filter((i) => i.level === 'error').length}❌)` : ''}</Button>
                     <Button size='small' icon={<UploadOutlined/>} onClick={() => setImportOpen(true)}>导入</Button>
                     <Input size='small' placeholder='后端路径 /proj/x.json' value={filePath} onChange={(e) => setFilePath(e.target.value)} style={{width: 180}}/>
                     <Button size='small' icon={<FolderOpenOutlined/>} onClick={loadFromBackend}>加载</Button>
@@ -319,6 +423,9 @@ export default function FlowDesigner({file}: {file?: string}) {
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}
                         onConnect={onConnect}
+                        onNodeDragStart={onNodeDragStart}
+                        onNodesDelete={onNodesDelete}
+                        onEdgesDelete={onEdgesDelete}
                         onNodeClick={(_, n) => {
                             // V7.5:规则节点(RuleSet/DecisionTable/ScoreCard)有 ruleRef → 跳独立编辑器,不弹 Drawer
                             const data = n.data as V1NodeData;
@@ -393,6 +500,22 @@ export default function FlowDesigner({file}: {file?: string}) {
                         {JSON.stringify(runResult.fact, null, 2)}
                     </pre>
                 )}
+            </Modal>
+            <Modal title={`校验结果 (${validationIssues.filter((i) => i.level === 'error').length} error, ${validationIssues.filter((i) => i.level === 'warning').length} warning)`}
+                open={validationOpen} onCancel={() => setValidationOpen(false)}
+                footer={<Button size='small' onClick={() => setValidationOpen(false)}>关闭</Button>} width={520}>
+                {validationIssues.length === 0
+                    ? <Text type='success'>✓ 所有校验通过,可以发布。</Text>
+                    : <Space direction='vertical' size={4} style={{width: '100%'}}>
+                        {validationIssues.map((iss, i) => (
+                            <div key={i} style={{display: 'flex', alignItems: 'flex-start', gap: 8, padding: '4px 8px', background: iss.level === 'error' ? '#fff1f0' : '#fffbe6', borderRadius: 4}}>
+                                <Text strong style={{color: iss.level === 'error' ? '#ff4d4f' : '#faad14', minWidth: 60}}>
+                                    {iss.level === 'error' ? 'ERROR' : 'WARN'}
+                                </Text>
+                                <Text style={{fontSize: 12}}>{iss.message}</Text>
+                            </div>
+                        ))}
+                    </Space>}
             </Modal>
         </Layout>
     );

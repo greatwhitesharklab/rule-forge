@@ -44,6 +44,7 @@ export default defineConfig({
             { text: '第一个规则', link: '/guide/quick-start' },
             { text: '规则类型', link: '/guide/rule-types' },
             { text: '决策流设计器', link: '/guide/flow-designer' },
+            { text: 'V1 al 动作库部署', link: '/guide/v1-al-deployment' },
             { text: '评分卡', link: '/guide/scorecard' },
             { text: '规则测试', link: '/guide/testing' },
             { text: 'V5.22 AI 规则创作', link: '/guide/v522-ai-rule-authoring' },
