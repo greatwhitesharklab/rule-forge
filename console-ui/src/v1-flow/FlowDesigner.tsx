@@ -1,4 +1,4 @@
-import {useCallback, useState, useMemo, useEffect} from 'react';
+import {useCallback, useState, useMemo, useEffect, useRef} from 'react';
 import {
     ReactFlow,
     Background,
@@ -254,6 +254,48 @@ export default function FlowDesigner({file}: {file?: string}) {
         setHistoryIndex((i) => Math.min(i + 1, MAX_HISTORY - 1));
     }, [nodes, edges, nodesMap, schemaName, historyIndex]);
 
+    /** V7.14 抽屉整段 undo:打开时 snapshot pre-state,关闭时若 dirty 把 pre-state 推 history
+     *  (整段抽屉编辑 = 1 个 undo 步;抽屉内 Input Ctrl+Z 仍由浏览器原生处理文本级 undo)。 */
+    useEffect(() => {
+        const prev = prevSelectedIdRef.current;
+        if (prev === null && selectedId !== null) {
+            preDrawerSnapshotRef.current = {nodes, edges, nodesMap, schemaName};
+            drawerDirtyRef.current = false;
+        } else if (prev !== null && selectedId === null && drawerDirtyRef.current && preDrawerSnapshotRef.current) {
+            const snap = preDrawerSnapshotRef.current;
+            setHistory((h) => {
+                const base = h.slice(0, historyIndex + 1);
+                const next = [...base, snap];
+                return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
+            });
+            setHistoryIndex((i) => Math.min(i + 1, MAX_HISTORY - 1));
+            preDrawerSnapshotRef.current = null;
+            drawerDirtyRef.current = false;
+        }
+        prevSelectedIdRef.current = selectedId;
+    }, [selectedId, nodes, edges, nodesMap, schemaName, historyIndex]);
+
+    /** V7.14 全局键盘 Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z → undo/redo。input/textarea/contenteditable 内交给浏览器原生。 */
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (!(e.ctrlKey || e.metaKey)) return;
+            const t = e.target as HTMLElement | null;
+            if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || (t as any).isContentEditable)) {
+                return;
+            }
+            const key = e.key.toLowerCase();
+            if (key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            } else if ((key === 'z' && e.shiftKey) || key === 'y') {
+                e.preventDefault();
+                redo();
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [undo, redo]);
+
     /** 挂载时若有 file(从项目树进入),按 file 加载 RuleAsset → 画布。V7.13:加载新流重置 history。 */
     useEffect(() => {
         if (!file) return;
@@ -299,11 +341,17 @@ export default function FlowDesigner({file}: {file?: string}) {
         [pushHistory, nodes.length, setNodes, schemaName],
     );
 
-    /** Drawer 改节点内容 → 回写 nodesMap + 同步画布节点显示名。 */
+    /** Drawer 改节点内容 → 回写 nodesMap + 同步画布节点显示名。V7.14:标 drawerDirty 让关闭时推整段 undo。 */
     const onNodeChange = useCallback((updated: V1Node) => {
         setNodesMap((m) => ({...m, [updated.id]: updated}));
         setNodes((nds) => nds.map((n) => n.id === updated.id ? {...n, data: {...n.data, name: updated.name}} : n));
+        drawerDirtyRef.current = true;
     }, [setNodes]);
+
+    /** V7.14 抽屉整段 undo refs(打开 snapshot / 关闭时若 dirty 推 history)。useEffect 放 history 块后避免 TDZ。 */
+    const preDrawerSnapshotRef = useRef<Snapshot | null>(null);
+    const drawerDirtyRef = useRef(false);
+    const prevSelectedIdRef = useRef<string | null>(null);
 
     const exportJson = useCallback(() => {
         setExported(JSON.stringify(toRuleAsset(nodes, edges, nodesMap, schemaName), null, 2));
