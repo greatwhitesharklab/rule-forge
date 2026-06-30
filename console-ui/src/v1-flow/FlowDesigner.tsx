@@ -21,6 +21,7 @@ import {type RuleAsset, type FlowElement, type V1Node, type NodeType} from './ru
 import NodePropertyDrawer from './NodePropertyDrawer';
 import GatewayEditor from './GatewayEditor';
 import {fromRuleAsset} from './fromRuleAsset';
+import {validateRuleAsset, type ValidationIssue} from './validation';
 
 const {Sider, Content, Header} = Layout;
 const {Text} = Typography;
@@ -146,10 +147,16 @@ export default function FlowDesigner({file}: {file?: string}) {
             .catch(() => setPublishedVersion(null));
     }, []);
 
-    /** V7.6:发布决策流(POST /v1/publish → 后端冻结闭包 bundle + git tag)。 */
+    /** V7.6:发布决策流(POST /v1/publish → 后端冻结闭包 bundle + git tag)。V7.11 发布前 gate 校验(error 禁发)。 */
     const publishFlow = useCallback(() => {
         if (!filePath) {
             message.error('先加载或输入决策流路径(顶部路径框)');
+            return;
+        }
+        const issues = runValidation();
+        const errors = issues.filter((i) => i.level === 'error');
+        if (errors.length > 0) {
+            message.error(`校验未通过:${errors.length} 个 error(点"校验"按钮查看详情)`);
             return;
         }
         formPost<{ version: string; status: string }>('/v1/publish', {flow: filePath})
@@ -159,6 +166,19 @@ export default function FlowDesigner({file}: {file?: string}) {
             })
             .catch(() => message.error('发布失败(后端未运行/未登录,或闭包解析失败 — 检查 ruleRef/库文件)'));
     }, [filePath]);
+
+    /** V7.11 校验状态 + 弹窗控制。 */
+    const [validationOpen, setValidationOpen] = useState(false);
+    const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
+
+    /** 跑画布校验 → 写 issues + 开 Modal。返回 issues(供 publish gate)。 */
+    const runValidation = useCallback((): ValidationIssue[] => {
+        const asset = toRuleAsset(nodes, edges, nodesMap, schemaName);
+        const issues = validateRuleAsset(asset);
+        setValidationIssues(issues);
+        setValidationOpen(true);
+        return issues;
+    }, [nodes, edges, nodesMap, schemaName]);
 
     /** 挂载时若有 file(从项目树进入),按 file 加载 RuleAsset → 画布。 */
     useEffect(() => {
@@ -291,6 +311,7 @@ export default function FlowDesigner({file}: {file?: string}) {
                 <Space>
                     <Text type='secondary' style={{fontSize: 12}}>Schema:</Text>
                     <Input size='small' value={schemaName} onChange={(e) => setSchemaName(e.target.value)} style={{width: 140}}/>
+                    <Button size='small' onClick={runValidation} data-testid='v1-validate-btn'>校验{validationIssues.length > 0 ? ` (${validationIssues.filter((i) => i.level === 'error').length}❌)` : ''}</Button>
                     <Button size='small' icon={<UploadOutlined/>} onClick={() => setImportOpen(true)}>导入</Button>
                     <Input size='small' placeholder='后端路径 /proj/x.json' value={filePath} onChange={(e) => setFilePath(e.target.value)} style={{width: 180}}/>
                     <Button size='small' icon={<FolderOpenOutlined/>} onClick={loadFromBackend}>加载</Button>
@@ -393,6 +414,22 @@ export default function FlowDesigner({file}: {file?: string}) {
                         {JSON.stringify(runResult.fact, null, 2)}
                     </pre>
                 )}
+            </Modal>
+            <Modal title={`校验结果 (${validationIssues.filter((i) => i.level === 'error').length} error, ${validationIssues.filter((i) => i.level === 'warning').length} warning)`}
+                open={validationOpen} onCancel={() => setValidationOpen(false)}
+                footer={<Button size='small' onClick={() => setValidationOpen(false)}>关闭</Button>} width={520}>
+                {validationIssues.length === 0
+                    ? <Text type='success'>✓ 所有校验通过,可以发布。</Text>
+                    : <Space direction='vertical' size={4} style={{width: '100%'}}>
+                        {validationIssues.map((iss, i) => (
+                            <div key={i} style={{display: 'flex', alignItems: 'flex-start', gap: 8, padding: '4px 8px', background: iss.level === 'error' ? '#fff1f0' : '#fffbe6', borderRadius: 4}}>
+                                <Text strong style={{color: iss.level === 'error' ? '#ff4d4f' : '#faad14', minWidth: 60}}>
+                                    {iss.level === 'error' ? 'ERROR' : 'WARN'}
+                                </Text>
+                                <Text style={{fontSize: 12}}>{iss.message}</Text>
+                            </div>
+                        ))}
+                    </Space>}
             </Modal>
         </Layout>
     );
