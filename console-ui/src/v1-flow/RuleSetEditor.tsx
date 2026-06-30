@@ -3,18 +3,12 @@ import {Input, Select, Button, Space, Typography, message, Divider, Form, InputN
 import {PlusOutlined, DeleteOutlined, SaveOutlined} from '@ant-design/icons';
 import {formPost} from '@/api/client';
 import ConditionEditor from './ConditionEditor';
+import {ActionsEditor} from './ActionEditor';
+import type {Action} from './ruleAsset';
 
 const {Text} = Typography;
 const HIT_POLICIES = [{value: 'FIRST', label: 'FIRST(首个命中)'}, {value: 'ALL', label: 'ALL(全部命中)'}, {value: 'ANY', label: 'ANY(任一命中)'}];
 
-interface Action {
-    type: string;
-    target?: string;
-    value?: string;
-    reason?: string;
-    ref?: string;
-    args?: {name: string; value?: string; ref?: string}[];
-}
 interface Rule {
     id: string;
     name: string;
@@ -28,75 +22,6 @@ interface RuleSet {
     name: string;
     hitPolicy: string;
     rules: Rule[];
-}
-
-const ACTION_TYPES = ['SET_VARIABLE', 'ADD_SCORE', 'SET_DECISION', 'REJECT', 'FLAG', 'INVOKE'];
-
-function ActionsEditor({actions, onChange}: {actions: Action[]; onChange: (a: Action[]) => void}) {
-    const updateAction = (i: number, patch: Partial<Action>) => {
-        const na = [...actions];
-        na[i] = {...actions[i], ...patch};
-        onChange(na);
-    };
-    return (
-        <div style={{marginTop: 6}}>
-            <Text type='secondary' style={{fontSize: 11}}>actions(命中时执行)</Text>
-            {actions.map((a, i) => (
-                <Space key={i} style={{display: 'flex', marginBottom: 4}} size={4} wrap>
-                    <Select value={a.type} options={ACTION_TYPES.map((t) => ({value: t, label: t}))} style={{width: 130}}
-                        onChange={(v) => updateAction(i, {type: v})}/>
-                    {(a.type === 'SET_VARIABLE' || a.type === 'ADD_SCORE') && <Input placeholder='target' value={a.target} style={{width: 100}}
-                        onChange={(e) => updateAction(i, {target: e.target.value})}/>}
-                    {(a.type === 'SET_VARIABLE' || a.type === 'ADD_SCORE' || a.type === 'SET_DECISION') && <Input placeholder='value' value={String(a.value ?? '')} style={{width: 90}}
-                        onChange={(e) => updateAction(i, {value: e.target.value})}/>}
-                    {(a.type === 'REJECT' || a.type === 'FLAG') && <Input placeholder='reason' value={a.reason} style={{width: 120}}
-                        onChange={(e) => updateAction(i, {reason: e.target.value})}/>}
-                    {a.type === 'INVOKE' && <InvokeFields action={a} onChange={(patch) => updateAction(i, patch)}/>}
-                    <Button size='small' danger icon={<DeleteOutlined/>} onClick={() => onChange(actions.filter((_, j) => j !== i))}/>
-                </Space>
-            ))}
-            <Button size='small' type='dashed' icon={<PlusOutlined/>} style={{marginTop: 4}}
-                onClick={() => onChange([...actions, {type: 'SET_VARIABLE', target: '', value: ''}])}>+ action</Button>
-        </div>
-    );
-}
-
-/** V7.9 al 动作库:INVOKE 专用字段。镜像 NodePropertyDrawer.InvokeActionFields(独立文件无共享组件以保持 PR 紧凑)。 */
-function InvokeFields({action, onChange}: {action: Action; onChange: (patch: Partial<Action>) => void}) {
-    const args = action.args || [];
-    const updateArg = (j: number, patch: Partial<{name: string; value?: string; ref?: string}>) => {
-        const next = [...args];
-        next[j] = {...args[j], ...patch};
-        onChange({args: next});
-    };
-    return (
-        <div style={{width: '100%'}}>
-            <Space size={4} wrap>
-                <Input placeholder='ref (beanId.method)' value={action.ref ?? ''} style={{width: 180}}
-                    onChange={(e) => onChange({ref: e.target.value})}/>
-                <Input placeholder='target (写回字段,可空)' value={action.target ?? ''} style={{width: 170}}
-                    onChange={(e) => onChange({target: e.target.value})}/>
-            </Space>
-            <div style={{marginTop: 2}}>
-                <Text type='secondary' style={{fontSize: 11}}>args(name + 字面量 value / 字段 ref)</Text>
-                {args.map((arg, j) => (
-                    <div key={j}>
-                        <Space size={4} style={{marginTop: 2}} wrap>
-                            <Input placeholder='name' value={arg.name} style={{width: 80}}
-                                onChange={(e) => updateArg(j, {name: e.target.value})}/>
-                            <Input placeholder='value(字面量)' value={String(arg.value ?? '')} style={{width: 110}}
-                                onChange={(e) => updateArg(j, {value: e.target.value})}/>
-                            <Input placeholder='ref(字段引用)' value={arg.ref ?? ''} style={{width: 110}}
-                                onChange={(e) => updateArg(j, {ref: e.target.value})}/>
-                            <Button size='small' danger icon={<DeleteOutlined/>} onClick={() => onChange({args: args.filter((_, k) => k !== j)})}/>
-                        </Space>
-                    </div>
-                ))}
-                <Button size='small' type='dashed' style={{marginTop: 2}} icon={<PlusOutlined/>}
-                    onClick={() => onChange({args: [...args, {name: '', value: ''}]})}>+ arg</Button>
-            </div>
-        </div>
-    );
 }
 
 /**
