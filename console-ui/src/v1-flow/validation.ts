@@ -86,5 +86,22 @@ export function validateRuleAsset(asset: RuleAsset): ValidationIssue[] {
         }
     }
 
+    // V7.16:重复节点名 warning(大小写不敏感,方便阅读但易混淆)
+    const nameMap = new Map<string, string[]>(); // lower-name → ids
+    for (const [id, n] of Object.entries(nodes)) {
+        const name = ((n as any).name as string || '').trim();
+        if (!name) continue;
+        const key = name.toLowerCase();
+        const arr = nameMap.get(key) || [];
+        arr.push(id);
+        nameMap.set(key, arr);
+    }
+    for (const [, ids] of nameMap) {
+        if (ids.length > 1) {
+            const names = ids.map((i) => nodes[i].name || i).join(', ');
+            issues.push({level: 'warning', message: `节点名重复:"${names}"(建议唯一,便于发布后排查)`, nodeId: ids[0]});
+        }
+    }
+
     return issues;
 }

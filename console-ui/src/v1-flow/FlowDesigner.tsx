@@ -1,19 +1,21 @@
 import {useCallback, useState, useMemo, useEffect, useRef} from 'react';
 import {
     ReactFlow,
+    ReactFlowProvider,
     Background,
     Controls,
     MiniMap,
     addEdge,
     useNodesState,
     useEdgesState,
+    useReactFlow,
     MarkerType,
     type Node,
     type Edge,
     type Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {Layout, Menu, Button, Space, Typography, Input, Drawer, Modal, message, theme} from 'antd';
+import {Layout, Menu, Button, Space, Typography, Input, Drawer, Modal, message, theme, AutoComplete} from 'antd';
 import {UploadOutlined, SaveOutlined, FolderOpenOutlined, CloudUploadOutlined, UndoOutlined, RedoOutlined, PartitionOutlined} from '@ant-design/icons';
 import {formPost, jsonPost, httpGet} from '@/api/client';
 import {nodeTypes, PALETTE, type V1NodeData} from './FlowNodes';
@@ -23,6 +25,7 @@ import GatewayEditor from './GatewayEditor';
 import {fromRuleAsset} from './fromRuleAsset';
 import {validateRuleAsset, type ValidationIssue} from './validation';
 import {autoLayout} from './layout';
+import {searchNodes} from './search';
 
 const {Sider, Content, Header} = Layout;
 const {Text} = Typography;
@@ -134,6 +137,14 @@ export default function FlowDesigner({file}: {file?: string}) {
     const [runOpen, setRunOpen] = useState(false);
     const [runFact, setRunFact] = useState('{\n  "age": 30\n}');
     const [runResult, setRunResult] = useState<V1ExecutionResponse | null>(null);
+    /** V7.15 节点搜索 query + 跳转。fitView 来自 useReactFlow(需 ReactFlowProvider 包裹,见 return)。 */
+    const [searchQuery, setSearchQuery] = useState('');
+    const {fitView} = useReactFlow();
+    const gotoNode = useCallback((id: string) => {
+        setSearchQuery('');
+        fitView({nodes: [{id}], duration: 400, padding: 0.2, maxZoom: 1.2});
+        setSelectedId(id);
+    }, [fitView]);
     /** V7.6:当前决策流的已发布版本号(null = 草稿/未发布)。加载/发布后刷新。 */
     const [publishedVersion, setPublishedVersion] = useState<string | null>(null);
 
@@ -433,12 +444,27 @@ export default function FlowDesigner({file}: {file?: string}) {
     const palette = useMemo(() => PALETTE.map((t) => ({key: t, label: `+ ${t}`})), []);
 
     return (
+        <ReactFlowProvider>
         <Layout style={{height: '100vh'}}>
             <Header style={{background: token.colorBgContainer, padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                 <Text strong style={{fontSize: 16}}>RuleForge · V1 决策流设计器</Text>
                 <Space>
                     <Text type='secondary' style={{fontSize: 12}}>Schema:</Text>
                     <Input size='small' value={schemaName} onChange={(e) => setSchemaName(e.target.value)} style={{width: 140}}/>
+                    <AutoComplete
+                        size='small'
+                        data-testid='v1-search-input'
+                        value={searchQuery}
+                        placeholder='搜索节点(name/id)'
+                        style={{width: 180}}
+                        onChange={setSearchQuery}
+                        onSelect={(val) => gotoNode(String(val))}
+                        options={searchNodes(nodes, searchQuery).map((nd) => ({
+                            value: nd.id,
+                            label: `${((nd.data as any)?.name as string) || nd.id} (${nd.id})`,
+                        }))}
+                        allowClear
+                    />
                     <Button size='small' icon={<UndoOutlined/>} onClick={undo} disabled={historyIndex <= 0} data-testid='v1-undo-btn' title='撤销'>撤销</Button>
                     <Button size='small' icon={<RedoOutlined/>} onClick={redo} disabled={historyIndex < 0 || historyIndex >= history.length - 1} data-testid='v1-redo-btn' title='重做'>重做</Button>
                     <Button size='small' icon={<PartitionOutlined/>} onClick={runAutoLayout} data-testid='v1-autolayout-btn' title='dagre 自动布局(TB)'>整理</Button>
@@ -492,7 +518,7 @@ export default function FlowDesigner({file}: {file?: string}) {
                     >
                         <Background/>
                         <Controls/>
-                        <MiniMap/>
+                        <MiniMap pannable zoomable/>
                     </ReactFlow>
                 </Content>
             </Layout>
@@ -566,5 +592,6 @@ export default function FlowDesigner({file}: {file?: string}) {
                     </Space>}
             </Modal>
         </Layout>
+        </ReactFlowProvider>
     );
 }
