@@ -282,6 +282,12 @@ export default function FlowDesigner({file}: {file?: string}) {
             setHistoryIndex((i) => Math.min(i + 1, MAX_HISTORY - 1));
             preDrawerSnapshotRef.current = null;
             drawerDirtyRef.current = false;
+            // V7.17 字段级:关闭时重置 burst flag + 清理 timer(下段从新 push)
+            fieldUndoPushedRef.current = false;
+            if (fieldUndoTimerRef.current) {
+                clearTimeout(fieldUndoTimerRef.current);
+                fieldUndoTimerRef.current = null;
+            }
         }
         prevSelectedIdRef.current = selectedId;
     }, [selectedId, nodes, edges, nodesMap, schemaName, historyIndex]);
@@ -352,17 +358,29 @@ export default function FlowDesigner({file}: {file?: string}) {
         [pushHistory, nodes.length, setNodes, schemaName],
     );
 
-    /** Drawer 改节点内容 → 回写 nodesMap + 同步画布节点显示名。V7.14:标 drawerDirty 让关闭时推整段 undo。 */
+    /** Drawer 改节点内容 → 回写 nodesMap + 同步画布节点显示名。
+     *  V7.14: drawerDirty 让关闭时推整段 undo。
+     *  V7.17: 字段级 debounce undo — 同一段连续编辑(每键) = 1 个 undo 步;
+     *  每段首键 pushHistory(pre-burst),静默 600ms 后重置 flag(下段再 push)。 */
     const onNodeChange = useCallback((updated: V1Node) => {
         setNodesMap((m) => ({...m, [updated.id]: updated}));
         setNodes((nds) => nds.map((n) => n.id === updated.id ? {...n, data: {...n.data, name: updated.name}} : n));
         drawerDirtyRef.current = true;
-    }, [setNodes]);
+        if (!fieldUndoPushedRef.current) {
+            pushHistory();
+            fieldUndoPushedRef.current = true;
+        }
+        if (fieldUndoTimerRef.current) clearTimeout(fieldUndoTimerRef.current);
+        fieldUndoTimerRef.current = setTimeout(() => { fieldUndoPushedRef.current = false; }, 600);
+    }, [pushHistory, setNodes]);
 
-    /** V7.14 抽屉整段 undo refs(打开 snapshot / 关闭时若 dirty 推 history)。useEffect 放 history 块后避免 TDZ。 */
+    /** V7.14 抽屉整段 undo refs(打开 snapshot / 关闭时若 dirty 推 history)。V7.17 加字段级 debounce refs。
+     *  useEffect 放 history 块后避免 TDZ。 */
     const preDrawerSnapshotRef = useRef<Snapshot | null>(null);
     const drawerDirtyRef = useRef(false);
     const prevSelectedIdRef = useRef<string | null>(null);
+    const fieldUndoPushedRef = useRef(false);
+    const fieldUndoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const exportJson = useCallback(() => {
         setExported(JSON.stringify(toRuleAsset(nodes, edges, nodesMap, schemaName), null, 2));

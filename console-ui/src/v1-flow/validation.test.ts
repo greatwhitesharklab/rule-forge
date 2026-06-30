@@ -120,7 +120,6 @@ describe('V7.11 — validateRuleAsset', () => {
     });
 
     it('V7.16:节点名重复(大小写不敏感)→ warning', () => {
-        // Given 3 节点其中 2 同名(大小写不同)
         const elements: FlowElement[] = [
             el({type: 'startEvent', id: 's1'}),
             el({type: 'endEvent', id: 'e1'}),
@@ -128,12 +127,48 @@ describe('V7.11 — validateRuleAsset', () => {
         ];
         const nodes: RuleAsset['nodes'] = {
             a: {id: 'a', type: 'RuleSet', name: 'precheck', hitPolicy: 'FIRST_MATCH', rules: []},
-            b: {id: 'b', type: 'RuleSet', name: 'PreCheck', hitPolicy: 'FIRST_MATCH', rules: []}, // 大小写不同
+            b: {id: 'b', type: 'RuleSet', name: 'PreCheck', hitPolicy: 'FIRST_MATCH', rules: []},
             c: {id: 'c', type: 'ScoreCard', name: 'other', output: 's', aggregation: 'SUM', cards: []},
         };
         const issues = validateRuleAsset(asset(elements, nodes));
         const issue = issues.find((i) => i.level === 'warning' && /重复/.test(i.message));
         expect(issue).toBeDefined();
         expect(issue!.message).toMatch(/precheck.*PreCheck/);
+    });
+
+    it('V7.17:Gateway 全条件出边无 defaultFlow → warning(死路风险)', () => {
+        // Given gateway 2 出边都带 conditionExpression,无 defaultFlow
+        const elements: FlowElement[] = [
+            el({type: 'startEvent', id: 's1'}),
+            el({type: 'exclusiveGateway', id: 'gw1'}),
+            el({type: 'serviceTask', id: 't1', implementation: 'RuleSet:rs1'}),
+            el({type: 'serviceTask', id: 't2', implementation: 'RuleSet:rs2'}),
+            el({type: 'endEvent', id: 'e1'}),
+            el({type: 'sequenceFlow', id: 'f1', sourceRef: 's1', targetRef: 'gw1'}),
+            el({type: 'sequenceFlow', id: 'f2', sourceRef: 'gw1', targetRef: 't1', conditionExpression: 'age >= 18'}),
+            el({type: 'sequenceFlow', id: 'f3', sourceRef: 'gw1', targetRef: 't2', conditionExpression: 'age < 18'}),
+            el({type: 'sequenceFlow', id: 'f4', sourceRef: 't1', targetRef: 'e1'}),
+            el({type: 'sequenceFlow', id: 'f5', sourceRef: 't2', targetRef: 'e1'}),
+        ];
+        const issues = validateRuleAsset(asset(elements, {
+            rs1: {id: 'rs1', type: 'RuleSet', name: 'r1', hitPolicy: 'FIRST_MATCH', rules: []},
+            rs2: {id: 'rs2', type: 'RuleSet', name: 'r2', hitPolicy: 'FIRST_MATCH', rules: []},
+        }));
+        const issue = issues.find((i) => i.nodeId === 'gw1' && /defaultFlow/.test(i.message));
+        expect(issue).toBeDefined();
+        expect(issue!.level).toBe('warning');
+    });
+
+    it('V7.17:Gateway 有 defaultFlow → 不报 warning', () => {
+        const elements: FlowElement[] = [
+            el({type: 'startEvent', id: 's1'}),
+            el({type: 'exclusiveGateway', id: 'gw1', defaultFlow: 'f3'}),
+            el({type: 'endEvent', id: 'e1'}),
+            el({type: 'sequenceFlow', id: 'f1', sourceRef: 's1', targetRef: 'gw1'}),
+            el({type: 'sequenceFlow', id: 'f2', sourceRef: 'gw1', targetRef: 'e1', conditionExpression: 'a > 1'}),
+            el({type: 'sequenceFlow', id: 'f3', sourceRef: 'gw1', targetRef: 'e1'}),
+        ];
+        const issues = validateRuleAsset(asset(elements));
+        expect(issues.find((i) => i.nodeId === 'gw1' && /defaultFlow/.test(i.message))).toBeUndefined();
     });
 });

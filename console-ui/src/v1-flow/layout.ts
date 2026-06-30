@@ -11,7 +11,8 @@ const DEFAULT_HEIGHT = 60;
 export function autoLayout(nodes: Node[], edges: Edge[]): Node[] {
     const g = new dagre.graphlib.Graph();
     g.setDefaultEdgeLabel(() => ({}));
-    g.setGraph({rankdir: 'TB', nodesep: 60, ranksep: 80, marginx: 20, marginy: 20});
+    // V7.17: align 'UL' 同行节点左对齐(多 Gateway 分支视觉整齐),ranker 'tight-tree' 紧凑
+    g.setGraph({rankdir: 'TB', nodesep: 50, ranksep: 80, marginx: 20, marginy: 20, align: 'UL', ranker: 'tight-tree'});
     for (const n of nodes) {
         const w = (n as any).measured?.width ?? (n as any).width ?? DEFAULT_WIDTH;
         const h = (n as any).measured?.height ?? (n as any).height ?? DEFAULT_HEIGHT;
