@@ -118,4 +118,22 @@ describe('V7.11 — validateRuleAsset', () => {
         const issues = validateRuleAsset(asset(elements));
         expect(issues.some((i) => i.level === 'warning' && /Start.*\d+/.test(i.message))).toBe(true);
     });
+
+    it('V7.16:节点名重复(大小写不敏感)→ warning', () => {
+        // Given 3 节点其中 2 同名(大小写不同)
+        const elements: FlowElement[] = [
+            el({type: 'startEvent', id: 's1'}),
+            el({type: 'endEvent', id: 'e1'}),
+            el({type: 'sequenceFlow', id: 'f1', sourceRef: 's1', targetRef: 'e1'}),
+        ];
+        const nodes: RuleAsset['nodes'] = {
+            a: {id: 'a', type: 'RuleSet', name: 'precheck', hitPolicy: 'FIRST_MATCH', rules: []},
+            b: {id: 'b', type: 'RuleSet', name: 'PreCheck', hitPolicy: 'FIRST_MATCH', rules: []}, // 大小写不同
+            c: {id: 'c', type: 'ScoreCard', name: 'other', output: 's', aggregation: 'SUM', cards: []},
+        };
+        const issues = validateRuleAsset(asset(elements, nodes));
+        const issue = issues.find((i) => i.level === 'warning' && /重复/.test(i.message));
+        expect(issue).toBeDefined();
+        expect(issue!.message).toMatch(/precheck.*PreCheck/);
+    });
 });

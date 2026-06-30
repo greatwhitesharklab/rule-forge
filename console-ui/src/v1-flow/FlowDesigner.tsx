@@ -1,19 +1,21 @@
-import {useCallback, useState, useMemo, useEffect} from 'react';
+import {useCallback, useState, useMemo, useEffect, useRef} from 'react';
 import {
     ReactFlow,
+    ReactFlowProvider,
     Background,
     Controls,
     MiniMap,
     addEdge,
     useNodesState,
     useEdgesState,
+    useReactFlow,
     MarkerType,
     type Node,
     type Edge,
     type Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {Layout, Menu, Button, Space, Typography, Input, Drawer, Modal, message, theme} from 'antd';
+import {Layout, Menu, Button, Space, Typography, Input, Drawer, Modal, message, theme, AutoComplete} from 'antd';
 import {UploadOutlined, SaveOutlined, FolderOpenOutlined, CloudUploadOutlined, UndoOutlined, RedoOutlined, PartitionOutlined} from '@ant-design/icons';
 import {formPost, jsonPost, httpGet} from '@/api/client';
 import {nodeTypes, PALETTE, type V1NodeData} from './FlowNodes';
@@ -23,6 +25,7 @@ import GatewayEditor from './GatewayEditor';
 import {fromRuleAsset} from './fromRuleAsset';
 import {validateRuleAsset, type ValidationIssue} from './validation';
 import {autoLayout} from './layout';
+import {searchNodes} from './search';
 
 const {Sider, Content, Header} = Layout;
 const {Text} = Typography;
@@ -134,6 +137,14 @@ export default function FlowDesigner({file}: {file?: string}) {
     const [runOpen, setRunOpen] = useState(false);
     const [runFact, setRunFact] = useState('{\n  "age": 30\n}');
     const [runResult, setRunResult] = useState<V1ExecutionResponse | null>(null);
+    /** V7.15 节点搜索 query + 跳转。fitView 来自 useReactFlow(需 ReactFlowProvider 包裹,见 return)。 */
+    const [searchQuery, setSearchQuery] = useState('');
+    const {fitView} = useReactFlow();
+    const gotoNode = useCallback((id: string) => {
+        setSearchQuery('');
+        fitView({nodes: [{id}], duration: 400, padding: 0.2, maxZoom: 1.2});
+        setSelectedId(id);
+    }, [fitView]);
     /** V7.6:当前决策流的已发布版本号(null = 草稿/未发布)。加载/发布后刷新。 */
     const [publishedVersion, setPublishedVersion] = useState<string | null>(null);
 
@@ -254,6 +265,48 @@ export default function FlowDesigner({file}: {file?: string}) {
         setHistoryIndex((i) => Math.min(i + 1, MAX_HISTORY - 1));
     }, [nodes, edges, nodesMap, schemaName, historyIndex]);
 
+    /** V7.14 抽屉整段 undo:打开时 snapshot pre-state,关闭时若 dirty 把 pre-state 推 history
+     *  (整段抽屉编辑 = 1 个 undo 步;抽屉内 Input Ctrl+Z 仍由浏览器原生处理文本级 undo)。 */
+    useEffect(() => {
+        const prev = prevSelectedIdRef.current;
+        if (prev === null && selectedId !== null) {
+            preDrawerSnapshotRef.current = {nodes, edges, nodesMap, schemaName};
+            drawerDirtyRef.current = false;
+        } else if (prev !== null && selectedId === null && drawerDirtyRef.current && preDrawerSnapshotRef.current) {
+            const snap = preDrawerSnapshotRef.current;
+            setHistory((h) => {
+                const base = h.slice(0, historyIndex + 1);
+                const next = [...base, snap];
+                return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
+            });
+            setHistoryIndex((i) => Math.min(i + 1, MAX_HISTORY - 1));
+            preDrawerSnapshotRef.current = null;
+            drawerDirtyRef.current = false;
+        }
+        prevSelectedIdRef.current = selectedId;
+    }, [selectedId, nodes, edges, nodesMap, schemaName, historyIndex]);
+
+    /** V7.14 全局键盘 Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z → undo/redo。input/textarea/contenteditable 内交给浏览器原生。 */
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (!(e.ctrlKey || e.metaKey)) return;
+            const t = e.target as HTMLElement | null;
+            if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || (t as any).isContentEditable)) {
+                return;
+            }
+            const key = e.key.toLowerCase();
+            if (key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            } else if ((key === 'z' && e.shiftKey) || key === 'y') {
+                e.preventDefault();
+                redo();
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [undo, redo]);
+
     /** 挂载时若有 file(从项目树进入),按 file 加载 RuleAsset → 画布。V7.13:加载新流重置 history。 */
     useEffect(() => {
         if (!file) return;
@@ -299,11 +352,17 @@ export default function FlowDesigner({file}: {file?: string}) {
         [pushHistory, nodes.length, setNodes, schemaName],
     );
 
-    /** Drawer 改节点内容 → 回写 nodesMap + 同步画布节点显示名。 */
+    /** Drawer 改节点内容 → 回写 nodesMap + 同步画布节点显示名。V7.14:标 drawerDirty 让关闭时推整段 undo。 */
     const onNodeChange = useCallback((updated: V1Node) => {
         setNodesMap((m) => ({...m, [updated.id]: updated}));
         setNodes((nds) => nds.map((n) => n.id === updated.id ? {...n, data: {...n.data, name: updated.name}} : n));
+        drawerDirtyRef.current = true;
     }, [setNodes]);
+
+    /** V7.14 抽屉整段 undo refs(打开 snapshot / 关闭时若 dirty 推 history)。useEffect 放 history 块后避免 TDZ。 */
+    const preDrawerSnapshotRef = useRef<Snapshot | null>(null);
+    const drawerDirtyRef = useRef(false);
+    const prevSelectedIdRef = useRef<string | null>(null);
 
     const exportJson = useCallback(() => {
         setExported(JSON.stringify(toRuleAsset(nodes, edges, nodesMap, schemaName), null, 2));
@@ -385,12 +444,27 @@ export default function FlowDesigner({file}: {file?: string}) {
     const palette = useMemo(() => PALETTE.map((t) => ({key: t, label: `+ ${t}`})), []);
 
     return (
+        <ReactFlowProvider>
         <Layout style={{height: '100vh'}}>
             <Header style={{background: token.colorBgContainer, padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                 <Text strong style={{fontSize: 16}}>RuleForge · V1 决策流设计器</Text>
                 <Space>
                     <Text type='secondary' style={{fontSize: 12}}>Schema:</Text>
                     <Input size='small' value={schemaName} onChange={(e) => setSchemaName(e.target.value)} style={{width: 140}}/>
+                    <AutoComplete
+                        size='small'
+                        data-testid='v1-search-input'
+                        value={searchQuery}
+                        placeholder='搜索节点(name/id)'
+                        style={{width: 180}}
+                        onChange={setSearchQuery}
+                        onSelect={(val) => gotoNode(String(val))}
+                        options={searchNodes(nodes, searchQuery).map((nd) => ({
+                            value: nd.id,
+                            label: `${((nd.data as any)?.name as string) || nd.id} (${nd.id})`,
+                        }))}
+                        allowClear
+                    />
                     <Button size='small' icon={<UndoOutlined/>} onClick={undo} disabled={historyIndex <= 0} data-testid='v1-undo-btn' title='撤销'>撤销</Button>
                     <Button size='small' icon={<RedoOutlined/>} onClick={redo} disabled={historyIndex < 0 || historyIndex >= history.length - 1} data-testid='v1-redo-btn' title='重做'>重做</Button>
                     <Button size='small' icon={<PartitionOutlined/>} onClick={runAutoLayout} data-testid='v1-autolayout-btn' title='dagre 自动布局(TB)'>整理</Button>
@@ -444,7 +518,7 @@ export default function FlowDesigner({file}: {file?: string}) {
                     >
                         <Background/>
                         <Controls/>
-                        <MiniMap/>
+                        <MiniMap pannable zoomable/>
                     </ReactFlow>
                 </Content>
             </Layout>
@@ -518,5 +592,6 @@ export default function FlowDesigner({file}: {file?: string}) {
                     </Space>}
             </Modal>
         </Layout>
+        </ReactFlowProvider>
     );
 }
