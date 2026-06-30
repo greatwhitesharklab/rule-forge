@@ -103,5 +103,16 @@ export function validateRuleAsset(asset: RuleAsset): ValidationIssue[] {
         }
     }
 
+    // V7.17:Gateway 缺 defaultFlow + 所有出边都有 condition → warning(全条件不命中时死路)
+    for (const e of elements) {
+        if (e.type !== 'exclusiveGateway') continue;
+        const out = elements.filter((x) => x.type === 'sequenceFlow' && x.sourceRef === e.id);
+        if (out.length === 0) continue;
+        const allConditional = out.every((x) => !!(x as any).conditionExpression && (x as any).conditionExpression.trim() !== '');
+        if (allConditional && !e.defaultFlow) {
+            issues.push({level: 'warning', message: `Gateway "${e.name || e.id}" 所有出边都有 condition 但无 defaultFlow,全不命中时 flow 终止(建议加 defaultFlow 兜底)`, nodeId: e.id});
+        }
+    }
+
     return issues;
 }
