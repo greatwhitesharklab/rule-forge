@@ -90,9 +90,12 @@ test.describe('V1 决策流设计器', () => {
     test('RuleSet 改命中策略 → 导出反映', async ({page}) => {
         await addNode(page, '+ RuleSet');
         await page.locator('[data-testid="v1-node-RuleSet"]').click();
-        // 改命中策略 FIRST_MATCH → ALL_MATCH
-        await page.locator('.ant-select').first().click();
-        await page.getByText('ALL_MATCH(全命中)').click();
+        // 改命中策略 FIRST_MATCH → ALL_MATCH(用 testid 精确定位 Drawer 内命中策略 Select;
+        // 不能用 .ant-select.first() —— Header 的 Schema AutoComplete 也是 .ant-select)
+        await page.locator('[data-testid="v1-hit-policy"]').click();
+        // antd Select 下拉项用 title 属性定位(比 getByRole option 稳定:
+        // antd 内部存在两套 option DOM,role=option 的 accessible name 计算不一致)
+        await page.locator('.ant-select-item-option[title="ALL_MATCH(全命中)"]').click();
         const asset = await exportJson(page);
         expect(asset.nodes['ruleset_1'].hitPolicy).toBe('ALL_MATCH');
     });
