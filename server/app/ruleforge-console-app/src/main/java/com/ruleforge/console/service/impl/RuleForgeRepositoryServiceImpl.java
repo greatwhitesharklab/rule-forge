@@ -85,7 +85,7 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
 
     @Override
     public List<RepositoryFile> loadProjects(String companyId) throws Exception {
-        return null;
+        return new ArrayList<>();
     }
 
     @Override
