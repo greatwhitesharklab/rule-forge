@@ -122,7 +122,7 @@ function toRuleAsset(
     };
 }
 
-export default function FlowDesigner({file}: {file?: string}) {
+function FlowDesignerInner({file}: {file?: string}) {
     const {token} = theme.useToken();
     const [nodes, setNodes, onNodesChange] = useNodesState<Node<V1NodeData>>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -462,7 +462,6 @@ export default function FlowDesigner({file}: {file?: string}) {
     const palette = useMemo(() => PALETTE.map((t) => ({key: t, label: `+ ${t}`})), []);
 
     return (
-        <ReactFlowProvider>
         <Layout style={{height: '100vh'}}>
             <Header style={{background: token.colorBgContainer, padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                 <Text strong style={{fontSize: 16}}>RuleForge · V1 决策流设计器</Text>
@@ -610,6 +609,19 @@ export default function FlowDesigner({file}: {file?: string}) {
                     </Space>}
             </Modal>
         </Layout>
+    );
+}
+
+/**
+ * V7.19 修复白屏:ReactFlowProvider 必须是调用 useReactFlow() 的组件的祖先组件,
+ * 不能挂在本组件 return 里(否则组件 body 跑 useReactFlow 时 Provider 尚未挂载,
+ * 抛 reactflow.dev/error#001 → 整个 /v1-flow 路由白屏)。
+ * 拆两层:外层挂 Provider,内层消费 hooks。调用方仍用 <FlowDesigner file=.../>。
+ */
+export default function FlowDesigner({file}: {file?: string}) {
+    return (
+        <ReactFlowProvider>
+            <FlowDesignerInner file={file}/>
         </ReactFlowProvider>
     );
 }

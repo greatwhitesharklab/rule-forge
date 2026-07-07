@@ -61,7 +61,7 @@ function RuleSetEditor({node, update}: {node: RuleSetNode; update: (p: Partial<V
     const rules = node.rules || [];
     return (
         <>
-            <Form.Item label='命中策略'><Select value={node.hitPolicy} options={HIT_POLICIES} onChange={(v) => update({hitPolicy: v} as Partial<V1Node>)}/></Form.Item>
+            <Form.Item label='命中策略'><Select value={node.hitPolicy} options={HIT_POLICIES} data-testid='v1-hit-policy' onChange={(v) => update({hitPolicy: v} as Partial<V1Node>)}/></Form.Item>
             <Divider style={{margin: '8px 0'}}><Text type='secondary'>规则({rules.length})</Text></Divider>
             {rules.map((r, i) => (
                 <div key={r.id} style={{border: '1px solid #f0f0f0', borderRadius: 6, padding: 8, marginBottom: 8}}>
