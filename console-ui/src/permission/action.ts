@@ -1,4 +1,4 @@
-import {formPost, httpGet} from '../api/client.js';
+import {formPost} from '../api/client.js';
 
 import {alert} from '@/utils/modal';
 export const MASTER_LOADED = 'master_loaded';
@@ -37,7 +37,7 @@ export interface UserPermission {
 
 export function loadMasterData() {
     return function (dispatch: Function) {
-        httpGet<UserPermission[]>("/permission/loadResourceSecurityConfigs", {
+        formPost<UserPermission[]>("/permission/loadResourceSecurityConfigs", {}, {
             errorPrefix: '加载权限信息失败,',
         }).then(function (data: UserPermission[]) {
             dispatch({type: MASTER_LOADED, data});

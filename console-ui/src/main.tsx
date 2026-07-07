@@ -19,7 +19,6 @@ import {RequireAuth} from '@/router/RequireAuth';
 const FrameApp = lazy(() => import('@/frame'));
 const VariableEditorRoute = lazy(() => import('@/variable/EditorRoute'));
 const ConstantEditorRoute = lazy(() => import('@/constant/EditorRoute'));
-const ParameterEditorRoute = lazy(() => import('@/parameter/EditorRoute'));
 const ActionEditorRoute = lazy(() => import('@/action/EditorRoute'));
 const ResourceEditorRoute = lazy(() => import('@/resource/EditorRoute'));
 // V7.7.2:PackageEditorRoute 删除 — 老 .rp 知识包编辑器废弃,V1 决策流走 V1FlowDesigner。
@@ -52,7 +51,6 @@ createRoot(document.getElementById('root')!).render(
                 <Route index element={<Suspense fallback={<div style={{padding: 24}}>加载中…</div>}><FrameApp/></Suspense>}/>
                 <Route path="editor/variable" element={<VariableEditorRoute/>}/>
                 <Route path="editor/constant" element={<ConstantEditorRoute/>}/>
-                <Route path="editor/parameter" element={<ParameterEditorRoute/>}/>
                 <Route path="editor/action" element={<ActionEditorRoute/>}/>
                 <Route path="editor/resource" element={<ResourceEditorRoute/>}/>
                 {/* V7.7.2:editor/package 路由删除(.rp 废弃) */}
