@@ -21,7 +21,7 @@ import org.springframework.context.annotation.*;
         "com.ruleforge.console.repository",
         "com.ruleforge.console.storage",
         "com.ruleforge.console.storage.impl",
-        "com.ruleforge.console.flow",
+        // V7.21:com.ruleforge.console.flow 包(BpmnFlowController)已随 BPMN 删除。
         "com.ruleforge.console.model",
         // V6.13.3: 之前漏 com.ruleforge.console.util,导致 @Component EnvironmentUtils 永远不被
         // 实例化,setApplicationContext 永不跑,任何 EnvironmentUtils.getLoginUser() 调用

@@ -104,12 +104,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.camunda.bpm</groupId>
-            <artifactId>camunda-external-task-client</artifactId>
-            <version>7.22.0</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>

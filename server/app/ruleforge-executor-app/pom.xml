@@ -58,13 +58,6 @@
             <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
-        <!-- ClickHouse JDBC — OLAP analytics dual-write -->
-        <dependency>
-            <groupId>com.clickhouse</groupId>
-            <artifactId>clickhouse-jdbc</artifactId>
-            <version>0.7.1</version>
-        </dependency>
-
         <!-- V7.21 — ruleforge-decision 模块彻底删除(BPMN 引擎 + 陪跑/灰度全砍)。
              共享层(数据源/变量定义)迁到 ruleforge-datasource;V1 决策流依赖 ruleforge-core。 -->
         <dependency>
