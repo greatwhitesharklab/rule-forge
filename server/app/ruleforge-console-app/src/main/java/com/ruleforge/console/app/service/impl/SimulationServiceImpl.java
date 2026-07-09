@@ -15,7 +15,7 @@ import com.ruleforge.console.app.mapper.SimulationResultMapper;
 import com.ruleforge.console.app.mapper.SimulationRunMapper;
 import com.ruleforge.console.service.BatchTestService;
 import com.ruleforge.console.service.SimulationService;
-import com.ruleforge.decision.util.ComparisonUtils;
+import com.ruleforge.datasource.util.ComparisonUtils;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.library.variable.VariableCategory;
 import lombok.extern.slf4j.Slf4j;

@@ -66,6 +66,19 @@
 
         <!-- V5.21+: 拆 Flowable 依赖 — 自建 FlowEngine 取代 Flowable 8 starter -->
 
+        <!-- V7.21 — flyway-core / flyway-mysql 原为 ruleforge-decision 传递依赖,
+             模块删除后 console-app 的 FlywayConfig / AppFlywayConfig 直接依赖显式声明。 -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>11.14.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <version>11.14.1</version>
+        </dependency>
+
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>

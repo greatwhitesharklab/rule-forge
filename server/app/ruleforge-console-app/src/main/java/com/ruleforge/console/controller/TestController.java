@@ -28,10 +28,6 @@ import com.ruleforge.console.model.DoTestDto;
 import com.ruleforge.console.model.ReadTestDataExcelResult;
 import com.ruleforge.console.service.TestService;
 import com.ruleforge.console.util.ExcelUtils;
-import com.ruleforge.decision.entity.DecisionFlowState;
-import com.ruleforge.decision.exception.FlowExecutionException;
-import com.ruleforge.decision.flow.engine.FlowContext;
-import com.ruleforge.decision.flow.engine.FlowEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
@@ -91,8 +87,6 @@ public class TestController {
     private final TestService testService;
     private final TestDataService testDataService;
     private final BatchTestService batchTestService;
-    // V5.21+: 自建决策流执行器(原 Flowable RuntimeService)
-    private final FlowEngine flowEngine;
 
     // ==================== 单条测试 ====================
 
@@ -114,7 +108,6 @@ public class TestController {
             }
             facts.put(vc, entity);
         }
-        String flowId = data.getFlowId();
         long start = System.currentTimeMillis();
         KnowledgeBase knowledgeBase = (KnowledgeBase) httpSessionKnowledgeCache.get(req, KB_KEY);
         if (knowledgeBase == null) {
@@ -131,52 +124,12 @@ public class TestController {
             }
         }
         ExecutionResponse response = null;
-        if (StringUtils.isNotEmpty(flowId)) {
-            Map<String, Object> flowVariables = new HashMap<>();
-            for (Map.Entry<VariableCategory, Object> entry : facts.entrySet()) {
-                Object obj = entry.getValue();
-                if (obj instanceof GeneralEntity) {
-                    String varName = entry.getKey().getName();
-                    flowVariables.put(varName, obj);
-                } else if (obj instanceof Map) {
-                    flowVariables.putAll((Map<String, Object>) obj);
-                }
-            }
-            // V5.21+: 走自建 FlowEngine(原 Flowable startProcessInstanceByKey)
-            // RuleNodeExecutor 内部对 outputModel == null 走 NoOp 兜底(V5.18 V18 + 后续
-            // PR 加的 guard,见 RuleNodeExecutor.java line 67),所以 console-app 测试路径
-            // 不引入 executor-app 的 OutputModel 类,守住模块边界。
-            // V5.39 A1:4 参构造
-            FlowContext flowCtx = new FlowContext(
-                new com.ruleforge.decision.flow.engine.FlowIdentity(
-                    UUID.randomUUID().toString(), flowId, null),
-                com.ruleforge.decision.flow.engine.BusinessVars.from(new HashMap<>(flowVariables)),
-                new com.ruleforge.decision.flow.engine.ReteSession(),
-                new com.ruleforge.decision.flow.engine.SuspendRegistry());
-            flowCtx.rete().replaceSession(session);
-            DecisionFlowState state = flowEngine.start(flowId, flowCtx);
-            if (DecisionFlowState.STATUS_FAILED.equals(state.getStatus())) {
-                throw new FlowExecutionException(state.getErrorMessage());
-            }
-            // 把 FlowEngine 写回的 vars 同步回 facts(供前端展示 var-assign 后的值)
-            Map<String, Object> resultVars = flowCtx.effectiveVars();
-            for (Map.Entry<VariableCategory, Object> entry : facts.entrySet()) {
-                Object obj = entry.getValue();
-                if (obj instanceof GeneralEntity) {
-                    String varName = entry.getKey().getName();
-                    Object updated = resultVars.get(varName);
-                    if (updated != null) {
-                        entry.setValue(updated);
-                    }
-                }
-            }
-            response = new ExecutionResponseImpl();
+        // V7.21 — BPMN 决策流(FlowEngine)彻底删除,doTest 只走纯规则路径。
+        // flowId 入参保留兼容(前端可能仍传),但不再有 flow 执行分支。
+        if (parameters == null) {
+            response = session.fireRules();
         } else {
-            if (parameters == null) {
-                response = session.fireRules();
-            } else {
-                response = session.fireRules(parameters);
-            }
+            response = session.fireRules(parameters);
         }
         for (VariableCategory vc : facts.keySet()) {
             Object obj = facts.get(vc);
@@ -198,16 +151,15 @@ public class TestController {
         List<RuleInfo> matchedRules = res.getMatchedRules();
         StringBuffer sb = new StringBuffer();
         sb.append("耗时：").append(elapse).append("ms");
-        if (StringUtils.isEmpty(flowId)) {
-            sb.append("，");
-            sb.append("匹配的规则共").append(matchedRules.size()).append("个");
-            if (!matchedRules.isEmpty()) {
-                buildRulesName(matchedRules, sb);
-            }
-            sb.append("；");
-            sb.append("触发的规则共").append(firedRules.size()).append("个");
-            buildRulesName(firedRules, sb);
+        // V7.21 — BPMN 决策流删除后 doTest 只走纯规则路径,始终展示规则匹配/触发统计。
+        sb.append("，");
+        sb.append("匹配的规则共").append(matchedRules.size()).append("个");
+        if (!matchedRules.isEmpty()) {
+            buildRulesName(matchedRules, sb);
         }
+        sb.append("；");
+        sb.append("触发的规则共").append(firedRules.size()).append("个");
+        buildRulesName(firedRules, sb);
         Map<String, Object> resultMap = new HashMap<>();
         resultMap.put("info", sb.toString());
         resultMap.put("data", variableCategories);

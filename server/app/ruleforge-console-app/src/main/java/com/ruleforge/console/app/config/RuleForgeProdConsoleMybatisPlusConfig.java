@@ -27,14 +27,11 @@ public class RuleForgeProdConsoleMybatisPlusConfig {
     @Bean
     public MapperScannerConfigurer mapperScannerConfigurer() {
         MapperScannerConfigurer mapperScannerConfigurer = new MapperScannerConfigurer();
-        // V5.53.3 — 把 decision 模块的 mapper 也加进来(除了 GrayStrategyMapper 它
-        // 在 com.ruleforge.decision.mapper.rf 子包,走 ruleforgeSqlSessionFactory)。
-        // 原因:V5.53.2 重命名 nd_→rfa_ 后,8/9 个 lib mapper 实际指向 app_db 的 rfa_*
-        // 表,但 @MapperScan 一直把它们绑到 ruleforgeSqlSessionFactory → 跨库查询 1146。
-        // GrayStrategyMapper 是唯一还在 ruleforge_db(rf_gray_strategy)的,已移到子包。
-        mapperScannerConfigurer.setBasePackage(
-                "com.ruleforge.console.app.mapper,"
-                + "com.ruleforge.decision.mapper");
+        // V7.21 — ruleforge-decision 删除后,原 decision.mapper(rfa_* 表)迁到
+        // com.ruleforge.datasource.mapper,由 RuleForgeDatasourceAutoConfiguration 的
+        // @MapperScan 统一扫(绑定到 appSqlSessionFactory — 本类的 @Primary SqlSessionFactory)。
+        // 本 scanner 只扫 console-app 本地 mapper(audit/batchtest/simulation 等)。
+        mapperScannerConfigurer.setBasePackage("com.ruleforge.console.app.mapper");
         mapperScannerConfigurer.setSqlSessionFactoryBeanName("appSqlSessionFactory");
         return mapperScannerConfigurer;
     }
