@@ -5,11 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
-import com.ruleforge.decision.config.RuleForgeDecisionAutoConfiguration;
-import com.ruleforge.decision.service.impl.DatasourceServiceImpl;
-import com.ruleforge.decision.service.impl.GrayStrategyServiceImpl;
-import com.ruleforge.decision.service.impl.RuleVariableDefServiceImpl;
-import com.ruleforge.decision.service.impl.ShadowConfigServiceImpl;
+import com.ruleforge.datasource.config.RuleForgeDatasourceAutoConfiguration;
 // V5.53.2 — FlywayConfig 跟 RuleForgeConsoleAutoConfiguration 都在
 //   com.ruleforge.console.config 包(@SpringBootApplication 扫不到),
 //   @ComponentScan 写在那 2 个 @Configuration 类里也被主类的 scan 覆盖。
@@ -23,20 +19,14 @@ import com.ruleforge.console.config.FlywayConfig;
 // @SpringBootApplication 默认从本类的 com.ruleforge.console.app 包开始扫,
 // 同时覆盖到 com.ruleforge.console 父包,所以 console 内部不需要再 @Import 旁路。
 //
-// 决策模块(ruleforge-decision)仍在 nested jar 里,Spring Boot 4 下需要:
-// - @Import 它的 Service 实现(boot 不会扫 nested jar 里的 @Component)
-// - @MapperScan 显式注册它的 mapper 接口 — 由 DecisionMybatisPlusConfig 统一注册
-// - @Import RuleForgeDecisionAutoConfiguration 启用 lib 内的 @Component (BpmnXmlParser /
-//   FlowDefinitionRepo / NodeExecutor / 等),boot 不会扫 nested jar 里的 @Component
-//
-// V5.47 — ruleforge-dsl module 整 module 删除,.ul 老 DSL 链彻底下架,
-//   RuleForgeDslAutoConfiguration 跟 4 个 DSL bean 全部不存在,不再 @Import。
+// V7.21 — ruleforge-decision 模块彻底删除(BPMN 引擎 + 陪跑/灰度全砍):
+//   - 共享层(数据源/变量定义)迁到 ruleforge-datasource 模块
+//   - Spring Boot 4 不扫 nested jar 的 @Component,显式 @Import
+//     RuleForgeDatasourceAutoConfiguration(扫 connector / service.impl + @MapperScan)
+//   - DatasourceServiceImpl / RuleVariableDefServiceImpl 由 AutoConfig 的 @ComponentScan 拾取
+//   - GrayStrategyServiceImpl / ShadowConfigServiceImpl 已随模块删除,不再 @Import
 @Import({
-        DatasourceServiceImpl.class,
-        GrayStrategyServiceImpl.class,
-        RuleVariableDefServiceImpl.class,
-        ShadowConfigServiceImpl.class,
-        RuleForgeDecisionAutoConfiguration.class,
+        RuleForgeDatasourceAutoConfiguration.class,
         // V5.53.2 — 上面 FlywayConfig import 的同款,显式带进 context,见 import 段注释。
         FlywayConfig.class
 })

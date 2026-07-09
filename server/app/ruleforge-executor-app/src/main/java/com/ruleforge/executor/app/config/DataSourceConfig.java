@@ -9,19 +9,18 @@ import org.springframework.context.annotation.Primary;
 import javax.sql.DataSource;
 
 /**
- * Executor 数据源配置 — ruleforge / app / clickhouse。
+ * Executor 数据源配置 — ruleforge / app。
  *
  * <p>和 console-app 的 DataSourceConfig 用同样模式,绕开 Spring Boot 4
  * 的 DataSourceAutoConfiguration,用 @Value + 直接 new HikariDataSource
  * 才能拿到显式的 poolName。
  *
- * <p>V5.21+: flowable DataSource 已删除 — 决策流由自建 FlowEngine 驱动,
- * 不再走 Flowable 8 引擎,flowable_db 也不再被任何 Bean 引用。
- *
- * <p>V5.53.3 — 新增 appDataSource(ruleforge_app_db)供 appSqlSessionFactory 使用。
- * 之前 executor-app 只连 ruleforge_db,导致 DecisionFlowStateMapper 等指向
- * rfa_* 的 mapper 跨库查询 1146。现在 ruleforge_db 给 GrayStrategyMapper(rf_gray_strategy),
- * app_db 给其余所有 decision mapper。
+ * <p>V7.21 — BPMN/陪跑/灰度/ClickHouse analytics 全部删除:
+ * <ul>
+ *   <li>ruleforge_db(rf_*):executor 现仅作底层连接池保留,无 rf_ mapper 读取</li>
+ *   <li>app_db(rfa_*):datasource 模块的 mapper 走 appSqlSessionFactory(@Primary)</li>
+ *   <li>clickhouse:analytics 双写已删,clickhouseDataSource bean 移除</li>
+ * </ul>
  */
 @Configuration
 public class DataSourceConfig {
@@ -44,15 +43,6 @@ public class DataSourceConfig {
     @Value("${RF_DB_PASSWORD:}")
     private String rfDbPassword;
 
-    @Value("${CH_DB_URL:jdbc:clickhouse://192.168.3.36:8123/ruleforge_analytics}")
-    private String chDbUrl;
-
-    @Value("${CH_DB_USERNAME:default}")
-    private String chDbUsername;
-
-    @Value("${CH_DB_PASSWORD:changeme}")
-    private String chDbPassword;
-
     @Primary
     @Bean
     public DataSource ruleforgeDataSource() {
@@ -62,22 +52,6 @@ public class DataSourceConfig {
     @Bean
     public DataSource appDataSource() {
         return buildPool("ExecutorAppCP", appDbUrl, appDbUsername, appDbPassword, 10);
-    }
-
-    @Bean("clickhouseDataSource")
-    public DataSource clickhouseDataSource() {
-        HikariDataSource ds = new HikariDataSource();
-        ds.setPoolName("ClickHouseCP");
-        ds.setJdbcUrl(chDbUrl);
-        ds.setUsername(chDbUsername);
-        ds.setPassword(chDbPassword);
-        ds.setDriverClassName("com.clickhouse.jdbc.ClickHouseDriver");
-        ds.setMaximumPoolSize(5);
-        ds.setMinimumIdle(1);
-        ds.setConnectionTimeout(10_000);
-        ds.setIdleTimeout(300_000);
-        ds.setMaxLifetime(600_000);
-        return ds;
     }
 
     private HikariDataSource buildPool(String name, String jdbcUrl, String user, String pwd, int maxPool) {

@@ -98,7 +98,8 @@ describe('FileTree', () => {
     // BUG FIX V6.13.5f:buildData 给 resource 容器和它所有 lib/ruleLib/... 子节点赋同一个 fullPath(同物理路径多虚拟分类)
     // 兄弟节点共享 key → antd 强制 key 唯一,第 2 个起被丢弃 → caret 折叠节点消失 / 状态错位
     // 修复:toAntNode 用 nodeKey(fullPath, type) 派生唯一 key
-    // V6.20.0 P2:只 4 类库容器 (lib/flowLib/drlLib/resource),用 5 个不同 type 兄弟测契约
+    // V6.20.0 P2:只 4 类库容器 (lib/drlLib/v1libraryLib/resource),用 5 个不同 type 兄弟测契约。
+    // V7.21:flowLib 换成 v1libraryLib(BPMN 决策流入口移除,V1 库容器替代)。
     it('V6.13.5f:同 fullPath 不同 type 的兄弟节点 antd key 唯一(resource + 4 个 lib 不撞 key)', () => {
         const siblingData = {
             id: 'root', name: 'root', type: 'root', fullPath: '/',
@@ -106,7 +107,7 @@ describe('FileTree', () => {
                 {id: 'r', name: '资源', type: 'resource', fullPath: '/test003', _level: 2},
                 {id: 'l1', name: '库', type: 'lib', fullPath: '/test003', _level: 3},
                 {id: 'l2', name: 'DRL规则', type: 'drlLib', fullPath: '/test003', _level: 3},
-                {id: 'l3', name: '决策流', type: 'flowLib', fullPath: '/test003', _level: 3},
+                {id: 'l3', name: 'V1库', type: 'v1libraryLib', fullPath: '/test003', _level: 3},
                 {id: 'l4', name: '公共', type: 'publicResource', fullPath: '/test003', _level: 3},
             ],
         } as unknown as TreeNodeData;
@@ -114,7 +115,7 @@ describe('FileTree', () => {
         const {container} = render(<Provider store={makeStore(siblingData)}><FileTree/></Provider>);
         // 5 个期望 name 全出现(无 antd 兄弟合并丢节点)
         const titles = Array.from(container.querySelectorAll('.ant-tree-treenode')).map(n => n.textContent || '');
-        ['资源', '库', 'DRL规则', '决策流', '公共'].forEach(name => {
+        ['资源', '库', 'DRL规则', 'V1库', '公共'].forEach(name => {
             expect(titles.some(t => t.includes(name))).toBe(true);
         });
         // antd 不应该报 "Same 'key' exist in the Tree" 警告

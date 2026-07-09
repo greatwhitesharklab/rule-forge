@@ -3,33 +3,23 @@ package com.ruleforge.console.service.impl;
 import com.ruleforge.console.repository.ExternalRepository;
 import com.ruleforge.exception.RuleException;
 import com.ruleforge.model.GeneralEntity;
-import com.ruleforge.model.library.variable.VariableCategory;
-import com.ruleforge.model.rule.Rule;
-import com.ruleforge.model.rule.RuleInfo;
-import com.ruleforge.runtime.KnowledgePackage;
-import com.ruleforge.engine.KnowledgeSession;
-import com.ruleforge.engine.KnowledgeSessionFactory;
-import com.ruleforge.engine.RuleExecutionResponse;
 import com.ruleforge.console.model.ApplicationAllVariableCategoryMap;
 import com.ruleforge.console.model.BatchTestFlowMap;
 import com.ruleforge.console.model.SaveProcessItemDto;
 import com.ruleforge.console.model.TestRuntimeErrorDto;
 import com.ruleforge.console.service.TestService;
-import com.ruleforge.decision.entity.DecisionFlowState;
-import com.ruleforge.decision.exception.FlowExecutionException;
-import com.ruleforge.decision.flow.engine.FlowContext;
-import com.ruleforge.decision.flow.engine.FlowEngine;
+import com.ruleforge.engine.RuleExecutionResponse;
+import com.ruleforge.runtime.KnowledgePackage;
+import com.ruleforge.engine.KnowledgeSession;
+import com.ruleforge.engine.KnowledgeSessionFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -37,14 +27,18 @@ import java.util.UUID;
 public class TestServiceImpl implements TestService {
 
     private final ExternalRepository externalRepository;
-    // V5.21+: 自建决策流执行器(原 Flowable RuntimeService)
-    private final FlowEngine flowEngine;
 
+    /**
+     * V7.21 — BPMN 决策流(FlowEngine)彻底删除后,doFlowTest 改走纯规则路径。
+     *
+     * <p>方法签名(含 flowId/flowMap 入参)保留不变,避免 BatchTest FLOW 模式
+     * (FlowBatchTestSubject / BatchTestServiceImpl)的调用方大面积改动;
+     * flowId/flowMap 入参不再参与执行,仅作签名兼容。
+     */
     @Override
     public SaveProcessItemDto doFlowTest(KnowledgePackage knowledgePackage, String flowId, ApplicationAllVariableCategoryMap row, BatchTestFlowMap flowMap) throws Exception {
         long start = System.currentTimeMillis();
 
-        // 获取session
         KnowledgeSession session = KnowledgeSessionFactory.newKnowledgeSession(knowledgePackage);
 
         SaveProcessItemDto saveProcessItemModel = new SaveProcessItemDto();
@@ -56,58 +50,25 @@ public class TestServiceImpl implements TestService {
             } else if (fact != null) {
                 session.insert(fact);
 
-                // 记录订单号
                 if (name.equals("输出信息")) {
                     saveProcessItemModel.setOutputModel((GeneralEntity) fact);
                 }
             }
         }
 
-        if (StringUtils.hasText(flowId)) {
-            saveProcessItemModel.setFlowId(flowId);
-
-            // V5.21+: 走自建 FlowEngine(原 Flowable startProcessInstanceByKey + getVariables)
-            // RuleNodeExecutor 对 outputModel == null 走 NoOp 兜底(见 RuleNodeExecutor.java line 67),
-            // 守住模块边界:console-app 不引入 executor-app 的 OutputModel。
-            Map<String, Object> flowVariables = new HashMap<>();
-            for (String name : row.keySet()) {
-                Object fact = row.get(name);
-                if (fact instanceof GeneralEntity) {
-                    flowVariables.put(((GeneralEntity) fact).getTargetClass(), fact);
-                } else if (fact instanceof Map) {
-                    flowVariables.putAll((Map<String, Object>) fact);
-                }
-            }
-            // V5.39 A1:4 参构造
-            FlowContext flowCtx = new FlowContext(
-                new com.ruleforge.decision.flow.engine.FlowIdentity(
-                    UUID.randomUUID().toString(), flowId, null),
-                com.ruleforge.decision.flow.engine.BusinessVars.from(new HashMap<>(flowVariables)),
-                new com.ruleforge.decision.flow.engine.ReteSession(),
-                new com.ruleforge.decision.flow.engine.SuspendRegistry());
-            flowCtx.rete().replaceSession(session);
-            DecisionFlowState state = flowEngine.start(flowId, flowCtx);
-            if (DecisionFlowState.STATUS_FAILED.equals(state.getStatus())) {
-                throw new FlowExecutionException(state.getErrorMessage());
-            }
-            Map<String, Object> resultVars = flowCtx.effectiveVars();
-            session.getParameters().putAll(resultVars);
-            row.put(VariableCategory.PARAM_CATEGORY, session.getParameters());
-
-            Map<String, Object> result = new HashMap<>();
-            // Record fired rules from FlowEngine output vars
-            Object firedRules = resultVars.get("_firedRules");
-            if (firedRules != null) {
-                result.put("触发规则数", firedRules);
-            }
-            long end = System.currentTimeMillis();
-            long elapse = end - start;
-
-            result.put("耗时", elapse);
-            row.put("测试结果", result);
+        RuleExecutionResponse response;
+        if (parameterMap == null) {
+            response = session.fireRules();
+        } else {
+            response = session.fireRules(parameterMap);
         }
+        // 把触发规则数 + 耗时写回行(供批量测试结果展示)
+        Map<String, Object> result = new HashMap<>();
+        result.put("触发规则数", response.getFiredRules().size());
+        long elapse = System.currentTimeMillis() - start;
+        result.put("耗时", elapse);
+        row.put("测试结果", result);
 
-        // 返回决策流水
         saveProcessItemModel.setMessageItemList(session.getExecMessageItems());
         return saveProcessItemModel;
     }
@@ -120,7 +81,6 @@ public class TestServiceImpl implements TestService {
         int maxItemNum = 500;
         List<SaveProcessItemDto> saveProcessItemDtoList = new ArrayList<>(maxItemNum);
         for (ApplicationAllVariableCategoryMap datum : rowList) {
-            // 试算每条数据
             try {
                 SaveProcessItemDto saveProcessItemDto = doFlowTest(knowledgePackage, flowId, datum, flowMap);
                 saveProcessItemDto.setPackageId(packageId);

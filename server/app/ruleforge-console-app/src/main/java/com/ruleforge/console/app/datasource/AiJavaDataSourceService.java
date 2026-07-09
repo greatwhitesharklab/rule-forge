@@ -2,11 +2,11 @@ package com.ruleforge.console.app.datasource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.ruleforge.decision.connector.AiJavaDataSourceConnector;
-import com.ruleforge.decision.datasource.IJavaDataSource;
-import com.ruleforge.decision.datasource.JavaSourceCompiler;
-import com.ruleforge.decision.entity.Datasource;
-import com.ruleforge.decision.service.IDatasourceService;
+import com.ruleforge.datasource.connector.AiJavaDataSourceConnector;
+import com.ruleforge.datasource.jcompiler.IJavaDataSource;
+import com.ruleforge.datasource.jcompiler.JavaSourceCompiler;
+import com.ruleforge.datasource.entity.Datasource;
+import com.ruleforge.datasource.service.IDatasourceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -53,9 +53,9 @@ public class AiJavaDataSourceService {
             return ApplyResult.failure("javaSource exceeds " + MAX_SOURCE_BYTES + " bytes");
         }
         if (!javaSource.contains("implements IJavaDataSource")
-            && !javaSource.contains("implements com.ruleforge.decision.datasource.IJavaDataSource")) {
+            && !javaSource.contains("implements com.ruleforge.datasource.jcompiler.IJavaDataSource")) {
             return ApplyResult.failure(
-                "Java source must implement com.ruleforge.decision.datasource.IJavaDataSource");
+                "Java source must implement com.ruleforge.datasource.jcompiler.IJavaDataSource");
         }
 
         Datasource ds = datasourceService.getDatasourceById(datasourceId);

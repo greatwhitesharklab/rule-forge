@@ -11,7 +11,7 @@
 
 </div>
 
-**面向金融场景的智能决策引擎** — 确定性规则 + ML 模型推理,每个决策可审计、可解释、可追溯，Java 17 + Spring Boot 4 决策引擎,内嵌 **RETE 规则匹配** + **BPMN 2.0 决策流**双推理内核，支持**信贷审批 / 反欺诈 / 评分卡 / 决策流**四大场景。
+**面向金融场景的智能决策引擎** — 确定性规则 + ML 模型推理,每个决策可审计、可解释、可追溯，Java 17 + Spring Boot 4 决策引擎,内嵌 **RETE 规则匹配** + **V1 决策流编排**(6 节点 + CEL 条件,线性 + 排他网关),支持**信贷审批 / 反欺诈 / 评分卡 / 决策流**四大场景。
 
 ## 🎯 快速选择你的路径
 
@@ -24,12 +24,11 @@
 
 ## ✨ 核心特性
 
-- **RETE + BPMN 2.0 双推理内核** — 规则匹配毫秒级,决策流覆盖完整 BPMN 2.0 子集(多池协作 / 异步消息 / 错误补偿 SAGA)
+- **RETE + V1 决策流编排** — 规则匹配毫秒级,V1 决策流极简 6 节点(Start/RuleSet/DecisionTable/ScoreCard/Decision/Gateway)+ CEL 条件,线性 + 排他网关图遍历
 - **7 种规则类型** — DRL · DMN 1.3 · PMML 4.4 · 决策表 · 评分卡 · 决策树 · 决策流
 - **金融场景开箱即用** — 信贷审批 / 反欺诈 / 评分卡 / 保险理赔,自带 XSD 校验、银企报文、决策审计
-- **灰度发布 + 陪跑对比** — 流量切分、影子规则包、主/陪跑差异自动对比(4 维度 × 4 级严重度)
-- **Web Console + CLI + DSL + REST API** — React + bpmn-js 设计器、Agent CLI 通道、外部系统 REST 集成
-- **可观测性 / 决策日志** — Micrometer + Prometheus 指标,完整决策链路可追溯
+- **Web Console + CLI + DSL + REST API** — React + react-flow 画布设计器、Agent CLI 通道、外部系统 REST 集成
+- **可观测性 / 决策分析** — 决策日志(ClickHouse 双写)、完整决策链路可追溯
 
 ## 🚀 快速开始
 
@@ -79,7 +78,7 @@ Rust 引擎 GA → 规则市场→ 多租户 是下一阶段方向。
 <summary>🦀 <b>Rust 实验引擎</b></summary>
 
 - 仓库:[experiments/server-rust/](experiments/server-rust/) · 架构图:[ARCHITECTURE.md](experiments/server-rust/ARCHITECTURE.md)
-- 状态:**alpha · 实验性 · 不进生产流量** — 用于验证 Rust 在 RETE / BPMN 场景下的性能 / 内存 / 并发上限
+- 状态:**alpha · 实验性 · 不进生产流量** — 用于验证 Rust 在 RETE 场景下的性能 / 内存 / 并发上限(V7.21 已删 Java 端 BPMN 引擎,Rust BPMN 复刻随之冻结)
 - 跟 Java 引擎平行实现,共用 DRL / PMML / DMN IR;升格 production 只需 `git mv experiments/server-rust ./server-rust` 一条命令
 - 性能基线:Java 0.16ms / 2000 fact · Rust 2.12ms / 1000 fact(Rust 慢 17-26x,见 [完整 perf 报告](server/lib/ruleforge-core/src/test/java/com/ruleforge/rete/perf/README.md))
 </details>
@@ -89,9 +88,9 @@ Rust 引擎 GA → 规则市场→ 多租户 是下一阶段方向。
 
 | 层 | 技术 |
 |---|---|
-| 后端 | Java 17 · Spring Boot 4.0.6 · MyBatis-Plus · MySQL · ANTLR4 · RETE · 自建 BPMN 2.0 决策流引擎 |
+| 后端 | Java 17 · Spring Boot 4.0.6 · MyBatis-Plus · MySQL · ANTLR4 · RETE · V1 决策流(V1FlowRunner,极简 6 节点 + CEL) |
 | 后端(实验) | Rust 1.x · Tokio · Axum · sqlx |
-| 前端 | TypeScript · React · Vite 8 · Ant Design 5 · bpmn-js |
+| 前端 | TypeScript · React · Vite 8 · Ant Design 5 · react-flow(V1 决策流画布) |
 | AI / ML | PKL Model Service(Python FastAPI)· Agent CLI |
 | 测试 | JUnit 5 · Vitest · Playwright · cargo bench |
 | 部署 | Docker · Docker Compose |
@@ -109,7 +108,7 @@ Rust 引擎 GA → 规则市场→ 多租户 是下一阶段方向。
 | 决策表 | DMN 1.3(Kie DMN) | 表格化条件匹配,7 种 hit policy |
 | 评分卡 | PMML 4.4(pmml4s) | 加权评分,A/B 卡对比 |
 | 决策树 | PMML 4.4(pmml4s) | 树形结构决策 |
-| 决策流 | BPMN 2.0 | 流程编排多规则 |
+| 决策流 | V1(自研,6 节点 + CEL) | 流程编排多规则,线性 + 排他网关 |
 | AI 规则 | V5.22 自研 agent 通道 | 自然语言创建规则 |
 
 完整字段 / 编辑器说明 → [规则类型](docs-site/guide/rule-types.md)

@@ -1,8 +1,8 @@
 package com.ruleforge.console.app.datasource;
 
-import com.ruleforge.decision.connector.AiJavaDataSourceConnector;
-import com.ruleforge.decision.entity.Datasource;
-import com.ruleforge.decision.service.IDatasourceService;
+import com.ruleforge.datasource.connector.AiJavaDataSourceConnector;
+import com.ruleforge.datasource.entity.Datasource;
+import com.ruleforge.datasource.service.IDatasourceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,7 +26,7 @@ class AiJavaDataSourceServiceTest {
 
     private static final String VALID_SOURCE = """
             package com.ruleforge.user;
-            import com.ruleforge.decision.datasource.IJavaDataSource;
+            import com.ruleforge.datasource.jcompiler.IJavaDataSource;
             import java.util.Map;
             public class Phase7Credit implements IJavaDataSource {
                 @Override public String getName() { return "p7"; }
@@ -119,7 +119,7 @@ class AiJavaDataSourceServiceTest {
             when(datasourceService.getDatasourceById(1L)).thenReturn(ds);
             String bad = """
                     package com.ruleforge.user;
-                    import com.ruleforge.decision.datasource.IJavaDataSource;
+                    import com.ruleforge.datasource.jcompiler.IJavaDataSource;
                     public class Bad implements IJavaDataSource {
                         @Override public String getName() { return "x"; }
                         @Override public Object fetchField(String e, String f, java.util.Map<String, String> c) {

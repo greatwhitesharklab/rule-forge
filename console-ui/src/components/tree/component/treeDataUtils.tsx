@@ -18,9 +18,8 @@ import type {MenuProps} from 'antd';
 /** 可展开的容器类型(文件夹/库根)。文件类型(rule/decisionTable/.rp 等)不在此列。 */
 const CONTAINER_TYPES = new Set<string>([
     'root', 'project', 'folder', 'resource', 'all', 'lib',
-    // V6.20.0 P2:删老 urule 规则库(ruleLib/decisionTableLib/decisionTreeLib/scorecardLib),
-    // 只留决策流(flowLib,ruleforge-decision 自建)+ DRL 规则(drlLib)。
-    'flowLib', 'drlLib',
+    // V7.21:BPMN 决策流库(flowLib)已删除 — V1 决策流为唯一决策路径。只留 DRL 规则。
+    'drlLib',
     // V7.4:V1 库容器
     'v1libraryLib',
     // V7.5:V1 规则独立文件容器
@@ -164,11 +163,7 @@ export function handleFileOpen(
         open('/app/editor/package?file=' + encodeURIComponent(packageName + '.rp'));
         return;
     }
-    // 决策流 (flow / .rl.xml) — 保留:ruleforge-decision 自建 BPMN 引擎
-    if (data.type === 'flow' || fullPath.endsWith('.rl.xml')) {
-        open('/app/editor/flow?file=' + encodeURIComponent(fullPath));
-        return;
-    }
+    // V7.21:BPMN 决策流(.rl.xml)入口已删除 — V1 决策流为唯一决策路径。
     // 未匹配类型(如老 .rs.xml/.dt.xml/.ul.xml 等,UI 已移除但 .rp 内已有文件可能仍命中):no-op,不动 window
 }
 

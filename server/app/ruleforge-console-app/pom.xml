@@ -51,17 +51,33 @@
             <artifactId>HikariCP</artifactId>
         </dependency>
 
+        <!-- V7.21 — ruleforge-decision 模块彻底删除(BPMN 引擎 + 陪跑/灰度全砍)。
+             共享层(数据源/变量定义)迁到 ruleforge-datasource;console 依赖 ruleforge-core。 -->
         <dependency>
             <groupId>com.ruleforge</groupId>
-            <artifactId>ruleforge-decision</artifactId>
-            <!-- V5.53.2 — 用 ${revision} 跟 lib/ 模块对齐(原来是写死 5.0.0,
-                 5.0.0 那版 lib 还带 V5.45.4 删掉的 dslRuleSetBuilder setter,
-                 启动 Spring 时 XML 装配 ruleforge.knowledgeBuilder 找不到
-                 那个 bean 报错)。lib 升 ${revision} 后这个死引用自然消失。 -->
+            <artifactId>ruleforge-core</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.ruleforge</groupId>
+            <artifactId>ruleforge-datasource</artifactId>
             <version>${revision}</version>
         </dependency>
 
         <!-- V5.21+: 拆 Flowable 依赖 — 自建 FlowEngine 取代 Flowable 8 starter -->
+
+        <!-- V7.21 — flyway-core / flyway-mysql 原为 ruleforge-decision 传递依赖,
+             模块删除后 console-app 的 FlywayConfig / AppFlywayConfig 直接依赖显式声明。 -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>11.14.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <version>11.14.1</version>
+        </dependency>
 
         <dependency>
             <groupId>jakarta.servlet</groupId>
@@ -85,12 +101,6 @@
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
             <version>2.9.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.camunda.bpm</groupId>
-            <artifactId>camunda-external-task-client</artifactId>
-            <version>7.22.0</version>
         </dependency>
 
         <dependency>

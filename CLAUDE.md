@@ -33,40 +33,40 @@ docker compose logs -f console-app # 看 console 日志
 
 ## 项目架构
 
-> **V6.11 audit 修正** (2026-06-21): 实际只有 2 lib 模块 (ruleforge-console / ruleforge-executor
-> 不是独立 lib, 它们的 `com.ruleforge.console.*` / `com.ruleforge.executor.*` 源码住在
-> 各自 app 模块内, 跟 .console.app.* / .executor.app.* 同包)。
+> **V7.21 架构重构** (2026-07):彻底删除老 BPMN 决策流(ruleforge-decision 模块),
+> V1 决策流成为唯一决策路径。共享层(数据源/变量定义)拆成独立 ruleforge-datasource 模块。
 
 ```
 parent                  Maven parent POM,Spring Boot BOM,Java 17
-ruleforge-core          lib/ — RETE 规则引擎(解析、执行、知识库)
-ruleforge-decision      lib/ — 自建 BPMN 2.0 决策流引擎 + 共享 entity
+ruleforge-core          lib/ — RETE 规则引擎(解析、执行、知识库)+ V1 决策流(V1FlowRunner)
+ruleforge-datasource    lib/ — 数据源管理 + 规则变量定义(通用基础设施层)
 ruleforge-console-app   app/ — 可部署 Spring Boot app — 编辑器(含 com.ruleforge.console.* 业务)
 ruleforge-executor-app  app/ — 可部署 Spring Boot app — 执行器(含 com.ruleforge.executor.* 业务)
 ```
 
 依赖链:
 ```
-core ← decision ← console-app
-core ← decision ← executor-app
+core ← datasource ← console-app
+core ← datasource ← executor-app
+core ← console-app / executor-app  (app 直接依赖 core)
 ```
 
 ### 模块详解
 
-- **ruleforge-core** (`com.ruleforge.*`):RETE 规则引擎核心。**引擎逻辑不依赖 Spring**(仅 `config/` 提供 Spring auto-config 做装配)。`model/`(规则/RETE 结构) + `runtime/`(知识会话/执行/缓存) + `parse/`(老 XML/DSL 解析,ANTLR4) + `ir/`(新标准 IR:DMN/DRL/PMML) + `controller/`(KnowledgePackageReceiverServlet)。
-- **ruleforge-decision** (`com.ruleforge.decision.*`):V5.21+ 自建 BPMN 2.0 决策流引擎,含外部数据 connector(`RestDataSourceConnector` 等)。
-- **ruleforge-console** (`com.ruleforge.console.*`):Web 编辑器后端。`controller/`(REST) + `flow/`(决策流,自建 BPMN) + `service/` + `storage/`(项目存储) + `mapper/`(MyBatis-Plus) + `repository/`(模型类) + `config/`(MybatisPlus/Flyway)。
-- **ruleforge-executor** (`com.ruleforge.executor.*`):规则执行。`controller/TestController`(`/test/do`、`/test/knowledge`) + `service/`(RuleForgeService、KnowledgePackageServiceImpl) + `service/impl/ExecResourceProvider`(从 console HTTP 拉资源)。
-- **ruleforge-console-app** (`com.ruleforge.console.app.*`):可部署编辑器,含数据源配置、环境 provider、业务代码(放款决策、影子执行、决策日志)。
-- **ruleforge-executor-app** (`com.ruleforge.executor.app.*`):可部署执行器,RestTemplate 配置用于和 console 通信。
+- **ruleforge-core** (`com.ruleforge.*`):RETE 规则引擎核心 + V1 决策流。**引擎逻辑不依赖 Spring**(仅 `config/` 提供 Spring auto-config 做装配)。`model/`(规则/RETE 结构) + `runtime/`(知识会话/执行/缓存) + `parse/`(老 XML/DSL 解析,ANTLR4) + `ir/`(新标准 IR:DMN/DRL/PMML) + `v1/`(V1 决策流:AST/执行器/CEL/发布 bundle)。
+- **ruleforge-datasource** (`com.ruleforge.datasource.*`):V7.21 从 ruleforge-decision 拆出的通用基础设施。数据源管理(entity/mapper/repository/service)+ 7 个连接器(REST/JDBC/AI-Java/AdvanceAI/PKL)+ Java 源码编译器(jcompiler)+ 规则变量定义 + Spring auto-config。
+- **ruleforge-console** (`com.ruleforge.console.*`):Web 编辑器后端。`controller/`(REST) + `service/` + `storage/`(项目存储) + `mapper/`(MyBatis-Plus) + `repository/`(模型类) + `config/`(MybatisPlus/Flyway)。V1 决策流控制器在 `controller/v1/`、发布管线在 `app/v1/`。
+- **ruleforge-executor** (`com.ruleforge.executor.*`):规则执行。`controller/TestController`(`/test/do`、`/test/knowledge`) + `service/`(RuleForgeService、KnowledgePackageServiceImpl) + `service/impl/ExecResourceProvider`(从 console HTTP 拉资源)。V1 生产执行在 `executor/v1/`(`POST /v1/exec`)。
+- **ruleforge-console-app** (`com.ruleforge.console.app.*`):可部署编辑器,含数据源配置、环境 provider、V1 发布(V1PublishService)、决策分析。
+- **ruleforge-executor-app** (`com.ruleforge.executor.app.*`):可部署执行器,RestTemplate 配置用于和 console 通信;数据源懒加载层(`com.ruleforge.decision.lazy`,app-local)。
 
 ## 技术栈
 
 - Java 17、Spring Boot 4.0.6、Spring Framework 7
 - MyBatis-Plus 3.5.9、MySQL、Flyway
 - ANTLR4、Jackson、fastjson2、HikariCP
-- V5.21+ 自建 BPMN 2.0 决策流引擎(`lib/ruleforge-decision/`)
-- 前端:TypeScript、React、Vite 8、Ant Design 5、bpmn-js(决策流设计器)
+- V1 决策流:极简 6 节点(Start/RuleSet/DecisionTable/ScoreCard/Decision/Gateway)+ CEL 条件,线性 + 排他网关图遍历(`V1FlowRunner`,在 ruleforge-core)
+- 前端:TypeScript、React、Vite 8、Ant Design 5、react-flow(V1 决策流画布)
 - 前端 HTTP:集中式 `src/api/client.ts`(formPost/jsonPost/jsonPut/httpGet/httpDelete/save/saveNewVersion)
 - 前端测试:Vitest 单测、Playwright E2E
 
@@ -126,22 +126,24 @@ core ← decision ← executor-app
 
 ### 模块边界 — 禁止"借实体"
 
-**核心规则:`ruleforge-console-app` 和 `ruleforge-executor-app` 是平行的可部署 Spring Boot app,互不依赖。** 共享的只有 `ruleforge-core` / `ruleforge-decision` 两个 lib 模块(跟 5 Maven 模块 pom 一致)。
+**核心规则:`ruleforge-console-app` 和 `ruleforge-executor-app` 是平行的可部署 Spring Boot app,互不依赖。** 共享的只有 `ruleforge-core` / `ruleforge-datasource` 两个 lib 模块(跟 Maven 模块 pom 一致)。
 
 **禁止的反模式**(只有 1 条,因为共享 lib 是合理设计):
 - ❌ **任何"在 A app 里 import B app 的类"** — 看起来能编(IDE 把整 monorepo index 了),**实际上 pom.xml 没声明依赖,`mvn -pl <app> package` 一定失败**。跨 app 只能走 HTTP(RestTemplate / HttpClient, console → executor 单向)。
 
-**表/Entity 归属速查**:
+**表/Entity 归属速查**(V7.21 更新:ruleforge-decision 已删,共享层迁 datasource):
 
 | 表/Entity | 所属模块 | DataSource |
 |---|---|---|
 | `rf_*` (V5.15 起权限/用户/审计) | console-app 专属 | `ruleforgeDataSource` (`ruleforge_db`) |
-| `nd_*` (V5.1~V5.13 批测/agent/监控/决策日志) | console-app 专属 | `appDataSource` (`app_db`) |
-| `act_*`/`flw_*` (流程引擎) | console-app + executor-app 共用 | `flowable` (`flowable_db`) |
+| `nd_*` (V5.1~V5.13 批测/agent/监控) | console-app 专属 | `appDataSource` (`app_db`) |
+| `rfa_datasource*` / `rfa_rule_variable_def` | 共享 `lib/ruleforge-datasource`(`com.ruleforge.datasource.entity.*`) | `appDataSource` (`app_db`) |
+| `rfa_decision_flow_log` (决策分析) | console-app(AnalysisController/DecisionAnalysisMapper) | `appDataSource` (`app_db`) |
+| `rf_v1_publish` (V1 发布 bundle) | console-app(`com.ruleforge.console.app.v1`) | `ruleforgeDataSource` (`ruleforge_db`) |
 | `com.ruleforge.console.app.entity.*` | console-app | 看 entity 注释指明 DataSource |
-| **`com.ruleforge.decision.entity.*`** | **共享 `lib/ruleforge-decision` (V6.11 修正, 之前误标为 executor-app 专属)** | `ruleforgeDataSource`(console 侧 + executor 侧都用) |
-| `com.ruleforge.console.*` (storage/flow/batchtest/migration/observability) | console-app 内置业务包 | 可在 console-app 直接用 |
+| `com.ruleforge.console.*` (storage/batchtest/migration/observability) | console-app 内置业务包 | 可在 console-app 直接用 |
 | `com.ruleforge.executor.*` (controller/service/...) | executor-app 内置业务包 | 可在 executor-app 直接用 |
+| `com.ruleforge.decision.lazy.*` | executor-app 内置(数据源懒加载层,V7.21 残留包名) | executor-app 直接用 |
 
 ## 配置
 

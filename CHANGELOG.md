@@ -26,6 +26,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+**V7.21 — 彻底删除 BPMN 决策流,V1 成为唯一决策路径 (4 阶段)**
+
+删除老 BPMN 决策流全链路(前端 flow-bpmn + 后端 ruleforge-decision 模块 + 陪跑/灰度/
+异步决策),V1 决策流(V1FlowRunner,极简 6 节点 + CEL,线性 + 排他网关图遍历)成为唯一
+决策路径。项目从未上生产,无数据迁移负担。
+
+- **阶段 0 — 前端删除**(-2193 行):删 flow-bpmn 目录(14 文件)+ 文件树 .rl.xml 入口 +
+  新建菜单"添加决策流" + 类型映射(TreeNodeType/FILE_TYPE_MAP/buildType/Utils)+ 测试同步
+- **阶段 1 — 新建 ruleforge-datasource 模块**(+29 文件):共享层(数据源管理 7 连接器 +
+  规则变量定义 + Java 编译器,28 文件)从 ruleforge-decision 拆出,包名
+  com.ruleforge.decision.* → com.ruleforge.datasource.* + RuleForgeDatasourceAutoConfiguration
+- **阶段 2 — 净删 BPMN 引擎**(-221 文件):删整个 ruleforge-decision 模块(109 main + 49 test)
+  + executor/console 两 app 的 BPMN/陪跑/灰度 app-local 类(DecisionServiceImpl/FlowDecisionController/
+  ShadowExecutionServiceImpl/GrayStrategyController/BpmnFlowController 等)+ 改装配(pom 改依赖
+  core+datasource、@ComponentScan/@Import/@MapperScan 收口)+ Flyway V1.13.0 forward 迁移 DROP 表
+- **code-review 修复**:Flyway 保留 rfa_decision_flow_log(分析功能在线查询);清死依赖
+  (camunda/clickhouse-jdbc);AutoConfig 补 repository 扫描
+
+改造后依赖链:`core ← datasource ← {console-app, executor-app}` + app 直接依赖 core。
+V1 决策流(V1FlowRunner + controller/v1 + executor/v1 + app/v1)零改动,已是唯一决策路径。
+
 ### Added
 
 **V5.28-V5.32 — Rust 端 BPMN 2.0 完整化 + SAGA 收口 + Postgres 原子化 (#66→#79, 14 PRs)**

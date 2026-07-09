@@ -74,7 +74,7 @@ describe('treeDataUtils', () => {
             {name: 'constant/.cl.xml → constant', node: {name: 'c.cl.xml', type: 'constant', fullPath: '/p/c.cl.xml'}, expectedPath: '/app/editor/constant'},
             {name: 'parameter/.pl.xml → parameter', node: {name: 'p.pl.xml', type: 'parameter', fullPath: '/p/p.pl.xml'}, expectedPath: '/app/editor/parameter'},
             {name: 'action/.al.xml → action', node: {name: 'a.al.xml', type: 'action', fullPath: '/p/a.al.xml'}, expectedPath: '/app/editor/action'},
-            {name: 'flow/.rl.xml → flow', node: {name: 'f.rl.xml', type: 'flow', fullPath: '/p/f.rl.xml'}, expectedPath: '/app/editor/flow'},
+            // V7.21:flow/.rl.xml 用例已删除(BPMN 决策流入口移除)。
             // V6.20.0:DRL 规则(.drl) → DRL 编辑器
             {name: 'V6.20.0:DRL/.drl → drl', node: {name: 'r.drl', type: 'drl', fullPath: '/p/r.drl'}, expectedPath: '/app/editor/drl'},
             // V6.20.0 P3:DMN/PMML 标准决策模型 → 只读源查看器

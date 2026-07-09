@@ -25,7 +25,7 @@ const ResourceEditorRoute = lazy(() => import('@/resource/EditorRoute'));
 const ClientEditorRoute = lazy(() => import('@/client/EditorRoute'));
 const PermissionEditorRoute = lazy(() => import('@/permission/EditorRoute'));
 const DrlEditorRoute = lazy(() => import('@/editor/drleditor/EditorRoute'));
-const FlowEditorRoute = lazy(() => import('@/flow-bpmn/EditorRoute'));
+// V7.21:BPMN 决策流编辑器(flow-bpmn)已删除 — V1 决策流(@/v1-flow)为唯一决策路径。
 // V6.20.0 P3:DMN / PMML 只读源查看器
 const DmnEditorRoute = lazy(() => import('@/editor/dmn/EditorRoute'));
 const PmmlEditorRoute = lazy(() => import('@/editor/pmml/EditorRoute'));
@@ -57,7 +57,6 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="editor/client" element={<ClientEditorRoute/>}/>
                 <Route path="editor/permission" element={<PermissionEditorRoute/>}/>
                 <Route path="editor/drl" element={<DrlEditorRoute/>}/>
-                <Route path="editor/flow" element={<FlowEditorRoute/>}/>
                 <Route path="editor/dmn" element={<DmnEditorRoute/>}/>
                 <Route path="editor/pmml" element={<PmmlEditorRoute/>}/>
                 {/* V7.0.0:V1 决策流设计器(独立全屏画布,不走 frame) */}

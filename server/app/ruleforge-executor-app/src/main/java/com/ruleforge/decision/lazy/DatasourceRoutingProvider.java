@@ -1,8 +1,8 @@
 package com.ruleforge.decision.lazy;
 
-import com.ruleforge.decision.connector.DataSourceConnector;
-import com.ruleforge.decision.entity.Datasource;
-import com.ruleforge.decision.service.IDatasourceService;
+import com.ruleforge.datasource.connector.DataSourceConnector;
+import com.ruleforge.datasource.entity.Datasource;
+import com.ruleforge.datasource.service.IDatasourceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
