@@ -35,15 +35,28 @@ Phase 8 / 9 / 12 完成后,版本号按改动量决定是 patch bump 还是 mino
 ## 实施顺序
 
 ```
-Phase 1-12 ✅ 已完成 → V5.25-V5.47 路线 B 收口 + 删老路径 ✅ 已完成 → V5.48+ 候选方向
+Phase 1-12 ✅ 已完成 → V5.25-V5.47 路线 B 收口 + 删老路径 ✅ 已完成 → V7.0-V7.20 V1 决策流 ✅ 已完成 → V7.21 删 BPMN ✅ 已完成 → V7.22+ 候选方向
 ```
 
 ```
 Phase 9   数据源批量测试                 P1  ── 收尾中(后端 60%,剩 controller)
 V5.40-V5.47 路线 B + 删老路径            P0  ── 已完成(冻结历史)
-V5.48+     DRL grammar 扩展 + 编辑器     P0  ── 候选
-V5.48+     Rust alpha index + Drools 7.31 实测  P2  ── 候选
+V7.0-V7.20 V1 决策流(6 节点画布+执行+发布+四库+UX) P0 ── 已完成
+V7.21      彻底删除 BPMN 决策流,V1 单一决策路径  P0  ── 已完成
+V7.22+     DRL grammar 扩展 + 编辑器     P0  ── 候选
+V7.22+     Rust alpha index + Drools 7.31 实测  P2  ── 候选
 ```
+
+### V7.21 — 彻底删除 BPMN 决策流(2026-07)
+
+删除老 BPMN 决策流全链路,V1 决策流成为唯一决策路径(4 阶段):
+- 阶段 0:删前端 flow-bpmn + .rl.xml 入口(-2193 行)
+- 阶段 1:共享层(数据源/变量定义)拆成独立 ruleforge-datasource 模块(+29 文件)
+- 阶段 2:删整个 ruleforge-decision 模块(-221 文件)+ 陪跑/灰度全链路 + 改装配
+- 代码审查修复 + 文档收口
+
+改造后依赖链:`core ← datasource ← {console-app, executor-app}`,V1 决策流(V1FlowRunner,
+极简 6 节点 + CEL,线性 + 排他网关)是唯一决策路径。详细记录见 CHANGELOG V7.21 段。
 
 ## 路线图总览
 
