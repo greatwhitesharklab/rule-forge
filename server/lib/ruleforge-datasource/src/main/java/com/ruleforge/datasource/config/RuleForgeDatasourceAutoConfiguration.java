@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan(basePackages = {
         "com.ruleforge.datasource.service.impl",
         "com.ruleforge.datasource.connector",
+        "com.ruleforge.datasource.repository",
 })
 @MapperScan(basePackages = {
         "com.ruleforge.datasource.mapper"

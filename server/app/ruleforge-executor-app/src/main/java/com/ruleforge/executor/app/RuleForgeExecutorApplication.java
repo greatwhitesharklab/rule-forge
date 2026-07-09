@@ -14,6 +14,11 @@ import com.ruleforge.datasource.config.RuleForgeDatasourceAutoConfiguration;
         // V7.21 — ruleforge-decision 模块删除后,app 内仅剩 com.ruleforge.decision.lazy
         // (DatasourceRoutingProvider / LazyEntityFactory 等懒加载层,V1 数据源拉取要用)。
         "com.ruleforge.decision",
+        // V7.21 — ruleforge-datasource 模块的 @Component(service.impl/connector/repository)。
+        // 主类显式 @ComponentScan 会限制注册范围,AutoConfig 的 @ComponentScan 被覆盖,
+        // 故此处直接扫 datasource 包(替代 RuleForgeDatasourceAutoConfiguration 的 ComponentScan;
+        // @MapperScan 仍由 AutoConfig 承担)。
+        "com.ruleforge.datasource",
         // Spring Boot 4 不扫 nested jar 的 @Component;补 core 模块的 cache 包
         // (MemoryKnowledgeCache — KnowledgePackageServiceImpl 依赖)
         "com.ruleforge.runtime.cache"
