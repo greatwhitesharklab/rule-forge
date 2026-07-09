@@ -157,9 +157,7 @@ describe('Frame Module - buildType Pure Function', () => {
         expect(ACTIONS.buildType('al.xml')).toBe('动作库');
     });
 
-    it('GIVEN rl.xml WHEN buildType is called THEN it should return 决策流', () => {
-        expect(ACTIONS.buildType('rl.xml')).toBe('决策流');
-    });
+    // V7.21:rl.xml → 决策流 用例已删除(BPMN 决策流入口移除)。
 
     // V6.20.0:DRL 规则
     it('GIVEN drl WHEN buildType is called THEN it should return DRL 规则', () => {

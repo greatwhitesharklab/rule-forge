@@ -445,7 +445,6 @@ const FILE_TYPE_MAP: Record<string, string> = {
     'rs.xml': 'Ruleset', 'rsl.xml': 'RulesetLib', 'ul': 'UL',
     'dt.xml': 'DecisionTable', 'ct.xml': 'Crosstab', 'dts.xml': 'ScriptDecisionTable',
     'dtree.xml': 'DecisionTree', 'sc': 'Scorecard', 'scc': 'ComplexScorecard',
-    'rl.xml': 'RuleFlow',
     'drl': 'Drl',
     // V6.20.0 P3:DMN / PMML(只读/导入,FileTypeUtils 后端识别 .dmn/.pmml)
     'dmn': 'Dmn', 'pmml': 'Pmml',
@@ -473,9 +472,7 @@ export function buildType(fileType: string): string {
         case 'al.xml':
             type = '动作库';
             break;
-        case 'rl.xml':
-            type = '决策流';
-            break;
+        // V7.21:case 'rl.xml'(BPMN 决策流)已删除 — V1 决策流为唯一决策路径。
         // V6.20.0:DRL 规则
         case "drl":
             type = "DRL 规则";
@@ -624,26 +621,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._style = Styles.frameStyle.getVariableIconStyle();
             data.contextMenu = buildFileContextMenu();
             break;
-        case "flowLib":
-            data._icon = Styles.frameStyle.getFlowLibIcon();
-            data._style = Styles.frameStyle.getFlowLibIconStyle();
-            data.contextMenu = [
-                {
-                    name: '添加目录',
-                    icon: Styles.frameStyle.getFolderIcon(),
-                    click: function (data: TreeNodeData) {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FOLDER_DIALOG, {nodeData: data});
-                    }
-                },
-                {
-                    name: '添加决策流',
-                    icon: Styles.frameStyle.getFlowIcon(),
-                    click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'rl.xml', nodeData: data});
-                    }
-                }
-            ];
-            break;
+        // V7.21:case "flowLib"(BPMN 决策流库)已删除 — V1 决策流为唯一决策路径。
         // V6.20.0:DRL 规则库(新分类,跟老 决策集/决策表 并列)
         case "drlLib":
             data._icon = Styles.frameStyle.getDrlLibIcon();
@@ -686,11 +664,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                 }
             ];
             break;
-        case "flow":
-            data._icon = Styles.frameStyle.getFlowIcon();
-            data._style = Styles.frameStyle.getFlowIconStyle();
-            data.contextMenu = buildFileContextMenu();
-            break;
+        // V7.21:case "flow"(老 BPMN 决策流文件)已删除 — V1 决策流为唯一决策路径。
         // V6.20.0:DRL 规则文件(.drl) → 走 DRL 编辑器
         case "drl":
             data._icon = Styles.frameStyle.getDrlIcon();
@@ -1001,19 +975,7 @@ function buildFullContextMenu(isFolder?: boolean, folderType?: string): ContextM
             }
         });
     }
-    if (!folderType || folderType === 'all' || folderType === 'flowLib') {
-        menus.push({
-            name: '添加决策流',
-            icon: Styles.frameStyle.getFlowIcon(),
-            click: function (data: TreeNodeData) {
-                event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'rl.xml', nodeData: data});
-            }
-        });
-        if (!addPasteMenuItem) {
-            menus.push(buildPasteMenuItem());
-            addPasteMenuItem = true;
-        }
-    }
+    // V7.21:通用菜单的 BPMN 决策流(flowLib)分支已删除 — V1 决策流为唯一决策路径。
     if (isFolder) {
         menus.push(
             {

@@ -73,7 +73,6 @@ const NODE_TYPE_TO_SPA_SEGMENT: Record<string, string> = {
     parameter: 'parameter',
     action: 'action',
     resourcepackage: 'package',
-    flow: 'flow',
 };
 
 /**
@@ -113,7 +112,6 @@ const FILE_EXT_TO_SPA_SEGMENT: { ext: string; segment: string }[] = [
     { ext: '.cl.xml', segment: 'constant' },
     { ext: '.pl.xml', segment: 'parameter' },
     { ext: '.al.xml', segment: 'action' },
-    { ext: '.rl.xml', segment: 'flow' },
 ];
 
 /**

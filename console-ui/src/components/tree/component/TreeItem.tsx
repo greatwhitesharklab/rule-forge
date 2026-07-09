@@ -225,17 +225,9 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                                 return;
                             }
 
-                            // 决策流 (flow / bpmn-js / .rl.xml) → /app/editor/flow
-                            // SPA 化,替代原 iframe editor.html?type=flowbpmn。
-                            // FlowEditor.tsx (bpmn-js React 包装) + EditorRoute 复现 index.tsx 挂载。
-                            const isFlow = data.type === 'flow'
-                                || (typeof data.fullPath === 'string' && data.fullPath.endsWith('.rl.xml'));
-                            if (isFlow) {
-                                window.open('/app/editor/flow?file=' + encodeURIComponent(data.fullPath), '_blank');
-                                return;
-                            }
+                            // V7.21:BPMN 决策流(.rl.xml / flow)入口已删除 — V1 决策流为唯一决策路径。
 
-                            // 所有 SPA 化编辑器类型(rule/decisionTable/.../flow/libs/public/resourcePackage)
+                            // 所有 SPA 化编辑器类型(rule/decisionTable/.../libs/public/resourcePackage)
                             // 已在上方各自分支 window.open 后 return。到达此处的类型(如 .ul.xml 脚本决策集)
                             // 尚无 SPA 路由,原走 iframe + TREE_NODE_CLICK 的通道在 SPA 化后已废弃
                             // (FrameTab 不再托管 iframe)。保留节点选中视觉反馈,不再尝试打开编辑器。

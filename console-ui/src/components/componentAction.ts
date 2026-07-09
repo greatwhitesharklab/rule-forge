@@ -194,11 +194,7 @@ export function buildData(data: TreeNodeData | TreeNodeData[]): void {
                 item._style = Styles.frameStyle.getDecisionTreeIconStyle();
                 item.editorPath = "/decisiontreeditor";
                 break;
-            case "flow":
-                item._icon = Styles.frameStyle.getFlowIcon();
-                item._style = Styles.frameStyle.getFlowIconStyle();
-                item.editorPath = "/floweditor";
-                break;
+            // V7.21:case "flow"(BPMN 决策流)已删除 — V1 决策流为唯一决策路径。
             case "scorecard":
                 item._icon = Styles.frameStyle.getScorecardIcon();
                 item._style = Styles.frameStyle.getScorecardIconStyle();
