@@ -65,11 +65,16 @@
             <version>0.7.1</version>
         </dependency>
 
+        <!-- V7.21 — ruleforge-decision 模块彻底删除(BPMN 引擎 + 陪跑/灰度全砍)。
+             共享层(数据源/变量定义)迁到 ruleforge-datasource;V1 决策流依赖 ruleforge-core。 -->
         <dependency>
             <groupId>com.ruleforge</groupId>
-            <artifactId>ruleforge-decision</artifactId>
-            <!-- V5.53.2 — 用 ${revision} 跟 lib/ 模块对齐(原来是写死 5.0.0,
-                 5.0.0 那版 lib 还带 V5.45.4 删掉的 dslRuleSetBuilder setter)。 -->
+            <artifactId>ruleforge-core</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.ruleforge</groupId>
+            <artifactId>ruleforge-datasource</artifactId>
             <version>${revision}</version>
         </dependency>
 
