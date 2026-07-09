@@ -13,6 +13,7 @@
         <module>parent</module>
         <module>lib/ruleforge-core</module>
         <module>lib/ruleforge-decision</module>
+        <module>lib/ruleforge-datasource</module>
         <module>app/ruleforge-console-app</module>
         <module>app/ruleforge-executor-app</module>
     </modules>
