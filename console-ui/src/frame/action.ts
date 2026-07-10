@@ -484,7 +484,24 @@ export function buildType(fileType: string): string {
         case "pmml":
             type = "PMML 模型(只读)";
             break;
-        // V7.0.0:V1 决策流
+        // V7.0.0->V7.5.1:V1 文件类型(buildType 的 case 必须与 OPEN_CREATE_FILE_DIALOG
+        //   emit 的 fileType 值一致,否则 buildType 抛 "Unknow file type" 中断对话框)
+        case "v1flow.json":
+            type = "V1 决策流";
+            break;
+        case "V1Library":
+            type = "V1 库";
+            break;
+        case "V1RuleSet":
+            type = "V1 规则集";
+            break;
+        case "V1DecisionTable":
+            type = "V1 决策表";
+            break;
+        case "V1ScoreCard":
+            type = "V1 评分卡";
+            break;
+        // 兼容旧 .json 文件(老文件无 .v1flow.json 后缀,buildType 传 "json")
         case "json":
             type = "V1 决策流";
             break;
