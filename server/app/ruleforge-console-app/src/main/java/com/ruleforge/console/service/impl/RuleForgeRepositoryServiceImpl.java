@@ -1518,15 +1518,8 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
 
                     projectFile.addChild(resDir, false);
                     break;
-                case resourcePackage:
-                    if ((types == null || types.length == 0) && this.permissionService.projectPackageHasReadPermission("projectNode.getFilePath()")) {
-                        RepositoryFile packageFile = new RepositoryFile();
-                        packageFile.setName(file.getName());
-                        packageFile.setType(Type.resourcePackage);
-                        packageFile.setFullPath(file.getFilePath());
-                        projectFile.addChild(packageFile, false);
-                    }
-                    break;
+                // V7.22:case resourcePackage(知识包树节点)已删除 — V1 发布替代,
+                //   编辑器路由 V7.7.2 已删,节点点击是空白页,不再生成。
                 default:
             }
         }

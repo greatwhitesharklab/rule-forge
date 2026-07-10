@@ -215,19 +215,11 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                                 return;
                             }
 
-                            // 知识包(resourcePackage, .rp):原走 iframe
-                            // editor.html?type=package,现 SPA 化为 /app/editor/package。
-                            // file 参数沿用原 buildEditorUrl 的格式 <packageName>.rp(无路径前缀),
-                            // EditorRoute 内部 .replace('.rp','') 得到 project 名。
-                            if (data.type === 'resourcePackage') {
-                                const packageName = data.fullPath.split('/')[1];
-                                window.open('/app/editor/package?file=' + encodeURIComponent(packageName + '.rp'), '_blank');
-                                return;
-                            }
-
+                            // V7.22:知识包(.rp / resourcePackage)入口已删除 — V1 发布(V1PublishService)
+                            //   替代老 .rp 管线,知识包编辑器路由 V7.7.2 已删,点击是空白页。
                             // V7.21:BPMN 决策流(.rl.xml / flow)入口已删除 — V1 决策流为唯一决策路径。
 
-                            // 所有 SPA 化编辑器类型(rule/decisionTable/.../libs/public/resourcePackage)
+                            // 所有 SPA 化编辑器类型(rule/decisionTable/.../libs/public)
                             // 已在上方各自分支 window.open 后 return。到达此处的类型(如 .ul.xml 脚本决策集)
                             // 尚无 SPA 路由,原走 iframe + TREE_NODE_CLICK 的通道在 SPA 化后已废弃
                             // (FrameTab 不再托管 iframe)。保留节点选中视觉反馈,不再尝试打开编辑器。
