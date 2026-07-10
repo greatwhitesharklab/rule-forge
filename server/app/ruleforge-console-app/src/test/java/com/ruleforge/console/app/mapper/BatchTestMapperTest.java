@@ -37,7 +37,7 @@ public class BatchTestMapperTest {
         try (Connection conn = dataSource.getConnection()) {
             Statement stmt = conn.createStatement();
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS nd_batch_test_session (
+                CREATE TABLE IF NOT EXISTS rfa_batch_test_session (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
                     project VARCHAR(100) NOT NULL,
                     package_id VARCHAR(100) NOT NULL,
@@ -58,7 +58,7 @@ public class BatchTestMapperTest {
                 )
             """);
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS nd_batch_test_row (
+                CREATE TABLE IF NOT EXISTS rfa_batch_test_row (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
                     session_id BIGINT NOT NULL,
                     row_index INT NOT NULL,
@@ -95,8 +95,8 @@ public class BatchTestMapperTest {
     void cleanTables() throws Exception {
         try (Connection conn = dataSource.getConnection()) {
             Statement stmt = conn.createStatement();
-            stmt.execute("TRUNCATE TABLE nd_batch_test_row");
-            stmt.execute("TRUNCATE TABLE nd_batch_test_session");
+            stmt.execute("TRUNCATE TABLE rfa_batch_test_row");
+            stmt.execute("TRUNCATE TABLE rfa_batch_test_session");
             conn.commit();
         }
     }
@@ -106,7 +106,7 @@ public class BatchTestMapperTest {
                                String status, int totalRows, int errorCount, double progress) throws Exception {
         try (Connection conn = dataSource.getConnection()) {
             PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO nd_batch_test_session (project, package_id, files, flow_id, status, total_rows, error_count, progress) " +
+                    "INSERT INTO rfa_batch_test_session (project, package_id, files, flow_id, status, total_rows, error_count, progress) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, project);
             ps.setString(2, packageId);
@@ -129,7 +129,7 @@ public class BatchTestMapperTest {
     private long insertRow(long sessionId, int rowIndex, String inputData, String status) throws Exception {
         try (Connection conn = dataSource.getConnection()) {
             PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO nd_batch_test_row (session_id, row_index, input_data, status) VALUES (?, ?, ?, ?)",
+                    "INSERT INTO rfa_batch_test_row (session_id, row_index, input_data, status) VALUES (?, ?, ?, ?)",
                     Statement.RETURN_GENERATED_KEYS);
             ps.setLong(1, sessionId);
             ps.setInt(2, rowIndex);
