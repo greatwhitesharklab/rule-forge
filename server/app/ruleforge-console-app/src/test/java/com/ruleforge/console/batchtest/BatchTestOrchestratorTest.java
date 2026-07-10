@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
  *   1. 创 session
  *   2. 调 ExcelRowParser 解析 Excel
  *   3. 按 (subjectType, inputSourceType) 决定每行的 input_data 形状
- *   4. 插 row 到 nd_batch_test_row
+ *   4. 插 row 到 rfa_batch_test_row
  *   5. 调度 subject 执行
  */
 @ExtendWith(MockitoExtension.class)
