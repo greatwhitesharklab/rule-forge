@@ -157,14 +157,9 @@ export function handleFileOpen(
         open('/app/editor/resource?file=' + encodeURIComponent(fullPath));
         return;
     }
-    // 知识包 (resourcePackage, .rp) — file 参数 = packageName.rp(无路径前缀),EditorRoute 内 .replace('.rp','')
-    if (data.type === 'resourcePackage') {
-        const packageName = fullPath.split('/')[1];
-        open('/app/editor/package?file=' + encodeURIComponent(packageName + '.rp'));
-        return;
-    }
+    // V7.22:知识包(.rp / resourcePackage)入口已删除 — V1 发布替代,编辑器路由 V7.7.2 已删。
     // V7.21:BPMN 决策流(.rl.xml)入口已删除 — V1 决策流为唯一决策路径。
-    // 未匹配类型(如老 .rs.xml/.dt.xml/.ul.xml 等,UI 已移除但 .rp 内已有文件可能仍命中):no-op,不动 window
+    // 未匹配类型(如老 .rs.xml/.dt.xml/.ul.xml 等):no-op,不动 window
 }
 
 /**

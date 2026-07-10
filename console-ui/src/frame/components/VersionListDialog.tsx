@@ -85,13 +85,8 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
                             // SPA 化:历史版本也走 /app/editor/<type>?file=<path>:<version> 新标签打开。
                             const spaSegment = typeToSpaSegment(data.type as string);
                             if (spaSegment) {
-                                let spaFile: string;
-                                if (data.type === 'resourcePackage') {
-                                    const packageName = (data.fullPath as string).split('/')[1];
-                                    spaFile = packageName + '.rp:' + row.name;
-                                } else {
-                                    spaFile = (data.fullPath as string) + ':' + row.name;
-                                }
+                                // V7.22:知识包(.rp)特殊路径处理已删除 — 编辑器路由 V7.7.2 已删。
+                                const spaFile = (data.fullPath as string) + ':' + row.name;
                                 window.open('/app/editor/' + spaSegment + '?file=' + encodeURIComponent(spaFile), '_blank');
                                 return;
                             }
@@ -100,12 +95,6 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
                             let url = buildEditorUrl(fallbackEditorPath, (data.fullPath as string) + ':' + row.name);
                             let fullPath = (data.fullPath as string) + ':' + row.name;
                             let name = (data.name as string) + ':' + row.name;
-                            if (data.type === 'resourcePackage') {
-                                const packageName = (data.fullPath as string).split('/')[1];
-                                url = buildEditorUrl(fallbackEditorPath, packageName + '.rp:' + row.name);
-                                fullPath = '/' + packageName + ':' + row.name;
-                                name = data.name as string;
-                            }
                             const config: Record<string, unknown> = {
                                 id: (data.id as string) + ':' + row.name,
                                 name: name, fullPath: fullPath, path: url, active: true

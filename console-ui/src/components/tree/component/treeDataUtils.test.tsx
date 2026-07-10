@@ -89,11 +89,7 @@ describe('treeDataUtils', () => {
             );
         });
 
-        it('resourcePackage → package?file={packageName}.rp', () => {
-            // fullPath='/projA' → split('/')[1]='projA' → file=projA.rp
-            handleFileOpen(makeNode({name: 'pkg.rp', type: 'resourcePackage', fullPath: '/projA'}), undefined, false);
-            expect(openSpy).toHaveBeenCalledWith('/app/editor/package?file=projA.rp', '_blank');
-        });
+        // V7.22:resourcePackage(知识包)测试用例已删除 — 入口已移除,V1 发布替代。
 
         it('treeType=public → resource 编辑器', () => {
             handleFileOpen(makeNode({name: 'res.xml', fullPath: '/pub/r.xml'}), 'public', false);
