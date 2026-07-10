@@ -41,7 +41,7 @@ public class DecisionAnalysisMapperTest {
         try (Connection conn = dataSource.getConnection()) {
             Statement stmt = conn.createStatement();
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS nd_decision_flow_log (
+                CREATE TABLE IF NOT EXISTS rfa_decision_flow_log (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
                     created_at TIMESTAMP NOT NULL,
                     rule_package_path VARCHAR(255),
@@ -56,7 +56,7 @@ public class DecisionAnalysisMapperTest {
                 )
             """);
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS nd_decision_rule_log (
+                CREATE TABLE IF NOT EXISTS rfa_decision_rule_log (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
                     flow_log_id BIGINT NOT NULL,
                     rule_name VARCHAR(255),
@@ -87,34 +87,34 @@ public class DecisionAnalysisMapperTest {
     void insertTestData() throws Exception {
         try (Connection conn = dataSource.getConnection()) {
             Statement stmt = conn.createStatement();
-            stmt.execute("TRUNCATE TABLE nd_decision_rule_log");
-            stmt.execute("TRUNCATE TABLE nd_decision_flow_log");
+            stmt.execute("TRUNCATE TABLE rfa_decision_rule_log");
+            stmt.execute("TRUNCATE TABLE rfa_decision_flow_log");
 
             // Day 1: 2026-05-24 — luzcred/withdrawal (5) + luzcred/T4 (2)
-            stmt.execute("INSERT INTO nd_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-24 10:00:00', 'luzcred/withdrawal', 'withdrawal-flow', 'SUCCESS', NULL, NULL, 30.0, 20.0, 5.0)");
-            stmt.execute("INSERT INTO nd_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-24 10:05:00', 'luzcred/withdrawal', 'withdrawal-flow', 'SUCCESS', NULL, NULL, 25.0, 18.0, 3.0)");
-            stmt.execute("INSERT INTO nd_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-24 11:00:00', 'luzcred/withdrawal', 'withdrawal-flow', 'REJECT', 'HIGH_RISK', '高风险客户', 40.0, 30.0, 5.0)");
-            stmt.execute("INSERT INTO nd_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-24 11:30:00', 'luzcred/withdrawal', 'withdrawal-flow', 'REJECT', 'DEBT_RATIO', '负债率过高', 35.0, 25.0, 4.0)");
-            stmt.execute("INSERT INTO nd_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-24 12:00:00', 'luzcred/T4', 't4-flow', 'SUCCESS', NULL, NULL, 50.0, 40.0, 5.0)");
-            stmt.execute("INSERT INTO nd_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-24 12:30:00', 'luzcred/T4', 't4-flow', 'SUCCESS', NULL, NULL, 45.0, 35.0, 5.0)");
+            stmt.execute("INSERT INTO rfa_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-24 10:00:00', 'luzcred/withdrawal', 'withdrawal-flow', 'SUCCESS', NULL, NULL, 30.0, 20.0, 5.0)");
+            stmt.execute("INSERT INTO rfa_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-24 10:05:00', 'luzcred/withdrawal', 'withdrawal-flow', 'SUCCESS', NULL, NULL, 25.0, 18.0, 3.0)");
+            stmt.execute("INSERT INTO rfa_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-24 11:00:00', 'luzcred/withdrawal', 'withdrawal-flow', 'REJECT', 'HIGH_RISK', '高风险客户', 40.0, 30.0, 5.0)");
+            stmt.execute("INSERT INTO rfa_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-24 11:30:00', 'luzcred/withdrawal', 'withdrawal-flow', 'REJECT', 'DEBT_RATIO', '负债率过高', 35.0, 25.0, 4.0)");
+            stmt.execute("INSERT INTO rfa_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-24 12:00:00', 'luzcred/T4', 't4-flow', 'SUCCESS', NULL, NULL, 50.0, 40.0, 5.0)");
+            stmt.execute("INSERT INTO rfa_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-24 12:30:00', 'luzcred/T4', 't4-flow', 'SUCCESS', NULL, NULL, 45.0, 35.0, 5.0)");
 
             // Day 2: 2026-05-25 (3)
-            stmt.execute("INSERT INTO nd_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-25 10:00:00', 'luzcred/withdrawal', 'withdrawal-flow', 'SUCCESS', NULL, NULL, 28.0, 19.0, 4.0)");
-            stmt.execute("INSERT INTO nd_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-25 14:00:00', 'luzcred/withdrawal', 'withdrawal-flow', 'SUCCESS', NULL, NULL, 32.0, 22.0, 5.0)");
-            stmt.execute("INSERT INTO nd_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-25 15:00:00', 'luzcred/withdrawal', 'withdrawal-flow', 'REJECT', 'HIGH_RISK', '高风险客户', 45.0, 35.0, 5.0)");
+            stmt.execute("INSERT INTO rfa_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-25 10:00:00', 'luzcred/withdrawal', 'withdrawal-flow', 'SUCCESS', NULL, NULL, 28.0, 19.0, 4.0)");
+            stmt.execute("INSERT INTO rfa_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-25 14:00:00', 'luzcred/withdrawal', 'withdrawal-flow', 'SUCCESS', NULL, NULL, 32.0, 22.0, 5.0)");
+            stmt.execute("INSERT INTO rfa_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-25 15:00:00', 'luzcred/withdrawal', 'withdrawal-flow', 'REJECT', 'HIGH_RISK', '高风险客户', 45.0, 35.0, 5.0)");
 
             // Day 3: 2026-05-26 (1)
-            stmt.execute("INSERT INTO nd_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-26 09:00:00', 'luzcred/withdrawal', 'withdrawal-flow', 'ERROR', NULL, NULL, 200.0, 180.0, 10.0)");
+            stmt.execute("INSERT INTO rfa_decision_flow_log (created_at, rule_package_path, flow_id, execution_status, reject_code, reject_reason, total_time_ms, execution_time_ms, load_knowledge_time_ms) VALUES ('2026-05-26 09:00:00', 'luzcred/withdrawal', 'withdrawal-flow', 'ERROR', NULL, NULL, 200.0, 180.0, 10.0)");
 
             // rule_log — 按 flow_log 自增 ID 顺序
-            stmt.execute("INSERT INTO nd_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (1, '新客额度else', '规则集', 5.0)");
-            stmt.execute("INSERT INTO nd_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (1, '免费模型规则else', '规则集', 3.0)");
-            stmt.execute("INSERT INTO nd_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (2, '新客额度else', '规则集', 4.0)");
-            stmt.execute("INSERT INTO nd_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (2, '免费模型规则else', '规则集', 2.0)");
-            stmt.execute("INSERT INTO nd_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (3, 'age_check', '规则集', 8.0)");
-            stmt.execute("INSERT INTO nd_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (5, 'advance_check', '决策表', 6.0)");
-            stmt.execute("INSERT INTO nd_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (8, '新客额度else', '规则集', 5.0)");
-            stmt.execute("INSERT INTO nd_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (10, 'error_handler', '脚本', 10.0)");
+            stmt.execute("INSERT INTO rfa_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (1, '新客额度else', '规则集', 5.0)");
+            stmt.execute("INSERT INTO rfa_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (1, '免费模型规则else', '规则集', 3.0)");
+            stmt.execute("INSERT INTO rfa_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (2, '新客额度else', '规则集', 4.0)");
+            stmt.execute("INSERT INTO rfa_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (2, '免费模型规则else', '规则集', 2.0)");
+            stmt.execute("INSERT INTO rfa_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (3, 'age_check', '规则集', 8.0)");
+            stmt.execute("INSERT INTO rfa_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (5, 'advance_check', '决策表', 6.0)");
+            stmt.execute("INSERT INTO rfa_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (8, '新客额度else', '规则集', 5.0)");
+            stmt.execute("INSERT INTO rfa_decision_rule_log (flow_log_id, rule_name, rule_type, duration_ms) VALUES (10, 'error_handler', '脚本', 10.0)");
 
             conn.commit();
         }

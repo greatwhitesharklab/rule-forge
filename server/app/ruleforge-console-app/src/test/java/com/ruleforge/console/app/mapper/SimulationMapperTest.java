@@ -36,7 +36,7 @@ public class SimulationMapperTest {
         try (Connection conn = dataSource.getConnection()) {
             Statement stmt = conn.createStatement();
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS nd_simulation_run (
+                CREATE TABLE IF NOT EXISTS rfa_simulation_run (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
                     rule_package_path VARCHAR(500) NOT NULL,
                     project VARCHAR(100) NOT NULL,
@@ -61,7 +61,7 @@ public class SimulationMapperTest {
                 )
             """);
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS nd_simulation_result (
+                CREATE TABLE IF NOT EXISTS rfa_simulation_result (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
                     simulation_run_id BIGINT NOT NULL,
                     original_flow_log_id BIGINT NOT NULL,
@@ -108,8 +108,8 @@ public class SimulationMapperTest {
     void cleanTables() throws Exception {
         try (Connection conn = dataSource.getConnection()) {
             Statement stmt = conn.createStatement();
-            stmt.execute("TRUNCATE TABLE nd_simulation_result");
-            stmt.execute("TRUNCATE TABLE nd_simulation_run");
+            stmt.execute("TRUNCATE TABLE rfa_simulation_result");
+            stmt.execute("TRUNCATE TABLE rfa_simulation_run");
             conn.commit();
         }
     }
@@ -120,7 +120,7 @@ public class SimulationMapperTest {
                            int totalLogs, int totalCompared, int totalDivergent) throws Exception {
         try (Connection conn = dataSource.getConnection()) {
             PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO nd_simulation_run (rule_package_path, project, package_id, " +
+                    "INSERT INTO rfa_simulation_run (rule_package_path, project, package_id, " +
                     "start_time, end_time, status, total_logs, total_compared, total_divergent) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, rulePackagePath);
@@ -146,7 +146,7 @@ public class SimulationMapperTest {
                               boolean hasDivergence, String errorMsg) throws Exception {
         try (Connection conn = dataSource.getConnection()) {
             PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO nd_simulation_result (simulation_run_id, original_flow_log_id, " +
+                    "INSERT INTO rfa_simulation_result (simulation_run_id, original_flow_log_id, " +
                     "divergence_severity, has_divergence, error_message) VALUES (?, ?, ?, ?, ?)",
                     Statement.RETURN_GENERATED_KEYS);
             ps.setLong(1, runId);
@@ -180,7 +180,7 @@ public class SimulationMapperTest {
 
             // 通过 JDBC 验证（BaseMapper.selectById 需 MyBatis-Plus SqlSessionFactory）
             try (Connection conn = dataSource.getConnection()) {
-                PreparedStatement ps = conn.prepareStatement("SELECT * FROM nd_simulation_run WHERE id = ?");
+                PreparedStatement ps = conn.prepareStatement("SELECT * FROM rfa_simulation_run WHERE id = ?");
                 ps.setLong(1, id);
                 var rs = ps.executeQuery();
                 assertThat(rs.next()).isTrue();
@@ -235,7 +235,7 @@ public class SimulationMapperTest {
 
                 // 通过 JDBC 验证更新结果
                 try (Connection conn = dataSource.getConnection()) {
-                    PreparedStatement ps = conn.prepareStatement("SELECT * FROM nd_simulation_run WHERE id = ?");
+                    PreparedStatement ps = conn.prepareStatement("SELECT * FROM rfa_simulation_run WHERE id = ?");
                     ps.setLong(1, id);
                     var rs = ps.executeQuery();
                     assertThat(rs.next()).isTrue();
