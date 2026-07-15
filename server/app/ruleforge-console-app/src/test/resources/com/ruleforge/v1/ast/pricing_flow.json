@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "id": "pricing_flow",
+  "name": "定价决策流(批测 fixture)",
+  "schema": {
+    "name": "PricingFact",
+    "fields": [
+      { "name": "score", "type": "NUMBER", "label": "信用分" },
+      { "name": "decision", "type": "STRING", "label": "决策" }
+    ]
+  },
+  "flow": {
+    "id": "pricing_flow_graph",
+    "name": "Pricing",
+    "version": "1.0",
+    "flowElements": [
+      { "type": "startEvent",  "id": "start", "name": "开始", "implementation": "Start:start", "position": { "x": 50, "y": 200 } },
+      { "type": "serviceTask", "id": "t_dt",  "name": "定价", "implementation": "DecisionTable:pricing", "position": { "x": 300, "y": 200 } },
+      { "type": "endEvent",    "id": "end",   "name": "决策", "implementation": "Decision:decision", "position": { "x": 550, "y": 200 } },
+      { "type": "sequenceFlow", "id": "f1", "sourceRef": "start", "targetRef": "t_dt" },
+      { "type": "sequenceFlow", "id": "f2", "sourceRef": "t_dt",  "targetRef": "end" }
+    ]
+  },
+  "nodes": {
+    "start": { "id": "start", "type": "Start", "name": "定价输入", "schema": "PricingFact" },
+    "pricing": {
+      "id": "pricing", "type": "DecisionTable", "name": "信用定价矩阵", "hitPolicy": "FIRST",
+      "inputs": [
+        { "name": "score", "dataType": "NUMBER", "direction": "INPUT" }
+      ],
+      "outputs": [ { "name": "decision", "dataType": "STRING", "direction": "OUTPUT" } ],
+      "rows": [
+        { "id": "r1", "conditions": ["score >= 80"], "outputs": ["approve"] },
+        { "id": "r2", "conditions": ["*"], "outputs": ["reject"] }
+      ]
+    },
+    "decision": {
+      "id": "decision", "type": "Decision", "name": "最终决策",
+      "decisionField": "decision",
+      "outputs": ["approve", "reject"],
+      "defaultOutput": "reject"
+    }
+  }
+}

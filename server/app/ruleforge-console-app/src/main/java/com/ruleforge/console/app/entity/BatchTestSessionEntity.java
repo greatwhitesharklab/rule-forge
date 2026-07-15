@@ -81,6 +81,8 @@ public class BatchTestSessionEntity {
     /** Subject type 常量 */
     public static final String SUBJECT_FLOW = "FLOW";
     public static final String SUBJECT_DATASOURCE = "DATASOURCE";
+    /** V7.23:V1 决策流批测(逐行跑 V1FlowRunner,替代老 FLOW 走 KnowledgeSession) */
+    public static final String SUBJECT_V1_FLOW = "V1_FLOW";
 
     /** Input source type 常量 */
     public static final String INPUT_FILE = "FILE";
