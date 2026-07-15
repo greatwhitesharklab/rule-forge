@@ -9,12 +9,15 @@ import com.ruleforge.console.batchtest.impl.DatasourceInputSource;
 import com.ruleforge.console.batchtest.impl.ExcelRowParser;
 import com.ruleforge.console.batchtest.impl.FileInputSource;
 import com.ruleforge.console.batchtest.impl.FlowBatchTestSubject;
+import com.ruleforge.console.batchtest.impl.V1BatchTestSubject;
+import com.ruleforge.console.app.v1.V1BundleResolver;
 import com.ruleforge.console.model.ApplicationAllVariableCategoryMap;
 import com.ruleforge.console.model.BatchTestFlowMap;
 import com.ruleforge.console.model.TestDataImportResult;
 import com.ruleforge.console.service.BatchTestService;
 import com.ruleforge.console.service.TestDataService;
 import com.ruleforge.runtime.KnowledgePackage;
+import com.ruleforge.v1.exec.V1PublishedBundle;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,18 +59,25 @@ public class BatchTestOrchestrator {
     private final TestDataService testDataService;     // v5.8.4 FLOW+FILE Excel 透传
     private final Executor batchTestExecutor;          // @Qualifier("batchTestExecutor") 来自 BatchTestAsyncConfig
     private final ObjectMapper objectMapper;          // 给 DATASOURCE subject 反序列化 input_data 用
+    private final V1BundleResolver v1BundleResolver;   // V7.23:V1_FLOW subject 加载决策流闭包
 
     /**
      * V5.8.2 现阶段支持的 (subject, inputSource) 组合:
      *   ✓ FLOW + FILE            — 复用 BatchTestServiceImpl.executeBatchAsync
      *   ✓ FLOW + DATASOURCE     — 走 executor HTTP /test/datasource/fetch
      *   ✓ DATASOURCE + FILE     — V5.8.2 新增,直接调数据源测 SLA
+     *   ✓ V1_FLOW + FILE        — V7.23 新增,逐行跑 V1FlowRunner(替代老 FLOW)
      *   ✗ DATASOURCE + DATASOURCE — 没有意义(自己拉自己),拒绝
      */
     private void validateModeSupported(String subjectType, String inputSourceType) {
         if (BatchTestSessionEntity.SUBJECT_FLOW.equals(subjectType)
                 && (BatchTestSessionEntity.INPUT_FILE.equals(inputSourceType)
                     || BatchTestSessionEntity.INPUT_DATASOURCE.equals(inputSourceType))) {
+            return;
+        }
+        // V7.23:V1 决策流批测 — Excel 给输入 fact,逐行跑 V1FlowRunner
+        if (BatchTestSessionEntity.SUBJECT_V1_FLOW.equals(subjectType)
+                && BatchTestSessionEntity.INPUT_FILE.equals(inputSourceType)) {
             return;
         }
         if (BatchTestSessionEntity.SUBJECT_DATASOURCE.equals(subjectType)
@@ -298,13 +308,16 @@ public class BatchTestOrchestrator {
     }
 
     /**
-     * 异步执行每行 — V5.8.2 按 subject 分发:
+     * 异步执行每行 — 按 subject 分发:
      *   - FLOW(无论 FILE/DATASOURCE input):复用 BatchTestServiceImpl.executeBatchAsync
      *     老路径,内部 rowMapper.updateResult 已带 latencyMs / errorCode
-     *   - DATASOURCE(V5.8.2 新):遍历行调 subject.execute(),结果直接写 DB
+     *   - V1_FLOW / DATASOURCE:遍历行调 subject.execute(),结果直接写 DB(V5.8.2 新路径)
      */
     private void schedulePerRowExecution(Long sessionId, BatchTestSubject subject, StartBatchTestRequest req) {
-        if (BatchTestSessionEntity.SUBJECT_FLOW.equals(req.subjectType())) {
+        if (BatchTestSessionEntity.SUBJECT_V1_FLOW.equals(req.subjectType())) {
+            // V7.23:V1 决策流批测 — resolve bundle 一次,逐行跑 V1FlowRunner
+            executeWithSubject(sessionId, subject, req);
+        } else if (BatchTestSessionEntity.SUBJECT_FLOW.equals(req.subjectType())) {
             // FLOW 走老路径
             @SuppressWarnings("unchecked")
             Map<String, Object> params = (Map<String, Object>) req.inputConfig().getOrDefault("flowParams", Map.of());
@@ -322,8 +335,11 @@ public class BatchTestOrchestrator {
     }
 
     /**
-     * V5.8.2 新路径:DATASOURCE subject(以及未来扩展)按行调 subject.execute()
+     * V5.8.2 新路径:DATASOURCE / V1_FLOW subject(以及未来扩展)按行调 subject.execute()
      * 每行:反序列化 input → 调 subject.execute(ctx) → 写 nd_batch_test_row
+     *
+     * <p>V7.23:V1_FLOW 模式在遍历前 resolve 一次 bundle(读 flow 文件 + 规则文件 + 项目库),
+     * 放进 subjectParams,避免每行重复读文件。
      */
     private void executeWithSubject(Long sessionId, BatchTestSubject subject, StartBatchTestRequest req) {
         // 拉所有行(简单实现,以后大表改 keyset pagination)
@@ -332,10 +348,31 @@ public class BatchTestOrchestrator {
                         .eq("session_id", sessionId)
                         .orderByAsc("row_index"));
 
-        // 组装 subject params(从 req.inputConfig 拿 + session 字段)
+        // 组装 subject params — 按 subjectType 分支
         Map<String, Object> subjectParams = new HashMap<>();
-        subjectParams.put("datasourceId", req.subjectId());  // subjectId 在 DATASOURCE 模式下是 datasourceId
-        subjectParams.put("inputSourceId", req.inputSourceId());
+        if (BatchTestSessionEntity.SUBJECT_V1_FLOW.equals(req.subjectType())) {
+            // V7.23:V1 决策流 — resolve bundle 一次(flowId = 决策流全路径)
+            String flowPath = req.flowId();
+            if (flowPath == null || flowPath.isBlank()) {
+                log.error("V1_FLOW batchTest 缺 flowId(session={})", sessionId);
+                markSessionFailed(sessionId, "V1_FLOW 缺 flowId(决策流全路径)");
+                return;
+            }
+            try {
+                V1PublishedBundle bundle = v1BundleResolver.resolve(flowPath);
+                subjectParams.put(V1BatchTestSubject.PARAM_BUNDLE, bundle);
+                subjectParams.put(V1BatchTestSubject.PARAM_FLOW_PATH, flowPath);
+                log.info("V1_FLOW batchTest bundle resolved: session={} flow={}", sessionId, flowPath);
+            } catch (Exception e) {
+                log.error("V1_FLOW batchTest resolve bundle 失败 session={} flow={}", sessionId, flowPath, e);
+                markSessionFailed(sessionId, "resolve bundle 失败: " + e.getMessage());
+                return;
+            }
+        } else {
+            // DATASOURCE 模式
+            subjectParams.put("datasourceId", req.subjectId());
+            subjectParams.put("inputSourceId", req.inputSourceId());
+        }
 
         // 异步遍历(后续加 fork-join 并行)
         for (BatchTestRowEntity row : rows) {
@@ -411,6 +448,19 @@ public class BatchTestOrchestrator {
         session.setProgress(1.0);
         sessionMapper.updateById(session);
         log.info("BatchTest session {} completed: errors={}", sessionId, errors);
+    }
+
+    /**
+     * V7.23:session 级失败(bundle resolve 失败 / 缺 flowId 等启动期错误)。
+     * session 无 errorMessage 字段,错误详情记日志,状态置 FAILED。
+     */
+    private void markSessionFailed(Long sessionId, String reason) {
+        BatchTestSessionEntity session = sessionMapper.selectById(sessionId);
+        if (session == null) return;
+        session.setStatus(BatchTestSessionEntity.STATUS_FAILED);
+        session.setProgress(1.0);
+        sessionMapper.updateById(session);
+        log.error("BatchTest session {} failed: {}", sessionId, reason);
     }
 
     public Map<String, Object> getProgress(Long sessionId) {

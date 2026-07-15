@@ -68,6 +68,7 @@ class BatchTestOrchestratorTest {
     @Mock private TestDataService testDataService;
     @Mock private java.util.concurrent.Executor batchTestExecutor;
     @Mock private ExecutorDatasourceClient executorDatasourceClient;
+    @Mock private com.ruleforge.console.app.v1.V1BundleResolver v1BundleResolver;
     @Spy private ObjectMapper objectMapper = new ObjectMapper();
     private BatchTestOrchestrator orchestrator;
 
@@ -90,7 +91,7 @@ class BatchTestOrchestratorTest {
                 sessionMapper, rowMapper,
                 flowSubject, fileInputSource, datasourceInputSource,
                 batchTestService, testDataService, batchTestExecutor,
-                objectMapper);
+                objectMapper, v1BundleResolver);
         orchestrator.init();
     }
 
