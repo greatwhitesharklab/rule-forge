@@ -126,60 +126,6 @@ declare module '*.css' {
     export default content;
 }
 
-// ---- CodeMirror declaration ----
-
-interface CodeMirrorEditor {
-    setSize(width: string, height: string | number): void;
-    setValue(content: string): void;
-    getValue(): string;
-    refresh(): void;
-    toTextArea(): void;
-    on(event: string, handler: (...args: any[]) => void): void;
-    setOption(option: string, value: unknown): void;
-    getOption(option: string): unknown;
-    getCursor(start?: string): CodeMirror.Position;
-    getTokenAt(pos: CodeMirror.Position, precise?: boolean): CodeMirror.Token;
-    getModeAt(pos: CodeMirror.Position): any;
-    getMode(): any;
-    startState(): any;
-    getStateAfter(line?: number): any;
-    showHint(options?: Record<string, unknown>): void;
-    replaceSelection(replacement: string): void;
-    _library?: any;
-}
-
-declare namespace CodeMirror {
-    interface Position {
-        line: number;
-        ch: number;
-    }
-
-    interface Token {
-        start: number;
-        end: number;
-        string: string;
-        type: string | null;
-        state: any;
-    }
-
-    function fromTextArea(textarea: HTMLTextAreaElement, options?: Record<string, unknown>): CodeMirrorEditor;
-    type Editor = CodeMirrorEditor;
-    var Pos: { (line: number, ch: number): Position };
-    var Pass: {};
-    var commands: Record<string, (cm: CodeMirrorEditor) => void>;
-    var hint: Record<string, any>;
-    function innerMode(mode: any, state: any): { state: any; mode: any };
-    function getMode(config: any, mode: string | any): any;
-    function copyState(mode: any, state: any): any;
-    function defineSimpleMode(name: string, spec: Record<string, any>): void;
-    function defineMode(name: string, factory: (config: any, parserConfig: any) => any, ...deps: string[]): void;
-    function registerHelper(type: string, name: string, value: any): void;
-}
-
-declare module 'codemirror' {
-    export = CodeMirror;
-}
-
 // ---- Node.js polyfill declarations ----
 
 declare module 'events' {

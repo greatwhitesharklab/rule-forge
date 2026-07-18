@@ -38,7 +38,6 @@ export default defineConfig({
                     if (id.includes('ag-grid')) return 'vendor-ag-grid';
                     if (id.includes('@xyflow') || id.includes('dagre')) return 'vendor-flow';
                     if (id.includes('antd') || id.includes('@ant-design') || id.includes('rc-')) return 'vendor-antd';
-                    if (id.includes('@codemirror') || id.includes('@lezer')) return 'vendor-codemirror';
                     if (id.includes('react') || id.includes('redux')) return 'vendor-react';
                     return undefined;
                 },

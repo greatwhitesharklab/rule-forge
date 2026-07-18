@@ -1,5 +1,4 @@
 import '@/css/iconfont.css';
-import 'codemirror/lib/codemirror.css';
 import '../css/tailwind-base.css';
 import {useEffect, useMemo} from 'react';
 import {applyMiddleware, createStore} from 'redux';
