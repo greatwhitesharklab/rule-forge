@@ -34,3 +34,6 @@ model-service/data/
 .zcode/
 data/
 
+
+# UX 审计截图工作产物
+.ux-audit/
