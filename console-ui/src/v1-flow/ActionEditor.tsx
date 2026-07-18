@@ -48,7 +48,7 @@ export function InvokeActionFields({action, onChange}: {action: Action; onChange
         onChange({args: next});
     };
     return (
-        <Space direction='vertical' size={2} style={{width: '100%'}}>
+        <Space orientation='vertical' size={2} style={{width: '100%'}}>
             <Space size={4} wrap>
                 <Input placeholder='ref (beanId.method)' value={action.ref ?? ''} style={{width: 180}}
                     onChange={(e) => onChange({ref: e.target.value})}/>

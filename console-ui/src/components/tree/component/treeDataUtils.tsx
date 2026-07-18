@@ -38,6 +38,21 @@ export function nodeKey(data: TreeNodeData): string {
     return data.type ? base + '#' + data.type : base;
 }
 
+/**
+ * 兄弟节点按 nodeKey 去重(保留首个)。
+ * 防御后端数据异常:test01 曾出现 5 个分类下各挂一个 fullPath+type 完全相同的
+ * 同名文件夹,antd Tree 报 "Same 'key' exist" 警告且展开行为错乱。
+ */
+export function dedupeByNodeKey(children: TreeNodeData[]): TreeNodeData[] {
+    const seen = new Set<string>();
+    return children.filter(c => {
+        const k = nodeKey(c);
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+    });
+}
+
 /** antd `<Tree>` 的节点(转换后),rawData 挂回原始 TreeNodeData 供 titleRender/loadData 用。 */
 export interface AntTreeNode {
     key: string;
@@ -239,7 +254,7 @@ export function toAntNode(data: TreeNodeData, term: string): AntTreeNode {
 
     let children: AntTreeNode[] | undefined;
     if (hasChildren) {
-        const filtered = data.children!.filter(c => hasMatchInSubtree(c, term));
+        const filtered = dedupeByNodeKey(data.children!).filter(c => hasMatchInSubtree(c, term));
         children = filtered.map(c => toAntNode(c, term));
     } else if (lazyLoadable) {
         children = undefined; // 触发 antd loadData
@@ -265,7 +280,7 @@ export function toAntNode(data: TreeNodeData, term: string): AntTreeNode {
  */
 export function buildAntTreeData(root: TreeNodeData | null | undefined, term: string): AntTreeNode[] {
     if (!root || !root.children) return [];
-    return root.children
+    return dedupeByNodeKey(root.children)
         .filter(c => hasMatchInSubtree(c, term))
         .map(c => toAntNode(c, term));
 }

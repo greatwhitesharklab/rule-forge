@@ -130,7 +130,7 @@ export default function RuleSetEditor({file}: {file?: string}) {
                         <Alert
                             type={drlResult.ruleSet.rules.length > 0 ? 'success' : 'warning'}
                             showIcon
-                            message={`解析完成:${drlResult.ruleSet.rules.length} 条 rule`}
+                            title={`解析完成:${drlResult.ruleSet.rules.length} 条 rule`}
                             description={drlResult.warnings.length > 0
                                 ? <ul style={{margin: 0, paddingLeft: 20}}>{drlResult.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
                                 : '无 warning'}

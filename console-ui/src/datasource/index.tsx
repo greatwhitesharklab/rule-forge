@@ -609,7 +609,7 @@ class DatasourcePanel extends Component<DatasourcePanelProps, DatasourcePanelSta
                 }
             >
                 {testResult && (
-                    <Alert type="info" showIcon message={testResult} style={{marginBottom: 12}}/>
+                    <Alert type="info" showIcon title={testResult} style={{marginBottom: 12}}/>
                 )}
 
                 {activeTab === 'datasources' && this.renderDatasources(datasources, showForm, formDatasource)}

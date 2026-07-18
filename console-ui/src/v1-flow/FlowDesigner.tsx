@@ -597,7 +597,7 @@ function FlowDesignerInner({file}: {file?: string}) {
                 footer={<Button size='small' onClick={() => setValidationOpen(false)}>关闭</Button>} width={520}>
                 {validationIssues.length === 0
                     ? <Text type='success'>✓ 所有校验通过,可以发布。</Text>
-                    : <Space direction='vertical' size={4} style={{width: '100%'}}>
+                    : <Space orientation='vertical' size={4} style={{width: '100%'}}>
                         {validationIssues.map((iss, i) => (
                             <div key={i} style={{display: 'flex', alignItems: 'flex-start', gap: 8, padding: '4px 8px', background: iss.level === 'error' ? '#fff1f0' : '#fffbe6', borderRadius: 4}}>
                                 <Text strong style={{color: iss.level === 'error' ? '#ff4d4f' : '#faad14', minWidth: 60}}>

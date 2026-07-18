@@ -182,7 +182,7 @@ class AuditLogPanel extends Component<{}, AuditLogPanelState> {
                     <Alert
                         data-testid="audit-log-error"
                         type="error"
-                        message="加载失败"
+                        title="加载失败"
                         description={error}
                         showIcon
                         style={{marginBottom: 16}}

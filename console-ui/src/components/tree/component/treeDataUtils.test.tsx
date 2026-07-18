@@ -9,6 +9,7 @@ import {
     hasMatchInSubtree,
     collectMatchAncestorKeys,
     nodeKey,
+    dedupeByNodeKey,
     toAntNode,
     buildAntTreeData,
     collectInitialExpandedKeys,
@@ -156,6 +157,21 @@ describe('treeDataUtils', () => {
             expect(resource).not.toBe(lib);
             expect(lib).not.toBe(ruleLib);
             expect(new Set([resource, lib, ruleLib]).size).toBe(3);
+        });
+    });
+
+    describe('dedupeByNodeKey', () => {
+        it('fullPath+type 完全相同的兄弟节点只保留首个(test01 重复 V1决策流 文件夹防御)', () => {
+            const dup1 = makeNode({name: 'V1决策流', type: 'v1flowLib', fullPath: '/t/flows'});
+            const dup2 = makeNode({name: 'V1决策流', type: 'v1flowLib', fullPath: '/t/flows'});
+            const other = makeNode({name: 'V1库', type: 'v1libraryLib', fullPath: '/t/libs'});
+            expect(dedupeByNodeKey([dup1, dup2, other])).toEqual([dup1, other]);
+        });
+        it('buildAntTreeData 对 root.children 去重后不产生重复 key', () => {
+            const child = makeNode({name: 'V1决策流', type: 'v1flowLib', fullPath: '/t/flows'});
+            const root = makeNode({name: 'root', children: [child, child]});
+            const tree = buildAntTreeData(root, '');
+            expect(tree.length).toBe(1);
         });
     });
 
