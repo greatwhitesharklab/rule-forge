@@ -24,7 +24,10 @@ export function buildProjectNameFromFile(file: string): string | undefined {
 }
 
 /**
- * 构造规则编辑器 iframe URL(修复 B-0:dev 环境所有规则编辑器打开后空白)。
+ * 构造规则编辑器 URL(修复 B-0:dev 环境所有规则编辑器打开后空白)。
+ *
+ * 现仅作为无 SPA 路由类型的 legacy fallback 使用(ReferenceDialog / VersionListDialog),
+ * 主流类型一律走 {@link typeToSpaSegment} → `/app/editor/<segment>`。
  *
  * 旧代码 `'.' + editorPath + "?file="` 有两个错误叠加:
  *  1. `'.' + '/html/editor.html'` = `'./html/editor.html'`,iframe 嵌在 `/html/frame.html` 内,

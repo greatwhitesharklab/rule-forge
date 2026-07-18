@@ -6,7 +6,7 @@ import {formPost} from '@/api/client';
  * 当前登录用户 Context。
  *
  * <p>SPA 阶段 2 起,frame 内部组件从 {@code window.__currentUser} 全局改读这个 Context。
- * 由 {@link RequireAuth} 守卫(SPA 路由)或 {@link LegacyAuthGate}(frame.html 独立入口)在鉴权通过后注入。
+ * 由 {@link RequireAuth} 守卫(SPA 路由)在鉴权通过后注入。
  *
  * <p>V5.74.2:完全脱离 {@code window.__currentUser} — 鉴权 → Provider 全在 React 树内。
  */
@@ -25,7 +25,7 @@ type AuthState = 'loading' | 'ok' | 'unauth';
  * </ul>
  *
  * <p>替代 frame.html 的同步 XHR 鉴权(原 line 14-28,阻塞渲染),改为异步路由守卫。
- * frame.html 独立入口的鉴权迁移到 {@link LegacyAuthGate}。
+ * frame.html 独立入口已随 SPA 阶段 5 删除。
  */
 export function RequireAuth() {
     const [state, setState] = useState<AuthState>('loading');

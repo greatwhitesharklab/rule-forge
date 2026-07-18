@@ -1,5 +1,13 @@
 # SPA 迁移实施计划(MPA → 单页 React)
 
+> ✅ **执行状态(2026-07-18 盘点):全部 6 阶段已完成。**
+> 阶段 0-4 在 V5.72-V5.74 落地(react-router-dom 7、根 `index.html`、`src/main.tsx`、
+> `RequireAuth` 异步守卫、editor 逐类型子路由化、E2E 迁移);
+> 阶段 5 收尾:`html/` 三入口已删、`vite.config.ts` 单入口、B 类隐藏 iframe 已改
+> `FormData + fetch`、`IFrame.tsx` 死代码 2026-07-18 删除。
+> 后续 V7.x 又物理删除老 7 编辑器(V1 画布接管)与 BPMN 决策流(V7.21),SPA 成为唯一形态。
+> 本文档保留作历史记录,勾选状态不再维护。
+
 > 这是 [frontend-optimization.md](./frontend-optimization.md) 第一节"核心架构问题"的可执行落地计划。
 > 因涉及正在运行的 dev 环境 + 8+ 编辑器 + E2E 测试,需分阶段、每阶段可回滚、完整回归后再合。
 > **不在会话中贸然一把梭** —— 每阶段独立分支 + PR + 全量 E2E。

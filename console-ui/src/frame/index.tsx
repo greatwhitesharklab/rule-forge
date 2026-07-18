@@ -112,15 +112,10 @@ const AppBodyConnected = connect((state: { ui?: { activePanel?: string } }) => (
  * Frame 主框架组件(SPA 阶段 2:从 DOMContentLoaded 回调提取)。
  *
  * <p>store 创建 + 副作用(loadData / EXPAND_TREE_NODE 监听)随组件生命周期。
- * 被 SPA 路由 /app(经 RequireAuth 守卫) 和 frame.html 独立入口(src/frame/main.tsx 经
- * LegacyAuthGate) 共享。
+ * 由 SPA 路由 /app(经 RequireAuth 守卫)挂载;frame.html 独立入口已随阶段 5 删除。
  *
- * <p>当前用户由父级 {@link CurrentUserContext.Provider} 提供:
- * <ul>
- *   <li>/app 路径 — RequireAuth 的 Provider 包裹 FrameApp</li>
- *   <li>frame.html 路径 — LegacyAuthGate 的 Provider 包裹 FrameApp</li>
- * </ul>
- * FrameApp 自身不再挂 Provider(V5.74.2 改造)。
+ * <p>当前用户由父级 {@link CurrentUserContext.Provider} 提供(RequireAuth 的 Provider
+ * 包裹 FrameApp)。FrameApp 自身不再挂 Provider(V5.74.2 改造)。
  */
 export default function FrameApp() {
     const store = useMemo(() => {

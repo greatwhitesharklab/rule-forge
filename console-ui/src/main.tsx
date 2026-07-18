@@ -14,7 +14,8 @@ import {RequireAuth} from '@/router/RequireAuth';
  *   <li>{@code /app} → {@link RequireAuth}(异步鉴权) → {@link FrameApp}(lazy,frame bundle 按需加载)</li>
  * </ul>
  *
- * <p>{@code login.html}/{@code frame.html} 仍可独立访问(MPA 回退,editor 阶段 3 前必需)。
+ * <p>MPA 回退入口({@code html/login.html} / {@code html/frame.html})已随阶段 5 删除,
+ * 本文件是唯一入口。
  */
 const FrameApp = lazy(() => import('@/frame'));
 const VariableEditorRoute = lazy(() => import('@/variable/EditorRoute'));

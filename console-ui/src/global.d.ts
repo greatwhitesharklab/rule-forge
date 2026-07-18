@@ -226,8 +226,7 @@ interface Window {
     // setCurrentGitTag dispatch,seeFileSource thunk 通过 getState() 读)。
 
     // Current user
-    // V5.74.2:已移除 __currentUser 全局变量,改纯 React CurrentUserContext(由 RequireAuth /
-    // LegacyAuthGate 注入)。
+    // V5.74.2:已移除 __currentUser 全局变量,改纯 React CurrentUserContext(由 RequireAuth 注入)。
 
     // Component event bus
     componentEvent: import('@/components/componentEvent.js').ComponentEventModule;

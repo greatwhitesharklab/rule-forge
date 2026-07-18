@@ -104,15 +104,12 @@ core ← console-app / executor-app  (app 直接依赖 core)
 ### Sub-task 工作流
 
 - **BDD/TDD 硬规则**:先写测试 → 写实现 → 跑全量回归 → commit。sub-task 完成直接做下一个,不 ask user。
-- **分支 + PR 流程**:
-  - 一个特性 (V5.x.y) 开一个分支 `feature/V5.x.y-<slug>`, N 个 sub-task 在分支内 commit
-  - 完成后 `git push -u origin` → `gh pr create` → `gh pr merge --squash --delete-branch`(走 GitHub PR API,不本地 merge)
-  - `git checkout main && git pull` 回主干,继续下一个特性
-- **灵活分组**: 同 concern 的 sub-task 可共分支; 不同 concern 可独立分支独立 PR。按实际情况决定。版本号 V6.x.y 三位原则保持。
+- **Git 工作流(2026-07 起,单人开发)**:直接在 `main` 上开发,每个 sub-task 完成立即 commit 到 main,不再走特性分支 + GitHub PR。需要隔离的大改动可临时开分支,合回 main 即可。
+- 版本号 `Major.Feature.Fix` 三位原则保持;CHANGELOG 标签 `v{MAJOR}.{FEATURE}.{FIX}`。
 
 ### 版本约定 (V5.16 起)
 
-**格式:`Major.Feature.Fix`** — 迁移文件 `V{MAJOR}.{FEATURE}.{FIX}__*.sql`,分支 `feature/{MAJOR}.{FEATURE}-{slug}`,CHANGELOG 标签 `v{MAJOR}.{FEATURE}.{FIX}`。
+**格式:`Major.Feature.Fix`** — 迁移文件 `V{MAJOR}.{FEATURE}.{FIX}__*.sql`,CHANGELOG 标签 `v{MAJOR}.{FEATURE}.{FIX}`(单人开发后直接提交 main,不再开特性分支)。
 
 | 位 | 语义 | 递增规则 |
 |---|---|---|

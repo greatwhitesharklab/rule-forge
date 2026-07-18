@@ -21,8 +21,8 @@ export default class LoginPage extends Component<object, LoginState> {
             if (result.status) {
                 const redirect = new URLSearchParams(window.location.search).get('redirect') || '/app';
                 window.location.href = redirect;
-                // SPA 模式(main.tsx 路由内)优先用 navigate('/app'),避免整页刷新;
-                // 但 LoginPage 不直接依赖 router(兼容 login.html 独立访问),阶段 2 在 /app 路由统一处理。
+                // SPA 模式(main.tsx 路由内)整页刷新到 /app,由 RequireAuth 守卫接管;
+                // login.html 独立入口已随 SPA 阶段 5 删除。
             } else {
                 this.setState({error: '登录失败'});
             }
@@ -85,5 +85,5 @@ export default class LoginPage extends Component<object, LoginState> {
     }
 }
 
-// 独立挂载(login.html 直接访问)移到 src/login/main.tsx,
-// 避免本模块被 SPA 根入口 src/main.tsx import 时重复 createRoot 同一个 #root。
+// 本模块只导出 LoginPage 组件,createRoot 挂载统一在 SPA 根入口 src/main.tsx。
+// (原 login.html 独立挂载 src/login/main.tsx 已随 SPA 阶段 5 删除。)

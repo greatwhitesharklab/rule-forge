@@ -1,5 +1,15 @@
 # 前端优化清单与改造方案
 
+> ✅ **执行状态(2026-07-18 盘点):除 B-3(样式栈长期收敛)外全部落地。**
+> - 第一节 MPA→SPA:已完成(见 [spa-migration-plan.md](./spa-migration-plan.md) 顶部状态),V7.x 后 SPA 为唯一形态
+> - B-0 编辑器空白:已修(editorPath 死代码删除,SPA 路由直开)
+> - B-1 / B-6 list_drafts 404 + 轮询过频:已修(端点存在,AlertBell 有 MAX_FAILS 退避)
+> - B-2 根路径 404:已修(根 `index.html`,`/` → `/login`)
+> - B-4 全局变量:已修(V5.72 `import.meta.env.VITE_API_BASE` + V5.74.2 CurrentUserContext)
+> - B-5 Git observability 404:已修(`GitObservabilityController` 已上线)
+> - B-3 Bootstrap 3 + AntD 双栈:**唯一未落地项**,长期债,新功能不再引入 Bootstrap
+> 本文档保留作历史记录。
+
 > 触发背景:2026-06-14 通过 Playwright MCP 对 console-ui 做端到端测试(登录 → 创建项目 → 进入规则编辑)时,
 > 结合用户对 "React 项目根路径 `/` 不能访问、为什么需要多个 html" 的架构质疑,盘点出的前端优化项。
 > 本文档先记录清单与方案,执行按优先级分批落地。
