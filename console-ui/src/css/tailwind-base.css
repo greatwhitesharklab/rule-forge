@@ -448,6 +448,7 @@ body .ant-modal-mask.ant-modal-mask {
 .welcome-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 0; background: var(--rf-primary); border-radius: 0 0 2px 0; transition: height 0.3s cubic-bezier(0.16,1,0.3,1); }
 .welcome-card:hover::before { height: 100%; }
 .welcome-card:hover { border-color: var(--rf-primary); box-shadow: 0 4px 12px rgba(84,105,212,0.08); transform: translateY(-2px); }
+.welcome-card-clickable { cursor: pointer; }
 .welcome-card-icon { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--rf-primary-bg) 0%, rgba(84,105,212,0.12) 100%); color: var(--rf-primary); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; transition: transform 0.25s cubic-bezier(0.16,1,0.3,1); }
 .welcome-card:hover .welcome-card-icon { transform: scale(1.08); }
 .welcome-card-body { flex: 1; min-width: 0; }
@@ -478,17 +479,28 @@ body .ant-modal-mask.ant-modal-mask {
     flex-shrink: 0;
 }
 .activity-bar-icon {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 46px;
     margin: 2px 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 2px;
     cursor: pointer;
     color: var(--rf-text-tertiary);
     border-radius: var(--rf-radius-base);
-    font-size: 18px;
+    font-size: 16px;
     transition: color 150ms, background 150ms;
+}
+/* 图标下 10px 文字标签(参考 VSCode activity bar 带标签形态),超长省略 */
+.activity-bar-icon-label {
+    font-size: 10px;
+    line-height: 1;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .activity-bar-icon:hover {
     color: var(--rf-text-primary);

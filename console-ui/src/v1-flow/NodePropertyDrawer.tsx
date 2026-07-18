@@ -8,6 +8,7 @@ import {type V1Node, type RuleSetNode, type Rule,
     type DecisionNode, type StartNode} from './ruleAsset';
 import ConditionEditor from './ConditionEditor';
 import {ActionsEditor} from './ActionEditor';
+import {AG_GRID_LOCALE_ZH} from './agGridLocale';
 
 const {Text} = Typography;
 const HIT_POLICIES = [{value: 'FIRST_MATCH', label: 'FIRST_MATCH(首命中)'}, {value: 'ALL_MATCH', label: 'ALL_MATCH(全命中)'}, {value: 'PRIORITY', label: 'PRIORITY(优先级)'}];
@@ -32,7 +33,7 @@ export default function NodePropertyDrawer({
     return (
         <Drawer
             title={<Space><NodeTypeBadge type={node.type}/><Text strong>{node.name}</Text></Space>}
-            open={open} onClose={onClose} width={620}
+            open={open} onClose={onClose} size={620}
             extra={<Text type='secondary' style={{fontSize: 12}}>id: {node.id}</Text>}
         >
             <Form layout='vertical' size='small'>
@@ -122,7 +123,8 @@ function DecisionTableEditor({node, update}: {node: DecisionTableNode; update: (
                 <Button size='small' onClick={addRow} icon={<PlusOutlined/>}>+ 行</Button>
             </Space>
             <div className='ag-theme-quartz' style={{height: Math.max(120, (rows.length + 1) * 36), width: '100%'}}>
-                <AgGridReact rowData={gridRows} columnDefs={colDefs} onCellValueChanged={onCellEdit} stopEditingWhenCellsLoseFocus={true}/>
+                <AgGridReact rowData={gridRows} columnDefs={colDefs} onCellValueChanged={onCellEdit} stopEditingWhenCellsLoseFocus={true} localeText={AG_GRID_LOCALE_ZH}
+                    /* v33+ 默认走 Theming API,与上方 legacy CSS 主题共存会报 error #239;显式声明 legacy */ theme='legacy'/>
             </div>
             <Text type='secondary' style={{fontSize: 11}}>condition 留空 = 通配 '*';CEL 表达式如 `score &lt; 500`</Text>
         </>

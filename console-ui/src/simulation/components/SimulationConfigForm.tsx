@@ -1,5 +1,7 @@
 import React, {Component, ChangeEvent, ReactNode} from 'react';
-import {Button, Input} from 'antd';
+import {Button, ConfigProvider, DatePicker, Input} from 'antd';
+import zhCN from 'antd/locale/zh_CN';
+import dayjs from 'dayjs';
 import {startSimulation, SimulationStartResult} from '../action.js';
 
 import {alert} from '@/utils/modal';
@@ -41,6 +43,12 @@ class SimulationConfigForm extends Component<SimulationConfigFormProps, Simulati
         this.setState({[field]: e.target.value} as unknown as SimulationConfigFormState);
     }
 
+    /** 日期选择(antd DatePicker,中文 locale 由本组件局部 ConfigProvider 提供);值仍存 'YYYY-MM-DD' 字符串。 */
+    handleDateChange(field: 'startTime' | 'endTime', dateString: string | string[]) {
+        const value = Array.isArray(dateString) ? dateString[0] : dateString;
+        this.setState({[field]: value || ''} as unknown as SimulationConfigFormState);
+    }
+
     handleSubmit() {
         const state = this.state;
         if (!state.project || !state.packageId || !state.files || !state.startTime || !state.endTime) {
@@ -72,6 +80,8 @@ class SimulationConfigForm extends Component<SimulationConfigFormProps, Simulati
     render(): ReactNode {
         const state = this.state;
         return (
+            // 局部 zhCN:SPA 根未挂全局 ConfigProvider,只让本表单的 DatePicker 显示中文
+            <ConfigProvider locale={zhCN}>
             <div style={{padding: 4}}>
                 <div className="ff-group">
                     <label style={{fontSize: 12, color: '#666'}}>项目名称</label>
@@ -103,15 +113,15 @@ class SimulationConfigForm extends Component<SimulationConfigFormProps, Simulati
                 </div>
                 <div className="ff-group">
                     <label style={{fontSize: 12, color: '#666'}}>开始时间</label>
-                    <Input type="date" size="small"
-                           value={state.startTime}
-                           onChange={this.handleChange.bind(this, 'startTime')}/>
+                    <DatePicker size="small" style={{width: '100%'}}
+                                value={state.startTime ? dayjs(state.startTime) : null}
+                                onChange={(_d, dateString) => this.handleDateChange('startTime', dateString)}/>
                 </div>
                 <div className="ff-group">
                     <label style={{fontSize: 12, color: '#666'}}>结束时间</label>
-                    <Input type="date" size="small"
-                           value={state.endTime}
-                           onChange={this.handleChange.bind(this, 'endTime')}/>
+                    <DatePicker size="small" style={{width: '100%'}}
+                                value={state.endTime ? dayjs(state.endTime) : null}
+                                onChange={(_d, dateString) => this.handleDateChange('endTime', dateString)}/>
                 </div>
                 <Button type="primary" size="small" block
                         disabled={state.submitting}
@@ -119,6 +129,7 @@ class SimulationConfigForm extends Component<SimulationConfigFormProps, Simulati
                     {state.submitting ? '启动中...' : '启动仿真'}
                 </Button>
             </div>
+            </ConfigProvider>
         );
     }
 }

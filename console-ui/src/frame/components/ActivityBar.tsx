@@ -44,6 +44,7 @@ class ActivityBar extends Component<ActivityBarProps> {
                  title={item.title}
                  onClick={() => this.handleClick(item.id)}>
                 {item.icon}
+                <span className="activity-bar-icon-label">{item.title}</span>
             </div>
         );
     }

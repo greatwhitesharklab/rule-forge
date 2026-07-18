@@ -36,11 +36,11 @@ test.describe('V1 决策流设计器', () => {
 
     test('palette 加 5 节点 → 画布渲染 + 导出 RuleAsset JSON', async ({page}) => {
         // Given palette When 加 Start/RuleSet/DecisionTable/ScoreCard/Decision
-        await addNode(page, '+ Start');
-        await addNode(page, '+ RuleSet');
-        await addNode(page, '+ DecisionTable');
-        await addNode(page, '+ ScoreCard');
-        await addNode(page, '+ Decision');
+        await addNode(page, '+ 开始');
+        await addNode(page, '+ 规则集');
+        await addNode(page, '+ 决策表');
+        await addNode(page, '+ 评分卡');
+        await addNode(page, '+ 决策');
 
         // Then 5 节点在画布
         await expect(page.locator('[data-testid="v1-node-Start"]')).toBeVisible();
@@ -64,7 +64,7 @@ test.describe('V1 决策流设计器', () => {
     });
 
     test('点 RuleSet 节点 → Drawer 开 + 加规则 + 可视化/CEL 模式', async ({page}) => {
-        await addNode(page, '+ RuleSet');
+        await addNode(page, '+ 规则集');
         await page.locator('[data-testid="v1-node-RuleSet"]').click();
 
         // Drawer 开,RuleSet 编辑器渲染
@@ -88,7 +88,7 @@ test.describe('V1 决策流设计器', () => {
     });
 
     test('RuleSet 改命中策略 → 导出反映', async ({page}) => {
-        await addNode(page, '+ RuleSet');
+        await addNode(page, '+ 规则集');
         await page.locator('[data-testid="v1-node-RuleSet"]').click();
         // 改命中策略 FIRST_MATCH → ALL_MATCH(用 testid 精确定位 Drawer 内命中策略 Select;
         // 不能用 .ant-select.first() —— Header 的 Schema AutoComplete 也是 .ant-select)

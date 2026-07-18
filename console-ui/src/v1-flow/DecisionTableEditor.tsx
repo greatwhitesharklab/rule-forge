@@ -5,6 +5,7 @@ import {AgGridReact} from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import {formPost} from '@/api/client';
+import {AG_GRID_LOCALE_ZH} from './agGridLocale';
 
 const {Text} = Typography;
 const TABLE_HIT_POLICIES = [{value: 'FIRST', label: 'FIRST(首个命中)'}, {value: 'ALL', label: 'ALL(全部命中)'}, {value: 'UNIQUE', label: 'UNIQUE(唯一命中)'}];
@@ -95,7 +96,8 @@ export default function DecisionTableEditor({file}: {file?: string}) {
                 <Button size='small' onClick={addRow} icon={<PlusOutlined/>}>+ 行</Button>
             </Space>
             <div className='ag-theme-quartz' style={{height: Math.max(120, (dt.rows.length + 1) * 36), width: '100%'}}>
-                <AgGridReact rowData={gridRows} columnDefs={colDefs} onCellValueChanged={onCellEdit} stopEditingWhenCellsLoseFocus={true}/>
+                <AgGridReact rowData={gridRows} columnDefs={colDefs} onCellValueChanged={onCellEdit} stopEditingWhenCellsLoseFocus={true} localeText={AG_GRID_LOCALE_ZH}
+                    /* v33+ 默认走 Theming API,与上方 legacy CSS 主题共存会报 error #239;显式声明 legacy */ theme='legacy'/>
             </div>
             <Text type='secondary' style={{fontSize: 11}}>condition 留空 = 通配 '*';CEL 表达式如 `score &lt; 500`</Text>
         </div>

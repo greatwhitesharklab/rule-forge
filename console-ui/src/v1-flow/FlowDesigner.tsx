@@ -18,7 +18,7 @@ import '@xyflow/react/dist/style.css';
 import {Layout, Menu, Button, Space, Typography, Input, Drawer, Modal, message, theme, AutoComplete} from 'antd';
 import {UploadOutlined, SaveOutlined, FolderOpenOutlined, CloudUploadOutlined, UndoOutlined, RedoOutlined, PartitionOutlined} from '@ant-design/icons';
 import {formPost, jsonPost, httpGet} from '@/api/client';
-import {nodeTypes, PALETTE, type V1NodeData} from './FlowNodes';
+import {nodeTypes, PALETTE, NODE_LABELS, type V1NodeData} from './FlowNodes';
 import {type RuleAsset, type FlowElement, type V1Node, type NodeType} from './ruleAsset';
 import NodePropertyDrawer from './NodePropertyDrawer';
 import GatewayEditor from './GatewayEditor';
@@ -459,7 +459,7 @@ function FlowDesignerInner({file}: {file?: string}) {
             .catch(() => message.error('运行失败(后端未运行或未登录;demo 页 /v1-flow 无 session,用 /app/v1-flow)'));
     }, [runFact, nodes, edges, nodesMap, schemaName]);
 
-    const palette = useMemo(() => PALETTE.map((t) => ({key: t, label: `+ ${t}`})), []);
+    const palette = useMemo(() => PALETTE.map((t) => ({key: t, label: `+ ${NODE_LABELS[t]}`})), []);
 
     return (
         <Layout style={{height: '100vh'}}>
@@ -500,11 +500,11 @@ function FlowDesignerInner({file}: {file?: string}) {
             </Header>
             <Layout>
                 <Sider width={200} style={{background: token.colorBgContainer, padding: 12}}>
-                    <Text type='secondary' style={{fontSize: 12}}>节点(5 业务 + Gateway)</Text>
+                    <Text type='secondary' style={{fontSize: 12}}>节点(5 业务 + 网关)</Text>
                     <Menu mode='inline' style={{borderInlineEnd: 'none', marginTop: 8}} items={palette} onClick={({key}) => addNode(key as NodeType)}/>
                     <Text type='secondary' style={{fontSize: 11, display: 'block', marginTop: 16}}>
-                        点节点加入画布 → 连线 → 点业务节点弹属性 Drawer 编辑 → 导出。
-                        Gateway 出边条件编辑在 V7.1-2b。
+                        点击节点加入画布 → 拖拽连线 → 点击画布节点编辑属性 → 保存或导出。
+                        网关的出边条件在选中网关后编辑。
                     </Text>
                 </Sider>
                 <Content style={{position: 'relative'}}>
@@ -555,7 +555,7 @@ function FlowDesignerInner({file}: {file?: string}) {
                 onSetDefault={setGatewayDefault}
                 onClose={() => setSelectedId(null)}
             />
-            <Drawer title='RuleAsset JSON(后端可执行)' open={exportOpen} onClose={() => setExportOpen(false)} width={520}>
+            <Drawer title='RuleAsset JSON(后端可执行)' open={exportOpen} onClose={() => setExportOpen(false)} size={520}>
                 <pre data-testid='v1-export' style={{fontSize: 11, fontFamily: 'monospace', whiteSpace: 'pre-wrap'}}>{exported}</pre>
             </Drawer>
             <Modal title='导入 RuleAsset JSON' open={importOpen} onCancel={() => setImportOpen(false)} onOk={doImport} okText='导入' width={620}>

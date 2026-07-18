@@ -2,14 +2,24 @@ import {Handle, Position} from '@xyflow/react';
 import type {NodeType} from './ruleAsset';
 
 /** V1 节点 BPMN 子集图标 + 配色。5 业务节点 + 1 流程控制节点(Gateway/exclusiveGateway)。
- *  Gateway 是 BPMN flow element(非 nodes{} 业务节点),画布上跟业务节点同渲染。 */
+ *  Gateway 是 BPMN flow element(非 nodes{} 业务节点),画布上跟业务节点同渲染。
+ *  label 仅用于显示(画布节点标题 + 左侧添加面板),nodeType 字符串是数据模型,保持英文。 */
+export const NODE_LABELS: Record<NodeType, string> = {
+    Start: '开始',
+    RuleSet: '规则集',
+    DecisionTable: '决策表',
+    ScoreCard: '评分卡',
+    Decision: '决策',
+    Gateway: '网关',
+};
+
 const NODE_STYLE: Record<NodeType, {icon: string; color: string; label: string}> = {
-    Start: {icon: '○', color: '#52c41a', label: 'Start'},
-    RuleSet: {icon: '⚖', color: '#1677ff', label: 'RuleSet'},
-    DecisionTable: {icon: '▦', color: '#722ed1', label: 'DecisionTable'},
-    ScoreCard: {icon: '★', color: '#fa8c16', label: 'ScoreCard'},
-    Decision: {icon: '◎', color: '#eb2f96', label: 'Decision'},
-    Gateway: {icon: '◇', color: '#13c2c2', label: 'Gateway'},
+    Start: {icon: '○', color: '#52c41a', label: NODE_LABELS.Start},
+    RuleSet: {icon: '⚖', color: '#1677ff', label: NODE_LABELS.RuleSet},
+    DecisionTable: {icon: '▦', color: '#722ed1', label: NODE_LABELS.DecisionTable},
+    ScoreCard: {icon: '★', color: '#fa8c16', label: NODE_LABELS.ScoreCard},
+    Decision: {icon: '◎', color: '#eb2f96', label: NODE_LABELS.Decision},
+    Gateway: {icon: '◇', color: '#13c2c2', label: NODE_LABELS.Gateway},
 };
 
 export interface V1NodeData {
