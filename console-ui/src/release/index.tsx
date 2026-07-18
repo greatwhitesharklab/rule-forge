@@ -281,7 +281,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
         ];
 
         return (
-            <Table rowKey={(r: DeploymentRecord, i: number) => String(r.id ?? i)}
+            <Table rowKey="id"
                    columns={columns} dataSource={history} pagination={false} size="small" />
         );
     }
@@ -301,7 +301,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
         return (
             <div>
                 {/* Node list */}
-                <Table<ExecutorNode> rowKey={(n, i) => String(n.id ?? i)} dataSource={nodes} pagination={false} size="small"
+                <Table<ExecutorNode> rowKey="id" dataSource={nodes} pagination={false} size="small"
                     columns={[
                         {title: '节点名称', dataIndex: 'nodeName', key: 'name'},
                         {title: 'URL', dataIndex: 'nodeUrl', key: 'url', ellipsis: true,
@@ -376,7 +376,7 @@ class ReleasePanel extends Component<ReleasePanelProps, ReleasePanelState> {
                         <p style={{fontSize: 12}}>点击下方按钮创建灰度策略</p>
                     </div>
                 ) : (
-                    <Table<GrayStrategy> rowKey={(s, i) => String(s.id ?? i)} dataSource={strategies} pagination={false} size="small"
+                    <Table<GrayStrategy> rowKey="id" dataSource={strategies} pagination={false} size="small"
                         columns={[
                             {title: '策略名称', dataIndex: 'strategyName', key: 'name'},
                             {title: '类型', dataIndex: 'strategyType', key: 'type',

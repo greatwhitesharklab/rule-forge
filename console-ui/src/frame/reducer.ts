@@ -95,7 +95,6 @@ function tree(state: FrameState = {}, action: { type: string; [key: string]: any
             var actionData: TreeNodeData = action.data;
             // 根据节点的类型决定更新哪个状态
             if(actionData.type === 'publicResource' || actionData.fullPath.startsWith('/public')) {
-                console.log('删除操作：更新 publicResource');
                 // 更新 publicResource
                 var publicResource = Object.assign({}, state.publicResource) as TreeNodeData;
                 var map = new Map<string, DataMapEntry>();
@@ -184,15 +183,8 @@ function tree(state: FrameState = {}, action: { type: string; [key: string]: any
         case ACTIONS.CREATE_NEW_FILE:
             var parentNodeData: TreeNodeData = action.parentNodeData;
 
-            console.log('CREATE_NEW_FILE reducer 被调用:', {
-                parentType: parentNodeData.type,
-                parentPath: parentNodeData.fullPath,
-                parentId: parentNodeData.id
-            });
-
             // 根据父节点的类型决定更新哪个状态
             if(parentNodeData.type === 'publicResource' || parentNodeData.fullPath.startsWith('/public')) {
-                console.log('更新 publicResource');
                 // 更新 publicResource
                 var newPublicResource = Object.assign({}, state.publicResource) as TreeNodeData;
                 var dataMap = new Map<string, DataMapEntry>();
@@ -200,7 +192,6 @@ function tree(state: FrameState = {}, action: { type: string; [key: string]: any
                 var targetParentNodeData = dataMap.get(parentNodeData.id);
 
                 if (!targetParentNodeData) {
-                    console.log('在 publicResource 中未找到父节点');
                     return state;
                 }
 
@@ -212,38 +203,28 @@ function tree(state: FrameState = {}, action: { type: string; [key: string]: any
                 children.push(action.newFileData as TreeNodeData);
                 return Object.assign({}, state, {publicResource: newPublicResource});
             } else {
-                console.log('更新 data (项目列表)');
                 // 更新 data (项目列表)
                 var newData = Object.assign({}, state.data) as TreeNodeData;
                 var dataMap = new Map<string, DataMapEntry>();
                 buildDataMap(newData, dataMap);
 
-                console.log('dataMap 中的所有节点ID:', Array.from(dataMap.keys()));
-                console.log('查找的父节点ID:', parentNodeData.id);
-
                 var targetParentNodeData = dataMap.get(parentNodeData.id);
 
                 if (!targetParentNodeData) {
-                    console.log('在 data 中未找到父节点');
                     return state;
                 }
-
-                console.log('找到的父节点数据:', targetParentNodeData);
-                console.log('父节点的 data 属性:', targetParentNodeData.data);
 
                 var children = targetParentNodeData.data.children;
                 if(!children){
                     children = [];
                     targetParentNodeData.data.children = children;
                 }
-                console.log('要添加的新文件数据:', action.newFileData);
 
                 // 过滤掉 undefined 元素
                 targetParentNodeData.data.children = targetParentNodeData.data.children.filter(child => child !== undefined);
 
                 // 直接添加到父节点的 children 数组
                 targetParentNodeData.data.children.push(action.newFileData as TreeNodeData);
-                console.log('添加新文件后的父节点 children:', targetParentNodeData.data.children);
                 return Object.assign({}, state, {data: newData});
             }
         case ACTIONS.LOAD_CHILDREN_END:

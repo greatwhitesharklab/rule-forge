@@ -111,7 +111,7 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
         ];
         const body = (
             <div>
-                <Table<VersionRow> rowKey={(_r: VersionRow, i: number) => String(i)} dataSource={list} columns={columns}
+                <Table<VersionRow> rowKey="name" dataSource={list} columns={columns}
                     pagination={false} size="small"
                     style={{tableLayout: 'fixed', wordBreak: 'break-all'}}/>
 

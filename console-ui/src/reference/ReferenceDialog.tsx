@@ -65,11 +65,8 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
     }
 
     componentDidMount(): void {
-        console.log('ReferenceDialog componentDidMount');
-
         // Listen for project list change events - use frame's eventEmitter
         frameEvent.eventEmitter.on(frameEvent.PROJECT_LIST_CHANGE, (projectNames: string[]) => {
-            console.log('ReferenceDialog received projectNames from event:', projectNames);
             this.setState({ projectNames });
         });
 
@@ -112,7 +109,6 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
     }
 
     loadProjectNames(): void {
-        console.log('ReferenceDialog loadProjectNames called');
         // Try to get project list from DOM
         const projectMenu = document.getElementById('__project_filter_menu');
         if (projectMenu) {
@@ -121,33 +117,25 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
                 if (!li.classList.contains('_firstItem')) {
                     const link = li.querySelector('a');
                     const projectName = (link as HTMLElement).textContent?.trim() || '';
-                    console.log('Found project name:', projectName);
                     if (projectName) {
                         projectNames.push(projectName);
                     }
                 }
             });
             if (projectNames.length > 0) {
-                console.log('ReferenceDialog loaded projectNames from DOM:', projectNames);
                 this.setState({ projectNames });
-            } else {
-                console.log('No project names found in DOM');
             }
-        } else {
-            console.log('Project menu not found in DOM');
         }
     }
 
     loadProjectNamesFromServer(): void {
-        console.log('ReferenceDialog loadProjectNamesFromServer called');
         // Fetch project list directly from server
         formPost<{ repo?: { projectNames?: string[] } }>('/frame/loadProjects', {classify: 'true', projectDetail: 'false'}, { silent: true }).then((data) => {
             if (data && data.repo && data.repo.projectNames) {
-                console.log('ReferenceDialog loaded projectNames from server:', data.repo.projectNames);
                 this.setState({ projectNames: data.repo.projectNames });
             }
         }).catch((error: unknown) => {
-            console.log('Failed to load project names from server:', error);
+            console.error('加载项目列表失败', error);
         });
     }
 
@@ -231,9 +219,6 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
     render(): React.ReactNode {
         const { fromResourceEditor, projectFilter, files, searchText, showDropdown } = this.state;
         const filteredProjectNames = this.getFilteredProjectNames();
-
-        console.log('ReferenceDialog render - projectNames:', this.state.projectNames);
-        console.log('ReferenceDialog render - fromResourceEditor:', fromResourceEditor);
 
         const body = (
             <div>

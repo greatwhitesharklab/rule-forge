@@ -56,6 +56,44 @@ stop_local() {
     fi
 }
 
+# 加载 .env 变量:JDBC URL 等值含未加引号的 `&` `?`,直接 source 会被 bash 截断,
+# 这里逐行拆分 KEY=VALUE 后 export,值不做二次解析。
+load_env() {
+    [ -f "$ROOT/.env" ] || return 0
+    local line key val
+    while IFS= read -r line || [ -n "$line" ]; do
+        case "$line" in
+            ''|\#*) continue ;;
+            *=*)
+                key="${line%%=*}"
+                val="${line#*=}"
+                val="${val%$'\r'}"
+                export "$key=$val"
+                ;;
+        esac
+    done < "$ROOT/.env"
+}
+
+# 3306 已被本机其它 MySQL(容器或宿主机)监听时跳过 compose 里的 mysql,避免端口冲突
+port_in_use() {
+    local port=$1
+    if command -v ss >/dev/null 2>&1; then
+        ss -ltn 2>/dev/null | grep -q ":${port} "
+    else
+        nc -z 127.0.0.1 "$port" 2>/dev/null
+    fi
+}
+
+start_supporting_services() {
+    local services="mysql model-service console-ui"
+    if port_in_use 3306; then
+        echo ">>> 3306 已被监听,跳过启动 mysql 容器(使用已有 MySQL)"
+        services="model-service console-ui"
+    fi
+    echo ">>> Starting supporting services ($services)"
+    docker compose up -d $services
+}
+
 start_local() {
     local svc=$1
     local module="ruleforge-$svc-app"
@@ -63,16 +101,10 @@ start_local() {
 
     stop_local "$svc"
 
-    # 加载 .env 变量
-    if [ -f "$ROOT/.env" ]; then
-        set -a
-        . "$ROOT/.env"
-        set +a
-    fi
+    load_env
 
     # 启动 MySQL/Model-Service/UI(后台)
-    echo ">>> Starting supporting services (mysql, model-service, console-ui)"
-    docker compose up -d mysql model-service console-ui
+    start_supporting_services
 
     echo ">>> Running $module locally"
     cd "$SERVER_DIR"
@@ -108,8 +140,7 @@ case "$ACTION" in
         ;;
     start)
         # 起 MySQL/Model-Service/UI
-        echo ">>> Starting supporting services"
-        docker compose up -d mysql model-service console-ui
+        start_supporting_services
 
         # 起指定 Java
         for svc in $TARGET; do

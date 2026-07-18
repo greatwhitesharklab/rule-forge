@@ -134,7 +134,7 @@ export default class UserPermissionDrawer extends Component<UserPermissionDrawer
                 title={`权限配置 — ${user.username}`}
                 open={visible}
                 onClose={onClose}
-                width={900} /* deprecated in antd v6, ok for v5 */
+                size={900}
                 extra={
                     <Button type="primary" loading={saving} onClick={this.handleSave}>
                         保存

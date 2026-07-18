@@ -48,7 +48,6 @@ export function loadTestRuleSets(file: string, version: string, callback: (rules
     formPost<Array<{ rules?: unknown[] }>>('/common/loadXml', { files: `${file}:${version}` }, { silent: true }).then(function (data) {
         const ruleset = data[0] || {};
         const rules = ruleset["rules"] || [];
-        console.log('获取规则集', rules);
         callback(rules);
     }).catch(function () {
         alert('加载资源失败.');

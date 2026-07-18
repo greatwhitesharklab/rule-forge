@@ -37,3 +37,6 @@ data/
 
 # UX 审计截图工作产物
 .ux-audit/
+
+# UX 走查脚本(一次性工具)
+console-ui/scripts/ux-audit*.mjs

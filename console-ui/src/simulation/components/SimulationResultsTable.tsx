@@ -88,7 +88,7 @@ class SimulationResultsTable extends Component<SimulationResultsTableProps, Simu
         }
         return (
             <div>
-                <Table<SimulationResultItem> rowKey={(r, i) => String(r.id ?? i)} dataSource={state.results}
+                <Table<SimulationResultItem> rowKey="id" dataSource={state.results}
                     columns={this.columns} pagination={false} size="small"
                     onRow={(r: SimulationResultItem) => ({style: {background: r.hasDivergence ? '#fff8e1' : undefined}})}
                     locale={{emptyText: '暂无数据'}}/>

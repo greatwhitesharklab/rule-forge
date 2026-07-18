@@ -32,7 +32,7 @@ export default function GatewayEditor({
     return (
         <Drawer
             title={<Space><Tag color='cyan'>Gateway</Tag><Text strong>出边分流条件</Text></Space>}
-            open={open} onClose={onClose} width={560}
+            open={open} onClose={onClose} size={560}
         >
             <Text type='secondary' style={{fontSize: 12}}>
                 按出边 CEL 条件<b>首个命中</b>分流;全不命中走 <b>default</b> 兜底边。

@@ -128,7 +128,6 @@ class ResourceEditor extends Component<ResourceEditorProps> {
                         <div style={{margin: '2px'}}>
                             <Space size="small" style={{margin: '2px'}}>
                                 <Button type="primary" htmlType="button" onClick={(e) => {
-                                    console.log(masterRowData)
                                     if (masterRowData.name) {
                                         event.eventEmitter.emit(event.OPEN_CREATE_PARAMS_DIALOG, {
                                             create: true,
