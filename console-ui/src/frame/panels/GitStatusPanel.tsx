@@ -1,6 +1,6 @@
 import {Component, ReactNode} from 'react';
 import {connect} from 'react-redux';
-import {Tabs} from 'antd';
+import {Card, Col, Row, Statistic, Tabs} from 'antd';
 import PageShell from '@/frame/components/PageShell';
 import {getGitStatusSummary, getGitStatusRecent, GitStatusSummary, GitStatusFailure} from '@/api/client.js';
 import {DashboardOutlined, ProfileOutlined} from '@ant-design/icons';
@@ -67,33 +67,37 @@ class GitStatusPanel extends Component<GitStatusPanelProps, GitStatusPanelState>
         if (this.props.onNavigate) this.props.onNavigate(tabId);
     }
 
+    /**
+     * UX-B3:统计项改 antd Statistic 卡片 —— 原 git-status-* CSS 类在 V5.101 重设计后
+     * 已无定义,统计项渲染成无样式纯文本堆叠。valueRender 里保留 data-testid 供测试锁定。
+     */
+    renderStat(title: string, testId: string, value: number | string) {
+        return (
+            <Col xs={24} sm={8}>
+                <Card size="small">
+                    <Statistic
+                        title={title}
+                        value={value}
+                        valueRender={() => <span data-testid={testId}>{value}</span>}
+                    />
+                </Card>
+            </Col>
+        );
+    }
+
     renderHeader() {
         const {summary, loading, error, lastRefresh} = this.state;
+        const stat = (v: number | undefined) => (loading && !summary ? '--' : (v ?? 0));
         return (
             <div className="git-status-summary" data-testid="git-status-summary">
-                <div className="git-status-summary-row">
-                    <div className="git-status-cell">
-                        <div className="git-status-cell-label">总失败</div>
-                        <div className="git-status-cell-value" data-testid="git-status-total">
-                            {loading && !summary ? '--' : (summary?.totalFailures ?? 0)}
-                        </div>
-                    </div>
-                    <div className="git-status-cell">
-                        <div className="git-status-cell-label">近 1h</div>
-                        <div className="git-status-cell-value" data-testid="git-status-last1h">
-                            {loading && !summary ? '--' : (summary?.last1h ?? 0)}
-                        </div>
-                    </div>
-                    <div className="git-status-cell">
-                        <div className="git-status-cell-label">近 24h</div>
-                        <div className="git-status-cell-value" data-testid="git-status-last24h">
-                            {loading && !summary ? '--' : (summary?.last24h ?? 0)}
-                        </div>
-                    </div>
-                </div>
-                {error ? <div className="git-status-error" data-testid="git-status-error">加载失败: {error}</div> : null}
+                <Row gutter={[16, 16]}>
+                    {this.renderStat('总失败', 'git-status-total', stat(summary?.totalFailures))}
+                    {this.renderStat('近 1h', 'git-status-last1h', stat(summary?.last1h))}
+                    {this.renderStat('近 24h', 'git-status-last24h', stat(summary?.last24h))}
+                </Row>
+                {error ? <div data-testid="git-status-error" style={{color: '#ff4d4f', fontSize: 12, marginTop: 8}}>加载失败: {error}</div> : null}
                 {lastRefresh ? (
-                    <div className="git-status-refresh">更新于 {lastRefresh.toLocaleTimeString()}</div>
+                    <div style={{color: '#999', fontSize: 12, marginTop: 8}}>更新于 {lastRefresh.toLocaleTimeString()}</div>
                 ) : null}
             </div>
         );
@@ -165,28 +169,9 @@ class GitStatusPanel extends Component<GitStatusPanelProps, GitStatusPanelState>
                     />
                 }
             >
-                <div style={{flexShrink: 0}}>{this.renderHeader()}</div>
-                <div className="git-status-body" style={{flex: 1, minHeight: 0, overflow: 'auto'}}>
+                <div style={{flexShrink: 0, padding: '16px 16px 0'}}>{this.renderHeader()}</div>
+                <div className="git-status-body" style={{flex: 1, minHeight: 0, overflow: 'auto', padding: 16}}>
                     {gitStatusTab === 'recent' ? this.renderRecent() : this.renderSummary()}
-                </div>
-                <div className="git-status-status" style={{flexShrink: 0}}>
-                    <div className="status-divider"/>
-                    <div className="status-item">
-                        <span className={'status-dot ' + (this.state.error
-                            ? 'status-dot-red'
-                            : this.state.summary && this.state.summary.last24h > 0
-                                ? 'status-dot-yellow'
-                                : 'status-dot-green')}/>
-                        <span className="status-label">24h</span>
-                        <span className="status-value">
-                            {this.state.summary ? this.state.summary.last24h : '--'}
-                        </span>
-                    </div>
-                    <div className="status-item">
-                        <span className="status-dot status-dot-gray"/>
-                        <span className="status-label">轮询</span>
-                        <span className="status-value">{POLL_INTERVAL_MS / 1000}s</span>
-                    </div>
                 </div>
             </PageShell>
         );

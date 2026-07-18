@@ -132,5 +132,11 @@ describe('V5.45.5 — Frame AlertBell BDD', () => {
         await waitFor(() => {
             expect(document.body.textContent).toContain('Loan interest bump');
         });
+        // UX-B3 回归锁:弹层必须真的处于展开态 —— 原 bug 是 trigger flushSync 置 open=true
+        // 后按钮自身 onClick 又切回 false,弹层留在 DOM 里但带 leave 动画类(pointer-events:none),
+        // 纯 textContent 断言测不出来
+        const popover = document.querySelector('.ant-popover') as HTMLElement;
+        expect(popover).toBeTruthy();
+        expect(/leave/.test(popover.className)).toBe(false);
     });
 });

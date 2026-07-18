@@ -130,7 +130,10 @@ describe('GitStatusPanel (5.10-D)', () => {
 
             // When
             renderPanel();
-            await waitFor(() => screen.getByText(/0/));
+            // 等加载完成 — 用 testid 锁定(旧写法 getByText(/0/) 会匹配到多个统计值,不稳定)
+            await waitFor(() => {
+                expect(screen.getByTestId('git-status-total').textContent).toBe('0');
+            });
             const recentTab = screen.getByText(/最近失败/);
             fireEvent.click(recentTab);
 

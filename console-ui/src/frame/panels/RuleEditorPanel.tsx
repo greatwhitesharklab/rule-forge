@@ -73,6 +73,16 @@ export default class RuleEditorPanel extends Component<RuleEditorPanelProps, Rul
         this.setState({dropdownOpen: false});
     }
 
+    /**
+     * UX-B3:导入项目入口。原入口只挂在"项目列表"根节点右键菜单(action.ts),
+     * 而文件树渲染跳过根节点 → UI 里找不到。这里与"创建新项目"同位置露出,
+     * 复用已挂载在 ComponentContainer 的 ImportProjectDialog(事件驱动,不新写对话框)。
+     */
+    _handleImportProject() {
+        this.props.eventObj.eventEmitter.emit(event.OPEN_IMPORT_PROJECT_DIALOG);
+        this.setState({dropdownOpen: false});
+    }
+
     render() {
         const {projects, selectedProject, dropdownOpen} = this.state;
         return (
@@ -100,6 +110,10 @@ export default class RuleEditorPanel extends Component<RuleEditorPanelProps, Rul
                             <div className="panel-dropdown-item" onClick={() => this._handleCreateProject()}>
                                 <i className="rf rf-createpro" style={{width: 16, fontSize: 12}}/>
                                 创建新项目
+                            </div>
+                            <div className="panel-dropdown-item" onClick={() => this._handleImportProject()}>
+                                <i className="rf rf-import" style={{width: 16, fontSize: 12}}/>
+                                导入项目
                             </div>
                         </div>
                     )}

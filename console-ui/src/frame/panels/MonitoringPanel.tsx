@@ -1,5 +1,7 @@
 import {Component, ReactNode} from 'react';
 import {connect} from 'react-redux';
+import {Card, Col, Empty, Row, Statistic, Tabs} from 'antd';
+import PageShell from '@/frame/components/PageShell';
 import {setMonitoringTab} from '@/frame/action.js';
 import {BarChartOutlined, BellOutlined, DashboardOutlined} from '@ant-design/icons';
 
@@ -21,49 +23,63 @@ interface MonitoringPanelProps {
     onNavigate?: (tabId: string) => void;
 }
 
+/**
+ * UX-B3 重写:V5.8.4 起专用面板撑满整个 content 区,老实现仍用 240px 侧栏的
+ * side-panel-nav 样式 —— 导航被横向拉满、P95/成功率/告警 三个指标沉到页面左下角。
+ * 现改为 PageShell + Tabs 骨架(与 GitStatusPanel 一致),指标用 antd Statistic 卡片呈现。
+ *
+ * <p>注意:实时 metrics 端点尚未接入,三指标沿用上版的占位值(-- / -- / 0)。
+ */
 class MonitoringPanel extends Component<MonitoringPanelProps> {
-    handleTabClick(tabId: string) {
+    handleTabChange(tabId: string) {
         this.props.dispatch(setMonitoringTab(tabId));
         if (this.props.onNavigate) {
             this.props.onNavigate(tabId);
         }
     }
 
+    renderOverview() {
+        const items = [
+            {title: 'P95 延迟', value: '--'},
+            {title: '成功率', value: '--'},
+            {title: '活跃告警', value: 0},
+        ];
+        return (
+            <Row gutter={[16, 16]} data-testid="monitoring-overview">
+                {items.map(it => (
+                    <Col xs={24} sm={8} key={it.title}>
+                        <Card size="small">
+                            <Statistic title={it.title} value={it.value}/>
+                        </Card>
+                    </Col>
+                ))}
+            </Row>
+        );
+    }
+
     render() {
         const {monitoringTab} = this.props;
         return (
-            <div className="monitoring-panel" style={{height: '100%'}}>
-                <div className="side-panel-header">监控告警</div>
-                <div className="side-panel-nav">
-                    {TABS.map(tab => (
-                        <div key={tab.id}
-                             className={'side-panel-nav-item' + (monitoringTab === tab.id ? ' active' : '')}
-                             onClick={() => this.handleTabClick(tab.id)}>
-                            <span style={{marginRight: 8, fontSize: 12}}>{tab.icon}</span>
-                            {tab.label}
-                        </div>
-                    ))}
+            <PageShell
+                title="监控告警"
+                fill
+                toolbar={
+                    <Tabs
+                        activeKey={monitoringTab}
+                        onChange={(key: string) => this.handleTabChange(key)}
+                        items={TABS.map(t => ({key: t.id, label: (<><span style={{marginRight: 6}}>{t.icon}</span>{t.label}</>)}))}
+                    />
+                }
+            >
+                <div style={{flex: 1, minHeight: 0, overflow: 'auto', padding: 16}}>
+                    {monitoringTab === 'overview' ? this.renderOverview() : (
+                        <Empty
+                            description={monitoringTab === 'metrics' ? '指标数据接入中' : '告警规则接入中'}
+                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        />
+                    )}
                 </div>
-                <div style={{flex: 1}}/>
-                <div className="monitoring-panel-status">
-                    <div className="status-divider"/>
-                    <div className="status-item">
-                        <span className="status-dot status-dot-green"/>
-                        <span className="status-label">P95</span>
-                        <span className="status-value">--</span>
-                    </div>
-                    <div className="status-item">
-                        <span className="status-dot status-dot-green"/>
-                        <span className="status-label">成功率</span>
-                        <span className="status-value">--</span>
-                    </div>
-                    <div className="status-item">
-                        <span className="status-dot status-dot-gray"/>
-                        <span className="status-label">告警</span>
-                        <span className="status-value">0</span>
-                    </div>
-                </div>
-            </div>
+            </PageShell>
         );
     }
 }

@@ -97,19 +97,14 @@ export default class AlertBell extends Component<AlertBellProps, AlertBellState>
         }
     };
 
-    handleBellClick = () => {
-        this.setState({open: !this.state.open}, () => {
-            // 展开时强制 reload(用户可能停留了 30s+ 没看)
-            if (this.state.open) this.load();
-        });
-    };
-
-    handlePopoverOpenChange = (open: boolean) => {
-        this.setState({open});
-    };
-
+    // UX-B3 修复:open 只由 Popover trigger="click" 驱动。原实现按钮自身 onClick 也
+    // 切换 open,而 @rc-component/trigger 先以 flushSync 调 onOpenChange(true)、再执行
+    // 按钮的 onClick —— 后者读到已更新的 state 又切回 false,弹层"开了又立刻关",
+    // 表现为点击铃铛无响应。
     handleOpenChange = (open: boolean) => {
         this.setState({open});
+        // 展开时强制 reload(用户可能停留了 30s+ 没看)
+        if (open) this.load();
     };
 
     handleReviewClick = (draft: AlertDraft) => {
@@ -189,7 +184,6 @@ export default class AlertBell extends Component<AlertBellProps, AlertBellState>
                 <button
                     data-testid="alert-bell-btn"
                     className="topbar-bell"
-                    onClick={this.handleBellClick}
                     aria-label="待审通知"
                 >
                     <Badge count={count} size="small" offset={[-2, 2]} overflowCount={99}>

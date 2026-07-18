@@ -52,8 +52,8 @@ test.describe('Monitoring Dashboard', () => {
     test('should display metric cards on default view', async ({page}) => {
         await expect(page.locator('text=P95').first()).toBeVisible({timeout: 10000});
         await expect(page.locator('text=成功率').first()).toBeVisible({timeout: 10000});
-        // "告警" metric card — use .nth(2) for the third status-label span
-        await expect(page.locator('.status-label').nth(2)).toHaveText('告警', {timeout: 10000});
+        // UX-B3:指标改 antd Statistic 卡片,第三张卡为"活跃告警"
+        await expect(page.locator('text=活跃告警')).toBeVisible({timeout: 10000});
     });
 
     // ──────────────────────────────────────────────────
