@@ -1,6 +1,5 @@
 import {useEffect, useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
-import {Store} from 'redux';
 import {createEditorStore} from '../store/createEditorStore';
 import {Provider} from 'react-redux';
 import reducer from './reducer';
@@ -18,7 +17,7 @@ import * as action from './action';
 export default function EditorRoute() {
     const [params] = useSearchParams();
     const file = params.get('file') || '';
-    const store: Store = useMemo(() => createEditorStore(reducer), []);
+    const store = useMemo(() => createEditorStore(reducer), []);
     useEffect(() => {
         if (!file || file.length < 1) {
             return;
