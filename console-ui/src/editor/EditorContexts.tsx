@@ -4,13 +4,13 @@
  * <p>背景:各编辑器(drleditor / flow-bpmn / decisiontree / scorecard / decisiontable / ...)是
  * 独立的 SPA 路由(`/app/editor/<type>`),与 frame `/app` 不共享 Redux store。它们历史上靠
  * {@code window._project}(项目名)+ {@code window._setDirty}(dirty 回调)+ {@code window._dirty}
- * (dirty 标志)在编辑器入口与复用对话框(ConfigLibraryDialog / RuleForgePropertiesPanel)/
+ * (dirty 标志)在编辑器入口与复用对话框(RuleForgePropertiesPanel)/
  * 内部组件(installLibrariesBridge)之间传值。
  *
  * <p>本模块提供两个 Context + 一个 hook:
  * <ul>
  *   <li>{@link ProjectContext} — 当前编辑文件所属项目名(由各 EditorRoute 用 buildProjectNameFromFile
- *       计算后 Provider 提供)。ConfigLibraryDialog / RuleForgePropertiesPanel / QuickTestDialog 等复用
+ *       计算后 Provider 提供)。RuleForgePropertiesPanel / QuickTestDialog 等复用
  *       对话框读它来拼 add/test 请求。</li>
  *   <li>{@link DirtyContext} — dirty 通知接口(setDirty: 标记编辑器有未保存改动; clearDirty: 保存后清零)。
  *       EditorToolbar / 安装 libraries bridge 的 effect 读它。</li>

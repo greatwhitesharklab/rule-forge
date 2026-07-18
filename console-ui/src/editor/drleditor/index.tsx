@@ -33,11 +33,16 @@ import { save, saveNewVersion } from '../../api/client';
 import { getParameter } from '../../Utils';
 import { DrlMonaco } from './DrlMonaco';
 import {useDirty} from '../../editor/EditorContexts';
+import EditorLoadState from '../EditorLoadState';
 
 const DrlEditor: React.FC<{ file: string }> = ({ file }) => {
     const dirty = useDirty();
     const [payload, setPayload] = useState<DrlFilePayload | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    // 保留原始错误对象,交给 EditorLoadState 格式化 —— loadDrlFile 失败时 reject 的是
+    // 原始 Response,String(e) 会显示成 "加载失败: [object Response]"(走查已暴露)。
+    const [error, setError] = useState<unknown>(null);
+    // 重试计数:错误态点"重试"时 +1,触发 useEffect 重新加载
+    const [reloadKey, setReloadKey] = useState(0);
     // 当前 Monaco 内容(给 save 用)
     const currentContentRef = useRef<string>('');
 
@@ -52,12 +57,12 @@ const DrlEditor: React.FC<{ file: string }> = ({ file }) => {
             })
             .catch(e => {
                 if (cancelled) return;
-                setError(String(e));
+                setError(e);
             });
         return () => {
             cancelled = true;
         };
-    }, [file]);
+    }, [file, reloadKey]);
 
     const handleContentChange = (value: string) => {
         currentContentRef.current = value;
@@ -96,10 +101,19 @@ const DrlEditor: React.FC<{ file: string }> = ({ file }) => {
     };
 
     if (error) {
-        return <div style={{ padding: 16, color: 'red' }}>加载失败: {error}</div>;
+        return (
+            <EditorLoadState
+                status="error"
+                error={error}
+                onRetry={() => {
+                    setError(null);
+                    setReloadKey(k => k + 1);
+                }}
+            />
+        );
     }
     if (!payload) {
-        return <div style={{ padding: 16 }}>加载中…</div>;
+        return <EditorLoadState status="loading"/>;
     }
 
     return (
@@ -155,7 +169,8 @@ const file = getParameter('file');
 // 注:window._project 不再设置,改由 EditorRoute 通过 ProjectContext 提供。
 
 const root = document.getElementById('container');
-if (root) {
+// 无 file 参数时不挂载编辑器(SPA 路由由 EditorRoute 渲染引导空态;legacy 页面直接留白)
+if (root && file) {
     createRoot(root).render(<DrlEditor file={file} />);
 }
 

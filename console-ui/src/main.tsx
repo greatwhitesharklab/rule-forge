@@ -3,6 +3,7 @@ import {lazy, Suspense} from 'react';
 import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
 import LoginPage from '@/login';
 import {RequireAuth} from '@/router/RequireAuth';
+import AntdProvider from '@/theme/AntdProvider';
 
 /**
  * SPA 根入口(spa-migration-plan.md 阶段 1-2)。
@@ -41,32 +42,36 @@ const V1DecisionTableEditorRoute = lazy(() => import('@/v1-flow/DecisionTableRou
 const V1ScoreCardEditorRoute = lazy(() => import('@/v1-flow/ScoreCardRoute'));
 
 createRoot(document.getElementById('root')!).render(
-    <BrowserRouter>
-        <Routes>
-            <Route path="/" element={<Navigate to="/login" replace/>}/>
-            <Route path="/login" element={<LoginPage/>}/>
-            {/* V7.0.0:V1 决策流设计器 demo 路由(纯客户端画布,免登录,不调后端)。
-                生产集成(保存到项目树)后再移进 /app RequireAuth 内。 */}
-            <Route path="/v1-flow" element={<Suspense fallback={<div style={{padding: 24}}>加载中…</div>}><V1FlowDesignerRoute/></Suspense>}/>
-            <Route path="/app" element={<RequireAuth/>}>
-                <Route index element={<Suspense fallback={<div style={{padding: 24}}>加载中…</div>}><FrameApp/></Suspense>}/>
-                {/* V7.23:editor/variable、editor/constant、editor/action 路由删除(老 4 库编辑器下线,见上方注释) */}
-                <Route path="editor/resource" element={<ResourceEditorRoute/>}/>
-                {/* V7.7.2:editor/package 路由删除(.rp 废弃) */}
-                <Route path="editor/client" element={<ClientEditorRoute/>}/>
-                <Route path="editor/permission" element={<PermissionEditorRoute/>}/>
-                <Route path="editor/drl" element={<DrlEditorRoute/>}/>
-                <Route path="editor/dmn" element={<DmnEditorRoute/>}/>
-                <Route path="editor/pmml" element={<PmmlEditorRoute/>}/>
-                {/* V7.0.0:V1 决策流设计器(独立全屏画布,不走 frame) */}
-                <Route path="v1-flow" element={<V1FlowDesignerRoute/>}/>
-                {/* V7.4:V1 库编辑器(vl/cl/pl 四库,从项目树"V1库"分类进入) */}
-                <Route path="v1-library" element={<V1LibraryEditorRoute/>}/>
-                {/* V7.5:V1 规则独立文件编辑器(决策流引用) */}
-                <Route path="v1-ruleset" element={<V1RuleSetEditorRoute/>}/>
-                <Route path="v1-decisiontable" element={<V1DecisionTableEditorRoute/>}/>
-                <Route path="v1-scorecard" element={<V1ScoreCardEditorRoute/>}/>
-            </Route>
-        </Routes>
-    </BrowserRouter>,
+    // V7 SPA 走查(B5):全局挂 AntdProvider(主题 + zhCN locale)——
+    // 覆盖登录页与 RequireAuth 内所有路由,各组件不再局部包 ConfigProvider。
+    <AntdProvider>
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<Navigate to="/login" replace/>}/>
+                <Route path="/login" element={<LoginPage/>}/>
+                {/* V7.0.0:V1 决策流设计器 demo 路由(纯客户端画布,免登录,不调后端)。
+                    生产集成(保存到项目树)后再移进 /app RequireAuth 内。 */}
+                <Route path="/v1-flow" element={<Suspense fallback={<div style={{padding: 24}}>加载中…</div>}><V1FlowDesignerRoute/></Suspense>}/>
+                <Route path="/app" element={<RequireAuth/>}>
+                    <Route index element={<Suspense fallback={<div style={{padding: 24}}>加载中…</div>}><FrameApp/></Suspense>}/>
+                    {/* V7.23:editor/variable、editor/constant、editor/action 路由删除(老 4 库编辑器下线,见上方注释) */}
+                    <Route path="editor/resource" element={<ResourceEditorRoute/>}/>
+                    {/* V7.7.2:editor/package 路由删除(.rp 废弃) */}
+                    <Route path="editor/client" element={<ClientEditorRoute/>}/>
+                    <Route path="editor/permission" element={<PermissionEditorRoute/>}/>
+                    <Route path="editor/drl" element={<DrlEditorRoute/>}/>
+                    <Route path="editor/dmn" element={<DmnEditorRoute/>}/>
+                    <Route path="editor/pmml" element={<PmmlEditorRoute/>}/>
+                    {/* V7.0.0:V1 决策流设计器(独立全屏画布,不走 frame) */}
+                    <Route path="v1-flow" element={<V1FlowDesignerRoute/>}/>
+                    {/* V7.4:V1 库编辑器(vl/cl/pl 四库,从项目树"V1库"分类进入) */}
+                    <Route path="v1-library" element={<V1LibraryEditorRoute/>}/>
+                    {/* V7.5:V1 规则独立文件编辑器(决策流引用) */}
+                    <Route path="v1-ruleset" element={<V1RuleSetEditorRoute/>}/>
+                    <Route path="v1-decisiontable" element={<V1DecisionTableEditorRoute/>}/>
+                    <Route path="v1-scorecard" element={<V1ScoreCardEditorRoute/>}/>
+                </Route>
+            </Routes>
+        </BrowserRouter>
+    </AntdProvider>,
 );

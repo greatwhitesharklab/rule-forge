@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {formPost} from '@/api/client';
 import {buildProjectNameFromFile} from '../../Utils';
+import EditorLoadState from '../EditorLoadState';
 
 /**
  * V6.20.0 P3:PMML 4.4 标准预测模型 — 只读源查看器。
@@ -24,9 +25,16 @@ export default function EditorRoute() {
     const project = buildProjectNameFromFile(file);
     const [content, setContent] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+    // 保留原始错误对象,交给 EditorLoadState 格式化(禁止 String(err) 显示 [object Response])
+    const [error, setError] = useState<unknown>(null);
+    // 重试计数:错误态点"重试"时 +1,触发 useEffect 重新加载
+    const [reloadKey, setReloadKey] = useState(0);
 
     useEffect(() => {
+        if (!file) {
+            setLoading(false);
+            return;
+        }
         let cancelled = false;
         setLoading(true);
         setError(null);
@@ -38,13 +46,18 @@ export default function EditorRoute() {
             })
             .catch((err: unknown) => {
                 if (cancelled) return;
-                setError(String(err));
+                setError(err);
                 setLoading(false);
             });
         return () => {
             cancelled = true;
         };
-    }, [file]);
+    }, [file, reloadKey]);
+
+    // 无 file 参数 → 引导空态(统一走 EditorLoadState)
+    if (!file) {
+        return <EditorLoadState status="no-file"/>;
+    }
 
     return (
         <div style={{padding: 16, height: '100vh', display: 'flex', flexDirection: 'column'}}>
@@ -70,11 +83,9 @@ export default function EditorRoute() {
                     核心模型请使用 DRL / 决策流(本系统的原生表达)。
                 </div>
             </div>
-            {loading && <div>加载中…</div>}
+            {loading && <EditorLoadState status="loading"/>}
             {error && (
-                <div style={{color: '#cf1322'}}>
-                    加载失败:{error}
-                </div>
+                <EditorLoadState status="error" error={error} onRetry={() => setReloadKey(k => k + 1)}/>
             )}
             {!loading && !error && (
                 <pre

@@ -4,6 +4,8 @@ import type {ProjectConfig} from './action.js';
 
 interface MasterState {
     masterData?: any[];
+    /** 加载失败原因(MASTER_LOAD_FAILED 写入,MASTER_LOADED 清零) */
+    loadError?: unknown;
 }
 
 interface SlaveState {
@@ -15,12 +17,15 @@ interface PermissionAction {
     data?: any;
     prop?: string;
     permission?: boolean;
+    error?: unknown;
 }
 
 function master(state: MasterState = {}, action: PermissionAction): MasterState {
     switch (action.type) {
         case ACTION.MASTER_LOADED:
-            return Object.assign({}, {masterData: action.data});
+            return Object.assign({}, {masterData: action.data, loadError: null});
+        case ACTION.MASTER_LOAD_FAILED:
+            return Object.assign({}, state, {loadError: action.error});
         default:
             return state;
     }

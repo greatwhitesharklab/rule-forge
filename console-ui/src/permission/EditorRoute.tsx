@@ -2,10 +2,42 @@ import {useEffect, useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {applyMiddleware, createStore, Store} from 'redux';
 import thunk from 'redux-thunk';
-import {Provider} from 'react-redux';
-import reducer from './reducer';
+import {connect, Provider} from 'react-redux';
+import reducer, {PermissionRootState} from './reducer';
 import PermissionConfigEditor from './components/PermissionConfigEditor';
 import * as action from './action';
+import EditorLoadState from '../editor/EditorLoadState';
+
+interface LoadGateProps {
+    masterData?: unknown[];
+    loadError?: unknown;
+    dispatch: (a: unknown) => unknown;
+}
+
+/**
+ * 加载态门卫:失败 → 统一错误态(EditorLoadState,带重试);未加载完成 → loading;
+ * 就绪 → 编辑器本体。权限配置是全局单例(无 file 参数),故无 no-file 空态。
+ */
+function LoadGate({masterData, loadError, dispatch}: LoadGateProps) {
+    if (loadError) {
+        return (
+            <EditorLoadState
+                status="error"
+                error={loadError}
+                onRetry={() => (dispatch as Function)(action.loadMasterData())}
+            />
+        );
+    }
+    if (!masterData) {
+        return <EditorLoadState status="loading"/>;
+    }
+    return <PermissionConfigEditor/>;
+}
+
+const ConnectedLoadGate = connect((state: PermissionRootState) => ({
+    masterData: state.master.masterData,
+    loadError: state.master.loadError,
+}))(LoadGate);
 
 /**
  * 权限配置 (permission) React 编辑器的 SPA 路由入口。
@@ -18,6 +50,8 @@ import * as action from './action';
  *
  * <p>原 iframe 入口从 TopBar 下拉菜单触发;SPA 化后改为
  * {@code window.open('/app/editor/permission', '_blank')}。
+ *
+ * <p>V7 SPA 走查:加载中/失败统一走 {@link LoadGate}(此前失败只弹一次 alert,页面白屏)。
  */
 export default function EditorRoute() {
     const [params] = useSearchParams();
@@ -30,7 +64,7 @@ export default function EditorRoute() {
 
     return (
         <Provider store={store}>
-            <PermissionConfigEditor/>
+            <ConnectedLoadGate/>
         </Provider>
     );
 }

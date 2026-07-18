@@ -235,12 +235,9 @@ interface Window {
     // Server URL override (used by ResourceListDialogComponent)
     ruleforgeServer?: string;
 
-    // Library caches (set by editor entry points)
-    _ruleforgeEditorActionLibraries: unknown[];
-    _ruleforgeEditorConstantLibraries: unknown[];
-    _ruleforgeEditorParameterLibraries: unknown[];
-    _ruleforgeEditorVariableLibraries: unknown[];
-    _ruleforgeEditorFunctionLibraries?: unknown[];
+    // V7.23:老编辑器 window 全局缓存已随编辑器下线删除 ——
+    // _ruleforgeEditor{Action,Constant,Parameter,Variable,Function}Libraries、
+    // _VariableValueArray / _ParameterValueArray / _currentConditionCell 均无写入方。
 
     // Clipboard state (cut/copy file operations)
     ___cutFileData: TreeNodeData | null;
@@ -253,13 +250,6 @@ interface Window {
 
     // Dirty state
     _dirty: boolean;
-
-    // Widget registration arrays (used by scorecard editors)
-    _VariableValueArray: Array<{ initMenu?(data: unknown[]): void }>;
-    _ParameterValueArray: Array<{ initMenu?(data: unknown[]): void }>;
-
-    // Current selection state for complex scorecard
-    _currentConditionCell: any;
 
     // File search term (used by FileTreePanel)
     searchFileName: string;

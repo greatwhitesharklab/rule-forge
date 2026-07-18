@@ -1,6 +1,5 @@
 import React, {Component, ChangeEvent, ReactNode} from 'react';
-import {Button, ConfigProvider, DatePicker, Input} from 'antd';
-import zhCN from 'antd/locale/zh_CN';
+import {Button, DatePicker, Input} from 'antd';
 import dayjs from 'dayjs';
 import {startSimulation, SimulationStartResult} from '../action.js';
 
@@ -43,7 +42,7 @@ class SimulationConfigForm extends Component<SimulationConfigFormProps, Simulati
         this.setState({[field]: e.target.value} as unknown as SimulationConfigFormState);
     }
 
-    /** 日期选择(antd DatePicker,中文 locale 由本组件局部 ConfigProvider 提供);值仍存 'YYYY-MM-DD' 字符串。 */
+    /** 日期选择(antd DatePicker,中文 locale 由 SPA 根的全局 AntdProvider 提供);值仍存 'YYYY-MM-DD' 字符串。 */
     handleDateChange(field: 'startTime' | 'endTime', dateString: string | string[]) {
         const value = Array.isArray(dateString) ? dateString[0] : dateString;
         this.setState({[field]: value || ''} as unknown as SimulationConfigFormState);
@@ -80,8 +79,6 @@ class SimulationConfigForm extends Component<SimulationConfigFormProps, Simulati
     render(): ReactNode {
         const state = this.state;
         return (
-            // 局部 zhCN:SPA 根未挂全局 ConfigProvider,只让本表单的 DatePicker 显示中文
-            <ConfigProvider locale={zhCN}>
             <div style={{padding: 4}}>
                 <div className="ff-group">
                     <label style={{fontSize: 12, color: '#666'}}>项目名称</label>
@@ -129,7 +126,6 @@ class SimulationConfigForm extends Component<SimulationConfigFormProps, Simulati
                     {state.submitting ? '启动中...' : '启动仿真'}
                 </Button>
             </div>
-            </ConfigProvider>
         );
     }
 }

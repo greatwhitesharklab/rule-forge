@@ -136,22 +136,20 @@ export function buildData(data: TreeNodeData | TreeNodeData[]): void {
             case "action":
                 item._icon = Styles.frameStyle.getActionIcon();
                 item._style = Styles.frameStyle.getActionIconStyle();
-                item.editorPath = "/actioneditor";
+                // V7.23:老 4 库编辑器已删除,editorPath 死字符串随之清理
+                // (editorPath 全库无读取方,原仅供 buildEditorUrl legacy fallback)。
                 break;
             case "parameter":
                 item._icon = Styles.frameStyle.getParameterIcon();
                 item._style = Styles.frameStyle.getParameterIconStyle();
-                item.editorPath = "/parametereditor";
                 break;
             case "constant":
                 item._icon = Styles.frameStyle.getConstantIcon();
                 item._style = Styles.frameStyle.getConstantIconStyle();
-                item.editorPath = "/constanteditor";
                 break;
             case "variable":
                 item._icon = Styles.frameStyle.getVariableIcon();
                 item._style = Styles.frameStyle.getVariableIconStyle();
-                item.editorPath = "/variableeditor";
                 break;
             case "ruleLib":
                 item._icon = Styles.frameStyle.getRuleLibIcon();

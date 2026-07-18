@@ -3,6 +3,7 @@ import * as componentEvent from '../components/componentEvent.js';
 
 import {alert, prompt} from '@/utils/modal';
 export const LOAD_MASTER_COMPLETED = 'load_master_completed';
+export const LOAD_MASTER_FAILED = 'load_master_failed';
 export const LOAD_SLAVE_COMPLETE = 'load_slave_completed';
 export const GENERATED_FIELDS = 'generated_fields';
 export const IMPORT_FIELDS = 'IMPORT_FIELDS';
@@ -31,6 +32,9 @@ export interface ResourceCategory {
 
 export function loadMasterData(files: string) {
     return function (dispatch: Function) {
+        // 现状(V7.23 走查确认):POST /xml 端点在后端 V5.43 已删除,无任何 mapping,
+        // 本调用必然 404。此 thunk 已无任何前端调用方(资源编辑器走 generateVariableLibrary),
+        // 仅 action.test.ts 覆盖;不发明新端点,保留死代码直到随资源编辑器重构一并清理。
         formPost<ResourceCategory[][]>("/xml", {files}).then(function (data) {
             dispatch({type: LOAD_MASTER_COMPLETED, masterData: data[0]});
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
@@ -69,7 +73,10 @@ export function generateVariableLibrary(file?: string) {
                 dispatch({type: SAVE, file, newVersion: false});
             }
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
-        }).catch(function () {
+        }).catch(function (err: unknown) {
+            // V7 SPA 走查:失败不能只藏 Loading 覆盖层(白屏无提示)——
+            // 同步 dispatch 失败态,EditorRoute 的 gate 渲染统一错误态(EditorLoadState)。
+            dispatch({type: LOAD_MASTER_FAILED, error: err});
             componentEvent.eventEmitter.emit(componentEvent.HIDE_LOADING);
         });
     }

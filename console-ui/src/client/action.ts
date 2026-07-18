@@ -4,6 +4,7 @@ import {alert} from '@/utils/modal';
 export const ADD = 'add';
 export const DEL = 'del';
 export const LOADED_DATA = 'loaded_data';
+export const LOAD_FAILED = 'load_failed';
 
 export function loadData(project: string | null) {
     return function (dispatch: (a: unknown) => void) {
@@ -11,8 +12,10 @@ export function loadData(project: string | null) {
             errorPrefix: '服务端错误：',
         }).then(function (data) {
             dispatch({type: LOADED_DATA, data});
-        }).catch(function () {
-            // error already handled by client
+        }).catch(function (err: unknown) {
+            // 全局 alert 已由 client 弹出;再 dispatch 失败态,让 EditorRoute gate
+            // 渲染统一错误态(EditorLoadState),不再白屏。
+            dispatch({type: LOAD_FAILED, error: err});
         });
     };
 }

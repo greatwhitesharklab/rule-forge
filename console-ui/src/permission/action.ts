@@ -2,6 +2,7 @@ import {formPost} from '../api/client.js';
 
 import {alert} from '@/utils/modal';
 export const MASTER_LOADED = 'master_loaded';
+export const MASTER_LOAD_FAILED = 'master_load_failed';
 export const SLAVE_LOADED = 'slave_loaded';
 export const PERMISSION_CHANGE = "permission_change";
 
@@ -41,8 +42,10 @@ export function loadMasterData() {
             errorPrefix: '加载权限信息失败,',
         }).then(function (data: UserPermission[]) {
             dispatch({type: MASTER_LOADED, data});
-        }).catch(function () {
-            // error already handled by client
+        }).catch(function (err: unknown) {
+            // 全局 alert 已由 client 弹出;再 dispatch 失败态,让 EditorRoute gate
+            // 渲染统一错误态(EditorLoadState),不再白屏。
+            dispatch({type: MASTER_LOAD_FAILED, error: err});
         });
     }
 };

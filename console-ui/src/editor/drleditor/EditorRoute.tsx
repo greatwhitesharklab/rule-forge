@@ -2,6 +2,7 @@ import {useSearchParams} from 'react-router-dom';
 import {buildProjectNameFromFile} from '../../Utils';
 import DrlEditor from './index';
 import {DirtyContext, ProjectContext, useDirtyApi} from '../../editor/EditorContexts';
+import EditorLoadState from '../EditorLoadState';
 
 /**
  * DRL 编辑器 (DRL 4, .drl) React 编辑器的 SPA 路由入口。
@@ -19,6 +20,11 @@ export default function EditorRoute() {
     const file = params.get('file') || '';
     const project = buildProjectNameFromFile(file);
     const {dirtyApi} = useDirtyApi(file);
+
+    // 无 file 参数 → 引导空态(统一走 EditorLoadState)
+    if (!file) {
+        return <EditorLoadState status="no-file"/>;
+    }
 
     return (
         <ProjectContext.Provider value={project}>

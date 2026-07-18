@@ -2,11 +2,41 @@ import {useEffect, useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {applyMiddleware, createStore, Store} from 'redux';
 import thunk from 'redux-thunk';
-import {Provider} from 'react-redux';
-import reducer from './reducer';
+import {connect, Provider} from 'react-redux';
+import reducer, {ResourceRootState} from './reducer';
 import ResourceEditor from './components/ResourceEditor';
 import * as action from './action';
+import * as componentEvent from '../components/componentEvent.js';
 import Loading from '../components/loading/component/Loading';
+import EditorLoadState from '../editor/EditorLoadState';
+
+interface LoadGateProps {
+    error?: unknown;
+    file: string;
+    dispatch: (a: unknown) => unknown;
+}
+
+/**
+ * 加载态门卫:加载失败时渲染统一错误态(EditorLoadState,带重试),否则渲染编辑器本体。
+ * 加载中的全屏 Spinner 由 {@code <Loading show={true}/>} 覆盖层负责(沿用原逻辑)。
+ */
+function LoadGate({error, file, dispatch}: LoadGateProps) {
+    if (error) {
+        return (
+            <EditorLoadState
+                status="error"
+                error={error}
+                onRetry={() => {
+                    componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
+                    dispatch(action.generateVariableLibrary(file));
+                }}
+            />
+        );
+    }
+    return <ResourceEditor file={file}/>;
+}
+
+const ConnectedLoadGate = connect((state: ResourceRootState) => ({error: state.master.error}))(LoadGate);
 
 /**
  * 公共资源 (resource) React 编辑器的 SPA 路由入口。
@@ -16,8 +46,8 @@ import Loading from '../components/loading/component/Loading';
  * Provider 包裹 + Loading 覆盖层),只是去掉 {@code createRoot(#container)},
  * 直接 return JSX。替代原 iframe {@code editor.html?type=resource}。
  *
- * <p>注意:resource 的加载 action 是 {@code generateVariableLibrary}(沿用 index.tsx),
- * 且保留 index.tsx 的 {@code <Loading show={true}/>} 覆盖层原样不简化。
+ * <p>V7 SPA 走查:无 file 参数 → 引导空态;加载失败 → 统一错误态(见 {@link LoadGate}),
+ * 不再白屏。加载中的全屏 Spinner 仍由 Loading 覆盖层负责。
  */
 export default function EditorRoute() {
     const [params] = useSearchParams();
@@ -30,11 +60,15 @@ export default function EditorRoute() {
         (store.dispatch as Function)(action.generateVariableLibrary(file));
     }, [file, store]);
 
+    if (!file) {
+        return <EditorLoadState status="no-file"/>;
+    }
+
     return (
         <div>
             <Loading show={true}/>
             <Provider store={store}>
-                <ResourceEditor file={file}/>
+                <ConnectedLoadGate file={file}/>
             </Provider>
         </div>
     );

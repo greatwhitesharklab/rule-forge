@@ -4,6 +4,8 @@ import type {ResourceCategory, VariableItem} from './action.js';
 
 interface MasterState {
     data?: ResourceCategory[];
+    /** 加载失败原因(LOAD_MASTER_FAILED 写入,LOAD_MASTER_COMPLETED 清零) */
+    error?: unknown;
 }
 
 interface SlaveState {
@@ -20,12 +22,16 @@ interface ResourceAction {
     jsonResult?: { variables: VariableItem[]; clazz?: string };
     newVersion?: boolean;
     file?: string;
+    error?: unknown;
 }
 
 function master(state: MasterState = {}, action: ResourceAction): MasterState {
     switch (action.type) {
         case ACTIONS.LOAD_MASTER_COMPLETED:
-            return Object.assign({}, {data: action.masterData});
+            return Object.assign({}, {data: action.masterData, error: null});
+        case ACTIONS.LOAD_MASTER_FAILED:
+            // 保留已加载数据(刷新失败时不清空),仅记录失败原因
+            return Object.assign({}, state, {error: action.error});
         case ACTIONS.DEL_MASTER: {
             var rowIndex = action.rowIndex!;
             var newData = [...(state.data || [])];
