@@ -27,6 +27,21 @@ export default defineConfig({
                 entryFileNames: 'bundle/[name].bundle.js',
                 chunkFileNames: 'bundle/[name]-[hash].js',
                 assetFileNames: 'bundle/assets/[name]-[hash][extname]',
+                // V7.24:重型依赖拆成独立 vendor chunk — 路由级 lazy chunk 不再重复打包
+                // antd/ag-grid/xyflow/monaco/echarts,且 vendor 内容稳定、可长期缓存。
+                manualChunks(id: string) {
+                    if (!id.includes('node_modules')) {
+                        return undefined;
+                    }
+                    if (id.includes('monaco-editor')) return 'vendor-monaco';
+                    if (id.includes('echarts') || id.includes('zrender')) return 'vendor-echarts';
+                    if (id.includes('ag-grid')) return 'vendor-ag-grid';
+                    if (id.includes('@xyflow') || id.includes('dagre')) return 'vendor-flow';
+                    if (id.includes('antd') || id.includes('@ant-design') || id.includes('rc-')) return 'vendor-antd';
+                    if (id.includes('@codemirror') || id.includes('@lezer')) return 'vendor-codemirror';
+                    if (id.includes('react') || id.includes('redux')) return 'vendor-react';
+                    return undefined;
+                },
             },
         },
         copyPublicDir: true,

@@ -1,5 +1,6 @@
 import React, {Component, createRef} from 'react';
 import {Input} from 'antd';
+import type {InputRef} from 'antd';
 
 const TIP = '请输入值';
 
@@ -21,7 +22,7 @@ export default class SimpleValueWidget extends Component<SimpleValueWidgetProps,
         editing: false,
         inputWidth: 120,
     };
-    inputRef = createRef<HTMLInputElement>();
+    inputRef = createRef<InputRef>();
     containerRef: HTMLSpanElement | null = null;
 
     componentDidMount() {
