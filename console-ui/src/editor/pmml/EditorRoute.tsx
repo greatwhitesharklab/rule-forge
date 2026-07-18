@@ -5,23 +5,19 @@ import {buildProjectNameFromFile} from '../../Utils';
 import EditorLoadState from '../EditorLoadState';
 
 /**
- * V6.20.0 P3:PMML 4.4 标准预测模型 — 只读源查看器。
+ * PMML 4.4 只读源查看器本体:调 {@code /frame/fileSource} 拿原文渲染到 {@code <pre>},
+ * 含 loading/error(带重试)/no-file 门禁。
+ * 可被路由壳或应用内标签宿主渲染 — file 从 props 传入,不依赖 react-router。
  *
- * <p>URL: {@code /app/editor/pmml?file=/project/<path>/foo.pmml}。
- *
- * <p>后端 core/ir/pmml/PmmlResourceDispatcher 已实现 pmml4s 1.5.6 顶层字段填充
- * (ScorecardDefinition: useReasonCodes/initialScore/baselineMethod/reasonCodeAlgorithm;
- *  DecisionTree: missingValueStrategy/defaultChild/splitCharacteristic),
- * 但当前版本仅顶层字段,子结构(cells/rows/&lt;Node&gt; 树)留空 → 0 rules emitted
- * (见 KnowledgeBuilder.java:112-120,return value 主动丢弃)。
- * 全量规则展开留作未来 V5.41.4 子结构扩展 PR。
- *
- * <p>本组件零编辑能力 — 调 {@code /frame/fileSource} 拿原文,渲染到 {@code <pre>}。
- * UI 显式标注"暂不产生规则",避免用户误以为 build 后会触发 PMML 求值。
+ * <p>本组件零编辑能力。后端 core/ir/pmml/PmmlResourceDispatcher 已实现 pmml4s 1.5.6
+ * 顶层字段填充(ScorecardDefinition: useReasonCodes/initialScore/baselineMethod/
+ * reasonCodeAlgorithm;DecisionTree: missingValueStrategy/defaultChild/
+ * splitCharacteristic),但当前版本仅顶层字段,子结构(cells/rows/&lt;Node&gt; 树)留空
+ * → 0 rules emitted(见 KnowledgeBuilder.java:112-120,return value 主动丢弃)。
+ * 全量规则展开留作未来 V5.41.4 子结构扩展 PR。UI 显式标注"暂不产生规则",
+ * 避免用户误以为 build 后会触发 PMML 求值。
  */
-export default function EditorRoute() {
-    const [params] = useSearchParams();
-    const file = params.get('file') || '';
+export function PmmlEditor({file}: {file: string}) {
     const project = buildProjectNameFromFile(file);
     const [content, setContent] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(true);
@@ -109,4 +105,16 @@ export default function EditorRoute() {
             )}
         </div>
     );
+}
+
+/**
+ * V6.20.0 P3:PMML 4.4 标准预测模型 — 只读源查看器的 SPA 路由入口。
+ *
+ * <p>URL: {@code /app/editor/pmml?file=/project/<path>/foo.pmml}。
+ * 本壳只做 searchParams 取值,查看器逻辑全部在 {@link PmmlEditor}。
+ */
+export default function EditorRoute() {
+    const [params] = useSearchParams();
+    const file = params.get('file') || '';
+    return <PmmlEditor file={file}/>;
 }

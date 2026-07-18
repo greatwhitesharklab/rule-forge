@@ -48,23 +48,11 @@ const ConnectedLoadGate = connect((state: ClientRootState) => ({
 }))(LoadGate);
 
 /**
- * 客户端推送配置 (client) React 编辑器的 SPA 路由入口。
- *
- * <p>URL: {@code /app/editor/client?project=<projectName>}。复现
- * {@code client/index.tsx} 的挂载逻辑(store 创建 + loadData(project) + Provider 包裹
- * ClientConfigEditor),只是去掉 {@code createRoot(#container)},直接 return JSX。
- *
- * <p>注意:client 原先读 {@code ?project=} 而非 {@code ?file=}。本路由保留
- * {@code project} 参数;若 URL 带的是 {@code file}(/project/<name> 形式)则取其最后
- * 一段作为 project 名,保持两种入口都能用。
- *
- * <p>V7 SPA 走查:无 project/file 参数 → 引导空态;加载中/失败统一走 {@link LoadGate}
- * (此前失败只弹一次 alert,页面白屏)。
+ * 客户端推送配置 (client) 编辑器本体:store 创建 + loadData(project) 加载 +
+ * EditorLoadState 门禁 + Provider 包裹。
+ * 可被路由壳或应用内标签宿主渲染 — project 从 props 传入,不依赖 react-router。
  */
-export default function EditorRoute() {
-    const [params] = useSearchParams();
-    const file = params.get('file') || '';
-    const project = params.get('project') || (file ? file.split('/').pop() : '');
+export function ClientEditor({project}: {project: string}) {
     const store: Store = useMemo(() => createStore(reducer, applyMiddleware(thunk)), []);
     useEffect(() => {
         if (!project) {
@@ -87,4 +75,28 @@ export default function EditorRoute() {
             <ConnectedLoadGate project={project}/>
         </Provider>
     );
+}
+
+/**
+ * 客户端推送配置 (client) React 编辑器的 SPA 路由入口。
+ *
+ * <p>URL: {@code /app/editor/client?project=<projectName>}。复现
+ * {@code client/index.tsx} 的挂载逻辑(store 创建 + loadData(project) + Provider 包裹
+ * ClientConfigEditor),只是去掉 {@code createRoot(#container)},直接 return JSX。
+ *
+ * <p>注意:client 原先读 {@code ?project=} 而非 {@code ?file=}。本路由保留
+ * {@code project} 参数;若 URL 带的是 {@code file}(/project/<name> 形式)则取其最后
+ * 一段作为 project 名,保持两种入口都能用。
+ *
+ * <p>V7 SPA 走查:无 project/file 参数 → 引导空态;加载中/失败统一走 {@link LoadGate}
+ * (此前失败只弹一次 alert,页面白屏)。
+ *
+ * <p>本壳只做 searchParams 取值(含 file → project 的回退推导),编辑器逻辑全部在
+ * {@link ClientEditor}。
+ */
+export default function EditorRoute() {
+    const [params] = useSearchParams();
+    const file = params.get('file') || '';
+    const project = params.get('project') || (file ? file.split('/').pop() : '');
+    return <ClientEditor project={project}/>;
 }

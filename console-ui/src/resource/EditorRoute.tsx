@@ -39,19 +39,15 @@ function LoadGate({error, file, dispatch}: LoadGateProps) {
 const ConnectedLoadGate = connect((state: ResourceRootState) => ({error: state.master.error}))(LoadGate);
 
 /**
- * 公共资源 (resource) React 编辑器的 SPA 路由入口。
+ * 公共资源 (resource) 编辑器本体:store 创建 + generateVariableLibrary 加载 +
+ * EditorLoadState 门禁 + Provider 包裹 + Loading 覆盖层。
+ * 可被路由壳或应用内标签宿主渲染 — file 从 props 传入,不依赖 react-router。
  *
- * <p>URL: {@code /app/editor/resource?file=/xxx}。
- * 复现 {@code resource/index.tsx} 的挂载逻辑(store 创建 + generateVariableLibrary +
- * Provider 包裹 + Loading 覆盖层),只是去掉 {@code createRoot(#container)},
- * 直接 return JSX。替代原 iframe {@code editor.html?type=resource}。
- *
- * <p>V7 SPA 走查:无 file 参数 → 引导空态;加载失败 → 统一错误态(见 {@link LoadGate}),
- * 不再白屏。加载中的全屏 Spinner 仍由 Loading 覆盖层负责。
+ * <p>(命名 ResourceEditorView 避开与同目录 components/ResourceEditor 组件重名;
+ * 逻辑复现 {@code resource/index.tsx} 的挂载逻辑,替代原 iframe
+ * {@code editor.html?type=resource}。)
  */
-export default function EditorRoute() {
-    const [params] = useSearchParams();
-    const file = params.get('file') || '';
+export function ResourceEditorView({file}: {file: string}) {
     const store: Store = useMemo(() => createStore(reducer, applyMiddleware(thunk)), []);
     useEffect(() => {
         if (!file || file.length < 1) {
@@ -72,4 +68,23 @@ export default function EditorRoute() {
             </Provider>
         </div>
     );
+}
+
+/**
+ * 公共资源 (resource) React 编辑器的 SPA 路由入口。
+ *
+ * <p>URL: {@code /app/editor/resource?file=/xxx}。
+ * 复现 {@code resource/index.tsx} 的挂载逻辑(store 创建 + generateVariableLibrary +
+ * Provider 包裹 + Loading 覆盖层),只是去掉 {@code createRoot(#container)},
+ * 直接 return JSX。替代原 iframe {@code editor.html?type=resource}。
+ *
+ * <p>V7 SPA 走查:无 file 参数 → 引导空态;加载失败 → 统一错误态(见 {@link LoadGate}),
+ * 不再白屏。加载中的全屏 Spinner 仍由 Loading 覆盖层负责。
+ *
+ * <p>本壳只做 searchParams 取值,编辑器逻辑全部在 {@link ResourceEditorView}。
+ */
+export default function EditorRoute() {
+    const [params] = useSearchParams();
+    const file = params.get('file') || '';
+    return <ResourceEditorView file={file}/>;
 }

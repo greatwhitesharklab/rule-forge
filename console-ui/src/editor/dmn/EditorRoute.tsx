@@ -5,22 +5,18 @@ import {buildProjectNameFromFile} from '../../Utils';
 import EditorLoadState from '../EditorLoadState';
 
 /**
- * V6.20.0 P3:DMN 1.3 标准决策模型 — 只读源查看器。
+ * DMN 1.3 只读源查看器本体:调 {@code /frame/fileSource} 拿原文渲染到 {@code <pre>},
+ * 含 loading/error(带重试)/no-file 门禁。
+ * 可被路由壳或应用内标签宿主渲染 — file 从 props 传入,不依赖 react-router。
  *
- * <p>URL: {@code /app/editor/dmn?file=/project/<path>/foo.dmn}。
- *
- * <p>后端 core/ir/dmn/DmnResourceDispatcher 已实现 Kie DMN 1.3 编译 → DecisionTable
- * 转换 → RETE rules emission(FEEL 表达式当前以字面量形式落入 SimpleValue.content,
- * 暂不作为 DRL 求值,见 dispatcher 注释)。所以 .dmn 知识包是"可执行但 FEEL 不求值"
- * 的状态;P3 UI 只展示原文供用户审阅 + 让用户从外部编辑器修改覆盖。
- *
- * <p>本组件零编辑能力 — 调 {@code /frame/fileSource} 拿原文,渲染到 {@code <pre>}。
+ * <p>本组件零编辑能力。后端 core/ir/dmn/DmnResourceDispatcher 已实现 Kie DMN 1.3 编译
+ * → DecisionTable 转换 → RETE rules emission(FEEL 表达式当前以字面量形式落入
+ * SimpleValue.content,暂不作为 DRL 求值,见 dispatcher 注释)。所以 .dmn 知识包是
+ * "可执行但 FEEL 不求值"的状态;UI 只展示原文供用户审阅 + 让用户从外部编辑器修改覆盖。
  * 知识包集成由 {@code com.ruleforge.core.builder.KnowledgeBuilder} 透明处理
  * (.dmn 后缀自动 dispatch),用户点 build 即可看到规则入网。
  */
-export default function EditorRoute() {
-    const [params] = useSearchParams();
-    const file = params.get('file') || '';
+export function DmnEditor({file}: {file: string}) {
     const project = buildProjectNameFromFile(file);
     const [content, setContent] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(true);
@@ -103,4 +99,16 @@ export default function EditorRoute() {
             )}
         </div>
     );
+}
+
+/**
+ * V6.20.0 P3:DMN 1.3 标准决策模型 — 只读源查看器的 SPA 路由入口。
+ *
+ * <p>URL: {@code /app/editor/dmn?file=/project/<path>/foo.dmn}。
+ * 本壳只做 searchParams 取值,查看器逻辑全部在 {@link DmnEditor}。
+ */
+export default function EditorRoute() {
+    const [params] = useSearchParams();
+    const file = params.get('file') || '';
+    return <DmnEditor file={file}/>;
 }

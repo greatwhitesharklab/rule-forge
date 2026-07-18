@@ -1,5 +1,4 @@
 import {useEffect, useMemo} from 'react';
-import {useSearchParams} from 'react-router-dom';
 import {applyMiddleware, createStore, Store} from 'redux';
 import thunk from 'redux-thunk';
 import {connect, Provider} from 'react-redux';
@@ -40,6 +39,25 @@ const ConnectedLoadGate = connect((state: PermissionRootState) => ({
 }))(LoadGate);
 
 /**
+ * 权限配置 (permission) 编辑器本体:store 创建 + loadMasterData 加载 +
+ * EditorLoadState 门禁 + Provider 包裹。
+ * 可被路由壳或应用内标签宿主渲染 — 全局单例、无 props,不依赖 react-router。
+ */
+export function PermissionEditor() {
+    const store: Store = useMemo(() => createStore(reducer, applyMiddleware(thunk)), []);
+    useEffect(() => {
+        // loadMasterData() 无参,与 index.tsx 一致;仅挂载后触发一次。
+        (store.dispatch as Function)(action.loadMasterData());
+    }, [store]);
+
+    return (
+        <Provider store={store}>
+            <ConnectedLoadGate/>
+        </Provider>
+    );
+}
+
+/**
  * 权限配置 (permission) React 编辑器的 SPA 路由入口。
  *
  * <p>URL: {@code /app/editor/permission}(无 file 参数 — 权限配置是全局单例,
@@ -52,19 +70,9 @@ const ConnectedLoadGate = connect((state: PermissionRootState) => ({
  * {@code window.open('/app/editor/permission', '_blank')}。
  *
  * <p>V7 SPA 走查:加载中/失败统一走 {@link LoadGate}(此前失败只弹一次 alert,页面白屏)。
+ *
+ * <p>本壳无 searchParams 可取(全局单例),直接渲染 {@link PermissionEditor}。
  */
 export default function EditorRoute() {
-    const [params] = useSearchParams();
-    const file = params.get('file') || '';
-    const store: Store = useMemo(() => createStore(reducer, applyMiddleware(thunk)), []);
-    useEffect(() => {
-        // loadMasterData() 无参,与 index.tsx 一致;仅挂载后触发一次。
-        (store.dispatch as Function)(action.loadMasterData());
-    }, [file, store]);
-
-    return (
-        <Provider store={store}>
-            <ConnectedLoadGate/>
-        </Provider>
-    );
+    return <PermissionEditor/>;
 }
