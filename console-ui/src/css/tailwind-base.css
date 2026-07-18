@@ -104,9 +104,6 @@ a:hover { color: var(--rf-primary-hover); }
    (决策表 13 按钮场景:每个 group 4 按钮,组与组之间要明显留白) — V5.71 删除,
    EditorToolbar dead code 已清理;CSS 一并删除避免 dead class 累积 */
 
-/* V5.9.0: navbar-btn (scriptdecisiontable 用) — Bootstrap 默认 transparent,这里统一背景
-   让 7 个按钮不跟页面背景混在一起,跟其他 editor toolbar 视觉一致 */
-
 /* ========== Tables ========== */
 /* V5.101:<thead> 默认 display:table-header-group,在 rf-table(border-collapse)下会和 <tbody>
    之间产生 ~22px phantom gap(实测:表头与首行数据间透出 table 背景)。改 table-row-group
@@ -135,14 +132,6 @@ a:hover { color: var(--rf-primary-hover); }
 .ff-well { background: var(--rf-bg-base); border: 1px solid var(--rf-border-split); border-radius: var(--rf-radius-lg); padding: 12px 16px; min-height: 20px; }
 
 /* ========== Grid ========== */
-
-/* ========== Modal (bootbox) ========== */
-.modal-lg { max-width: 700px; }
-.modal-sm { max-width: 300px; }
-/* V5.9.0: package 错误信息超长(4 行 JSON),Bootstrap modal-body 默认 word-break:break-all 会
-   把 "Error" 拆成 "Er ror" 难看。!important 覆盖 bootstrap.css,优先 anywhere */
-
-/* V5.9.0: Bootstrap modal 也垂直居中 (跟 Antd modal 一致) */
 
 /* ========== Well ========== */
 

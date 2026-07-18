@@ -4,7 +4,8 @@ import * as event from '../../../frame/event.js';
 
 interface DialogButton {
     name: string;
-    className: string;
+    type?: 'primary' | 'link' | 'default';
+    danger?: boolean;
     icon: ReactNode;
     click: (dispatch?: unknown) => void;
 }
@@ -97,13 +98,9 @@ export default class Dialog extends Component<DialogProps, DialogState> {
     render() {
         const { visible, title, body, buttons } = this.state;
         const buttonElements = (buttons || []).map((btn, index) => {
-            const cls = btn.className || '';
-            const btnProps: {type?: 'primary' | 'link'; danger?: boolean} = {};
-            if (cls.includes('rf-btn-primary')) btnProps.type = 'primary';
-            else if (cls.includes('rf-btn-danger')) btnProps.danger = true;
-            else if (cls.includes('rf-btn-link')) btnProps.type = 'link';
             return (
-                <Button key={index} {...btnProps} onClick={() => btn.click(this.props.dispatch)}>
+                <Button key={index} type={btn.type === 'default' ? undefined : btn.type} danger={btn.danger}
+                        onClick={() => btn.click(this.props.dispatch)}>
                     {typeof btn.icon === 'string' ? <i className={btn.icon} /> : btn.icon} {btn.name}
                 </Button>
             );

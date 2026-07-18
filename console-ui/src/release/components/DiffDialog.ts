@@ -27,7 +27,7 @@ const DiffDialog = {
                         title: '版本差异: ' + fromVersion + ' → ' + toVersion,
                         message: '<div style="max-height:70vh;overflow:auto;">' + renderedHtml + '</div>',
                         size: 'large',
-                        buttons: {close: {label: '关闭', className: 'btn-default'}}
+                        buttons: {close: {label: '关闭'}}
                     });
                 } catch (_e) {
                     DiffDialog._showPlainText(content, fromVersion, toVersion);
@@ -48,7 +48,7 @@ const DiffDialog = {
             title: '版本差异: ' + fromVersion + ' → ' + toVersion,
             message: '<pre style="max-height:70vh;overflow:auto;font-size:12px;">' + escaped + '</pre>',
             size: 'large',
-            buttons: {close: {label: '关闭', className: 'btn-default'}}
+            buttons: {close: {label: '关闭'}}
         });
     }
 };

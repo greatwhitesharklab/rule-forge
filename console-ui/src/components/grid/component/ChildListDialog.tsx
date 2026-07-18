@@ -63,7 +63,7 @@ export default class ChildListDialog extends Component<Record<string, never>, Ch
         const buttons = [
             {
                 name: '添加记录',
-                className: 'btn btn-primary',
+                type: 'primary' as const,
                 click: function () {
                     rows.push({});
                     _this.setState({ rows });
@@ -71,7 +71,7 @@ export default class ChildListDialog extends Component<Record<string, never>, Ch
             },
             {
                 name: '确定',
-                className: 'btn btn-danger',
+                danger: true,
                 click: function () {
                     callback && callback(rows);
                     _this.setState({ visible: false });

@@ -277,11 +277,11 @@ export default class RuleHealthView extends Component<RuleHealthViewProps, RuleH
             <div style={{display: 'flex', gap: 6, padding: '8px 12px', borderBottom: '1px solid #e8e8e8', alignItems: 'center'}}>
                 <span style={{fontSize: 11, color: '#666'}}>时间窗口:</span>
                 {[7, 30, 90].map(d => (
-                    <button key={d}
-                            className={'btn btn-xs ' + (this.state.days === d ? 'btn-primary' : 'btn-default')}
+                    <Button key={d} size="small"
+                            type={this.state.days === d ? 'primary' : 'default'}
                             onClick={() => this.handleDaysChange(d)}>
                         {d} 天
-                    </button>
+                    </Button>
                 ))}
                 <span style={{marginLeft: 'auto', fontSize: 11, color: '#999'}}>
                     {statusTag}

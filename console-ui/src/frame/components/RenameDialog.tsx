@@ -64,7 +64,7 @@ export default class RenameDialog extends Component<RenameDialogProps, RenameDia
         const {dispatch} = this.props;
         const buttons = [{
             name: '确定',
-            className: 'btn btn-success',
+            type: 'primary' as const,
             icon: 'rf rf-save',
             click: async function () {
                 const {valid, errors} = await this._validate();

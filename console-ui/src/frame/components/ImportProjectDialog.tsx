@@ -1,5 +1,6 @@
 import {Component} from 'react';
 import {apiBase} from '@/api/client';
+import {UploadOutlined} from '@ant-design/icons';
 import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 
@@ -60,8 +61,8 @@ export default class ImportProjectDialog extends Component<ImportProjectDialogPr
         const buttons = [
             {
                 name: '导入',
-                className: 'btn btn-danger',
-                icon: 'fa fa-upload',
+                danger: true,
+                icon: <UploadOutlined />,
                 click: function () {
                     if ($vm.state.isImporting) {
                         alert('正在导入中，请等待');

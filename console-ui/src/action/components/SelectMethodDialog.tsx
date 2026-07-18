@@ -62,7 +62,7 @@ class SelectMethodDialog extends Component<SelectMethodDialogProps, SelectMethod
         const buttons = [
             {
                 name: '关闭',
-                className: 'btn btn-primary',
+                type: 'primary' as const,
                 icon: <CloseOutlined />,
                 click: function () {
                     event.eventEmitter.emit(event.CLOSE_SELECT_METHOD_DIALOG);

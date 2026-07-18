@@ -1,6 +1,6 @@
 import '../../../css/iconfont.css';
 import {Input} from 'antd';
-import { Component } from 'react';
+import { Component, ReactNode } from 'react';
 import CommonDialog from './CommonDialog.tsx';
 import CommonTree from '../../tree/component/CommonTree.jsx';
 import * as action from '../../componentAction.js';
@@ -93,10 +93,16 @@ export default class KnowledgeTreeDialog extends Component<KnowledgeTreeDialogPr
             </div>
         );
         const fileType = this.state.fileType || '';
-        const buttons = [
+        const buttons: Array<{
+            name: string;
+            type?: 'primary' | 'link' | 'default';
+            danger?: boolean;
+            icon?: ReactNode;
+            click: () => void;
+        }> = [
             {
                 name: '最新版本',
-                className: 'btn btn-danger',
+                danger: true,
                 icon: <SaveOutlined />,
                 click: function (): void {
                     if (this.currentNodeData) {
@@ -110,7 +116,7 @@ export default class KnowledgeTreeDialog extends Component<KnowledgeTreeDialogPr
         ];
         buttons.push({
             name: '历史版本',
-            className: 'btn btn-primary',
+            type: 'primary',
             icon: <LikeOutlined />,
             click: function (): void {
                 if (this.currentNodeData) {

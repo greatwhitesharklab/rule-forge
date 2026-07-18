@@ -44,7 +44,7 @@ export default class ImportXmlDialog extends Component<ImportXmlDialogProps, Imp
         const buttons = [
             {
                 name: '上传',
-                className: 'btn btn-danger',
+                danger: true,
                 icon: <CloudUploadOutlined />,
                 click: function () {
                     const fileInput = document.querySelector('#' + formId + ' [name=file]') as HTMLInputElement;

@@ -35,7 +35,6 @@
     "ag-grid-community": "^36.0.0",
     "ag-grid-react": "^36.0.0",
     "antd": "^6.4.3",
-    "bpmn-js": "^17.11.1",
     "codemirror": "^5.33.0",
     "dagre": "^0.8.5",
     "diff2html": "^3.4.56",

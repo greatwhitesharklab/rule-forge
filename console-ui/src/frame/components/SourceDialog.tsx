@@ -74,7 +74,7 @@ export default class SourceDialog extends Component<SourceDialogProps, SourceDia
         );
         const buttons = [{
             name: '保存',
-            className: 'btn btn-success',
+            type: 'primary' as const,
             icon: 'rf rf-save',
             click: function () {
                 const newContent = this.state.codeMirror!.getValue(), fullPath = this.state.file;

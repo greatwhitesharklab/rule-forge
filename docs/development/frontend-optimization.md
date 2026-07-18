@@ -1,13 +1,15 @@
 # 前端优化清单与改造方案
 
-> ✅ **执行状态(2026-07-18 盘点):除 B-3(样式栈长期收敛)外全部落地。**
+> ✅ **执行状态(2026-07-18 盘点):全部落地,清单关闭。**
 > - 第一节 MPA→SPA:已完成(见 [spa-migration-plan.md](./spa-migration-plan.md) 顶部状态),V7.x 后 SPA 为唯一形态
 > - B-0 编辑器空白:已修(editorPath 死代码删除,SPA 路由直开)
 > - B-1 / B-6 list_drafts 404 + 轮询过频:已修(端点存在,AlertBell 有 MAX_FAILS 退避)
 > - B-2 根路径 404:已修(根 `index.html`,`/` → `/login`)
 > - B-4 全局变量:已修(V5.72 `import.meta.env.VITE_API_BASE` + V5.74.2 CurrentUserContext)
 > - B-5 Git observability 404:已修(`GitObservabilityController` 已上线)
-> - B-3 Bootstrap 3 + AntD 双栈:**唯一未落地项**,长期债,新功能不再引入 Bootstrap
+> - B-3 Bootstrap 双栈:已收敛(2026-07-18 收尾:按钮契约 className→显式 props、fa 图标→AntD、
+>   删 public/fonts 死字体 + bpmn-js 死依赖 + bootstrap 覆盖 CSS;bootstrap/jquery/font-awesome
+>   依赖早在 V5.101 系列移除,AntD 6 + Tailwind 为唯一样式栈)
 > 本文档保留作历史记录。
 
 > 触发背景:2026-06-14 通过 Playwright MCP 对 console-ui 做端到端测试(登录 → 创建项目 → 进入规则编辑)时,
@@ -151,6 +153,8 @@
 - **优先级**:中(随架构改造解决)
 
 ### B-3 [代码质量] Bootstrap 3 + Ant Design 双样式栈混用
+
+> ✅ 已收敛(2026-07-18):依赖 V5.101 系列移除,2026-07-18 完成收尾(按钮契约/fa 图标/死字体/死依赖/死 CSS)。
 
 - **现象**:`package.json` 同时依赖 `bootstrap@3.4.1`、`bootstrapvalidator`、`font-awesome@4.6.1`(老 jQuery 时代栈)和 `antd@6.4.3`、`tailwindcss`。
 - **影响**:样式系统分裂,主题难统一,bundle 偏大。

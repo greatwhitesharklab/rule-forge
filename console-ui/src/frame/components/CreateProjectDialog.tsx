@@ -5,6 +5,7 @@ import * as componentEvent from '../../components/componentEvent.js';
 import * as event from '../event.js';
 import * as action from '../action.js';
 import {formPost} from '../../api/client.js';
+import {SaveOutlined} from '@ant-design/icons';
 
 const NAME_REGEXP = /^(?!_)(?!-)[一-龥_a-zA-Z0-9_-]{1,}$/;
 
@@ -70,8 +71,8 @@ export default class CreateProjectDialog extends Component<CreateProjectDialogPr
         buttons.push(
             {
                 name: '保存',
-                className: 'btn btn-success',
-                icon: 'fa fa-floppy-o',
+                type: 'primary',
+                icon: <SaveOutlined />,
                 click: async function () {
                     const {valid, errors} = await this._validate();
                     if (!valid) {

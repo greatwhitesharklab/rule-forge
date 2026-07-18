@@ -4,6 +4,7 @@ import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
 import type {ResourceCategory} from '../action.js';
+import {SaveOutlined} from '@ant-design/icons';
 
 interface AddParamsDialogProps {
     dispatch: (a: unknown) => unknown;
@@ -173,8 +174,8 @@ export default class AddParamsDialog extends Component<AddParamsDialogProps, Add
         const buttons = [
             {
                 name: '保存',
-                className: 'btn btn-success',
-                icon: 'fa fa-floppy-o',
+                type: 'primary' as const,
+                icon: <SaveOutlined />,
                 click: function (this: AddParamsDialog) {
                     var {valid, errors} = this._validate();
                     if (!valid) {

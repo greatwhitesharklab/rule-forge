@@ -4,6 +4,7 @@ import Dialog from '../../components/dialog/component/Dialog.jsx';
 import * as componentEvent from '../../components/componentEvent.js';
 import * as event from '../event.js';
 import * as action from '../action.js';
+import {SaveOutlined} from '@ant-design/icons';
 
 const NAME_REGEXP = /^(?!_)(?!-)[一-龥_a-zA-Z0-9_-]{1,}$/;
 
@@ -66,8 +67,8 @@ export default class UpdateProjectDialog extends Component<UpdateProjectDialogPr
         buttons.push(
             {
                 name: '保存',
-                className: 'btn btn-success',
-                icon: 'fa fa-floppy-o',
+                type: 'primary',
+                icon: <SaveOutlined />,
                 click: function () {
                     const {valid, errors} = this._validate();
                     if (!valid) {

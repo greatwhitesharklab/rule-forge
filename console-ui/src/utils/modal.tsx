@@ -79,7 +79,7 @@ export interface DialogOptions {
     message: string; // HTML 字符串
     onhide?: () => void;
     callback?: () => void; // 任意按钮/关闭时调用 (兼容 bootbox.dialog callback)
-    buttons?: Record<string, {label?: string; className?: string; callback?: () => void}>;
+    buttons?: Record<string, {label?: string; type?: 'primary' | 'link' | 'default'; danger?: boolean; callback?: () => void}>;
     closeButton?: boolean;
     size?: 'small' | 'large' | string; // 兼容 bootbox.dialog size
 }
@@ -111,15 +111,11 @@ export function dialog(options: DialogOptions): {close: () => void} {
                 title={options.title}
                 open={open}
                 footer={buttonEntries.length > 0 ? buttonEntries.map(([key, btn]) => {
-                    const cls = btn.className || 'rf-btn-default';
-                    const btnProps: {type?: 'primary' | 'link'; color?: 'danger'} = {};
-                    if (cls.includes('rf-btn-primary')) btnProps.type = 'primary';
-                    else if (cls.includes('rf-btn-danger')) btnProps.color = 'danger';
-                    else if (cls.includes('rf-btn-link')) btnProps.type = 'link';
                     return (
                         <Button
                             key={key}
-                            {...btnProps}
+                            type={btn.type === 'default' ? undefined : btn.type}
+                            danger={btn.danger}
                             onClick={() => {
                                 if (btn.callback) btn.callback();
                                 close();
