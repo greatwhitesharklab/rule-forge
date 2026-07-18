@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { createStore } from 'redux';
+import { createEditorStore } from '../../store/createEditorStore';
 import reducer from '@/frame/reducer.js';
 import GitStatusPanel from './GitStatusPanel.tsx';
 
@@ -32,7 +32,7 @@ vi.mock('@/api/client.js', () => ({
 }));
 
 function renderPanel() {
-    const store = createStore(reducer);
+    const store = createEditorStore(reducer);
     return render(
         <Provider store={store}>
             <GitStatusPanel/>

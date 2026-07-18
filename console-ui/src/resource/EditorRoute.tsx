@@ -1,7 +1,7 @@
 import {useEffect, useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
-import {applyMiddleware, createStore, Store} from 'redux';
-import thunk from 'redux-thunk';
+import {Store} from 'redux';
+import {createEditorStore} from '../store/createEditorStore';
 import {Provider} from 'react-redux';
 import reducer from './reducer';
 import ResourceEditor from './components/ResourceEditor';
@@ -22,7 +22,7 @@ import Loading from '../components/loading/component/Loading';
 export default function EditorRoute() {
     const [params] = useSearchParams();
     const file = params.get('file') || '';
-    const store: Store = useMemo(() => createStore(reducer, applyMiddleware(thunk)), []);
+    const store: Store = useMemo(() => createEditorStore(reducer), []);
     useEffect(() => {
         if (!file || file.length < 1) {
             return;

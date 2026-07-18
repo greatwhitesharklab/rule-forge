@@ -27,7 +27,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {Provider} from 'react-redux';
-import {createStore} from 'redux';
+import {createEditorStore} from '../../store/createEditorStore';
 import reducer from '@/frame/reducer.js';
 import {AuditLogPanel} from './AuditLogPanel.tsx';
 import {getAuditLogs} from '@/api/client.js';
@@ -39,7 +39,7 @@ vi.mock('@/api/client.js', () => ({
 const mockedGetAuditLogs = vi.mocked(getAuditLogs);
 
 function renderPanel() {
-    const store = createStore(reducer);
+    const store = createEditorStore(reducer);
     return render(
         <Provider store={store}>
             <AuditLogPanel/>

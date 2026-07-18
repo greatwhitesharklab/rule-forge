@@ -1,7 +1,7 @@
 import {useEffect, useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
-import {applyMiddleware, createStore, Store} from 'redux';
-import thunk from 'redux-thunk';
+import {Store} from 'redux';
+import {createEditorStore} from '../store/createEditorStore';
 import {Provider} from 'react-redux';
 import reducer from './reducer';
 import PermissionConfigEditor from './components/PermissionConfigEditor';
@@ -22,7 +22,7 @@ import * as action from './action';
 export default function EditorRoute() {
     const [params] = useSearchParams();
     const file = params.get('file') || '';
-    const store: Store = useMemo(() => createStore(reducer, applyMiddleware(thunk)), []);
+    const store: Store = useMemo(() => createEditorStore(reducer), []);
     useEffect(() => {
         // loadMasterData() 无参,与 index.tsx 一致;仅挂载后触发一次。
         (store.dispatch as Function)(action.loadMasterData());

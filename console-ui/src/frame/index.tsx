@@ -1,11 +1,10 @@
 import '@/css/iconfont.css';
 import '../css/tailwind-base.css';
 import {useEffect, useMemo} from 'react';
-import {applyMiddleware, createStore} from 'redux';
+import {createEditorStore} from '../store/createEditorStore';
 import {Provider} from 'react-redux';
 import * as ACTIONS from '@/frame/action.js';
 import reducer from '@/frame/reducer.js';
-import thunk from 'redux-thunk';
 import Splitter from '@/components/splitter/component/Splitter.tsx';
 import FrameTab from '@/components/frametab/component/FrameTab.tsx';
 import ComponentContainer from '@/frame/components/ComponentContainer.tsx';
@@ -123,7 +122,7 @@ const AppBodyConnected = connect((state: { ui?: { activePanel?: string } }) => (
  */
 export default function FrameApp() {
     const store = useMemo(() => {
-        const s = createStore(reducer, applyMiddleware(thunk));
+        const s = createEditorStore(reducer);
         (s.dispatch as Function)(ACTIONS.loadData());
         return s;
     }, []);

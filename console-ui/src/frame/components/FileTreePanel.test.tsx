@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import {Provider} from 'react-redux';
-import {createStore, applyMiddleware} from 'redux';
-import thunk from 'redux-thunk';
+import {createEditorStore} from '../../store/createEditorStore';
 import rootReducer from '../reducer';
 
 /**
@@ -112,7 +111,7 @@ import FileTreePanel from './FileTreePanel';
 import * as ACTIONS from '../action.js';
 
 function makeStore() {
-    return createStore(rootReducer, applyMiddleware(thunk));
+    return createEditorStore(rootReducer);
 }
 
 function renderPanel(projectName: string | null = null) {
