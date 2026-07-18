@@ -25,6 +25,7 @@ export default class CreateProjectDialog extends Component<CreateProjectDialogPr
         super(props);
         this.state = {visible: false, newProjectName: '', errors: {}};
         this._validate = this._validate.bind(this);
+        this._save = this._save.bind(this);
     }
 
     componentDidMount() {
@@ -57,36 +58,44 @@ export default class CreateProjectDialog extends Component<CreateProjectDialogPr
         return {valid: Object.keys(errors).length === 0, errors};
     }
 
-    render() {
+    // 保存(按钮点击 / 输入框回车共用,校验走同一套 _validate)
+    async _save() {
+        const {valid, errors} = await this._validate();
+        if (!valid) {
+            this.setState({errors});
+            return;
+        }
+        componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
+        const newProjectName = this.state.newProjectName;
         const {dispatch} = this.props;
+        setTimeout(function () {
+            dispatch(action.createNewProject(newProjectName));
+        }, 200);
+    }
+
+    render() {
         const body = (
             <div className="ff-group">
                 <label>新项目名称</label>
-                <Input name="newProjectName" value={this.state.newProjectName}
+                <Input name="newProjectName" value={this.state.newProjectName} autoFocus placeholder='请输入新项目名称'
+                       onPressEnter={this._save}
                        onChange={function (e: React.ChangeEvent<HTMLInputElement>) { this.setState({newProjectName: e.target.value, errors: {}}) }.bind(this)}/>
                 {this.state.errors.newProjectName && <div  style={{fontSize: '12px', color: 'var(--rf-danger)'}}>{this.state.errors.newProjectName}</div>}
             </div>
         );
-        const buttons = [];
-        buttons.push(
+        const buttons = [
+            {
+                name: '取消',
+                type: 'default' as const,
+                click: () => this.setState({visible: false}),
+            },
             {
                 name: '保存',
-                type: 'primary',
+                type: 'primary' as const,
                 icon: <SaveOutlined />,
-                click: async function () {
-                    const {valid, errors} = await this._validate();
-                    if (!valid) {
-                        this.setState({errors});
-                        return;
-                    }
-                    componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
-                    const newProjectName = this.state.newProjectName;
-                    setTimeout(function () {
-                        dispatch(action.createNewProject(newProjectName));
-                    }.bind(this), 200);
-                }.bind(this)
+                click: this._save,
             }
-        );
+        ];
         return (
             <Dialog visible={this.state.visible} title="创建新项目" body={body} buttons={buttons}
                     onClose={() => this.setState({visible: false})}></Dialog>

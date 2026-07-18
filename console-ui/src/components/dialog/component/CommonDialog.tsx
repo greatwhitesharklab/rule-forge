@@ -46,8 +46,10 @@ export default class CommonDialog extends Component<CommonDialogProps> {
             </>
         ) : title;
         return (
+            // 不能加 forceRender:它会让所有 Modal 常驻 @rc-component/portal 的 ESC 栈,
+            // Escape 只路由到栈顶(最后挂载的)对话框,可见对话框反而收不到(V6.12.6 同类坑)
             <Modal open={visible} title={titleNode} footer={buttonElements} onCancel={onClose}
-                   width={large ? 960 : 520} style={dialogStyle} forceRender>
+                   width={large ? 960 : 520} style={dialogStyle}>
                 {body}
             </Modal>
         );

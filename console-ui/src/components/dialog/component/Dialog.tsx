@@ -6,7 +6,7 @@ interface DialogButton {
     name: string;
     type?: 'primary' | 'link' | 'default';
     danger?: boolean;
-    icon: ReactNode;
+    icon?: ReactNode;
     click: (dispatch?: unknown) => void;
 }
 
@@ -106,7 +106,9 @@ export default class Dialog extends Component<DialogProps, DialogState> {
             );
         });
         return (
-            <Modal open={visible} title={title} footer={buttonElements} onCancel={() => this._close()} forceRender>
+            // 不能加 forceRender:它会让所有 Modal 常驻 @rc-component/portal 的 ESC 栈,
+            // Escape 只路由到栈顶(最后挂载的)对话框,可见对话框反而收不到(同 CommonDialog)
+            <Modal open={visible} title={title} footer={buttonElements} onCancel={() => this._close()}>
                 {body}
             </Modal>
         );

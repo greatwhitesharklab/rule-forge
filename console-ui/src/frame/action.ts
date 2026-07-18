@@ -451,6 +451,12 @@ const FILE_TYPE_MAP: Record<string, string> = {
     // V7.0.0→V7.5.1:V1 决策流(.v1flow.json 统一后缀;.json 兼容旧)
     'v1flow.json': 'V1Flow',
     'json': 'V1Flow',
+    // V7.4/V7.5:V1 库/规则独立文件(后缀权威见后端 FileTypeUtils.EXTENSION_MAP:
+    //   .v1lib.json/.v1rs.json/.v1dt.json/.v1sc.json;枚举名即服务端 type)
+    'v1lib.json': 'V1Library',
+    'v1rs.json': 'V1RuleSet',
+    'v1dt.json': 'V1DecisionTable',
+    'v1sc.json': 'V1ScoreCard',
 };
 
 export function buildType(fileType: string): string {
@@ -489,16 +495,18 @@ export function buildType(fileType: string): string {
         case "v1flow.json":
             type = "V1 决策流";
             break;
-        case "V1Library":
+        // V7.4/V7.5:V1 库/规则独立文件(fileType 用统一后缀,跟 v1flow.json 同约定;
+        //   后端按 FileTypeUtils 后缀归类,裸类型名后缀会让新文件在树里不可见)
+        case "v1lib.json":
             type = "V1 库";
             break;
-        case "V1RuleSet":
+        case "v1rs.json":
             type = "V1 规则集";
             break;
-        case "V1DecisionTable":
+        case "v1dt.json":
             type = "V1 决策表";
             break;
-        case "V1ScoreCard":
+        case "v1sc.json":
             type = "V1 评分卡";
             break;
         // 兼容旧 .json 文件(老文件无 .v1flow.json 后缀,buildType 传 "json")
@@ -537,7 +545,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._icon = Styles.frameStyle.getRootIcon();
             data._style = Styles.frameStyle.getRootIconStyle();
             data.editorPath = function () {
-                console.log(data);
+                // 历史遗留:root 节点的 editorPath 仅为占位,无实际操作
             };
             data.contextMenu = [
                 {
@@ -710,7 +718,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                     name: '添加 V1 库',
                     icon: Styles.frameStyle.getFlowIcon(),
                     click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'V1Library', nodeData: data});
+                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'v1lib.json', nodeData: data});
                     }
                 }
             ];
@@ -737,7 +745,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                     name: '添加 V1 规则集',
                     icon: Styles.frameStyle.getFlowIcon(),
                     click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'V1RuleSet', nodeData: data});
+                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'v1rs.json', nodeData: data});
                     }
                 }
             ];
@@ -764,7 +772,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                     name: '添加 V1 决策表',
                     icon: Styles.frameStyle.getDecisionTableIcon(),
                     click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'V1DecisionTable', nodeData: data});
+                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'v1dt.json', nodeData: data});
                     }
                 }
             ];
@@ -791,7 +799,7 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                     name: '添加 V1 评分卡',
                     icon: Styles.frameStyle.getScorecardIcon(),
                     click: function () {
-                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'V1ScoreCard', nodeData: data});
+                        event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'v1sc.json', nodeData: data});
                     }
                 }
             ];

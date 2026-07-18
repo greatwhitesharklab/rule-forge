@@ -27,6 +27,7 @@ export default class RenameDialog extends Component<RenameDialogProps, RenameDia
         super(props);
         this.state = {name: '', fileName: '', extName: '', parentPath: '', fullPath: '', visible: false, errors: {}};
         this._validate = this._validate.bind(this);
+        this._save = this._save.bind(this);
     }
 
     componentDidMount() {
@@ -60,30 +61,41 @@ export default class RenameDialog extends Component<RenameDialogProps, RenameDia
         return {valid: Object.keys(errors).length === 0, errors};
     }
 
-    render() {
+    // 保存(按钮点击 / 输入框回车共用,校验走同一套 _validate)
+    async _save() {
+        const {valid, errors} = await this._validate();
+        if (!valid) {
+            this.setState({errors});
+            return;
+        }
+        const {parentPath, fullPath} = this.state;
+        const newName = parentPath + '/' + this.state.fileName + this.state.extName;
         const {dispatch} = this.props;
-        const buttons = [{
-            name: '确定',
-            type: 'primary' as const,
-            icon: 'rf rf-save',
-            click: async function () {
-                const {valid, errors} = await this._validate();
-                if (!valid) {
-                    this.setState({errors});
-                    return;
-                }
-                const {parentPath, fullPath} = this.state;
-                const newName = parentPath + '/' + this.state.fileName + this.state.extName;
-                componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
-                setTimeout(function () {
-                    dispatch(action.rename(fullPath, newName));
-                }, 100);
-            }.bind(this)
-        }];
+        componentEvent.eventEmitter.emit(componentEvent.SHOW_LOADING);
+        setTimeout(function () {
+            dispatch(action.rename(fullPath, newName));
+        }, 100);
+    }
+
+    render() {
+        const buttons = [
+            {
+                name: '取消',
+                type: 'default' as const,
+                click: () => this.setState({visible: false}),
+            },
+            {
+                name: '确定',
+                type: 'primary' as const,
+                icon: 'rf rf-save',
+                click: this._save,
+            }
+        ];
         const body = (
             <div className="ff-group">
                 <label>名称</label>
-                <Input name="newFileNameForRename" value={this.state.fileName}
+                <Input name="newFileNameForRename" value={this.state.fileName} autoFocus placeholder='请输入新名称'
+                       onPressEnter={this._save}
                        onChange={function (e: React.ChangeEvent<HTMLInputElement>) {
                            this.setState({fileName: e.target.value, errors: {}});
                        }.bind(this)}/>

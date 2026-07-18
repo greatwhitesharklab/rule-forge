@@ -173,6 +173,18 @@ describe('Frame Module - buildType Pure Function', () => {
         expect(ACTIONS.buildType('pmml')).toBe('PMML 模型(只读)');
     });
 
+    // V7.4/V7.5:V1 库/规则独立文件(统一 .v1xx.json 后缀,跟 v1flow.json 同约定;
+    //   case 值必须与 buildData 里 OPEN_CREATE_FILE_DIALOG emit 的 fileType 一致)
+    it.each([
+        ['v1flow.json', 'V1 决策流'],
+        ['v1lib.json', 'V1 库'],
+        ['v1rs.json', 'V1 规则集'],
+        ['v1dt.json', 'V1 决策表'],
+        ['v1sc.json', 'V1 评分卡'],
+    ])('GIVEN V1 后缀 %s WHEN buildType THEN return %s', (fileType, expected) => {
+        expect(ACTIONS.buildType(fileType)).toBe(expected);
+    });
+
     // V7.7.2:'rp' case 删除 — 老 .rp 知识包废弃
 
     // V6.20.0 P2:删老 urule 规则类型 — buildType 不再识别它们
@@ -318,6 +330,78 @@ describe('Frame Module - Thunks', () => {
         // createNewFile 在 formPost 成功后 dispatch loadData(...) (一个 thunk 函数)
         // 来刷新文件树,而不是直接 dispatch CREATE_NEW_FILE action。
         expect(dispatch).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    // B1 止血:V1 新建文件必须用 .v1xx.json 后缀(后端 FileTypeUtils 按后缀归类,
+    //   裸类型名后缀 lib1.V1Library 会导致新文件在文件树里不可见)
+    it.each([
+        ['v1lib.json', 'V1Library'],
+        ['v1rs.json', 'V1RuleSet'],
+        ['v1dt.json', 'V1DecisionTable'],
+        ['v1sc.json', 'V1ScoreCard'],
+    ])('GIVEN V1 fileType %s WHEN createNewFile THEN 文件名带该后缀且服务端 type 为 %s', async (fileType, serverType) => {
+        mockServer.mockResponse('/frame/createFile', {});
+
+        const parentNodeData = { fullPath: '/test', name: 'test', type: 'folder' };
+        const thunk = ACTIONS.createNewFile('f1', fileType, parentNodeData as any);
+        thunk(dispatch, getState);
+
+        await flushAsync();
+
+        const lastCall = (mockServer.fetchMock as any).mock.calls.find(
+            (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('/frame/createFile'),
+        );
+        expect(lastCall).toBeTruthy();
+        const body = decodeURIComponent(String((lastCall[1] as RequestInit).body || ''));
+        expect(body).toContain('path=/test/f1.' + fileType);
+        expect(body).toContain('type=' + serverType);
+    });
+
+    // B1 止血:V1 分类右键菜单回归 — 5 个 V1 容器菜单每项必须有非空 label(name)
+    it.each([
+        ['v1flowLib', '添加 V1 决策流'],
+        ['v1libraryLib', '添加 V1 库'],
+        ['v1rulesetLib', '添加 V1 规则集'],
+        ['v1decisiontableLib', '添加 V1 决策表'],
+        ['v1scorecardLib', '添加 V1 评分卡'],
+    ])('GIVEN %s 节点 WHEN loadData THEN 右键菜单两项且 label 非空', async (libType, addLabel) => {
+        const libNode = {
+            id: 'lib1', name: 'V1分类', type: libType, fullPath: '/test/v1',
+            children: [],
+        };
+        // loadData 会按 projectName 剥掉 root+项目两层,直接展示项目子节点
+        const projectNode = {
+            id: 'proj', name: 'test', type: 'project', fullPath: '/test',
+            children: [libNode],
+        };
+        const rootFile = {
+            id: 'root', name: 'root', type: 'root', fullPath: '/',
+            children: [projectNode],
+        };
+        const publicResource = {
+            id: 'public', name: 'public', type: 'publicResource', fullPath: '/public',
+            children: [],
+        };
+        mockServer.mockResponse('/frame/loadProjects', {
+            classify: true,
+            repo: { rootFile, publicResource, projectNames: [] },
+            user: { import: true, export: true },
+        });
+
+        const thunk = ACTIONS.loadData(true, 'test', 'all', '');
+        thunk(dispatch, getState);
+
+        await flushAsync();
+
+        const loadEnd = dispatch.mock.calls.find(
+            (c: unknown[]) => (c[0] as { type?: string }).type === ACTIONS.LOAD_END,
+        );
+        expect(loadEnd).toBeTruthy();
+        const built = (loadEnd[0] as { data: { children: { contextMenu?: { name: string }[] }[] } }).data.children[0];
+        const names = (built.contextMenu || []).map((item) => item.name);
+        expect(names).toContain('添加目录');
+        expect(names).toContain(addLabel);
+        names.forEach((name) => expect(name).not.toBe(''));
     });
 
     it('GIVEN newProjectName WHEN createNewProject thunk is dispatched THEN it should post to /frame/createProject and dispatch loadData thunk', async () => {
