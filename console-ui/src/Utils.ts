@@ -62,6 +62,9 @@ export function buildEditorUrl(editorPath: string | (() => void), file: string):
  *
  * key   = TreeNodeData.type 的值(全小写,与 action.ts switch case 一致)。
  * value = SPA 路由段(`/app/editor/<value>`)。
+ *
+ * V7.23:老 4 库(variable/constant/parameter/action)项删除 —— 编辑器已下线,
+ * 树点击改走只读源码查看(TreeItem.tsx dispatch seeFileSource)。
  */
 const NODE_TYPE_TO_SPA_SEGMENT: Record<string, string> = {
     rule: 'ruleset',
@@ -71,10 +74,6 @@ const NODE_TYPE_TO_SPA_SEGMENT: Record<string, string> = {
     scorecard: 'scorecard',
     complexscorecard: 'complexscorecard',
     crosstab: 'crosstab',
-    variable: 'variable',
-    constant: 'constant',
-    parameter: 'parameter',
-    action: 'action',
     resourcepackage: 'package',
 };
 
@@ -101,6 +100,7 @@ export function typeToSpaSegment(type: string | undefined | null): string | null
  * (跟 TreeItem.tsx 的判定逻辑一致)。
  *
  * 注意:UL(`.ul.xml` 脚本决策集)目前无 SPA 路由,不在此表内 → 返回 null → 走 iframe fallback。
+ * V7.23:老 4 库(.vl.xml/.cl.xml/.pl.xml/.al.xml)项随编辑器下线一并删除。
  */
 const FILE_EXT_TO_SPA_SEGMENT: { ext: string; segment: string }[] = [
     { ext: '.rs.xml', segment: 'ruleset' },
@@ -111,10 +111,6 @@ const FILE_EXT_TO_SPA_SEGMENT: { ext: string; segment: string }[] = [
     { ext: '.sc', segment: 'scorecard' },
     { ext: '.complexscorecard', segment: 'complexscorecard' },
     { ext: '.ct.xml', segment: 'crosstab' },
-    { ext: '.vl.xml', segment: 'variable' },
-    { ext: '.cl.xml', segment: 'constant' },
-    { ext: '.pl.xml', segment: 'parameter' },
-    { ext: '.al.xml', segment: 'action' },
 ];
 
 /**

@@ -107,7 +107,15 @@ function FileTreeImpl({data, dispatch, treeType, readOnly, onFileReadOnlyClick, 
         setSelectedKeys(keys);
         const node = info.node as {rawData?: TreeNodeData} | undefined;
         if (node?.rawData) {
-            handleFileOpen(node.rawData, treeType, !!readOnly, onFileReadOnlyClick);
+            // V7.23:老 4 库(变量/常量/参数/动作库)编辑器已删除,点击走 seeFileSource
+            // 只读源码查看(第 5 参回调);其余类型仍 window.open 各自 SPA 编辑器。
+            handleFileOpen(
+                node.rawData,
+                treeType,
+                !!readOnly,
+                onFileReadOnlyClick,
+                (d: TreeNodeData) => dispatch(ACTIONS.seeFileSource(d) as unknown),
+            );
         }
     };
 

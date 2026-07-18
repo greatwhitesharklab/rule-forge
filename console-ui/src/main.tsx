@@ -18,9 +18,9 @@ import {RequireAuth} from '@/router/RequireAuth';
  * 本文件是唯一入口。
  */
 const FrameApp = lazy(() => import('@/frame'));
-const VariableEditorRoute = lazy(() => import('@/variable/EditorRoute'));
-const ConstantEditorRoute = lazy(() => import('@/constant/EditorRoute'));
-const ActionEditorRoute = lazy(() => import('@/action/EditorRoute'));
+// V7.23:老 4 库编辑器(变量库/常量库/动作库,参数库 V7.20 已删后端)已删除 ——
+// 后端加载端点 POST /xml 在 V5.43 已移除,编辑器白屏;V1 库编辑器(@/v1-flow/LibraryEditorRoute)是替代品。
+// 树点击老 4 库文件改走只读源码查看(见 TreeItem.tsx)。
 const ResourceEditorRoute = lazy(() => import('@/resource/EditorRoute'));
 // V7.7.2:PackageEditorRoute 删除 — 老 .rp 知识包编辑器废弃,V1 决策流走 V1FlowDesigner。
 const ClientEditorRoute = lazy(() => import('@/client/EditorRoute'));
@@ -50,9 +50,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/v1-flow" element={<Suspense fallback={<div style={{padding: 24}}>加载中…</div>}><V1FlowDesignerRoute/></Suspense>}/>
             <Route path="/app" element={<RequireAuth/>}>
                 <Route index element={<Suspense fallback={<div style={{padding: 24}}>加载中…</div>}><FrameApp/></Suspense>}/>
-                <Route path="editor/variable" element={<VariableEditorRoute/>}/>
-                <Route path="editor/constant" element={<ConstantEditorRoute/>}/>
-                <Route path="editor/action" element={<ActionEditorRoute/>}/>
+                {/* V7.23:editor/variable、editor/constant、editor/action 路由删除(老 4 库编辑器下线,见上方注释) */}
                 <Route path="editor/resource" element={<ResourceEditorRoute/>}/>
                 {/* V7.7.2:editor/package 路由删除(.rp 废弃) */}
                 <Route path="editor/client" element={<ClientEditorRoute/>}/>

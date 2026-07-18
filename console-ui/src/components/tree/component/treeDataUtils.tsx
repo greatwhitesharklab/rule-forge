@@ -93,12 +93,16 @@ export function isContainerType(data: TreeNodeData): boolean {
  * @param treeType          'public' = 公共资源树(文件统一走 resource 编辑器)
  * @param readOnly          V6.13.1 只读模式(看 git 版本)
  * @param onFileReadOnlyClick readOnly 模式文件 click 回调(FileTreePanel dispatch seeFileSource)
+ * @param onFileSourceClick V7.23 老 4 库(变量/常量/参数/动作库)文件 click 回调。
+ *                          4 库编辑器已删除(后端加载端点 POST /xml V5.43 移除),
+ *                          点击改走只读源码查看(FileTree dispatch seeFileSource);缺省 no-op。
  */
 export function handleFileOpen(
     data: TreeNodeData,
     treeType: string | undefined,
     readOnly: boolean,
     onFileReadOnlyClick?: (data: TreeNodeData) => void,
+    onFileSourceClick?: (data: TreeNodeData) => void,
 ): void {
     if (!isFileNode(data)) return;
     // V6.13.1 readOnly 模式:走回调弹源码,不开编辑器
@@ -112,7 +116,8 @@ export function handleFileOpen(
     const open = (url: string) => window.open(url, '_blank');
 
     // V6.20.0 P2:删老 urule 规则(.rs.xml/.dt.xml/.dtree.xml/.sdt.xml/.sc.xml/.complexscorecard/.ct.xml)
-// UI 入口,只留 DRL + 4 库 + 决策流 + 知识包 + 公共资源。
+// UI 入口,只留 DRL + 决策流 + 知识包 + 公共资源。
+// V7.23:老 4 库(变量/常量/参数/动作库)编辑器入口也删除,改走 onFileSourceClick 源码查看(见下方分支)。
 // V6.20.0:DRL (.drl) — 走 DRL 编辑器
     if (data.type === 'drl' || fullPath.endsWith('.drl')) {
         open('/app/editor/drl?file=' + encodeURIComponent(fullPath));
@@ -152,7 +157,9 @@ export function handleFileOpen(
         open('/app/editor/pmml?file=' + encodeURIComponent(fullPath));
         return;
     }
-    // 变量/常量/参数/动作库 (双扩展名 .vl.xml/.cl.xml/.pl.xml/.al.xml),按 type 或后缀
+    // 变量/常量/参数/动作库 (双扩展名 .vl.xml/.cl.xml/.pl.xml/.al.xml),按 type 或后缀。
+    // V7.23:老 4 库编辑器已删除,不再 window.open;改走 onFileSourceClick 回调只读查看源码
+    // (FileTree dispatch seeFileSource),无回调时 no-op。
     const libType =
         data.type === 'variable' ? 'variable'
         : data.type === 'constant' ? 'constant'
@@ -164,7 +171,7 @@ export function handleFileOpen(
         : fullPath.endsWith('.al.xml') ? 'action'
         : null;
     if (libType) {
-        open('/app/editor/' + libType + '?file=' + encodeURIComponent(fullPath));
+        onFileSourceClick?.(data);
         return;
     }
     // 公共资源树 (treeType==='public') → 统一 resource 编辑器

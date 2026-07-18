@@ -68,13 +68,11 @@ describe('treeDataUtils', () => {
         afterEach(() => openSpy.mockRestore());
 
         // V6.20.0 P2:删老 urule 规则 UI 入口(.rs.xml/.dt.xml/.dtree.xml/.sdt.xml/.sc.xml/.complexscorecard/.ct.xml)。
-        // 只留 DRL + 4 库 + 决策流 + 知识包。
+        // 只留 DRL + 决策流 + 知识包。
+        // V7.23:老 4 库(.vl/.cl/.pl/.al.xml)window.open 用例删除 —— 编辑器下线,改走
+        //   onFileSourceClick 回调(见下方专项用例)。
         // (name 必须含扩展名,isFileNode 才判 true;真实节点 name 就是文件名带后缀)
         const cases: Array<{name: string; node: Partial<TreeNodeData>; expectedPath: string}> = [
-            {name: 'variable/.vl.xml → variable', node: {name: 'v.vl.xml', type: 'variable', fullPath: '/p/v.vl.xml'}, expectedPath: '/app/editor/variable'},
-            {name: 'constant/.cl.xml → constant', node: {name: 'c.cl.xml', type: 'constant', fullPath: '/p/c.cl.xml'}, expectedPath: '/app/editor/constant'},
-            {name: 'parameter/.pl.xml → parameter', node: {name: 'p.pl.xml', type: 'parameter', fullPath: '/p/p.pl.xml'}, expectedPath: '/app/editor/parameter'},
-            {name: 'action/.al.xml → action', node: {name: 'a.al.xml', type: 'action', fullPath: '/p/a.al.xml'}, expectedPath: '/app/editor/action'},
             // V7.21:flow/.rl.xml 用例已删除(BPMN 决策流入口移除)。
             // V6.20.0:DRL 规则(.drl) → DRL 编辑器
             {name: 'V6.20.0:DRL/.drl → drl', node: {name: 'r.drl', type: 'drl', fullPath: '/p/r.drl'}, expectedPath: '/app/editor/drl'},
@@ -104,6 +102,25 @@ describe('treeDataUtils', () => {
             const cb = vi.fn();
             handleFileOpen(makeNode({name: 'v.vl.xml', type: 'variable', fullPath: '/p/v.vl.xml'}), undefined, true, cb);
             expect(cb).toHaveBeenCalledWith(expect.objectContaining({fullPath: '/p/v.vl.xml'}));
+            expect(openSpy).not.toHaveBeenCalled();
+        });
+
+        // V7.23:老 4 库编辑器已删除,点击走 onFileSourceClick 回调(只读源码查看),不开窗
+        it.each([
+            {name: 'variable/.vl.xml', node: {name: 'v.vl.xml', type: 'variable', fullPath: '/p/v.vl.xml'}},
+            {name: 'constant/.cl.xml', node: {name: 'c.cl.xml', type: 'constant', fullPath: '/p/c.cl.xml'}},
+            {name: 'parameter/.pl.xml', node: {name: 'p.pl.xml', type: 'parameter', fullPath: '/p/p.pl.xml'}},
+            {name: 'action/.al.xml', node: {name: 'a.al.xml', type: 'action', fullPath: '/p/a.al.xml'}},
+            {name: '仅后缀命中(.vl.xml 无 type)', node: {name: 'v.vl.xml', fullPath: '/p/v.vl.xml'}},
+        ])('V7.23:老 4 库 $name → onFileSourceClick 回调,不开窗', ({node}) => {
+            const cb = vi.fn();
+            handleFileOpen(makeNode(node), undefined, false, undefined, cb);
+            expect(cb).toHaveBeenCalledWith(expect.objectContaining({fullPath: node.fullPath}));
+            expect(openSpy).not.toHaveBeenCalled();
+        });
+
+        it('V7.23:老 4 库无 onFileSourceClick 回调 → no-op,不开窗', () => {
+            handleFileOpen(makeNode({name: 'v.vl.xml', type: 'variable', fullPath: '/p/v.vl.xml'}), undefined, false);
             expect(openSpy).not.toHaveBeenCalled();
         });
 

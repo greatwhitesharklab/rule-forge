@@ -440,8 +440,7 @@ export function loadChildren(parentNodeData: TreeNodeData, classify?: boolean | 
 }
 
 const FILE_TYPE_MAP: Record<string, string> = {
-    'vl.xml': 'VariableLibrary', 'cl.xml': 'ConstantLibrary',
-    'pl.xml': 'ParameterLibrary', 'al.xml': 'ActionLibrary',
+    // V7.23:vl.xml/cl.xml/pl.xml/al.xml 项删除 —— 老 4 库"新建"入口随编辑器下线移除
     'rs.xml': 'Ruleset', 'rsl.xml': 'RulesetLib', 'ul': 'UL',
     'dt.xml': 'DecisionTable', 'ct.xml': 'Crosstab', 'dts.xml': 'ScriptDecisionTable',
     'dtree.xml': 'DecisionTree', 'sc': 'Scorecard', 'scc': 'ComplexScorecard',
@@ -466,18 +465,8 @@ export function buildType(fileType: string): string {
     }
     let type: string | undefined;
     switch (fileType) {
-        case 'vl.xml':
-            type = "变量库";
-            break;
-        case 'cl.xml':
-            type = '常量库';
-            break;
-        case 'pl.xml':
-            type = '参数库';
-            break;
-        case 'al.xml':
-            type = '动作库';
-            break;
+        // V7.23:vl.xml/cl.xml/pl.xml/al.xml case 删除 —— 老 4 库"新建"入口随编辑器下线移除,
+        //   与老 urule 类型一样走下方 "Unknow file type" 抛错防误用
         // V7.21:case 'rl.xml'(BPMN 决策流)已删除 — V1 决策流为唯一决策路径。
         // V6.20.0:DRL 规则
         case "drl":
@@ -626,6 +615,10 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
             data._style = Styles.frameStyle.getLibIconStyle();
             data.contextMenu = buildLibContextMenu();
             break;
+        // V7.23:老 4 库(action/parameter/constant/variable)编辑器已删除,但后端
+        //   (FrameController loadProjects / RuleForgeRepositoryServiceImpl)仍会给老项目
+        //   下发这 4 类节点,故渲染 case 保留;文件点击走只读源码查看(TreeItem.tsx),
+        //   "新建"菜单项已从 buildLibContextMenu / buildFullContextMenu 移除。
         case "action":
             data._icon = Styles.frameStyle.getActionIcon();
             data._style = Styles.frameStyle.getActionIconStyle();
@@ -850,35 +843,9 @@ function buildLibContextMenu(): ContextMenuItem[] {
             click: function (data: TreeNodeData) {
                 event.eventEmitter.emit(event.OPEN_CREATE_FOLDER_DIALOG, {nodeData: data});
             }
-        },
-        {
-            name: '添加变量库',
-            icon: Styles.frameStyle.getVariableIcon(),
-            click: function (data: TreeNodeData) {
-                event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'vl.xml', nodeData: data});
-            }
-        },
-        {
-            name: '添加常量库',
-            icon: Styles.frameStyle.getConstantIcon(),
-            click: function (data: TreeNodeData) {
-                event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'cl.xml', nodeData: data});
-            }
-        },
-        {
-            name: '添加参数库',
-            icon: Styles.frameStyle.getParameterIcon(),
-            click: function (data: TreeNodeData) {
-                event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'pl.xml', nodeData: data});
-            }
-        },
-        {
-            name: '添加动作库',
-            icon: Styles.frameStyle.getActionIcon(),
-            click: function (data: TreeNodeData) {
-                event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'al.xml', nodeData: data});
-            }
         }
+        // V7.23:"添加变量库/常量库/参数库/动作库"菜单项删除 —— 老 4 库编辑器已下线
+        //   (后端加载端点 POST /xml V5.43 移除),新建入口不再提供;存量文件只读查看源码。
     ];
 }
 
@@ -892,36 +859,8 @@ function buildFullContextMenu(isFolder?: boolean, folderType?: string): ContextM
     }];
     let addPasteMenuItem = false;
     if (!folderType || folderType === 'all' || folderType === 'lib') {
-        menus.push(
-            {
-                name: '添加变量库',
-                icon: Styles.frameStyle.getVariableIcon(),
-                click: function (data: TreeNodeData) {
-                    event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'vl.xml', nodeData: data});
-                }
-            },
-            {
-                name: '添加常量库',
-                icon: Styles.frameStyle.getConstantIcon(),
-                click: function (data: TreeNodeData) {
-                    event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'cl.xml', nodeData: data});
-                }
-            },
-            {
-                name: '添加参数库',
-                icon: Styles.frameStyle.getParameterIcon(),
-                click: function (data: TreeNodeData) {
-                    event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'pl.xml', nodeData: data});
-                }
-            },
-            {
-                name: '添加动作库',
-                icon: Styles.frameStyle.getActionIcon(),
-                click: function (data: TreeNodeData) {
-                    event.eventEmitter.emit(event.OPEN_CREATE_FILE_DIALOG, {fileType: 'al.xml', nodeData: data});
-                }
-            }
-        );
+        // V7.23:"添加变量库/常量库/参数库/动作库"菜单项删除 —— 老 4 库编辑器已下线,
+        //   此分支只保留粘贴项
         if (!addPasteMenuItem) {
             menus.push(buildPasteMenuItem());
             addPasteMenuItem = true;

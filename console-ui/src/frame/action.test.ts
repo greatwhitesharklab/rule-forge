@@ -141,21 +141,8 @@ describe('Frame Module - Action Creators', () => {
 });
 
 describe('Frame Module - buildType Pure Function', () => {
-    it('GIVEN vl.xml WHEN buildType is called THEN it should return 变量库', () => {
-        expect(ACTIONS.buildType('vl.xml')).toBe('变量库');
-    });
-
-    it('GIVEN cl.xml WHEN buildType is called THEN it should return 常量库', () => {
-        expect(ACTIONS.buildType('cl.xml')).toBe('常量库');
-    });
-
-    it('GIVEN pl.xml WHEN buildType is called THEN it should return 参数库', () => {
-        expect(ACTIONS.buildType('pl.xml')).toBe('参数库');
-    });
-
-    it('GIVEN al.xml WHEN buildType is called THEN it should return 动作库', () => {
-        expect(ACTIONS.buildType('al.xml')).toBe('动作库');
-    });
+    // V7.23:vl.xml/cl.xml/pl.xml/al.xml 正向用例删除 —— 老 4 库"新建"入口随编辑器下线移除,
+    //   与 V6.20.0 P2 老 urule 类型一样走下方 throws 用例
 
     // V7.21:rl.xml → 决策流 用例已删除(BPMN 决策流入口移除)。
 
@@ -189,8 +176,10 @@ describe('Frame Module - buildType Pure Function', () => {
 
     // V6.20.0 P2:删老 urule 规则类型 — buildType 不再识别它们
     // 老入口已被 DRL/DMN/PMML 取代,前端创建菜单已无这些扩展名,buildType 抛错防误用
-    it.each(['rs.xml', 'rsl.xml', 'ul', 'dt.xml', 'dts.xml', 'dtree.xml', 'sc', 'scc', 'ct.xml'])(
-        'V6.20.0 P2:GIVEN 已删 type %s WHEN buildType THEN throws',
+    // V7.23:vl.xml/cl.xml/pl.xml/al.xml(老 4 库)加入已删列表 —— 编辑器下线,新建入口移除
+    it.each(['rs.xml', 'rsl.xml', 'ul', 'dt.xml', 'dts.xml', 'dtree.xml', 'sc', 'scc', 'ct.xml',
+        'vl.xml', 'cl.xml', 'pl.xml', 'al.xml'])(
+        'GIVEN 已删 type %s WHEN buildType THEN throws',
         (deletedType) => {
             const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
             expect(() => ACTIONS.buildType(deletedType)).toThrow('Unknow file type :' + deletedType);
@@ -200,7 +189,7 @@ describe('Frame Module - buildType Pure Function', () => {
 
     it('GIVEN file type with colon WHEN buildType is called THEN it should extract Type before colon', () => {
         expect(ACTIONS.buildType('drl:subtype')).toBe('DRL 规则');
-        expect(ACTIONS.buildType('vl.xml:v')).toBe('变量库');
+        expect(ACTIONS.buildType('v1lib.json:v')).toBe('V1 库');
     });
 
     it('GIVEN unknown file type WHEN buildType is called THEN it should alert and throw error', () => {

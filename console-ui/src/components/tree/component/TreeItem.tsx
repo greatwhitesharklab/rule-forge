@@ -178,8 +178,6 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                             // 不走原 iframe (editor.html?type=...)。判断优先级:data.type 直配 >
                             // 文件扩展名 > public 资源树(treeType==='public')。
                             // - ruleset (rule / .rs.xml) → /app/editor/ruleset
-                            // - variable (.vl.xml) / constant (.cl.xml) / parameter (.pl.xml)
-                            //   / action (.al.xml) → 对应 /app/editor/<type>
                             // - public 资源 (treeType==='public',原 /html/editor.html?type=resource)
                             //   → /app/editor/resource
                             // V7.0.0 item ④:老 7 编辑器(ruleset/decisiontree/decisiontable/
@@ -188,7 +186,10 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                             // 4 弃类决策(树/脚本表/复杂评分卡/交叉表)已下线。详见 main.tsx。
 
                             // 变量库 / 常量库 / 参数库 / 动作库:按 data.type + 完整文件后缀双判定
-                            // (注意是 .vl.xml / .cl.xml / .pl.xml / .al.xml 这种双扩展名)
+                            // (注意是 .vl.xml / .cl.xml / .pl.xml / .al.xml 这种双扩展名)。
+                            // V7.23:老 4 库编辑器已删除(后端加载端点 POST /xml V5.43 已移除,打开白屏),
+                            // 老项目里残留的这类文件点击改走只读源码查看 —— dispatch seeFileSource thunk,
+                            // 弹源码对话框(与 FileTreePanel 的 readOnly 查看同一通道)。
                             const libTypeByData: string | null =
                                 data.type === 'variable' ? 'variable'
                                 : data.type === 'constant' ? 'constant'
@@ -204,7 +205,7 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                                 : null;
                             const libType = libTypeByData || libTypeByExt;
                             if (libType) {
-                                window.open('/app/editor/' + libType + '?file=' + encodeURIComponent(data.fullPath), '_blank');
+                                dispatch?.(ACTIONS.seeFileSource(data) as unknown);
                                 return;
                             }
 
