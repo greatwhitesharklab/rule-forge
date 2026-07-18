@@ -1,5 +1,19 @@
 # UX/UE 审计清单与优化方案
 
+> **执行状态(2026-07-19):全部 7 批次完成,清单关闭。**
+> - ✅ B1 止血(`17f4420`):V1 后缀 bug、Modal Escape(forceRender 根因)、对话框取消/回车
+> - ✅ B2 死编辑器(`b75be67`):老 4 库编辑器删除(后端 /xml 端点 V5.43 已删),老库文件点击改只读源码
+> - ✅ B3 面板布局(`1aa2ce8`):监控/Git 健康 Statistic/Card 化、AlertBell 双控 open 修复、导入项目入口可达
+> - ✅ B4 错误态(`40c6b09`):EditorLoadState 统一空态/错误态(含 [object Response] 修复)、全局 zhCN
+> - ✅ B5 文案(`e52af1a`):QuickStart 重写、V1 画布/ag-grid 中文化、ActivityBar 文字标签
+> - ✅ B6 编辑器内嵌(`43a0c4a` + `d3754a5`):11 编辑器组件化 + EditorTabs 应用内标签页,
+>   window.open 清零,FrameTab/ContentTabBar 拆除;真机冒烟通过(无新浏览器标签、标签保活)
+> - ✅ B7 代码健康(`da08bd1` + `df53d5c`):console.log 清零、dev-local.sh 加固、antd/ag-grid 警告、树重复 key 防御
+>
+> 已知余项(不阻塞):V1 画布工具栏在标签页内顶部几 px 裁切(原按整页设计);
+> demo 路由 /v1-flow 点规则节点 no-op;监控面板指标仍是占位值(实时 metrics 端点未接);
+> 老类型(.rs.xml)版本列表"打开"为 no-op(编辑器已删);ActionEditorController 等后端死 controller 未清。
+
 > 2026-07-18 全栈走查:console-app(8180)+ vite dev + MySQL,admin 登录,
 > Playwright 逐页截图 40+ 张(原始图在 `.ux-audit/`,走查笔记 `.ux-audit/notes.md`),
 > 覆盖登录/主框架/文件树/右键菜单/对话框/各编辑器/V1 画布/10 个 ActivityBar 面板。
