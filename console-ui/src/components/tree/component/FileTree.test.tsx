@@ -4,6 +4,7 @@ import {Provider} from 'react-redux';
 import {createStore, applyMiddleware} from 'redux';
 import thunk from 'redux-thunk';
 import FileTree from './FileTree';
+import {eventEmitter, OPEN_EDITOR_TAB} from '@/frame/event';
 
 /** 构造测试 store:reducer 直接返回固定 state(connect 的 mapStateToProps 读 state.data)。
  *  生产 FileTree 在 antd Tree mount 时会调 loadData 触发 dispatch(thunk),所以测试 store 加 thunk middleware。 */
@@ -27,11 +28,14 @@ const sampleData = {
 } as unknown as TreeNodeData;
 
 describe('FileTree', () => {
-    let openSpy: ReturnType<typeof vi.spyOn>;
+    // V7:点文件从 window.open 改为 openEditorTab(OPEN_EDITOR_TAB 事件)。监听事件总线断言。
+    let opened: Array<{editorType: string; file?: string}>;
+    const openHandler = (p: {editorType: string; file?: string}) => opened.push(p);
     beforeEach(() => {
-        openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+        opened = [];
+        eventEmitter.on(OPEN_EDITOR_TAB, openHandler);
     });
-    afterEach(() => openSpy.mockRestore());
+    afterEach(() => eventEmitter.removeListener(OPEN_EDITOR_TAB, openHandler));
 
     it('渲染节点(projA _level<expandLevel 初始展开 → loan 可见)', () => {
         render(<Provider store={makeStore(sampleData)}><FileTree/></Provider>);
@@ -59,14 +63,11 @@ describe('FileTree', () => {
         expect(mark?.textContent).toBe('loan');
     });
 
-    // V6.20.0 P2:点 .drl 文件 → /app/editor/drl(老 /app/editor/ruleset 已删)
-    it('点文件 → window.open DRL 编辑器(onSelect→handleFileOpen)', () => {
+    // V6.20.0 P2:点 .drl 文件 → DRL 编辑器标签(老 window.open /app/editor/drl 已改应用内标签)
+    it('点文件 → openEditorTab 打开 DRL 编辑器标签(onSelect→handleFileOpen)', () => {
         render(<Provider store={makeStore(sampleData)}><FileTree/></Provider>);
         fireEvent.click(screen.getByText('loan.drl'));
-        expect(openSpy).toHaveBeenCalledWith(
-            expect.stringContaining('/app/editor/drl'),
-            '_blank',
-        );
+        expect(opened).toEqual([{editorType: 'drl', file: '/r/p/loan.drl'}]);
     });
 
     it('正常模式:contextMenu 节点有 ⋯ 操作按钮(FileTreeNode)', () => {
@@ -80,12 +81,12 @@ describe('FileTree', () => {
         expect(screen.queryByRole('button', {name: '节点操作'})).toBeNull();
     });
 
-    it('readOnly 模式:点文件 → 走 onFileReadOnlyClick 回调,不开窗', () => {
+    it('readOnly 模式:点文件 → 走 onFileReadOnlyClick 回调,不开编辑器', () => {
         const onReadOnly = vi.fn();
         render(<Provider store={makeStore(sampleData)}><FileTree readOnly onFileReadOnlyClick={onReadOnly}/></Provider>);
         fireEvent.click(screen.getByText('loan.drl'));
         expect(onReadOnly).toHaveBeenCalled();
-        expect(openSpy).not.toHaveBeenCalled();
+        expect(opened).toEqual([]);
     });
 
     it('搜索展开祖先:匹配深层文件 → projA 仍可见', () => {

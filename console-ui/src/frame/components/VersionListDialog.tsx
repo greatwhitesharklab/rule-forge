@@ -5,8 +5,8 @@ import CommonDialog from '../../components/dialog/component/CommonDialog.jsx';
 import * as event from '../event.js';
 import * as action from '../action.js';
 import {seeFileVersions} from '../action.js';
-import * as componentEvent from '../../components/componentEvent.js';
-import {formatDate, buildEditorUrl, typeToSpaSegment} from '../../Utils.ts';
+import {formatDate} from '../../Utils.ts';
+import {isEditorType, type EditorType} from '../editorTypeMap';
 
 interface VersionRow {
     name: string;
@@ -82,24 +82,16 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
                 render: (_: unknown, row: VersionRow) => (
                     <>
                         <Button type="link" style={{padding: 0}} onClick={() => {
-                            // SPA 化:历史版本也走 /app/editor/<type>?file=<path>:<version> 新标签打开。
-                            const spaSegment = typeToSpaSegment(data.type as string);
-                            if (spaSegment) {
-                                // V7.22:知识包(.rp)特殊路径处理已删除 — 编辑器路由 V7.7.2 已删。
-                                const spaFile = (data.fullPath as string) + ':' + row.name;
-                                window.open('/app/editor/' + spaSegment + '?file=' + encodeURIComponent(spaFile), '_blank');
-                                return;
+                            // 历史版本走应用内编辑器标签:file 带 ':版本号' 后缀,原样透传给编辑器组件。
+                            const dataType = data.type as string;
+                            if (isEditorType(dataType)) {
+                                event.openEditorTab({
+                                    editorType: dataType as EditorType,
+                                    file: (data.fullPath as string) + ':' + row.name,
+                                });
                             }
-                            // fallback:无 SPA 路由的 type,保留原 iframe 逻辑。
-                            const fallbackEditorPath = '/html/editor.html?type=' + (data.type as string);
-                            let url = buildEditorUrl(fallbackEditorPath, (data.fullPath as string) + ':' + row.name);
-                            let fullPath = (data.fullPath as string) + ':' + row.name;
-                            let name = (data.name as string) + ':' + row.name;
-                            const config: Record<string, unknown> = {
-                                id: (data.id as string) + ':' + row.name,
-                                name: name, fullPath: fullPath, path: url, active: true
-                            };
-                            componentEvent.eventEmitter.emit(componentEvent.TREE_NODE_CLICK, config);
+                            // 无编辑器的老类型(如老 .rs.xml):no-op —— 原 iframe fallback
+                            // 已随 FrameTab 拆除。
                         }}>打开</Button>
                         <Button type="link" style={{padding: 0, marginLeft: 8}} onClick={() => {
                             const fullPath = (data.fullPath as string) + ':' + row.name;

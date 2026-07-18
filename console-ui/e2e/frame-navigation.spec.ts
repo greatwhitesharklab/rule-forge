@@ -150,7 +150,7 @@ test.describe('Main Frame Navigation', () => {
 
     // Given: User is on main frame
     // When: User clicks on a file in the tree
-    // Then: File should open in a new tab
+    // Then: File should open as an in-app editor tab (V7: no more window.open new browser tab)
     test('should open file in tab when clicking tree file node', async ({ page }) => {
         // Given: Wait for tree to load
         // Tree nodes are spans with id starting "node-" that have an anchor inside
@@ -171,15 +171,15 @@ test.describe('Main Frame Navigation', () => {
         }
 
         if (clickedFileNode) {
-            // Then: A tab should appear in the content tab bar
-            // (the new ContentTabBar renders .content-tab elements, not the
-            //  legacy bootstrap #fornavframetab_ li selector)
-            const tabLink = page.locator('.content-tab');
-            await expect(tabLink.first()).toBeVisible({ timeout: 5000 });
+            // Then: An antd tab should appear in the in-app editor tab bar
+            // (EditorTabs renders .ant-tabs-tab inside .editor-tabs-host;
+            //  the legacy ContentTabBar .content-tab and iframe host are gone)
+            const tab = page.locator('.editor-tabs-host .ant-tabs-tab');
+            await expect(tab.first()).toBeVisible({ timeout: 5000 });
 
-            // Then: An iframe should be created for the file
-            const iframe = page.locator('iframe');
-            await expect(iframe.first()).toBeVisible({ timeout: 5000 });
+            // Then: The active editor pane should be rendered (in-app, no new window)
+            const pane = page.locator('.editor-tabs-panes .editor-tab-pane');
+            await expect(pane.first()).toBeVisible({ timeout: 5000 });
         }
     });
 

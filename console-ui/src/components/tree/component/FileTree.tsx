@@ -39,7 +39,7 @@ interface FileTreeProps extends FileTreeOwnProps {
  * children=undefined 触发 loadData)。expandedKeys/selectedKeys 受控。搜索框过滤 + 高亮 +
  * 自动展开命中祖先。节点走 {@link FileTreeNode}(titleRender)。
  *
- * <p>交互映射:onSelect→{@link handleFileOpen}(13 type window.open / readOnly 回调);
+ * <p>交互映射:onSelect→{@link handleFileOpen}(openEditorTab 应用内标签 / readOnly 回调);
  * loadData→{@link ACTIONS.loadChildren} 懒加载;右键/hover ⋯→FileTreeNode 内 Dropdown。
  *
  * <p>样式走 fileTree.css(定制 .ant-tree + --rf-* token,跟 PackageNavigator 同代)。
@@ -108,7 +108,7 @@ function FileTreeImpl({data, dispatch, treeType, readOnly, onFileReadOnlyClick, 
         const node = info.node as {rawData?: TreeNodeData} | undefined;
         if (node?.rawData) {
             // V7.23:老 4 库(变量/常量/参数/动作库)编辑器已删除,点击走 seeFileSource
-            // 只读源码查看(第 5 参回调);其余类型仍 window.open 各自 SPA 编辑器。
+            // 只读源码查看(第 5 参回调);其余类型经 openEditorTab 开应用内编辑器标签。
             handleFileOpen(
                 node.rawData,
                 treeType,

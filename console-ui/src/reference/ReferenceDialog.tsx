@@ -4,7 +4,7 @@ import * as event from './event.js';
 import * as frameEvent from '../frame/event.js';
 import {formPost} from '../api/client.js';
 import {Button, Table} from 'antd';
-import {buildEditorUrl, filePathToSpaSegment} from '../Utils.ts';
+import {filePathToEditorType} from '../frame/editorTypeMap';
 
 interface ReferenceFile {
     path: string;
@@ -289,20 +289,13 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
                         {title: '操作', key: 'op',
                             render: (_: unknown, file: ReferenceFile) => (
                                 <Button type="link" style={{padding: '5px 5px'}} onClick={() => {
-                                    // SPA 化:按 file.path 扩展名映射到 /app/editor/<type> 新标签打开。
-                                    const spaSegment = filePathToSpaSegment(file.path);
-                                    if (spaSegment) {
-                                        window.open('/app/editor/' + spaSegment + '?file=' + encodeURIComponent(file.path), '_blank');
-                                        return;
+                                    // 按 file.path 扩展名映射 editorType,开应用内编辑器标签。
+                                    const editorType = filePathToEditorType(file.path);
+                                    if (editorType) {
+                                        frameEvent.openEditorTab({editorType, file: file.path});
                                     }
-                                    // fallback:无 SPA 路由的 type,保留原 iframe 逻辑
-                                    const editorPath = '/html' + file.editor;
-                                    const url = buildEditorUrl(editorPath, file.path);
-                                    const config = {id: file.path, name: file.name, fullPath: file.path, path: url, active: true};
-                                    (window.parent as unknown as { componentEvent: { eventEmitter: { emit: (event: string, data: unknown) => void }; TREE_NODE_CLICK: string } }).componentEvent.eventEmitter.emit(
-                                        (window.parent as unknown as { componentEvent: { TREE_NODE_CLICK: string } }).componentEvent.TREE_NODE_CLICK,
-                                        config
-                                    );
+                                    // 无编辑器的老类型(如老 .rs.xml):no-op —— 原 iframe fallback
+                                    // (window.parent.componentEvent TREE_NODE_CLICK)已随 FrameTab 拆除。
                                 }}>设计器中打开</Button>
                             )},
                     ]}/>

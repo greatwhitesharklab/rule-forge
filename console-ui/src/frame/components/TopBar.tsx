@@ -5,6 +5,7 @@ import AlertBell from '@/frame/AlertBell';
 import {LogoutOutlined, SearchOutlined} from '@ant-design/icons';
 import {CurrentUserContext} from '@/router/RequireAuth';
 import * as ACTIONS from '@/frame/action.js';
+import {openEditorTab} from '@/frame/event.js';
 import {selectProjectName} from '@/frame/reducer.ts';
 
 interface TopBarProps {
@@ -120,8 +121,8 @@ class TopBar extends Component<TopBarProps, TopBarState> {
                                 <div className="topbar-dropdown-divider"/>
                                 <div className="topbar-dropdown-item" onClick={() => {
                                     this.setState({userDropdownOpen: false});
-                                    // 原 iframe editor.html?type=permission → SPA 化为新标签 /app/editor/permission
-                                    window.open('/app/editor/permission', '_blank');
+                                    // 权限配置是全局单例(file 无关),走应用内编辑器标签
+                                    openEditorTab({editorType: 'permission'});
                                 }}>
                                     <i className="rf rf-authority" style={{width: 16, fontSize: 12}}/>
                                     权限配置

@@ -26,8 +26,8 @@ export function buildProjectNameFromFile(file: string): string | undefined {
 /**
  * 构造规则编辑器 URL(修复 B-0:dev 环境所有规则编辑器打开后空白)。
  *
- * 现仅作为无 SPA 路由类型的 legacy fallback 使用(ReferenceDialog / VersionListDialog),
- * 主流类型一律走 {@link typeToSpaSegment} → `/app/editor/<segment>`。
+ * 历史遗留工具:编辑器入口已全面改走应用内标签(openEditorTab),本函数暂无生产调用方,
+ * 保留供潜在 legacy 场景与既有单测使用。
  *
  * 旧代码 `'.' + editorPath + "?file="` 有两个错误叠加:
  *  1. `'.' + '/html/editor.html'` = `'./html/editor.html'`,iframe 嵌在 `/html/frame.html` 内,
@@ -48,91 +48,9 @@ export function buildEditorUrl(editorPath: string | (() => void), file: string):
 }
 
 /**
- * 树节点 `data.type`(action.ts 的 buildData switch case 值)→ SPA 路由段映射表。
- *
- * VersionListDialog 打开历史版本时改走 `/app/editor/<segment>`。data.type 是树节点的
- * 业务类型(action.ts `buildData` 的 switch case),绝大多数与 SPA 路由段同名,例外:
- *  - `rule`         → `ruleset`(决策集)
- *  - `resourcePackage` → `package`(知识包)
- *  - `flow`         → `flow`(注意 data.type 已经是 flow,而 editorPath 旧值是 `?type=flowbpmn`)
- *
- * 权威路由表见 main.tsx 的 `<Route path="editor/...">`。
- *
- * 不在此表的 type(如 'ul' 脚本决策集)→ 返回 null → 调用方回退到原 iframe 逻辑。
- *
- * key   = TreeNodeData.type 的值(全小写,与 action.ts switch case 一致)。
- * value = SPA 路由段(`/app/editor/<value>`)。
- *
- * V7.23:老 4 库(variable/constant/parameter/action)项删除 —— 编辑器已下线,
- * 树点击改走只读源码查看(TreeItem.tsx dispatch seeFileSource)。
+ * 树节点 type / 文件扩展名 → 编辑器类型的映射已迁至 frame/editorTypeMap.ts
+ * (应用内编辑器标签方案;原 typeToSpaSegment / filePathToSpaSegment 随 window.open 入口一并删除)。
  */
-const NODE_TYPE_TO_SPA_SEGMENT: Record<string, string> = {
-    rule: 'ruleset',
-    decisiontable: 'decisiontable',
-    scriptdecisiontable: 'scriptdecisiontable',
-    decisiontree: 'decisiontree',
-    scorecard: 'scorecard',
-    complexscorecard: 'complexscorecard',
-    crosstab: 'crosstab',
-    resourcepackage: 'package',
-};
-
-/**
- * 把树节点 `data.type`(action.ts 的 buildData switch case 值)映射到 SPA 路由段。
- *
- * 输入样例:`'flow'` → `'flow'`;`'rule'` → `'ruleset'`;`'resourcePackage'` → `'package'`。
- *
- * @returns SPA 路由段(`/app/editor/<返回值>`),或 `null` 表示该 type 尚无 SPA 路由
- *          (如 'ul' 脚本决策集),调用方应回退到原 iframe 逻辑。
- */
-export function typeToSpaSegment(type: string | undefined | null): string | null {
-    if (!type) {
-        return null;
-    }
-    return NODE_TYPE_TO_SPA_SEGMENT[type.toLowerCase()] ?? null;
-}
-
-/**
- * 文件路径 → SPA 路由段映射表(按文件扩展名)。
- *
- * 用于 ReferenceDialog:后端返回的 `file.editor` 是旧版单页 HTML 路径
- * (如 `/ruleset-editor.html`),不含 `type=`,改按 `file.path` 的扩展名映射到 SPA 路由段
- * (跟 TreeItem.tsx 的判定逻辑一致)。
- *
- * 注意:UL(`.ul.xml` 脚本决策集)目前无 SPA 路由,不在此表内 → 返回 null → 走 iframe fallback。
- * V7.23:老 4 库(.vl.xml/.cl.xml/.pl.xml/.al.xml)项随编辑器下线一并删除。
- */
-const FILE_EXT_TO_SPA_SEGMENT: { ext: string; segment: string }[] = [
-    { ext: '.rs.xml', segment: 'ruleset' },
-    { ext: '.dt.xml', segment: 'decisiontable' },
-    { ext: '.sdt.xml', segment: 'scriptdecisiontable' },
-    { ext: '.dtree.xml', segment: 'decisiontree' },
-    { ext: '.sc.xml', segment: 'scorecard' },
-    { ext: '.sc', segment: 'scorecard' },
-    { ext: '.complexscorecard', segment: 'complexscorecard' },
-    { ext: '.ct.xml', segment: 'crosstab' },
-];
-
-/**
- * 把文件路径按扩展名映射到 SPA 路由段。
- *
- * 输入样例:`'/p/foo.dt.xml'` → `'decisiontable'`;`'/p/bar.rl.xml'` → `'flow'`。
- *
- * @returns SPA 路由段,或 `null`(如 `.ul.xml` 脚本决策集 / `.rp` 知识包,这些
- *          由各自的特殊入口处理,本函数不管)。
- */
-export function filePathToSpaSegment(fullPath: string): string | null {
-    if (!fullPath) {
-        return null;
-    }
-    const lower = fullPath.toLowerCase();
-    for (const entry of FILE_EXT_TO_SPA_SEGMENT) {
-        if (lower.endsWith(entry.ext)) {
-            return entry.segment;
-        }
-    }
-    return null;
-}
 
 export function handleResponseError(response: Response | { status?: number; text?: () => Promise<string> }, prefix?: string): void | Promise<void> {
     if ((response as Response).status === 401) {

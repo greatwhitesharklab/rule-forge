@@ -18,6 +18,8 @@ import '@xyflow/react/dist/style.css';
 import {Layout, Menu, Button, Space, Typography, Input, Drawer, Modal, message, theme, AutoComplete} from 'antd';
 import {UploadOutlined, SaveOutlined, FolderOpenOutlined, CloudUploadOutlined, UndoOutlined, RedoOutlined, PartitionOutlined} from '@ant-design/icons';
 import {formPost, jsonPost, httpGet} from '@/api/client';
+import {openEditorTab} from '@/frame/event';
+import type {EditorType} from '@/frame/editorTypeMap';
 import {nodeTypes, PALETTE, NODE_LABELS, type V1NodeData} from './FlowNodes';
 import {type RuleAsset, type FlowElement, type V1Node, type NodeType} from './ruleAsset';
 import NodePropertyDrawer from './NodePropertyDrawer';
@@ -518,13 +520,12 @@ function FlowDesignerInner({file}: {file?: string}) {
                         onNodesDelete={onNodesDelete}
                         onEdgesDelete={onEdgesDelete}
                         onNodeClick={(_, n) => {
-                            // V7.5:规则节点(RuleSet/DecisionTable/ScoreCard)有 ruleRef → 跳独立编辑器,不弹 Drawer
+                            // V7.5:规则节点(RuleSet/DecisionTable/ScoreCard)有 ruleRef → 开对应编辑器标签,不弹 Drawer
                             const data = n.data as V1NodeData;
                             const ruleRef = data.ruleRef;
                             if (ruleRef && ruleRef.trim() !== '' && (data.nodeType === 'RuleSet' || data.nodeType === 'DecisionTable' || data.nodeType === 'ScoreCard')) {
-                                const editorMap: Record<string, string> = {RuleSet: 'v1-ruleset', DecisionTable: 'v1-decisiontable', ScoreCard: 'v1-scorecard'};
-                                const editor = editorMap[data.nodeType];
-                                window.open(`/app/${editor}?file=${encodeURIComponent(ruleRef)}`, '_blank');
+                                const editorMap: Record<string, EditorType> = {RuleSet: 'v1ruleset', DecisionTable: 'v1decisiontable', ScoreCard: 'v1scorecard'};
+                                openEditorTab({editorType: editorMap[data.nodeType], file: ruleRef});
                             } else {
                                 setSelectedId(n.id);
                             }

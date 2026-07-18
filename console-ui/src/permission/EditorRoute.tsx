@@ -66,8 +66,8 @@ export function PermissionEditor() {
  * {@code createRoot(#container)},直接 return JSX。替代原 iframe
  * {@code editor.html?type=permission}。
  *
- * <p>原 iframe 入口从 TopBar 下拉菜单触发;SPA 化后改为
- * {@code window.open('/app/editor/permission', '_blank')}。
+ * <p>原 iframe 入口从 TopBar 下拉菜单触发;现改为 TopBar 调 openEditorTab 开应用内
+ * 编辑器标签(全局单例,file 无关),本路由保留作深链/刷新兜底。
  *
  * <p>V7 SPA 走查:加载中/失败统一走 {@link LoadGate}(此前失败只弹一次 alert,页面白屏)。
  *

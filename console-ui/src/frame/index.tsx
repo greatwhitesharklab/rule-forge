@@ -8,10 +8,9 @@ import * as ACTIONS from '@/frame/action.js';
 import reducer from '@/frame/reducer.js';
 import thunk from 'redux-thunk';
 import Splitter from '@/components/splitter/component/Splitter.tsx';
-import FrameTab from '@/components/frametab/component/FrameTab.tsx';
 import ComponentContainer from '@/frame/components/ComponentContainer.tsx';
 import TopBar from '@/frame/components/TopBar.tsx';
-import ContentTabBar from '@/frame/components/ContentTabBar.tsx';
+import EditorTabs from '@/frame/components/EditorTabs.tsx';
 import ActivityBar from '@/frame/components/ActivityBar.tsx';
 import RuleEditorPanel from '@/frame/panels/RuleEditorPanel.jsx';
 import MonitoringPanel from '@/frame/panels/MonitoringPanel.jsx';
@@ -64,17 +63,14 @@ const SidePanelConnected = connect((state: { ui?: { activePanel?: string } }) =>
 
 /**
  * V5.8.4+ layout:当 activePanel != 'rules'(用户点了 ActivityBar 切到 DatasourcePanel /
- * MonitoringPanel / ReleasePanel 等专用面板),直接把面板撑满整个 content 区,
- * 不再保留右侧 FrameTab welcome 页(避免"panel + welcome"叠加的视觉混乱)。
+ * MonitoringPanel / ReleasePanel 等专用面板),直接把面板撑满整个 content 区。
  *
- * activePanel === 'rules' 时维持原 Splitter:SidePanelSwitcher 240px + app-content 右侧。
+ * activePanel === 'rules' 时维持原 Splitter:SidePanelSwitcher 240px + app-content 右侧
+ * (对话框宿主 ComponentContainer + 应用内编辑器标签 EditorTabs)。
  */
 function AppBody({activePanel, store, eventObj}: {activePanel: string; store: Store; eventObj: typeof event}) {
-    var contentTabBarRef: any = null;
-    var frameTabRef: any = null;
-
     if (activePanel !== 'rules') {
-        // 专用面板激活:撑满 content,没有右侧 welcome
+        // 专用面板激活:撑满 content,没有右侧编辑器区
         // V5.101:wrap 在 flex:1 容器里 —— 否则面板在 app-body(flex row)里塌成内容宽度
         // (实测 monitoring 只有 117px,因为面板自身没 flex:1)。host 撑满,面板撑满 host。
         return (
@@ -88,19 +84,8 @@ function AppBody({activePanel, store, eventObj}: {activePanel: string; store: St
         <Splitter orientation='vertical' position='240px'>
             <SidePanelConnected store={store} eventObj={eventObj}/>
             <div className="app-content">
-                <ContentTabBar ref={(ref: any) => { contentTabBarRef = ref; }}
-                               getFrameTabRef={() => frameTabRef}/>
-                <div className="content-area">
-                    <ComponentContainer/>
-                    <FrameTab ref={(ref: any) => {
-                        frameTabRef = ref;
-                        if (contentTabBarRef) contentTabBarRef.frameTabRef = ref;
-                    }}
-                              welcomePage={window._welcomePage}
-                              onTabsChange={(tabs: unknown, activeTab: string) => {
-                                  if (contentTabBarRef) contentTabBarRef.setTabData(tabs, activeTab);
-                              }}/>
-                </div>
+                <ComponentContainer/>
+                <EditorTabs/>
             </div>
         </Splitter>
     );

@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import TreeParentItem from './TreeParentItem';
 import Menu from '../../menu/component/Menu';
 import * as ACTIONS from '../../../frame/action.js';
+import {openEditorTab} from '../../../frame/event.js';
 
 interface TreeItemProps {
     data: TreeNodeData;
@@ -14,13 +15,13 @@ interface TreeItemProps {
      * V6.13.1:只读模式。
      * <ul>
      *   <li>右键 context menu 不弹 (无新建/重命名/删除/锁定 等编辑入口)</li>
-     *   <li>文件 click 走 {@link onFileReadOnlyClick} 而非 window.open 编辑器</li>
+     *   <li>文件 click 走 {@link onFileReadOnlyClick} 而非打开编辑器</li>
      *   <li>父组件 (FileTreePanel) 选 git 版本时传 true,选 working tree 时传 false</li>
      * </ul>
      */
     readOnly?: boolean;
     /**
-     * V6.13.1:readOnly 模式下文件 click 触发的回调,代替默认 window.open 打开编辑器。
+     * V6.13.1:readOnly 模式下文件 click 触发的回调,代替默认打开编辑器。
      * FileTreePanel 接到后 dispatch seeFileSource thunk,弹源码对话框 (走 git snapshot)。
      */
     onFileReadOnlyClick?: (data: TreeNodeData) => void;
@@ -174,15 +175,12 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                             return;
                         }
                         if (isFile) {
-                            // 已完成 SPA 化的 React 编辑器集合:新标签打开 /app/editor/<type>,
-                            // 不走原 iframe (editor.html?type=...)。判断优先级:data.type 直配 >
-                            // 文件扩展名 > public 资源树(treeType==='public')。
-                            // - ruleset (rule / .rs.xml) → /app/editor/ruleset
-                            // - public 资源 (treeType==='public',原 /html/editor.html?type=resource)
-                            //   → /app/editor/resource
+                            // 已完成 SPA 化的 React 编辑器集合:经 openEditorTab 在主框架内容区
+                            // 开应用内编辑器标签(替代原新开浏览器标签 '/app/editor/<type>' 方案)。
+                            // 判断优先级:data.type 直配 > 文件扩展名 > public 资源树(treeType==='public')。
                             // V7.0.0 item ④:老 7 编辑器(ruleset/decisiontree/decisiontable/
                             // scriptdecisiontable/scorecard/complexscorecard/crosstab)已物理删除,
-                            // 其 window.open 路由分支随之移除。V1 画布接管 RuleSet/DecisionTable/ScoreCard;
+                            // 其入口分支随之移除。V1 画布接管 RuleSet/DecisionTable/ScoreCard;
                             // 4 弃类决策(树/脚本表/复杂评分卡/交叉表)已下线。详见 main.tsx。
 
                             // 变量库 / 常量库 / 参数库 / 动作库:按 data.type + 完整文件后缀双判定
@@ -209,10 +207,9 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                                 return;
                             }
 
-                            // 公共资源树(treeType==='public'):原走 /html/editor.html?type=resource,
-                            // 现 SPA 化为 /app/editor/resource
+                            // 公共资源树(treeType==='public'):统一走 resource 编辑器应用内标签
                             if (this.props.treeType === 'public') {
-                                window.open('/app/editor/resource?file=' + encodeURIComponent(data.fullPath), '_blank');
+                                openEditorTab({editorType: 'resource', file: data.fullPath});
                                 return;
                             }
 
@@ -220,10 +217,9 @@ class TreeItem extends Component<TreeItemProps, TreeItemState> {
                             //   替代老 .rp 管线,知识包编辑器路由 V7.7.2 已删,点击是空白页。
                             // V7.21:BPMN 决策流(.rl.xml / flow)入口已删除 — V1 决策流为唯一决策路径。
 
-                            // 所有 SPA 化编辑器类型(rule/decisionTable/.../libs/public)
-                            // 已在上方各自分支 window.open 后 return。到达此处的类型(如 .ul.xml 脚本决策集)
-                            // 尚无 SPA 路由,原走 iframe + TREE_NODE_CLICK 的通道在 SPA 化后已废弃
-                            // (FrameTab 不再托管 iframe)。保留节点选中视觉反馈,不再尝试打开编辑器。
+                            // 有编辑器的类型已在上方各自分支 openEditorTab 后 return。到达此处的类型
+                            // (如 .ul.xml 脚本决策集)已无编辑器,原 iframe + TREE_NODE_CLICK 通道
+                            // 随 FrameTab 一并拆除。保留节点选中视觉反馈,不再尝试打开编辑器。
                             document.querySelectorAll('.tree .tree-active').forEach(el => el.classList.remove('tree-active'));
                             const spanEl = document.getElementById(spanId);
                             if (spanEl) spanEl.classList.add('tree-active');

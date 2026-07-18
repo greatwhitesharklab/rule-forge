@@ -100,21 +100,21 @@ test.describe('V5.8.4 BatchTest Excel upload (DatasourcePanel)', () => {
         await excelModal.getByRole('button', {name: /取\s*消/}).click();
     });
 
-    // ── BDD STUB: 激活 DatasourcePanel 时右侧 FrameTab welcome 页应隐藏 ──
+    // ── BDD STUB: 激活 DatasourcePanel 时右侧 welcome 页应隐藏 ──
     // Given: 用户登录后打开 frame 主页
-    //   And:  默认 activePanel = 'rules',右侧 ContentTabBar + FrameTab 渲染欢迎页
+    //   And:  默认 activePanel = 'rules',右侧 EditorTabs 在无打开标签时渲染欢迎页
     // When:  用户点击 ActivityBar 的"数据源"图标
-    // Then:  右侧 FrameTab 的"欢迎使用 RuleForge 决策平台"应不再可见
+    // Then:  右侧 EditorTabs 的"欢迎使用 RuleForge 决策平台"应不再可见
     //   And:  DatasourcePanel 应占满 content 区(1232px @ 1280 viewport)
     //   And:  DatasourcePanel 自身的 table/tabs 仍可见
     test('should hide the welcome page when a side panel is active', async ({page}) => {
         // Given: 默认页是 welcome(QuickStart.tsx 渲染 h2.welcome-title)
-        // (FrameTab 只在 data.length===0 时渲染 welcome,大多数情况都满足)
+        // (EditorTabs 只在无打开标签时渲染 welcome,大多数情况都满足)
         const welcomeCount = await page.locator('h2.welcome-title').count();
         if (welcomeCount === 0) {
-            // 极少数情况 FrameTab 有打开的 tab,这种情况下已经没 welcome 可隐藏
+            // 极少数情况已有打开的编辑器标签,这种情况下已经没 welcome 可隐藏
             // — 跳过这个断言,只验证切换后 layout
-            console.log('note: welcome not initially visible (FrameTab has tabs open)');
+            console.log('note: welcome not initially visible (editor tabs open)');
         } else {
             await expect(page.locator('h2.welcome-title')).toBeVisible({timeout: 5000});
         }

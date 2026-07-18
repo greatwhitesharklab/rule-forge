@@ -527,8 +527,8 @@ function buildData(data: TreeNodeData, level: number, user: { import: boolean; e
 function buildData(data: TreeNodeData, level: number, user?: { import: boolean; export: boolean }): void {
     data._level = level++;
     // NOTE: 历史上各文件类型分支会设置 data.editorPath("/html/editor.html?type=<type>"),
-    // 但 SPA 化后 TreeItem 改走 window.open('/app/editor/<type>'),VersionListDialog 改用
-    // data.type 直接映射(typeToSpaSegment),editorPath 赋值已全部删除(死代码)。
+    // 但 TreeItem/treeDataUtils 改走 openEditorTab 应用内标签后 editorPath 已无读取方,
+    // 赋值已全部删除(死代码)。
     switch (data.type) {
         case "root":
             data._icon = Styles.frameStyle.getRootIcon();
@@ -588,7 +588,13 @@ function buildData(data: TreeNodeData, level: number, user?: { import: boolean; 
                                     return;
                                 }
                                 const url = apiBase() + '/frame/exportProjectBackupFile?path=' + encodeURI(encodeURI(data.fullPath));
-                                window.open(url, '_blank');
+                                // 导出是文件下载(非编辑器),用隐藏 a 标签触发,避免 window.open 弹窗拦截
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = '';
+                                document.body.appendChild(a);
+                                a.click();
+                                a.remove();
                             });
                         }
                     },

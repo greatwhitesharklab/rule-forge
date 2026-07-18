@@ -1,5 +1,7 @@
 import React from 'react';
 import type {MenuProps} from 'antd';
+import {openEditorTab} from '@/frame/event.js';
+import {treeNodeToEditorType} from '@/frame/editorTypeMap';
 
 /**
  * V6.13.5a:文件树纯函数集 —— 从老 {@link TreeItem} (class 组件) + {@link Menu} 抽出的可单测逻辑,
@@ -8,7 +10,8 @@ import type {MenuProps} from 'antd';
  * <p>抽离来源:
  * <ul>
  *   <li>{@link isFileNode} / {@link isContainerType} ← TreeItem.isFile (121-129) / isContainer (143-144)</li>
- *   <li>{@link handleFileOpen} ← TreeItem.onClick (168-305) 的 13 type 分支 window.open + readOnly 回调</li>
+ *   <li>{@link handleFileOpen} ← TreeItem.onClick (168-305) 的文件类型分发 + readOnly 回调
+ *       (原 window.open 新窗口,现改 openEditorTab 应用内编辑器标签)</li>
  *   <li>{@link contextMenuToAntItems} ← Menu.tsx (22-27) 的 contextMenu → antd items 转换</li>
  *   <li>{@link matchesSearch} / {@link hasMatchInSubtree} / {@link collectMatchAncestorKeys} /
  *       {@link buildAntTreeData} / {@link toAntNode} / {@link highlight} ← 新增(搜索 + treeData 转换)</li>
@@ -86,7 +89,8 @@ export function isContainerType(data: TreeNodeData): boolean {
 }
 
 /**
- * 文件点击行为(原 TreeItem.onClick 168-305)。按 type 分发 window.open SPA 编辑器路由,
+ * 文件点击行为(原 TreeItem.onClick 168-305)。按 type/扩展名映射 editorType,
+ * 经 {@link openEditorTab} 在主框架内容区打开应用内编辑器标签(V7 起替代 window.open 新窗口);
  * readOnly 模式走 onFileReadOnlyClick 回调弹源码。纯逻辑,不含 DOM 选中高亮(新组件用 selectedKeys)。
  *
  * @param data              节点
@@ -113,53 +117,12 @@ export function handleFileOpen(
     if (readOnly) return; // readOnly 且无回调:不开编辑器(看 git 版本,开编辑器无意义)
 
     const fullPath = typeof data.fullPath === 'string' ? data.fullPath : '';
-    const open = (url: string) => window.open(url, '_blank');
 
     // V6.20.0 P2:删老 urule 规则(.rs.xml/.dt.xml/.dtree.xml/.sdt.xml/.sc.xml/.complexscorecard/.ct.xml)
-// UI 入口,只留 DRL + 决策流 + 知识包 + 公共资源。
-// V7.23:老 4 库(变量/常量/参数/动作库)编辑器入口也删除,改走 onFileSourceClick 源码查看(见下方分支)。
-// V6.20.0:DRL (.drl) — 走 DRL 编辑器
-    if (data.type === 'drl' || fullPath.endsWith('.drl')) {
-        open('/app/editor/drl?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // V7.0.0→V7.5.1:V1 决策流 (.v1flow.json 统一后缀;.json 兼容旧文件)
-    if (data.type === 'v1flow' || fullPath.endsWith('.v1flow.json') || fullPath.endsWith('.json')) {
-        open('/app/v1-flow?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // V7.4:V1 库 (.v1lib.json) — 走库编辑器
-    if (data.type === 'v1library' || fullPath.endsWith('.v1lib.json')) {
-        open('/app/v1-library?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // V7.5:V1 规则集 (.v1rs.json) — 走规则集编辑器
-    if (data.type === 'v1ruleset' || fullPath.endsWith('.v1rs.json')) {
-        open('/app/v1-ruleset?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // V7.5:V1 决策表 (.v1dt.json) — 走决策表编辑器
-    if (data.type === 'v1decisiontable' || fullPath.endsWith('.v1dt.json')) {
-        open('/app/v1-decisiontable?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // V7.5:V1 评分卡 (.v1sc.json) — 走评分卡编辑器
-    if (data.type === 'v1scorecard' || fullPath.endsWith('.v1sc.json')) {
-        open('/app/v1-scorecard?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // V6.20.0 P3:DMN / PMML 标准决策模型 — 走只读查看器(无 UI 编辑器,纯源文本展示)
-    if (data.type === 'dmn' || fullPath.endsWith('.dmn')) {
-        open('/app/editor/dmn?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    if (data.type === 'pmml' || fullPath.endsWith('.pmml')) {
-        open('/app/editor/pmml?file=' + encodeURIComponent(fullPath));
-        return;
-    }
-    // 变量/常量/参数/动作库 (双扩展名 .vl.xml/.cl.xml/.pl.xml/.al.xml),按 type 或后缀。
-    // V7.23:老 4 库编辑器已删除,不再 window.open;改走 onFileSourceClick 回调只读查看源码
-    // (FileTree dispatch seeFileSource),无回调时 no-op。
+    // UI 入口,只留 DRL + V1 系 + DMN/PMML + 公共资源。
+    // V7.23:老 4 库(变量/常量/参数/动作库,双扩展名 .vl.xml/.cl.xml/.pl.xml/.al.xml)
+    //   编辑器入口已删除,改走 onFileSourceClick 源码查看。该判定必须先于 editorType 映射
+    //   (顺序同原实现:编辑器分支 → 4 库 → public;4 库后缀不命中任何编辑器分支,提前 return 即可)。
     const libType =
         data.type === 'variable' ? 'variable'
         : data.type === 'constant' ? 'constant'
@@ -174,14 +137,16 @@ export function handleFileOpen(
         onFileSourceClick?.(data);
         return;
     }
-    // 公共资源树 (treeType==='public') → 统一 resource 编辑器
-    if (treeType === 'public') {
-        open('/app/editor/resource?file=' + encodeURIComponent(fullPath));
+
+    // type/扩展名 → editorType 映射(含 treeType==='public' → resource),见 editorTypeMap
+    const editorType = treeNodeToEditorType(data, treeType);
+    if (editorType) {
+        openEditorTab({editorType, file: fullPath});
         return;
     }
     // V7.22:知识包(.rp / resourcePackage)入口已删除 — V1 发布替代,编辑器路由 V7.7.2 已删。
     // V7.21:BPMN 决策流(.rl.xml)入口已删除 — V1 决策流为唯一决策路径。
-    // 未匹配类型(如老 .rs.xml/.dt.xml/.ul.xml 等):no-op,不动 window
+    // 未匹配类型(如老 .rs.xml/.dt.xml/.ul.xml 等):no-op
 }
 
 /**
