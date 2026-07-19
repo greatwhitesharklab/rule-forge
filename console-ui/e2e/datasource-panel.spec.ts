@@ -1,4 +1,4 @@
-import {test, expect} from '@playwright/test';
+import {test, expect, Page, Locator} from '@playwright/test';
 import {login} from './helpers';
 
 /**
@@ -8,46 +8,57 @@ import {login} from './helpers';
  *   As a rule system administrator
  *   I want to manage external datasources and field mappings via the web console
  *   So that rules can fetch external data at runtime
+ *
+ * V7.x:面板已 antd 化(PageShell + antd Tabs/Table/Card/Select/Alert),
+ * bootstrap 的 .nav-tabs/.panel/.form-group/glyphicon 全没了。
  */
 
 /** Helper: open the datasource panel via Activity Bar */
-async function openDatasourcePanel(page) {
+async function openDatasourcePanel(page: Page) {
     await page.locator('.activity-bar-icon[title="数据源"]').click();
-    // Wait for the panel's nav-tabs to render (Redux dispatch + fetch)
-    await page.waitForSelector('.nav-tabs:has-text("数据源")');
+    // Wait for the panel's antd Tabs to render (Redux dispatch + fetch)
+    await page.waitForSelector('.page-shell .ant-tabs-tab:has-text("数据源")');
 }
 
 /** Helper: get the datasource panel container (scoped to avoid collisions with other panels) */
-function panel(page) {
-    // The panel root is <div style="padding:15px..."> containing the .nav-tabs with "数据源"
-    return page.locator('.nav-tabs:has-text("数据源")').locator('..');
+function panel(page: Page) {
+    // PageShell root,h1.page-title = "数据源"
+    return page.locator('.page-shell').filter({has: page.locator('h1.page-title', {hasText: '数据源'})});
+}
+
+/** Helper: pick an option in an antd Select (dropdown renders in a body portal) */
+async function selectAntdOption(page: Page, select: Locator, label: string) {
+    await select.click();
+    await page.locator('.ant-select-dropdown:visible .ant-select-item-option', {hasText: label}).first().click();
 }
 
 /** Helper: create a datasource via UI and return its row */
-async function createDatasourceViaUI(page, {name, type, configFields = {}}) {
+async function createDatasourceViaUI(page: Page, {name, type, configFields = {}}: {name: string; type?: string; configFields?: Record<string, string>}) {
     const p = panel(page);
 
     // Click add button
     await p.locator('button:has-text("新增数据源")').click();
-    const form = p.locator('.panel');
-    await expect(form.locator('.panel-heading')).toContainText('新增数据源');
+    const form = p.locator('.ant-card');
+    await expect(form.locator('.ant-card-head-title')).toContainText('新增数据源');
 
-    // Fill name — target the first visible input inside the form body
-    await form.locator('.panel-body input.form-control').first().fill(name);
+    // Fill name — first antd input inside the form card
+    await form.locator('.ant-input').first().fill(name);
 
-    // Select type if not default REST_API
+    // Select type if not default REST_API (antd Select,非原生 select)
     if (type && type !== 'REST_API') {
-        await form.locator('.panel-body select').selectOption(type);
+        const typeGroup = form.locator('.ff-group').filter({hasText: /^类型/});
+        await selectAntdOption(page, typeGroup.locator('.ant-select'), type === 'ADVANCE_AI' ? 'Advance AI' : type);
     }
 
     // Fill config fields (label → value)
     for (const [label, value] of Object.entries(configFields)) {
-        const group = form.locator('.form-group').filter({hasText: new RegExp('^' + label)});
+        const group = form.locator('.ff-group').filter({hasText: new RegExp('^' + label)});
         await group.locator('input').fill(value);
     }
 
-    // Save — scoped to the form panel
-    await form.locator('button:has-text("保存")').click();
+    // Save — scoped to the form card
+    // (antd 对两个汉字的按钮自动插空格:"保存" 实际渲染为 "保 存",用 regex 兼容)
+    await form.locator('button').filter({hasText: /保\s*存/}).click();
     // Wait for list to reload
     await page.waitForTimeout(500);
 
@@ -58,16 +69,15 @@ async function createDatasourceViaUI(page, {name, type, configFields = {}}) {
 test.describe('Datasource Panel', () => {
     test.beforeEach(async ({page}) => {
         await login(page);
-        // /index.html 已被新的 vite 多页应用淘汰,统一走 /app
+        // SPA:统一走 /app 路由
         await page.goto('/app');
         await openDatasourcePanel(page);
     });
 
-    // ── BDD STUB: should load datasource panel with tabs and table headers ──
-    // Given: A logged-in user has navigated to /index.html and opened the datasource panel via the Activity Bar
+    // Given: A logged-in user has opened the datasource panel via the Activity Bar
     // When: The panel finishes its initial render (Redux dispatch + datasource list fetch resolves)
-    // Then: The panel should display exactly two .nav-tabs tabs
-    // And: The first tab "数据源" should have the active class
+    // Then: The panel should display exactly two antd tabs
+    // And: The first tab "数据源" should be active
     // And: The second tab should be labeled "映射配置"
     // And: A "新增数据源" button should be visible
     // And: A datasource table should render with headers: 名称, 类型, 状态, 描述, 超时(ms), 缓存, 操作
@@ -75,11 +85,11 @@ test.describe('Datasource Panel', () => {
         const p = panel(page);
 
         // Then: Two tabs are visible
-        const tabs = p.locator('.nav-tabs li');
+        const tabs = p.locator('.ant-tabs-tab');
         await expect(tabs).toHaveCount(2);
 
         // Then: First tab "数据源" is active
-        await expect(tabs.nth(0)).toHaveClass(/active/);
+        await expect(tabs.nth(0)).toHaveClass(/ant-tabs-tab-active/);
         await expect(tabs.nth(0)).toContainText('数据源');
         await expect(tabs.nth(1)).toContainText('映射配置');
 
@@ -94,9 +104,8 @@ test.describe('Datasource Panel', () => {
         );
     });
 
-    // ── BDD STUB: should create a REST API datasource and show it in the list ──
     // Given: A logged-in user is on the "数据源" tab of the datasource panel
-    // When: The user clicks "新增数据源" and a form panel with heading "新增数据源" appears
+    // When: The user clicks "新增数据源" and a form card titled "新增数据源" appears
     // And:  The user fills in 名称 = "E2E测试REST数据源"
     // And:  Leaves 类型 as the default REST_API
     // And:  Fills Base URL = "https://api.example.com" and Endpoint = "/v1/data"
@@ -116,9 +125,8 @@ test.describe('Datasource Panel', () => {
         await expect(row.locator('td').nth(1)).toContainText('REST_API');
     });
 
-    // ── BDD STUB: should create an Advance AI datasource with type-specific config fields ──
     // Given: A logged-in user is on the "数据源" tab and has clicked "新增数据源" to open the form
-    // When: The user selects 类型 = "ADVANCE_AI" from the type dropdown
+    // When: The user selects 类型 = "Advance AI" from the type dropdown
     // Then: The form should reveal Advance AI-specific config fields: Base URL, Access Key, Secret Key
     // When: The user fills 名称 = "E2E测试AdvanceAI数据源" and the three config fields
     // And:  Clicks "保存"
@@ -140,7 +148,6 @@ test.describe('Datasource Panel', () => {
         await expect(row.locator('td').nth(1)).toContainText('ADVANCE_AI');
     });
 
-    // ── BDD STUB: should create a JDBC datasource with connection config fields ──
     // Given: A logged-in user is on the "数据源" tab and has clicked "新增数据源" to open the form
     // When: The user selects 类型 = "JDBC" from the type dropdown
     // Then: The form should reveal JDBC-specific config fields: JDBC URL, 用户名, 密码, 查询模板
@@ -165,10 +172,9 @@ test.describe('Datasource Panel', () => {
         await expect(row.locator('td').nth(1)).toContainText('JDBC');
     });
 
-    // ── BDD STUB: should edit an existing datasource and reflect changes ──
     // Given: A datasource named "E2E待编辑数据源" exists in the datasource table
     // When:  The user clicks the edit (pencil) button on that row
-    // Then:  A form panel opens with the heading "编辑数据源" and the 名称 field is pre-filled with the existing name
+    // Then:  A form card opens titled "编辑数据源" with the 名称 field pre-filled
     // When:  The user clears the 名称 field, enters "E2E已编辑数据源", and clicks "保存"
     // Then:  The form should close and the table should reload
     // And:   A row with the new name "E2E已编辑数据源" should be visible
@@ -178,22 +184,22 @@ test.describe('Datasource Panel', () => {
         // Given: Create a datasource first
         await createDatasourceViaUI(page, {name: 'E2E待编辑数据源'});
 
-        // When: Click edit button (pencil icon) on that row
+        // When: Click edit button (第一个 icon button,antd Button + EditOutlined) on that row
         const row = p.locator('table tbody tr').filter({hasText: 'E2E待编辑数据源'}).first();
-        await row.locator('.glyphicon-edit').first().click();
+        await row.locator('button').first().click();
 
-        // Then: Form opens with "编辑数据源" heading
-        const form = p.locator('.panel');
-        await expect(form.locator('.panel-heading')).toContainText('编辑数据源');
+        // Then: Form opens with "编辑数据源" title
+        const form = p.locator('.ant-card');
+        await expect(form.locator('.ant-card-head-title')).toContainText('编辑数据源');
 
         // Then: Name field is pre-filled
-        const nameInput = form.locator('.panel-body input.form-control').first();
+        const nameInput = form.locator('.ant-input').first();
         await expect(nameInput).toHaveValue('E2E待编辑数据源');
 
         // When: Change name
         await nameInput.clear();
         await nameInput.fill('E2E已编辑数据源');
-        await form.locator('button:has-text("保存")').click();
+        await form.locator('button').filter({hasText: /保\s*存/}).click();
         await page.waitForTimeout(500);
 
         // Then: Updated name appears in the table
@@ -201,7 +207,6 @@ test.describe('Datasource Panel', () => {
         await expect(updatedRow).toBeVisible();
     });
 
-    // ── BDD STUB: should delete a datasource after confirmation ──
     // Given: A datasource named "E2E待删除数据源" exists in the datasource table
     // When:  The user clicks the delete (trash) button on that row
     // Then:  A native confirm dialog should appear with the message "确定删除此数据源？"
@@ -214,23 +219,23 @@ test.describe('Datasource Panel', () => {
         // Given: Create a datasource first
         await createDatasourceViaUI(page, {name: 'E2E待删除数据源'});
 
-        // When: Click delete button and accept confirmation
+        // When: Click delete button (antd danger icon button) and accept confirmation
         const row = p.locator('table tbody tr').filter({hasText: 'E2E待删除数据源'}).first();
         page.on('dialog', async dialog => {
             expect(dialog.message()).toContain('确定删除此数据源');
             await dialog.accept();
         });
-        await row.locator('.glyphicon-trash').first().click();
+        await row.locator('button.ant-btn-dangerous').first().click();
 
         // Then: Row should disappear
         await page.waitForTimeout(500);
         await expect(p.locator('table tbody tr').filter({hasText: 'E2E待删除数据源'})).toHaveCount(0);
     });
 
-    // ── BDD STUB: should test connection and show result banner ──
-    // Given: A REST_API datasource named "E2E测试连接数据源" pointing at https://httpbin.org/get exists in the table
+    // Given: A REST_API datasource named "E2E测试连接数据源" pointing at 本机后端 health 端点 exists in the table
+    //  (不用外网 httpbin.org — CI/dev 机外网不稳定,测试中... 会卡 20s 超时)
     // When:  The user clicks the "测试" button on that row
-    // Then:  An .alert banner should appear within the panel
+    // Then:  An .ant-alert banner should appear within the panel
     // And:   The banner should eventually contain text matching /连接成功|连接失败/ (after the network call resolves)
     // And:   The banner should auto-dismiss within ~3 seconds
     test('should test connection and show result banner', async ({page}) => {
@@ -240,15 +245,16 @@ test.describe('Datasource Panel', () => {
         await createDatasourceViaUI(page, {
             name: 'E2E测试连接数据源',
             type: 'REST_API',
-            configFields: {'Base URL': 'https://httpbin.org', 'Endpoint': '/get'}
+            configFields: {'Base URL': 'http://localhost:8180', 'Endpoint': '/ruleforge/actuator/health'}
         });
 
-        // When: Click test button
+        // When: Click test button (操作列顺序:编辑 / 测试 / 批量测试 / 删除,
+        // "批量测试" 也含"测试"字样,取第一个命中的即为"测试"按钮)
         const row = p.locator('table tbody tr').filter({hasText: 'E2E测试连接数据源'}).first();
-        await row.locator('button.ant-btn:has-text("测试")').first().click();
+        await row.locator('button', {hasText: '测试'}).first().click();
 
         // Then: Alert banner appears with result
-        const alert = p.locator('.alert');
+        const alert = p.locator('.ant-alert');
         await expect(alert).toBeVisible({timeout: 10000});
         // Wait for "测试中..." to be replaced by actual result (may take time for external API)
         await expect(alert).toContainText(/连接成功|连接失败/, {timeout: 20000});
@@ -257,10 +263,9 @@ test.describe('Datasource Panel', () => {
         await expect(alert).not.toBeVisible({timeout: 5000});
     });
 
-    // ── BDD STUB: should switch to mapping tab and show entity mapping UI ──
     // Given: A logged-in user has opened the datasource panel
     // When:  The user clicks the "映射配置" tab
-    // Then:  The second tab should have the active class
+    // Then:  The second tab should become active
     // And:   A heading "实体类" should be visible
     // And:   An input with placeholder "实体类名 (clazz)" should be visible
     // And:   A "保存映射" button should be visible
@@ -269,10 +274,10 @@ test.describe('Datasource Panel', () => {
         const p = panel(page);
 
         // When: Click "映射配置" tab
-        await p.locator('.nav-tabs li').nth(1).locator('a').click();
+        await p.locator('.ant-tabs-tab').nth(1).click();
 
         // Then: Second tab becomes active
-        await expect(p.locator('.nav-tabs li').nth(1)).toHaveClass(/active/);
+        await expect(p.locator('.ant-tabs-tab').nth(1)).toHaveClass(/ant-tabs-tab-active/);
 
         // Then: Heading visible
         await expect(p.locator('h5')).toContainText('实体类');
@@ -291,7 +296,6 @@ test.describe('Datasource Panel', () => {
         );
     });
 
-    // ── BDD STUB: should save an entity mapping and display it in the table ──
     // Given: A logged-in user is on the "映射配置" tab and a datasource named "E2E映射数据源" exists
     // When:  The user enters clazz = "com.example.LoanEntity" into the entity-class input
     // And:   Selects "E2E映射数据源" from the datasource dropdown
@@ -309,13 +313,13 @@ test.describe('Datasource Panel', () => {
         await expect(dsRow).toBeVisible();
 
         // When: Switch to mapping tab
-        await p.locator('.nav-tabs li').nth(1).locator('a').click();
+        await p.locator('.ant-tabs-tab').nth(1).click();
 
         // When: Fill clazz name
         await p.locator('input[placeholder="实体类名 (clazz)"]').fill('com.example.LoanEntity');
 
-        // When: Select datasource from dropdown
-        await p.locator('select:has(option:has-text("E2E映射数据源"))').selectOption({label: 'E2E映射数据源'});
+        // When: Select datasource from antd Select dropdown
+        await selectAntdOption(page, p.locator('.ant-select').first(), 'E2E映射数据源');
 
         // When: Click save
         await p.locator('button:has-text("保存映射")').click();
@@ -327,44 +331,39 @@ test.describe('Datasource Panel', () => {
         await expect(mappingTable).toBeAttached();
     });
 
-    // ── BDD STUB: should load and display field mappings for an entity ──
     // Given: A datasource "E2E字段映射数据源" and an entity mapping for clazz "com.example.FieldTestEntity" exist
     // And:   Two field mappings (creditScore→score, riskLevel→risk_level) are preloaded via the PUT /datasource/{id}/field-mappings API
     // When:  The user clicks the "字段映射" button on the entity mapping row
-    // Then:  A section heading "字段映射 - com.example.FieldTestEntity" should appear
-    //  (the field-mapping-table assertion is lenient — the row click may
-    //   not always trigger an update depending on backend state, so we just
-    //   verify the UI shell didn't crash)
+    // Then:  A section heading "字段映射: com.example.FieldTestEntity" should appear
+    //  (window._server 已随 V5.72 删除,API 固定走 /api 前缀)
     test('should load and display field mappings for an entity', async ({page}) => {
         const p = panel(page);
 
         // Given: Create datasource + entity mapping
         await createDatasourceViaUI(page, {name: 'E2E字段映射数据源'});
-        await p.locator('.nav-tabs li').nth(1).locator('a').click();
+        await p.locator('.ant-tabs-tab').nth(1).click();
 
         // Wait for mapping tab to render and datasource options to load
         await page.waitForTimeout(500);
         await p.locator('input[placeholder="实体类名 (clazz)"]').fill('com.example.FieldTestEntity');
 
-        // Select the datasource option — wait for it to appear in the dropdown
-        const dsSelect = p.locator('select').last();
-        await expect(dsSelect.locator('option:has-text("E2E字段映射数据源")')).toBeAttached({timeout: 5000});
-        await dsSelect.selectOption({label: 'E2E字段映射数据源'});
+        // Select the datasource from the antd Select
+        await selectAntdOption(page, p.locator('.ant-select').first(), 'E2E字段映射数据源');
         await p.locator('button:has-text("保存映射")').click();
 
         // Wait for entity mapping to appear
         const mappingTable = p.locator('table').last();
-        await expect(mappingTable.locator('tbody')).not.toBeEmpty({timeout: 5000});
+        await expect(mappingTable.locator('tbody tr').first()).toBeVisible({timeout: 5000});
 
         // Given: Insert field mappings via API so the component renders the section
         const dsId = await page.evaluate(async () => {
-            const resp = await fetch(window._server + '/datasource');
+            const resp = await fetch('/api/datasource');
             const list = await resp.json();
-            const ds = list.find(d => d.name === 'E2E字段映射数据源');
+            const ds = list.find((d: {name: string}) => d.name === 'E2E字段映射数据源');
             return ds ? ds.id : null;
         });
         await page.evaluate(async (dsId) => {
-            await fetch(window._server + '/datasource/' + dsId + '/field-mappings', {
+            await fetch('/api/datasource/' + dsId + '/field-mappings', {
                 method: 'PUT',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
@@ -377,23 +376,15 @@ test.describe('Datasource Panel', () => {
             });
         }, dsId);
 
-        // When: Click "字段映射" button (if visible) — be lenient
+        // When: Click "字段映射" button on the entity mapping row
         const mappingRow = mappingTable.locator('tbody tr').filter({hasText: 'com.example.FieldTestEntity'}).first();
-        const rowVisible = await mappingRow.isVisible({timeout: 5000}).catch(() => false);
-        if (rowVisible) {
-            await mappingRow.locator('button:has-text("字段映射")').click({timeout: 10000}).catch(() => {});
-            await page.waitForTimeout(500);
-            // Then: Field mapping section appears with clazz in title
-            await expect(p.locator('h5:has-text("字段映射")')).toContainText('com.example.FieldTestEntity', {timeout: 5000}).catch(() => {});
-        } else {
-            // Lenient: just verify the table shell is in the DOM
-            await expect(mappingTable).toBeAttached();
-        }
+        await expect(mappingRow).toBeVisible({timeout: 5000});
+        await mappingRow.locator('button:has-text("字段映射")').click();
+
+        // Then: Field mapping section appears with clazz in title
+        await expect(p.locator('h5:has-text("字段映射")')).toContainText('com.example.FieldTestEntity', {timeout: 5000});
     });
 
-    // ──────────────────────────────────────────────────
-    // Scenario 11: Form type switch changes config fields
-    // ──────────────────────────────────────────────────
     // Given: User has opened the "新增数据源" form
     // When: User selects type "REST API" → Base URL + Endpoint
     // When: User switches to "Advance AI" → Base URL + Access Key + Secret Key
@@ -403,68 +394,63 @@ test.describe('Datasource Panel', () => {
 
         // Given: Open the form
         await p.locator('button:has-text("新增数据源")').click();
-        const form = p.locator('.panel');
-        await expect(form.locator('.panel-heading')).toContainText('新增数据源');
+        const form = p.locator('.ant-card');
+        await expect(form.locator('.ant-card-head-title')).toContainText('新增数据源');
 
-        const formBody = form.locator('.panel-body');
+        const typeSelect = form.locator('.ff-group').filter({hasText: /^类型/}).locator('.ant-select');
 
         // When: Default is REST_API — Base URL + Endpoint visible
-        await expect(formBody.locator('.form-group').filter({hasText: /^Endpoint/})).toBeVisible();
+        await expect(form.locator('.ff-group').filter({hasText: /^Endpoint/})).toBeVisible();
 
         // When: Switch to Advance AI
-        await formBody.locator('select').first().selectOption('ADVANCE_AI');
+        await selectAntdOption(page, typeSelect, 'Advance AI');
         // Then: Access Key and Secret Key appear, Endpoint disappears
-        await expect(formBody.locator('.form-group').filter({hasText: /^Access Key/})).toBeVisible();
-        await expect(formBody.locator('.form-group').filter({hasText: /^Secret Key/})).toBeVisible();
-        await expect(formBody.locator('.form-group').filter({hasText: /^Endpoint/})).not.toBeVisible();
+        await expect(form.locator('.ff-group').filter({hasText: /^Access Key/})).toBeVisible();
+        await expect(form.locator('.ff-group').filter({hasText: /^Secret Key/})).toBeVisible();
+        await expect(form.locator('.ff-group').filter({hasText: /^Endpoint/})).not.toBeVisible();
 
         // When: Switch to JDBC
-        await formBody.locator('select').first().selectOption('JDBC');
+        await selectAntdOption(page, typeSelect, 'JDBC');
         // Then: JDBC-specific fields appear
-        await expect(formBody.locator('.form-group').filter({hasText: /^JDBC URL/})).toBeVisible();
-        await expect(formBody.locator('.form-group').filter({hasText: /^用户名/})).toBeVisible();
-        await expect(formBody.locator('.form-group').filter({hasText: /^密码/})).toBeVisible();
-        await expect(formBody.locator('.form-group').filter({hasText: /^查询模板/})).toBeVisible();
+        await expect(form.locator('.ff-group').filter({hasText: /^JDBC URL/})).toBeVisible();
+        await expect(form.locator('.ff-group').filter({hasText: /^用户名/})).toBeVisible();
+        await expect(form.locator('.ff-group').filter({hasText: /^密码/})).toBeVisible();
+        await expect(form.locator('.ff-group').filter({hasText: /^查询模板/})).toBeVisible();
         // And: REST/AdvanceAI fields disappear
-        await expect(formBody.locator('.form-group').filter({hasText: /^Endpoint/})).not.toBeVisible();
-        await expect(formBody.locator('.form-group').filter({hasText: /^Access Key/})).not.toBeVisible();
+        await expect(form.locator('.ff-group').filter({hasText: /^Endpoint/})).not.toBeVisible();
+        await expect(form.locator('.ff-group').filter({hasText: /^Access Key/})).not.toBeVisible();
     });
 
-    // ──────────────────────────────────────────────────
-    // Scenario 12: Cancel form dismisses it
-    // ──────────────────────────────────────────────────
     // Given: User has opened the "新增数据源" form
     // When: User clicks "取消"
-    // Then: Form panel should close
+    // Then: Form card should close
     // And: Table should still be visible without new entries
     test('should dismiss form on cancel', async ({page}) => {
         const p = panel(page);
 
         // Given: Open the form
         await p.locator('button:has-text("新增数据源")').click();
-        const form = p.locator('.panel');
-        await expect(form.locator('.panel-heading')).toContainText('新增数据源');
+        const form = p.locator('.ant-card');
+        await expect(form.locator('.ant-card-head-title')).toContainText('新增数据源');
 
         // When: Click cancel
-        await form.locator('button:has-text("取消")').click();
+        await form.locator('button').filter({hasText: /取\s*消/}).click();
 
-        // Then: Form panel is gone
+        // Then: Form card is gone
         await expect(form).not.toBeVisible();
 
         // Then: Datasource table is still visible (first table in the panel)
         await expect(p.locator('table').first()).toBeVisible();
     });
 
-    // ── BDD STUB: V5.9.0 视觉 diff 回归保护 ────────────────────────────────
     // Given: 用户登录,DatasourcePanel 已渲染
     //   And:  表格至少有一行数据
     // When:  Playwright 截图面板(table 区域,跳过 modal/animation)
     // Then:  跟 baseline "datasource-panel-baseline.png" 对比
     //   And:  diff < maxDiffPixels(500) → 允许背景渐变/字体抗锯齿
     //   And:  diff ratio < maxDiffPixelRatio(0.02) → 允许 < 2% 像素差
-    // Why:   防止 Step 1-3 的样式改动被后续 commit 无意回退(比如有人误改 token)
-    //        第一次跑:生成 baseline;后续跑:必须 diff 在阈值内。
-    //        阈值故意放宽(500px / 2%)— 留点空间给无关紧要的 hover/font 变化。
+    // Why:   防止样式改动被后续 commit 无意回退。
+    //        baseline 在 antd 化改版后重建过(--update-snapshots)。
     test('V5.9.0 visual diff — DatasourcePanel table 截图与 baseline 对比', async ({page}) => {
         const p = panel(page);
         // 等表格 + 第一行渲染好

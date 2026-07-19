@@ -4,56 +4,51 @@ import { login } from './helpers';
 /**
  * BDD Tests for Main Frame Navigation
  *
- * Given: User is logged in and on main frame (index.html)
+ * Given: User is logged in and on the SPA main frame (/app)
  * When: User interacts with project tree and file operations
  * Then: Expected navigation and file operations occur
  */
 test.describe('Main Frame Navigation', () => {
     test.beforeEach(async ({ page }) => {
         await login(page);
-        // The new vite multi-page setup serves the main frame at /app
-        // (login redirect default is `frame.html`, no /index.html exists anymore)
+        // SPA:主框架是 /app 路由,frame.html / #container 已删
         await page.goto('/app');
+        await page.waitForSelector('.app-layout', { timeout: 10000 });
     });
 
-    // ── BDD STUB: should load main frame with sidebar and welcome page ──
     // Given: A logged-in user navigates to /app
-    // When:  The main frame's React shell finishes its initial mount (Splitter + Welcome page)
-    // Then:  The #container element should be visible
-    // And:   A .tree div representing the sidebar should be visible
-    // And:   A welcome heading "欢迎使用 RuleForge 决策平台" should be visible
+    // When:  The main frame's React shell finishes its initial mount
+    // Then:  The .app-layout shell should be visible
+    // And:   The sidebar file tree (.rf-file-tree) should be visible
+    // And:   The QuickStart welcome heading should be visible
     test('should load main frame with sidebar and welcome page', async ({ page }) => {
-        // Then: The container div should be rendered
-        const container = page.locator('#container');
+        // Then: The SPA shell should be rendered
+        const container = page.locator('.app-layout');
         await expect(container).toBeVisible({ timeout: 10000 });
 
-        // Then: The Splitter should render two panes
-        // The sidebar has the .tree class div
-        const treeDiv = page.locator('.tree');
+        // Then: The sidebar should render the antd file tree
+        const treeDiv = page.locator('.rf-file-tree');
         await expect(treeDiv).toBeVisible({ timeout: 10000 });
 
         // Then: Welcome page (QuickStart) heading should be visible
-        // (QuickStart renders an h2.welcome-title; the new copy is
-        //  "欢迎使用 RuleForge 决策平台" — the old "欢迎使用决策系统" was dropped)
         const welcomePage = page.locator('.welcome-title');
         await expect(welcomePage).toBeVisible({ timeout: 10000 });
     });
 
-    // ── BDD STUB: should display sidebar toolbar with search and dropdowns ──
     // Given: A logged-in user is on the main frame
-    // When:  The sidebar toolbar finishes rendering
-    // Then:  A .fileSearchText input and its .glyphicon-search icon should be visible
+    // When:  The top bar + sidebar toolbar finish rendering
+    // Then:  The TopBar search input (.fileSearchText) should be visible
     // And:   The project selector (.panel-project-selector) should be visible
-    // And:   The user avatar (.topbar-user-avatar in TopBar) should be visible
-    //  (the legacy SidebarToolbar with 4 dropdown-toggles was replaced by
-    //  RuleEditorPanel's .panel-project-selector + TopBar's .topbar-user)
+    // And:   The user avatar (.topbar-user-avatar) should be visible
+    //  (bootstrap glyphicon 图标已删,搜索图标是 antd SearchOutlined;
+    //   TopBar 搜索仅在 rules 面板显示,而 rules 是默认面板)
     test('should display sidebar toolbar with search and dropdowns', async ({ page }) => {
         // Then: Search input should be visible
         const searchInput = page.locator('.fileSearchText');
         await expect(searchInput).toBeVisible({ timeout: 10000 });
 
-        // Then: Search icon should be visible
-        const searchIcon = page.locator('.glyphicon.glyphicon-search');
+        // Then: Search icon (antd) should be visible next to the input
+        const searchIcon = page.locator('.topbar-search .anticon-search');
         await expect(searchIcon).toBeVisible();
 
         // Then: Project selector dropdown should be visible
@@ -65,86 +60,84 @@ test.describe('Main Frame Navigation', () => {
         await expect(userAvatar).toBeVisible();
     });
 
-    // ── BDD STUB: should display project tree with nodes ──
     // Given: A logged-in user is on the main frame
     // When:  The project tree finishes its initial fetch + render
-    // Then:  The .tree container is present (Tree component renders into it)
+    // Then:  The .rf-file-tree container is present (antd Tree renders into it)
     //  (the project tree may be empty if the backend returned no projects;
     //   we verify the container is mounted rather than asserting non-empty
     //   children, since the data fetch is async and may complete after the
     //   test page is loaded)
     test('should display project tree with nodes', async ({ page }) => {
         // Then: Tree container should be present
-        const treeContainer = page.locator('.tree').first();
-        await expect(treeContainer).toBeAttached({ timeout: 10000 });
+        const treeContainer = page.locator('.rf-file-tree').first();
+        await expect(treeContainer).toBeVisible({ timeout: 10000 });
 
-        // Then: Tree should contain list items (may be empty if no project data)
-        const treeItems = page.locator('.tree li');
+        // Then: Tree may contain nodes (may be empty if no project data)
+        const treeItems = page.locator('.rf-file-tree .ant-tree-treenode');
         const itemCount = await treeItems.count();
         expect(itemCount).toBeGreaterThanOrEqual(0);
     });
 
     // Given: User is on main frame with project tree
-    // When: User clicks on a parent tree node to expand
+    // When: User clicks on a parent node switcher to expand
     // Then: Node should expand showing children
     test('should expand tree node when clicking parent node', async ({ page }) => {
-        // Given: Find a parent node (has parent_li class)
-        const parentNode = page.locator('.tree li.parent_li').first();
-        const parentExists = await parentNode.isVisible({ timeout: 10000 }).catch(() => false);
+        // Given: Find a collapsed parent node (antd switcher in close state)
+        const switcher = page.locator('.rf-file-tree .ant-tree-switcher_close').first();
+        const switcherVisible = await switcher.isVisible({ timeout: 10000 }).catch(() => false);
 
-        if (parentExists) {
-            // When: Click on the parent node span
-            const parentSpan = parentNode.locator('span').first();
-            await parentSpan.click();
+        if (switcherVisible) {
+            const before = await page.locator('.rf-file-tree .ant-tree-treenode').count();
 
-            // Then: Children should become visible
-            await page.waitForTimeout(500);
+            // When: Click on the switcher to expand
+            await switcher.click();
+
+            // Then: More tree nodes should be rendered
+            await expect(async () => {
+                const after = await page.locator('.rf-file-tree .ant-tree-treenode').count();
+                expect(after).toBeGreaterThan(before);
+            }).toPass({ timeout: 5000 });
         }
     });
 
-    // ── BDD STUB: should show context menu on right-click ──
     // Given: A logged-in user is on the main frame with a project tree loaded
-    // When:  The user right-clicks on a tree node (.tree span[id^="node-"])
-    // Then:  No uncaught error should be thrown
-    //  (the new Menu component renders context menus as .rf-context-menu /
-    //  .menu-container — we just verify the right-click doesn't crash and
-    //  wait briefly for any menu to appear)
+    // When:  The user right-clicks on a tree node (.rf-tree-node)
+    // Then:  An antd dropdown context menu should appear
+    //  (FileTreeNode 用 antd Dropdown trigger=['contextMenu'] 渲染右键菜单)
     test('should show context menu on right-click', async ({ page }) => {
         // Given: Wait for tree to load
-        const treeSpan = page.locator('.tree span[id^="node-"]').first();
-        const treeSpanVisible = await treeSpan.isVisible({ timeout: 10000 }).catch(() => false);
+        const treeNode = page.locator('.rf-file-tree .rf-tree-node').first();
+        const nodeVisible = await treeNode.isVisible({ timeout: 10000 }).catch(() => false);
 
-        if (treeSpanVisible) {
+        if (nodeVisible) {
             // When: Right-click on tree node
-            await treeSpan.click({ button: 'right' });
+            await treeNode.click({ button: 'right' });
 
-            // Then: Wait briefly for any context menu
-            await page.waitForTimeout(500);
+            // Then: antd dropdown menu should appear
+            const menu = page.locator('.ant-dropdown-menu');
+            await expect(menu.first()).toBeVisible({ timeout: 5000 });
         }
     });
 
-    // ── BDD STUB: should search files when entering text and clicking search ──
     // Given: A logged-in user is on the main frame
-    // When:  The user types "variable" into .fileSearchText and clicks the .glyphicon-search icon
+    // When:  The user types "variable" into the TopBar .fileSearchText and presses Enter
     // Then:  The tree should re-fetch with the new filter (network goes idle)
-    // And:   The .tree div should remain visible (re-rendered with filtered results)
-    test('should search files when entering text and clicking search', async ({ page }) => {
+    // And:   The .rf-file-tree div should remain visible (re-rendered with filtered results)
+    //  (V5.101 起搜索在 TopBar,回车触发 loadData;glyphicon-search 图标已删)
+    test('should search files when entering text and pressing enter', async ({ page }) => {
         // Given: Locate search box
         const searchInput = page.locator('.fileSearchText');
         await expect(searchInput).toBeVisible({ timeout: 10000 });
 
-        // When: Type search query
+        // When: Type search query and press Enter (TopBar search is Enter-triggered)
         await searchInput.fill('variable');
-
-        // When: Click search icon
-        const searchIcon = page.locator('.glyphicon-search');
-        await searchIcon.click();
+        await searchInput.press('Enter');
 
         // Then: Wait for tree to reload
         await page.waitForLoadState('networkidle');
 
         // Then: Tree should still be visible
-        const treeDiv = page.locator('.tree');
+        const treeDiv = page.locator('.rf-file-tree');
         await expect(treeDiv).toBeVisible();
     });
 
@@ -152,44 +145,39 @@ test.describe('Main Frame Navigation', () => {
     // When: User clicks on a file in the tree
     // Then: File should open as an in-app editor tab (V7: no more window.open new browser tab)
     test('should open file in tab when clicking tree file node', async ({ page }) => {
-        // Given: Wait for tree to load
-        // Tree nodes are spans with id starting "node-" that have an anchor inside
-        // File nodes have icons like rf-variable, rf-rule, rf-table, rf-tree, rf-flow (NOT rf-folder)
-        const fileNodeSpans = page.locator('.tree span[id^="node-"]');
-        const count = await fileNodeSpans.count();
+        // Given: Wait for tree to load; expand all collapsed nodes first
+        const treeNodes = page.locator('.rf-file-tree .ant-tree-treenode');
+        const anyNode = await treeNodes.first().isVisible({ timeout: 10000 }).catch(() => false);
 
-        // Find a file-type node (not a folder) by checking if it has a non-folder icon
-        let clickedFileNode = false;
-        for (let i = 0; i < count; i++) {
-            const span = fileNodeSpans.nth(i);
-            const iconClass = await span.locator('i:first-child').getAttribute('class').catch(() => '');
-            if (iconClass && !iconClass.includes('rf-folder')) {
-                await span.locator('a').click();
-                clickedFileNode = true;
-                break;
+        if (anyNode) {
+            // Expand every collapsed switcher so leaf file nodes become visible
+            const switchers = page.locator('.rf-file-tree .ant-tree-switcher_close');
+            while (await switchers.count() > 0) {
+                await switchers.first().click();
+                await page.waitForTimeout(300);
             }
-        }
 
-        if (clickedFileNode) {
-            // Then: An antd tab should appear in the in-app editor tab bar
-            // (EditorTabs renders .ant-tabs-tab inside .editor-tabs-host;
-            //  the legacy ContentTabBar .content-tab and iframe host are gone)
-            const tab = page.locator('.editor-tabs-host .ant-tabs-tab');
-            await expect(tab.first()).toBeVisible({ timeout: 5000 });
+            // When: Click the first leaf node (no switcher icon = file, not folder)
+            const leaf = page.locator('.rf-file-tree .ant-tree-treenode:has(.ant-tree-switcher-noop) .ant-tree-node-content-wrapper').first();
+            const leafVisible = await leaf.isVisible({ timeout: 5000 }).catch(() => false);
 
-            // Then: The active editor pane should be rendered (in-app, no new window)
-            const pane = page.locator('.editor-tabs-panes .editor-tab-pane');
-            await expect(pane.first()).toBeVisible({ timeout: 5000 });
+            if (leafVisible) {
+                await leaf.click();
+
+                // Then: An antd tab should appear in the in-app editor tab bar
+                //  (老 4 库文件类型走 seeFileSource 源码对话框,不算编辑器标签;
+                //   其余类型经 openEditorTab 开 .ant-tabs-tab + .editor-tab-pane)
+                const tab = page.locator('.ant-tabs-tab');
+                const sourceDialog = page.locator('.ant-modal');
+                await expect(tab.first().or(sourceDialog.first())).toBeVisible({ timeout: 5000 });
+            }
         }
     });
 
-    // ── BDD STUB: should have project selector with project options ──
     // Given: A logged-in user is on the main frame
     // When:  The sidebar project selector finishes rendering
     // Then:  The .panel-project-selector should be visible
     // And:   The .panel-project-btn should display the placeholder "选择项目" or a project name
-    //  (the display mode dropdown from the legacy SidebarToolbar is gone in
-    //  the new layout; the project selector is now the main dropdown control)
     test('should have project selector with project options', async ({ page }) => {
         // Given: Wait for project selector to load
         const projectSelector = page.locator('.panel-project-selector');

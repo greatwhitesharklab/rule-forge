@@ -87,7 +87,8 @@ test.describe('Agent AI Assistant Panel', () => {
         await expect(page.locator('text=LLM 厂商')).toBeVisible();
 
         // Use .first() to avoid matching other "保存" buttons in hidden dialogs
-        await expect(page.locator('button.btn-primary:has-text("保存")').first()).toBeVisible();
+        // (antd:primary 按钮 class 是 .ant-btn-primary,不是 bootstrap .btn-primary)
+        await expect(page.locator('button.ant-btn-primary:has-text("保存")').first()).toBeVisible();
         await expect(page.locator('button:has-text("测试连接")')).toBeVisible();
     });
 

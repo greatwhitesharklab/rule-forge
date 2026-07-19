@@ -53,13 +53,16 @@ test.describe('User Management Panel', () => {
     test('should display newly created user in table', async ({page}) => {
         await expect(page.locator('.ant-table')).toBeVisible({timeout: 10000});
 
+        // 用户名带时间戳 — 固定名 "e2e_api_user" 跑第二次会撞"已存在"失败(用例不幂等)
+        const username = 'e2e_api_user_' + Date.now();
+
         // Create user via API (bypasses Antd Form complexity)
-        await page.evaluate(async () => {
+        await page.evaluate(async (username) => {
             const resp = await fetch('/api/permission/users', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 body: new URLSearchParams({
-                    username: 'e2e_api_user',
+                    username,
                     password: 'test123',
                     isAdmin: 'false',
                     canExport: 'false',
@@ -67,7 +70,7 @@ test.describe('User Management Panel', () => {
             });
             const result = await resp.json();
             if (!result.status) throw new Error('Create user failed: ' + JSON.stringify(result));
-        });
+        }, username);
 
         // Reload the panel by clicking away and back
         await page.locator('[title="规则编辑"]').click();
@@ -76,7 +79,7 @@ test.describe('User Management Panel', () => {
         await expect(page.locator('.ant-table')).toBeVisible({timeout: 10000});
 
         // New user should appear in the table
-        await expect(page.locator('.ant-table').locator('text=e2e_api_user')).toBeVisible({timeout: 10000});
+        await expect(page.locator('.ant-table').locator(`text=${username}`)).toBeVisible({timeout: 10000});
 
         // Non-admin user should have "权限" button
         await expect(page.locator('.ant-table').locator('button:has-text("权限")').first()).toBeVisible({timeout: 5000});

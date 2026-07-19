@@ -37,7 +37,8 @@ test.describe('V5.8.4 BatchTest Excel upload (DatasourcePanel)', () => {
         await login(page);
         await page.goto('/app');
         await page.locator('.activity-bar-icon[title="数据源"]').click();
-        await page.waitForSelector('.nav-tabs:has-text("数据源")');
+        // antd 化:面板是 PageShell + antd Tabs,不再是 bootstrap .nav-tabs
+        await page.waitForSelector('.page-shell .ant-tabs-tab:has-text("数据源")');
         // 等 datasource 列表加载
         await page.waitForSelector('table tbody tr', {timeout: 10000});
     });
@@ -121,7 +122,7 @@ test.describe('V5.8.4 BatchTest Excel upload (DatasourcePanel)', () => {
 
         // When: 切到 DatasourcePanel
         await page.locator('.activity-bar-icon[title="数据源"]').click();
-        await page.waitForSelector('.nav-tabs:has-text("数据源")', {timeout: 10000});
+        await page.waitForSelector('.page-shell .ant-tabs-tab:has-text("数据源")', {timeout: 10000});
         await page.waitForTimeout(500);  // 等 layout 切换
 
         // Then: welcome 页隐藏(无论之前是否可见)
@@ -130,8 +131,8 @@ test.describe('V5.8.4 BatchTest Excel upload (DatasourcePanel)', () => {
         await expect(page.locator('table tbody tr').first()).toBeVisible();
         // And: DatasourcePanel 容器占满 content 区(>800,显著宽于旧 240 左侧)
         const panelWidth = await page.evaluate(() => {
-            const tabs = document.querySelector('.nav-tabs');
-            return tabs ? tabs.closest('[style*="padding"]')?.getBoundingClientRect().width : null;
+            const shell = document.querySelector('.page-shell');
+            return shell ? shell.getBoundingClientRect().width : null;
         });
         expect(panelWidth).toBeGreaterThan(800);  // 全宽,不是 240
     });
@@ -147,7 +148,7 @@ test.describe('V5.8.4 BatchTest Excel upload (DatasourcePanel)', () => {
     // Then:  POST /api/batchtest/start-with-file 命中,返回 sessionId
     //   And:  BatchTestDialog 弹窗出现,显示 sessionId 和 RUNNING 状态
     //   And:  1-3 秒后 progress 从 0 增长(行执行)
-    test('should upload .xlsx and open BatchTestDialog with running session', async ({page}) => {
+    test('should upload .xlsx and start a batch test session', async ({page}) => {
         const targetRow = page.locator('table tbody tr').filter({hasText: 'E2E测试REST数据源'}).first();
         await targetRow.locator('button.ant-btn:has-text("批量测试")').first().click();
 
@@ -186,19 +187,8 @@ test.describe('V5.8.4 BatchTest Excel upload (DatasourcePanel)', () => {
         expect(body.subjectType).toBe('DATASOURCE');
         expect(body.inputSourceType).toBe('FILE');
 
-        // Then: BatchTestDialog opens
-        const dialog = page.locator('.modal').filter({hasText: '批量测试'});
-        await expect(dialog).toBeVisible({timeout: 10000});
-        // Status heading or "执行中" should be visible
-        await expect(dialog).toContainText(/执行中|批量测试/);
-        await shot(page, '05-batchtest-dialog-running');
-
-        // Wait for progress to be polled (or COMPLETED/FAILED) — give it up to 10s
-        await page.waitForTimeout(3000);
-        await shot(page, '06-batchtest-dialog-progress');
-
-        // session polling has started — verify the request was made
-        // (no need to assert completion since the actual REST_API datasource
-        //  isn't reachable from the docker network)
+        // V7.7.2:老 BatchTestDialog 已删(OPEN_BATCH_TEST_DIALOG 事件无监听方),
+        // 启动后不再有进度弹窗 — 本用例锁到 start-with-file API 层(sessionId 返回即成功)。
+        // session 执行进度不再断言(REST_API 数据源在 docker network 里不可达)
     });
 });

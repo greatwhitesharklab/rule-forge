@@ -5,14 +5,13 @@ import {login} from './helpers';
  * V5.9.0 100% 交互级 tour — 不放过任何小功能
  *
  * 覆盖:
- *  H: 19 editor 保存/重载 round-trip
  *  I: 30+ dialog 完整提交流
  *  J: project + files CRUD 端到端
  *  K: datasource + 知识包 + 版本 CRUD
- *  L: 决策表/树/卡/BPMN 内部交互
  *  M: Quick test/批测/监控/仿真/agent 端到端
  *  N: 表单校验 + 网络错 + session 过期
  *  O: 移动端 + 主题 + 搜索 + 设置
+ *  (H 老 4 库 editor round-trip、L 老编辑器/BPMN 加载 — 功能已删,用例移除)
  */
 
 const SHOT = '/home/fredgu/git_home/ruleforge/step5-screenshots';
@@ -68,37 +67,7 @@ async function apiCall(page, method, path, body) {
     }, {method, path, body});
 }
 
-// ============================================================================
-//  H: 19 editor 保存/重载 round-trip
-// ============================================================================
-test.describe('H: 19 editor save/reload round-trip', () => {
-    test.beforeEach(async ({page}) => { await login(page); });
-
-    const editors = [
-        {type: 'variable', file: '/test_proj/test_vl.xml', content: '<?xml version="1.0" encoding="utf-8"?><variable-library><category name="__rt_var__" type="Custom" clazz="java.lang.String"><variable name="rtField" label="rtLabel" type="String"/></category></variable-library>'},
-        {type: 'constant', file: '/test_proj/test_cl.xml', content: '<?xml version="1.0" encoding="utf-8"?><constant-library><category name="__rt_const_cat__"><constant name="__rt_const__" label="rtL" type="String"/></category></constant-library>'},
-        {type: 'parameter', file: '/test_proj/test_pl.xml', content: '<?xml version="1.0" encoding="utf-8"?><parameter-library><parameter name="__rt_param__" label="rt" type="String" act="InOut"/></parameter-library>'},
-        {type: 'action', file: '/test_proj/test_al.xml', content: '<?xml version="1.0" encoding="utf-8"?><action-library></action-library>'},
-    ];
-
-    for (const e of editors) {
-        test(`H-${e.type}-save-reload-roundtrip`, async ({page}) => {
-            // 1. Save via API
-            const saveRes = await apiCall(page, 'POST', '/common/saveFile', {
-                file: e.file, newVersion: 'false', content: e.content
-            });
-            // 允许 200 (success) 或 200 + status=false (validation issue, 测试本身的 XML 格式)
-            expect(saveRes.status, `saveFile ${e.type} returned ${saveRes.status}: ${JSON.stringify(saveRes.body)}`).toBe(200);
-            if (!saveRes.body.status) {
-                console.warn(`H-${e.type}: saveFile status=false (可能 XML schema 不对), 仍继续 editor 加载测试: ${saveRes.body.message}`);
-            }
-
-            // 2. Open editor
-            await openEditor(page, e.type, e.file);
-            await shot(page, `h-roundtrip-${e.type}`);
-        });
-    }
-});
+// H 段已删:老 4 库(variable/constant/parameter/action)编辑器 V7.23 下线,round-trip 用例整体死亡。
 
 // ============================================================================
 //  I: 30+ dialog 完整提交
@@ -119,16 +88,19 @@ test.describe('I: dialog complete submit flow', () => {
         }
     });
 
-    test('I-02-create-file-variable', async ({page}) => {
+    test('I-02-create-file-v1ruleset', async ({page}) => {
+        // V7.23:VariableLibrary(老 4 库)已删,createFile 改用活类型 V1RuleSet
+        const proj = '__ix_p_' + Date.now();
+        await apiCall(page, 'POST', '/frame/createProject', {newProjectName: proj});
         const res = await apiCall(page, 'POST', '/frame/createFile', {
-            path: '/test_proj/__ix_v' + Date.now() + '.xml', type: 'VariableLibrary'
+            path: '/' + proj + '/__ix_v' + Date.now() + '.v1rs.json', type: 'V1RuleSet'
         });
         expect(res.status).toBe(200);
-        expect(res.body.type).toBe('variable');
+        expect(res.body.type).toBe('v1ruleset');
         // cleanup
         if (res.status === 200 && res.body.fullPath) {
             await apiCall(page, 'POST', '/frame/deleteFile', {
-                path: res.body.fullPath, classify: 'public', projectName: 'test_proj'
+                path: res.body.fullPath, classify: 'public', projectName: proj
             });
         }
     });
@@ -142,32 +114,28 @@ test.describe('I: dialog complete submit flow', () => {
     });
 
     test('I-04-rename-file', async ({page}) => {
-        // 先创建一个文件
+        // 先建项目 + 文件(V7.23:老 VariableLibrary 类型已删,用 V1RuleSet)
         const ts = Date.now();
-        const path = '/test_proj/__ix_rename_' + ts + '.xml';
-        const c = await apiCall(page, 'POST', '/frame/createFile', {path, type: 'VariableLibrary'});
+        const proj = '__ix_rn_' + ts;
+        await apiCall(page, 'POST', '/frame/createProject', {newProjectName: proj});
+        const path = '/' + proj + '/__ix_rename_' + ts + '.v1rs.json';
+        const c = await apiCall(page, 'POST', '/frame/createFile', {path, type: 'V1RuleSet'});
         expect(c.status).toBe(200);
         // rename (now POST /frame/fileRename with path/newPath)
         const r = await apiCall(page, 'POST', '/frame/fileRename', {
-            path, newPath: '/test_proj/__ix_renamed_' + ts + '.xml',
-            classify: 'public', projectName: 'test_proj', types: ''
+            path, newPath: '/' + proj + '/__ix_renamed_' + ts + '.v1rs.json',
+            classify: 'public', projectName: proj, types: ''
         });
         expect([200, 400, 500]).toContain(r.status);
         // cleanup
         await apiCall(page, 'POST', '/frame/deleteFile', {
-            path: '/test_proj/__ix_renamed_' + ts + '.xml',
-            classify: 'public', projectName: 'test_proj'
+            path: '/' + proj + '/__ix_renamed_' + ts + '.v1rs.json',
+            classify: 'public', projectName: proj
         });
     });
 
-    test('I-05-save-and-reload-variable', async ({page}) => {
-        // Custom type, valid XML
-        const content = '<?xml version="1.0" encoding="utf-8"?><variable-library><category name="d" type="Custom" clazz="java.lang.String"><variable name="f" label="L" type="String"/></category></variable-library>';
-        const s = await apiCall(page, 'POST', '/common/saveFile', {
-            file: '/test_proj/test_vl.xml', newVersion: 'false', content
-        });
-        expect(s.body.status, JSON.stringify(s.body)).toBe(true);
-    });
+    // I-05-save-and-reload-variable 已删:V7.23 老 4 库(变量库 vl.xml)编辑器下线,
+    // /common/saveFile 不再接受 variable-library XML,该用例整体死亡。
 
     test('I-06-datasource-CRUD', async ({page}) => {
         const ts = Date.now();
@@ -230,10 +198,8 @@ test.describe('I: dialog complete submit flow', () => {
         expect([200, 404]).toContain(r.status);
     });
 
-    test('I-11-package-list', async ({page}) => {
-        const r = await apiCall(page, 'POST', '/packageeditor/loadPackages', {project: 'test_proj'});
-        expect([200, 400]).toContain(r.status);
-    });
+    // I-11-package-list 已删:后端 PackageEditorController 已整体移除
+    // (/packageeditor/loadPackages 端点不存在,返 500 NoResourceFound)。
 
     test('I-12-version-list', async ({page}) => {
         const r = await page.evaluate(async () => {
@@ -288,27 +254,29 @@ test.describe('J: project + files CRUD end-to-end', () => {
     });
 
     test('J-02-file-create-load-save-load', async ({page}) => {
-        const path = '/test_proj/__ix_j2_' + Date.now() + '.xml';
-        const c = await apiCall(page, 'POST', '/frame/createFile', {path, type: 'VariableLibrary'});
+        // V7.23:老 VariableLibrary 已删,改用 V1 规则集(.v1rs.json)做 create→save→read 闭环
+        const ts = Date.now();
+        const proj = '__ix_j2_' + ts;
+        await apiCall(page, 'POST', '/frame/createProject', {newProjectName: proj});
+        const path = '/' + proj + '/__ix_j2_' + ts + '.v1rs.json';
+        const c = await apiCall(page, 'POST', '/frame/createFile', {path, type: 'V1RuleSet'});
         expect(c.status).toBe(200);
 
-        // save with proper variable XML
+        // save V1 ruleset JSON
+        const content = JSON.stringify({id: 'rs1', type: 'RuleSet', name: '__ix_j2_marker__', hitPolicy: 'FIRST', rules: []});
         const s = await apiCall(page, 'POST', '/common/saveFile', {
-            file: path, newVersion: 'false',
-            content: '<?xml version="1.0" encoding="utf-8"?><variable-library><category name="x" type="Custom" clazz="x"><variable name="f" label="L" type="String"/></category></variable-library>'
+            file: path, newVersion: 'false', content
         });
-        // 后端可能 schema 校验失败,接受 status=false 但 status code 是 200
         expect(s.status, JSON.stringify(s.body)).toBe(200);
-        if (s.body.status) {
-            // load - 可能会失败因为 simple XML
-            const l = await apiCall(page, 'POST', '/common/loadXml', {files: path});
-            expect([200, 400, 500]).toContain(l.status);
-        } else {
-            console.warn('J-02: saveFile status=false (可能 XStream 反序列化失败):', s.body.message);
-        }
+        expect(s.body.status, JSON.stringify(s.body)).toBe(true);
+
+        // read back — V1 文件走 /frame/fileSource(loadXml 只认老 XML)
+        const l = await apiCall(page, 'POST', '/frame/fileSource', {path});
+        expect(l.status).toBe(200);
+        expect(JSON.stringify(l.body)).toContain('__ix_j2_marker__');
 
         // cleanup
-        await apiCall(page, 'POST', '/frame/deleteFile', {path, classify: 'public', projectName: 'test_proj'});
+        await apiCall(page, 'POST', '/frame/deleteFile', {path, classify: 'public', projectName: proj});
     });
 
     test('J-03-folder-create-list', async ({page}) => {
@@ -456,76 +424,7 @@ test.describe('K: datasource + package + version CRUD', () => {
     });
 });
 
-// ============================================================================
-//  L: 决策表/树/卡/BPMN 内部交互
-// ============================================================================
-test.describe('L: internal editor interactions', () => {
-    test.beforeEach(async ({page}) => { await login(page); });
-
-    test('L-01-decisiontable-load', async ({page}) => {
-        await openEditor(page, 'decisiontable', '/test_proj/test_dt.xml');
-        await shot(page, 'l-decisiontable');
-    });
-
-    test('L-02-scriptdecisiontable-load', async ({page}) => {
-        await openEditor(page, 'scriptdecisiontable', '/test_proj/test_dts.xml');
-        await shot(page, 'l-scriptdecisiontable');
-    });
-
-    test('L-03-decisiontree-load', async ({page}) => {
-        await openEditor(page, 'decisiontree', '/test_proj/test_dtree.xml');
-        await shot(page, 'l-decisiontree');
-    });
-
-    test('L-04-scorecard-load', async ({page}) => {
-        await openEditor(page, 'scorecard', '/test_proj/test_sc2.xml');
-        await shot(page, 'l-scorecard');
-    });
-
-    test('L-05-complexscorecard-load', async ({page}) => {
-        await openEditor(page, 'complexscorecard', '/test_proj/test_scc.xml');
-        await shot(page, 'l-complexscorecard');
-    });
-
-    test('L-06-crosstab-load', async ({page}) => {
-        await openEditor(page, 'crosstab', '/test_proj/test_ct.xml');
-        await shot(page, 'l-crosstab');
-    });
-
-    test('L-07-flowbpmn-load', async ({page}) => {
-        await openEditor(page, 'flowbpmn', '/test_proj/test_rl.xml');
-        await shot(page, 'l-flowbpmn');
-    });
-
-    test('L-08-ruleset-load', async ({page}) => {
-        await openEditor(page, 'ruleset', '/test_proj/test_rules.xml');
-        await shot(page, 'l-ruleset');
-    });
-
-    test('L-09-rulesetlib-load', async ({page}) => {
-        await openEditor(page, 'rulesetlib', '/test_proj/test_rsl.xml');
-        await shot(page, 'l-rulesetlib');
-    });
-
-    test('L-10-decisiontable-cell-edit-and-save', async ({page}) => {
-        await openEditor(page, 'decisiontable', '/test_proj/test_dt.xml');
-        await page.waitForTimeout(2000);
-        // try to find a cell input
-        const cellInput = page.locator('.cell-input, .editable-cell input, table input[type="text"]').first();
-        if (await cellInput.isVisible({timeout: 2000}).catch(() => false)) {
-            const old = await cellInput.inputValue().catch(() => '');
-            await cellInput.fill('__ix_rt__');
-            await shot(page, 'l-dt-cell-edited');
-            // save
-            const saveBtn = page.locator('button:has-text("保存")').first();
-            if (await saveBtn.isVisible({timeout: 1000}).catch(() => false)) {
-                await saveBtn.click({force: true});
-                await page.waitForTimeout(2000);
-                await dismissModal(page);
-            }
-        }
-    });
-});
+// L 段已删:决策表/树/卡编辑器 V7.0 删除、BPMN 决策流 V7.21 删除,加载用例整体死亡。
 
 // ============================================================================
 //  M: Quick test/批测/监控/仿真/agent 端到端
@@ -688,7 +587,7 @@ test.describe('N: validation + error + session expiry', () => {
     test('N-04-401-no-cookie', async ({browser}) => {
         const ctx = await browser.newContext();  // 无 cookie
         const page = await ctx.newPage();
-        await page.goto('http://localhost/');  // 先 navigate
+        await page.goto('/');  // 先 navigate(baseURL = PLAYWRIGHT_BASE_URL)
         const r = await page.evaluate(async () => {
             const r = await fetch('/api/frame/loadProjects', {method: 'POST'});
             return {status: r.status, body: await r.text()};
@@ -710,7 +609,7 @@ test.describe('N: validation + error + session expiry', () => {
     test('N-06-unauthorized-no-credentials', async ({browser}) => {
         const ctx = await browser.newContext();
         const page = await ctx.newPage();
-        await page.goto('http://localhost/');
+        await page.goto('/');  // baseURL = PLAYWRIGHT_BASE_URL
         const r = await page.evaluate(async () => {
             const r = await fetch('/api/common/loadXml', {
                 method: 'POST',

@@ -4,10 +4,9 @@ import { test, expect } from '@playwright/test';
  * BDD walkthrough — login flow behaviors
  *
  * Background:
- *   - Vite dev server on localhost:3000, served from /login
- *   - Backend on localhost:8180, /api/frame/login accepts any credentials
- *     (the legacy ruleforge backend doesn't validate; the frontend gates
- *     subsequent API calls on the JSESSIONID cookie returned)
+ *   - SPA on PLAYWRIGHT_BASE_URL, login page at /login
+ *   - Backend on localhost:8180, /api/frame/login 真实校验口令
+ *     (合法账号 admin/admin123;成功后前端跳 /app)
  */
 test.describe('Login Flow', () => {
     test.beforeEach(async ({ page }) => {
@@ -22,54 +21,46 @@ test.describe('Login Flow', () => {
         await expect(page.locator('button[type="submit"]').first()).toBeVisible();
     });
 
-    // ── BDD STUB: should login successfully with valid credentials ─────
     // Given:  user is on the login page
-    //  And:   user has typed "admin" in the username field
-    //  And:   user has typed "admin" in the password field
+    //  And:   user has typed "admin" / "admin123" in the form
     // When:   user clicks the submit button
     // Then:   the browser should navigate to /app (within 10s)
-    //  And:   a JSESSIONID cookie should be set by the backend
-    //   (login.tsx redirects to `frame.html` by default; the legacy
-    //   /index.html path no longer exists in the new vite multi-page setup)
+    //  (SPA 阶段 5:登录成功 window.location.href 跳 /app,frame.html 已删;
+    //   后端 /frame/login 现在真实校验口令,合法账号是 admin/admin123)
     test('should login successfully with valid credentials', async ({ page }) => {
         await page.locator('input[type="text"]').first().fill('admin');
-        await page.locator('input[type="password"]').first().fill('admin');
+        await page.locator('input[type="password"]').first().fill('admin123');
         await page.locator('button[type="submit"]').first().click();
 
-        await expect(page).toHaveURL(/\/frame\.html/, { timeout: 10000 });
+        await expect(page).toHaveURL(/\/app/, { timeout: 10000 });
     });
 
-    // ── BDD STUB: should show error message with invalid credentials ──
     // Given:  user is on the login page
-    //  And:   the /frame/login endpoint is intercepted to abort (network failure)
     //  And:   user has typed "admin" / "wrong" in the form
     // When:   user clicks the submit button
     // Then:   a .login-error element should become visible
     //  And:   the URL should remain on /login
-    //  (the redesigned login page uses .login-error instead of bootstrap's
-    //   .alert-danger — the new login is a React component under #root)
+    //  (后端现在真实校验口令,错误口令返回 status:false → .login-error 显示)
     test('should show error message with invalid credentials', async ({ page }) => {
-        // Backend accepts any credentials, so this tests the error handling path
-        // by simulating a network failure scenario
-        await page.route('**/frame/login', route => route.abort('failed'));
         await page.locator('input[type="text"]').first().fill('admin');
         await page.locator('input[type="password"]').first().fill('wrong');
         await page.locator('button[type="submit"]').first().click();
 
         await expect(page.locator('.login-error')).toBeVisible({ timeout: 10000 });
-        await expect(page).toHaveURL(/\/html\/login\.html/);
+        await expect(page).toHaveURL(/\/login/);
     });
 
-    // ── BDD STUB: should login with empty fields since backend accepts any input
     // Given:  user is on the login page
     //  And:   both username and password fields are empty
     // When:   user clicks the submit button
-    // Then:   the browser should navigate to /app (within 10s)
-    //  And:   the main frame should render (#container visible)
-    test('should login with empty fields since backend accepts any input', async ({ page }) => {
+    // Then:   a .login-error element should become visible
+    //  And:   the URL should remain on /login
+    //  (后端真实校验口令后,空字段同样返回 status:false)
+    test('should show error message when submitting empty fields', async ({ page }) => {
         await page.locator('button[type="submit"]').first().click();
 
-        await expect(page).toHaveURL(/\/frame\.html/, { timeout: 10000 });
+        await expect(page.locator('.login-error')).toBeVisible({ timeout: 10000 });
+        await expect(page).toHaveURL(/\/login/);
     });
 
     // ── BDD STUB: should show loading state while logging in ──────────
@@ -89,7 +80,7 @@ test.describe('Login Flow', () => {
         });
 
         await page.locator('input[type="text"]').first().fill('admin');
-        await page.locator('input[type="password"]').first().fill('admin');
+        await page.locator('input[type="password"]').first().fill('admin123');
 
         const submitBtn = page.locator('button[type="submit"]').first();
         await submitBtn.click();

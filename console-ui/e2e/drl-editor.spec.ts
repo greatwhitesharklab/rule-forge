@@ -21,7 +21,8 @@ test.describe('V5.44.4 — DRL Editor round-trip e2e', () => {
     test('should call /common/loadDrl via UI and show imports + ruleNames', async ({ page }) => {
         // V5.44.4 决定:e2e 走 page.request 调 /loadDrl 端点(不依赖 UI 集成,
         // UI 集成留 V5.45+)。这样锁住端点契约 + 验证 auth flow 正常。
-        const response = await page.request.post('/common/loadDrl', {
+        // 注意:必须带 /api 前缀,否则请求落在 vite SPA fallback 上而非后端。
+        const response = await page.request.post('/api/common/loadDrl', {
             form: { file: '/proj/rules/r.drl' },
         });
         // 后端可能返 404 (文件不存在) — 视为可接受,锁 401 才算 auth fail

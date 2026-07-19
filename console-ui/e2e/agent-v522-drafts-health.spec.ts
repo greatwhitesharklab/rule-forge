@@ -40,8 +40,11 @@ test.describe('V5.22 — Agent panel Drafts + Health tabs', () => {
     // Then: DraftsView renders (project filter dropdown is visible)
     test('should load DraftsView when 草稿 tab is clicked', async ({page}) => {
         await page.getByText('草稿', {exact: true}).click();
-        // DraftsView has a project filter dropdown labelled "项目"
-        await expect(page.getByText('项目', {exact: true}).first()).toBeVisible();
+        // DraftsView toolbar:状态筛选 select(全部状态)+ 刷新按钮
+        // (老版本的 "项目" 下拉已随项目上下文全局化移除)
+        await expect(page.locator('select').first()).toBeVisible();
+        await expect(page.locator('option:has-text("全部状态")')).toBeAttached();
+        await expect(page.locator('button:has-text("刷新")')).toBeVisible();
     });
 
     // ──────────────────────────────────────────────────
@@ -52,13 +55,10 @@ test.describe('V5.22 — Agent panel Drafts + Health tabs', () => {
     // Then: RuleHealthView renders (time window 7/30/90 toggle is visible)
     test('should load RuleHealthView when 健康 tab is clicked', async ({page}) => {
         await page.getByText('健康', {exact: true}).click();
-        // RuleHealthView has a 7/30/90 day toggle (rendered as buttons or radios)
-        // Look for any of the day labels to confirm the view rendered
-        const day7 = page.getByText('7', {exact: true}).first();
-        const day30 = page.getByText('30', {exact: true}).first();
-        const day90 = page.getByText('90', {exact: true}).first();
-        // At least one day label should be visible
-        await expect(day7.or(day30).or(day90)).toBeVisible();
+        // RuleHealthView has a 7/30/90 day toggle (antd buttons,文案 "7 天"/"30 天"/"90 天")
+        await expect(page.getByRole('button', {name: '7 天'})).toBeVisible();
+        await expect(page.getByRole('button', {name: '30 天'})).toBeVisible();
+        await expect(page.getByRole('button', {name: '90 天'})).toBeVisible();
     });
 
     // ──────────────────────────────────────────────────
