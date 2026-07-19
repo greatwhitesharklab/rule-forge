@@ -176,12 +176,8 @@ test.describe('I: dialog complete submit flow', () => {
         expect(r.body.repo).toBeDefined();
     });
 
-    test('I-08-load-package-config', async ({page}) => {
-        // 修复后:空 project name 应该返 200 + 空 {}
-        const r = await apiCall(page, 'POST', '/packageeditor/loadPackageTree', {project: 'test_proj', packageId: 'main'});
-        expect([200, 400, 500]).toContain(r.status);
-    });
-
+    // I-08-load-package-config 已删:/packageeditor/loadPackageTree 端点已随
+    // PackageEditorController 整体移除,用例只能断言 500,无回归价值。
     test('I-09-monitoring-list', async ({page}) => {
         const r = await page.evaluate(async () => {
             const r = await fetch('/api/monitoring/alerts/', {credentials: 'include'});
@@ -355,30 +351,8 @@ test.describe('K: datasource + package + version CRUD', () => {
         expect([200, 400, 500]).toContain(r.status);
     });
 
-    test('K-05-package-save-config', async ({page}) => {
-        const r = await page.evaluate(async () => {
-            const r = await fetch('/api/packageeditor/saveResourcePackages', {
-                method: 'POST', credentials: 'include',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'project=test_proj&packages=' + encodeURIComponent('[]')
-            });
-            return {status: r.status, body: await r.text()};
-        });
-        expect([200, 400, 500]).toContain(r.status);
-    });
-
-    test('K-06-package-refresh-cache', async ({page}) => {
-        const r = await page.evaluate(async () => {
-            const r = await fetch('/api/packageeditor/refreshKnowledgeCache', {
-                method: 'POST', credentials: 'include',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'project=test_proj'
-            });
-            return {status: r.status, body: await r.text()};
-        });
-        expect([200, 400, 500]).toContain(r.status);
-    });
-
+    // K-05/K-06 已删:/api/packageeditor/saveResourcePackages、refreshKnowledgeCache
+    // 端点已随 PackageEditorController 整体移除,用例只能断言 500,无回归价值。
     test('K-07-deployment-environments', async ({page}) => {
         const r = await page.evaluate(async () => {
             const r = await fetch('/api/deployment/environments', {credentials: 'include'});

@@ -233,51 +233,13 @@ test.describe('R: Quick test / 批测 完整跑通', () => {
 });
 
 // ============================================================================
-//  U: 知识包 + 版本管理
+//  U: 版本管理(原知识包用例 U-01..03 已随 PackageEditorController 移除删除)
 // ============================================================================
-test.describe('U: 知识包 + 版本管理', () => {
+test.describe('U: 版本管理', () => {
     test.beforeEach(async ({page}) => { await login(page); });
 
-    test('U-01-package-list', async ({page}) => {
-        const r = await apiCall(page, 'POST', '/packageeditor/loadPackages', {project: 'test_proj'});
-        expect([200, 400, 500]).toContain(r.status);
-    });
-
-    test('U-02-package-tree', async ({page}) => {
-        const r = await apiCall(page, 'POST', '/packageeditor/loadPackageTree', {project: 'test_proj', packageId: 'main'});
-        expect([200, 400, 500]).toContain(r.status);
-    });
-
-    test('U-03-package-save-via-ui', async ({page}) => {
-        await page.goto('/app');
-        await page.waitForSelector('.app-layout', {timeout: 10000});
-        await page.locator('.activity-bar-icon[title="规则编辑"]').click({force: true});
-        await page.waitForTimeout(1000);
-        // 选 test_proj
-        const dd = page.locator('button:has-text("选择项目")').first();
-        if (await dd.isVisible({timeout: 2000}).catch(() => false)) {
-            await dd.click({force: true});
-            await page.waitForTimeout(500);
-            const proj = page.locator('li:has-text("test_proj")').first();
-            if (await proj.isVisible({timeout: 1000}).catch(() => false)) {
-                await proj.click();
-                await page.waitForTimeout(2000);
-            }
-        }
-        // 切到 package view
-        const toggleBtn = page.locator('button[title*="包"], button[title*="切换"]').first();
-        if (await toggleBtn.isVisible({timeout: 1000}).catch(() => false)) {
-            await toggleBtn.click({force: true});
-            await page.waitForTimeout(1500);
-        }
-        const rp = page.locator('text=知识包.rp').first();
-        if (await rp.isVisible({timeout: 2000}).catch(() => false)) {
-            await rp.click({force: true});
-            await page.waitForTimeout(2000);
-        }
-        await shot(page, 'u3-package-view');
-    });
-
+    // U-01/U-02/U-03 已删:.rp 知识包接口 /packageeditor/loadPackages、loadPackageTree
+    // 随后端 PackageEditorController 整体移除(server 已无任何 packageeditor 端点)。
     test('U-04-deployment-environments', async ({page}) => {
         const r = await page.evaluate(async () => {
             const r = await fetch('/api/deployment/environments', {credentials: 'include'});

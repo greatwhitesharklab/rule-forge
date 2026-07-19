@@ -156,29 +156,5 @@ test.describe('100% Business Flow', () => {
         await shot(page, 'flow-08-simulation');
     });
 
-    test('flow-09-package-save', async ({page}) => {
-        await page.goto('/app');
-        await page.waitForSelector('.app-layout', {timeout: 10000});
-        const dropdown = page.locator('button:has-text("选择项目"), button:has-text("test_proj")').first();
-        if (await dropdown.isVisible({timeout: 2000}).catch(() => false)) {
-            await dropdown.click({force: true});
-            await page.waitForTimeout(400);
-            const proj = page.locator('li:has-text("test_proj")').first();
-            if (await proj.isVisible({timeout: 1000}).catch(() => false)) {
-                await proj.click();
-                await page.waitForTimeout(2000);
-            }
-        }
-        const viewToggle = page.locator('button[title*="包"], button[title*="切换"]').first();
-        if (await viewToggle.isVisible({timeout: 1000}).catch(() => false)) {
-            await viewToggle.click({force: true});
-            await page.waitForTimeout(1500);
-        }
-        const rp = page.locator('text=知识包.rp').first();
-        if (await rp.isVisible({timeout: 1500}).catch(() => false)) {
-            await rp.click({force: true});
-            await page.waitForTimeout(2500);
-        }
-        await shot(page, 'flow-09-package-view');
-    });
+    // flow-09-package-save 已删:.rp 知识包视图流程(PackageEditor)后端已移除。
 });

@@ -66,37 +66,7 @@ test.describe('100% Editor tour', () => {
         await shot(page, 'editor-type-action');
     });
 
-    test('e05-editor-package', async ({page}) => {
-        // package editor 不是 file 路径模式,走 frame
-        await page.goto('/app');
-        await page.waitForSelector('.app-layout', {timeout: 10000});
-        await page.waitForTimeout(800);
-        // 点 "选择项目" 选 test_proj
-        const dropdown = page.locator('button:has-text("选择项目")').first();
-        if (await dropdown.isVisible({timeout: 2000}).catch(() => false)) {
-            await dropdown.click();
-            await page.waitForTimeout(400);
-            const proj = page.locator('li:has-text("test_proj")').first();
-            if (await proj.isVisible({timeout: 1000}).catch(() => false)) {
-                await proj.click();
-                await page.waitForTimeout(1500);
-            }
-        }
-        // 切到 package view
-        const viewToggle = page.locator('button[title*="包"], button[title*="切换"]').first();
-        if (await viewToggle.isVisible({timeout: 1000}).catch(() => false)) {
-            await viewToggle.click({force: true});
-            await page.waitForTimeout(1500);
-        }
-        // 点 知识包.rp
-        const rp = page.locator('text=知识包.rp').first();
-        if (await rp.isVisible({timeout: 1500}).catch(() => false)) {
-            await rp.click({force: true});
-            await page.waitForTimeout(2500);
-        }
-        await shot(page, 'editor-type-package');
-    });
-
+    // e05-editor-package 已删:.rp 知识包编辑器流程(PackageEditor)后端已移除。
     test('e06-editor-client', async ({page}) => {
         await openEditor(page, 'client', '/test_proj/test_cl.xml');
         await shot(page, 'editor-type-client');
@@ -333,36 +303,7 @@ test.describe('100% State tour', () => {
         }
     });
 
-    test('s09-error-500-loadPackageConfig', async ({page}) => {
-        // 这个之前会 500 返 JSON,现在返 200 + {} 空 config
-        await page.goto('/app');
-        await page.waitForSelector('.app-layout', {timeout: 10000});
-        // V5.8.4 后 activity bar 删了 "项目文件" 入口(规则编辑自带项目树 + 选择项目)
-        await page.locator('.activity-bar-icon[title="规则编辑"]').click({force: true});
-        await page.waitForTimeout(800);
-        // 选项目 → 切到 package view
-        const dropdown = page.locator('button:has-text("选择项目")').first();
-        if (await dropdown.isVisible({timeout: 2000}).catch(() => false)) {
-            await dropdown.click();
-            await page.waitForTimeout(400);
-            const proj = page.locator('li:has-text("test_proj")').first();
-            if (await proj.isVisible({timeout: 1000}).catch(() => false)) {
-                await proj.click();
-                await page.waitForTimeout(2000);
-            }
-        }
-        const viewToggle = page.locator('button[title*="包"], button[title*="切换"]').first();
-        if (await viewToggle.isVisible({timeout: 1000}).catch(() => false)) {
-            await viewToggle.click({force: true});
-            await page.waitForTimeout(1500);
-        }
-        const rp = page.locator('text=知识包.rp').first();
-        if (await rp.isVisible({timeout: 1500}).catch(() => false)) {
-            await rp.click({force: true});
-            await page.waitForTimeout(2000);
-        }
-        await shot(page, 'state-package-loaded-no-500');
-    });
+    // s09-error-500-loadPackageConfig 已删:知识包.rp 加载流程(PackageEditor)后端已移除。
 });
 
 test.describe('100% Interaction state tour', () => {

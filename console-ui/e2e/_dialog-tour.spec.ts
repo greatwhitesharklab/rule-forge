@@ -30,31 +30,7 @@ test.describe('Dialog tour', () => {
         await page.keyboard.press('Escape').catch(() => {});
     });
 
-    test('package-flow-dialog', async ({page}) => {
-        await login(page);
-        // 切到 package 视图
-        await page.goto('/app');
-        await page.waitForSelector('.app-layout', {timeout: 10000});
-        await page.waitForTimeout(800);
-        // 选第一个项目
-        const dropdown = page.locator('button:has-text("选择项目")').first();
-        if (await dropdown.isVisible({timeout: 2000}).catch(() => false)) {
-            await dropdown.click();
-            await page.waitForTimeout(500);
-            const firstProject = page.locator('.dropdown-menu li a, .ant-dropdown-menu li').first();
-            if (await firstProject.isVisible({timeout: 2000}).catch(() => false)) {
-                await firstProject.click();
-                await page.waitForTimeout(1500);
-            }
-        }
-        // 切到 package 视图(package navigator button)
-        const packageBtn = page.locator('button:has-text("知识包"), button:has-text("包"), .view-toggle, [class*="package-view"]').first();
-        if (await packageBtn.isVisible({timeout: 1000}).catch(() => false)) {
-            await packageBtn.click();
-            await page.waitForTimeout(800);
-        }
-        await page.screenshot({path: `${SHOT_DIR}/dialog-package-view.png`, fullPage: false});
-    });
+    // package-flow-dialog 已删:.rp 知识包视图(PackageEditor)后端已移除,流程死亡。
 
     test('datasource-batchtest-modal', async ({page}) => {
         await login(page);

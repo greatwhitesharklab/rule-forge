@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --project=chromium && playwright test --project=firefox",
     "test:e2e:smoke": "playwright test --config=playwright.config.smoke.js",
     "test:e2e:tour": "playwright test --config=playwright.config.tour.js",
     "typecheck": "tsc --noEmit"
