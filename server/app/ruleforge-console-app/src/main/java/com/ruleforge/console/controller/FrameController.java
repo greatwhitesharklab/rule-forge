@@ -147,6 +147,11 @@ public class FrameController extends BaseController {
         } else {
             inputStream = this.ruleforgeRepositoryService.readFile(path, version);
         }
+        // readFile 在 Git/DB 都查不到时返 null(见 RuleForgeRepositoryServiceImpl.readFile 注释),
+        // 这里必须显式判空 — 否则 IOUtils.toString(null) NPE 500,调用方拿不到有效信息。
+        if (inputStream == null) {
+            throw new RuleException("File [" + path + "] not found.");
+        }
         String content = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
         inputStream.close();
         String xml;

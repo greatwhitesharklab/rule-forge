@@ -110,7 +110,8 @@ class DualWriteObservabilityBddTest {
                 realGitConfig,
                 xmlCanonicalizer,
                 failureRepository,
-                meterRegistry
+                meterRegistry,
+                new com.ruleforge.console.DefaultEnvironmentProvider()
         );
 
         when(permissionService.projectPackageHasWritePermission(anyString())).thenReturn(true);

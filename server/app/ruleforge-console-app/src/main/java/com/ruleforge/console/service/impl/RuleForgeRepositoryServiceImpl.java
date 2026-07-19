@@ -77,6 +77,8 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
     // V5.10-C: dualWrite 失败 audit log + Micrometer counter
     private final GitDualwriteFailureRepository dualwriteFailureRepository;
     private final MeterRegistry meterRegistry;
+    // V7.23.1:读侧解析 user 分支(currentLoginUsername),跟写侧 resolveBranch(author) 对齐
+    private final com.ruleforge.console.EnvironmentProvider environmentProvider;
 
     private static final String DUALWRITE_COUNTER = "ruleforge_git_dualwrite_total";
     private static final String DUALDELETE_COUNTER = "ruleforge_git_dualdelete_total";
@@ -820,15 +822,45 @@ public class RuleForgeRepositoryServiceImpl implements RuleForgeRepositoryServic
                 }
             }
 
-            // For "latest" or snapshot — read from user branch or main
-            String branch = BranchContext.getBranch() != null ? BranchContext.getBranch() : "main";
-            InputStream stream = gitStorageService.readFileStream(projectName, branch, gitPath);
+            // For "latest" or snapshot — 读 working tree。
+            // 写侧 dualWriteToGit 走 resolveBranch(author) = user/<loginUser>(BranchContext 未设时),
+            // 读侧必须解析到同一分支,否则 save→read-back 断链(fileSource NPE,V7.7.2 回归)。
+            // 顺序:显式 BranchContext → 当前登录用户的 user/<name> 分支 → main(发布合并后的内容)。
+            if (BranchContext.getBranch() != null) {
+                InputStream stream = gitStorageService.readFileStream(projectName, BranchContext.getBranch(), gitPath);
+                if (stream != null) {
+                    log.debug("Read file [{}] from Git on BranchContext branch [{}]", path, BranchContext.getBranch());
+                }
+                return stream;
+            }
+            String username = currentLoginUsername();
+            if (username != null) {
+                InputStream stream = gitStorageService.readFileStream(projectName, BranchContext.forUser(username), gitPath);
+                if (stream != null) {
+                    log.debug("Read file [{}] from Git on user branch [{}]", path, BranchContext.forUser(username));
+                    return stream;
+                }
+            }
+            InputStream stream = gitStorageService.readFileStream(projectName, "main", gitPath);
             if (stream != null) {
-                log.debug("Read file [{}] from Git on branch [{}]", path, branch);
+                log.debug("Read file [{}] from Git on branch [main]", path);
             }
             return stream;
         } catch (Exception e) {
             log.debug("Git read failed for [{}], falling back to DB: {}", path, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 当前登录用户名(经 RequestContextHolder 取 session;未登录/非请求线程返 null)。
+     * 读侧解析 user 分支用,跟写侧 resolveBranch(author) 对齐。
+     */
+    private String currentLoginUsername() {
+        try {
+            User user = environmentProvider.getLoginUser(null);
+            return user != null ? user.getUsername() : null;
+        } catch (Exception e) {
             return null;
         }
     }

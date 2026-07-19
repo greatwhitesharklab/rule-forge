@@ -125,7 +125,8 @@ class RuleForgeRepositoryServiceImplGitStorageIntegrationTest {
                 realGitConfig,
                 xmlCanonicalizer,
                 dualwriteFailureRepository,
-                meterRegistry
+                meterRegistry,
+                new com.ruleforge.console.DefaultEnvironmentProvider()
         );
 
         // 3. 通用 stub
