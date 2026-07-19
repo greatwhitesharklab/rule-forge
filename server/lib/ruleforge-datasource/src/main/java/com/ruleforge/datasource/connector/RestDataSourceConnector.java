@@ -3,7 +3,6 @@ package com.ruleforge.datasource.connector;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruleforge.datasource.entity.Datasource;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -17,10 +16,11 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class RestDataSourceConnector implements DataSourceConnector {
 
-    private final RestTemplate restTemplate;
+    // V7.23.2:不再注入 app 级共享 RestTemplate(默认无超时,对端挂起会卡 ~65s),
+    // 改用连接器专用带超时实例(见 ConnectorHttp)。
+    private final RestTemplate restTemplate = ConnectorHttp.createRestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override

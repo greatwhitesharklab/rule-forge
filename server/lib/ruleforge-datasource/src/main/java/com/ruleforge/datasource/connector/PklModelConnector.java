@@ -3,7 +3,6 @@ package com.ruleforge.datasource.connector;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruleforge.datasource.entity.Datasource;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -23,10 +22,10 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class PklModelConnector implements DataSourceConnector {
 
-    private final RestTemplate restTemplate;
+    // V7.23.2:连接器专用带超时实例(见 ConnectorHttp),不再注入无超时共享 RestTemplate。
+    private final RestTemplate restTemplate = ConnectorHttp.createRestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override

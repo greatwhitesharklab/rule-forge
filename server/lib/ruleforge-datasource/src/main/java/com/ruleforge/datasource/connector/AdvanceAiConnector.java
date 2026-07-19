@@ -32,7 +32,8 @@ public class AdvanceAiConnector implements DataSourceConnector {
 
     private final AdvanceAiTokenManager tokenManager;
     private final DatasourceRepository datasourceRepository;
-    private final RestTemplate restTemplate;
+    // V7.23.2:连接器专用带超时实例(见 ConnectorHttp),不再注入无超时共享 RestTemplate。
+    private final RestTemplate restTemplate = ConnectorHttp.createRestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // ===== API 端点常量 =====
