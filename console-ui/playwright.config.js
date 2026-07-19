@@ -5,7 +5,10 @@ export default defineConfig({
     // 30s default 跑 16 个重型集成测试(datasource 创建、flow 流程、agent panel)会超时,
     // 这些测试要做 login + 复杂 UI 操作 + 等后端响应。提到 60s 给它们空间。
     timeout: 60_000,
-    retries: 0,
+    // 全量并行时跨 spec 共享后端状态(项目列表/数据源),个别用例(V-02 建项目下拉)
+    // 会随机撞上状态污染而超时 — 单跑必过。retries=1 吸收这类并行 flake,
+    // 真 bug 仍会红(重试也过不了)。
+    retries: 1,
     use: {
         // 默认打 vite preview(构建产物,见下方 webServer;2026-07 起由 dev server 改过来:
         // dev server 按需编译在 10 workers 并发下偶发 >10s,导致 .app-layout 加载类用例随机超时;
