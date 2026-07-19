@@ -8,13 +8,13 @@ export const LOAD_FAILED = 'load_failed';
 
 export function loadData(project: string | null) {
     return function (dispatch: (a: unknown) => void) {
+        // silent:失败不弹全局 alert,只 dispatch 失败态,由 EditorRoute gate
+        // 渲染统一错误态(EditorLoadState)——避免 alert + 错误态双重提示。
         formPost('/clientconfig/loadData', {project: project || ''}, {
-            errorPrefix: '服务端错误：',
+            silent: true,
         }).then(function (data) {
             dispatch({type: LOADED_DATA, data});
         }).catch(function (err: unknown) {
-            // 全局 alert 已由 client 弹出;再 dispatch 失败态,让 EditorRoute gate
-            // 渲染统一错误态(EditorLoadState),不再白屏。
             dispatch({type: LOAD_FAILED, error: err});
         });
     };

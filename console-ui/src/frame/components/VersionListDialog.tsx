@@ -84,18 +84,22 @@ export default class VersionListDialog extends Component<VersionListDialogProps,
                         <Button type="link" style={{padding: 0}} onClick={() => {
                             // 历史版本走应用内编辑器标签:file 带 ':版本号' 后缀,原样透传给编辑器组件。
                             const dataType = data.type as string;
+                            const fullPath = (data.fullPath as string) + ':' + row.name;
                             if (isEditorType(dataType)) {
                                 event.openEditorTab({
                                     editorType: dataType as EditorType,
-                                    file: (data.fullPath as string) + ':' + row.name,
+                                    file: fullPath,
                                 });
+                            } else {
+                                // 无编辑器的老类型(如老 .rs.xml):降级只读源码查看,不留死按钮
+                                action.openFileSourceDialog(fullPath);
                             }
-                            // 无编辑器的老类型(如老 .rs.xml):no-op —— 原 iframe fallback
-                            // 已随 FrameTab 拆除。
                         }}>打开</Button>
                         <Button type="link" style={{padding: 0, marginLeft: 8}} onClick={() => {
                             const fullPath = (data.fullPath as string) + ':' + row.name;
-                            action.seeFileSource({fullPath} as TreeNodeData);
+                            // seeFileSource 是 thunk(需 store dispatch 读 gitTag);本对话框无 store,
+                            // 版本号已编码在 fullPath 后缀里,直接走同一源码查看通道。
+                            action.openFileSourceDialog(fullPath);
                         }}>源码</Button>
                     </>
                 )

@@ -221,7 +221,6 @@ interface Window {
     _types: string | null;
     _classify: boolean;
     _project: string | null;
-    _welcomePage: string;
     // V5.74.3:已移除 _currentGitTag 全局变量,改 Redux ui.currentGitTag(FileTreePanel
     // setCurrentGitTag dispatch,seeFileSource thunk 通过 getState() 读)。
 
@@ -253,7 +252,4 @@ interface Window {
 
     // File search term (used by FileTreePanel)
     searchFileName: string;
-
-    // Welcome page
-    _welcomePage: string;
 }

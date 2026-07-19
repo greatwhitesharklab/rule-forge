@@ -2,6 +2,7 @@ import React, {Component, FormEvent, ChangeEvent, MouseEvent} from 'react';
 import CommonDialog from '../components/dialog/component/CommonDialog.jsx';
 import * as event from './event.js';
 import * as frameEvent from '../frame/event.js';
+import * as frameAction from '../frame/action.js';
 import {formPost} from '../api/client.js';
 import {Button, Table} from 'antd';
 import {filePathToEditorType} from '../frame/editorTypeMap';
@@ -293,9 +294,10 @@ export default class ReferenceDialog extends Component<object, ReferenceDialogSt
                                     const editorType = filePathToEditorType(file.path);
                                     if (editorType) {
                                         frameEvent.openEditorTab({editorType, file: file.path});
+                                    } else {
+                                        // 无编辑器的老类型(如老 .rs.xml):降级只读源码查看,不留死按钮
+                                        frameAction.openFileSourceDialog(file.path);
                                     }
-                                    // 无编辑器的老类型(如老 .rs.xml):no-op —— 原 iframe fallback
-                                    // (window.parent.componentEvent TREE_NODE_CLICK)已随 FrameTab 拆除。
                                 }}>设计器中打开</Button>
                             )},
                     ]}/>

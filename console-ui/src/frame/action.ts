@@ -1140,6 +1140,22 @@ export function saveFileSource(file: string, content: string) {
 }
 
 /**
+ * 拉文件源码并弹只读源码对话框(OPEN_SOURCE_DIALOG)。
+ * seeFileSource thunk 与无 store 场景(VersionListDialog / ReferenceDialog 里
+ * 无编辑器的老类型降级只读查看)共用本通道。
+ */
+export function openFileSourceDialog(fullPath: string, gitTag?: string | null) {
+    const params: Record<string, string> = {path: fullPath};
+    if (gitTag) {
+        params.gitTag = gitTag;
+    }
+    formPost("/frame/fileSource", params).then(function (result: { content: string }) {
+        event.eventEmitter.emit(event.OPEN_SOURCE_DIALOG, fullPath, result.content);
+    }).catch(function () {
+    });
+}
+
+/**
  * V5.74.3:thunk 化以通过 getState() 读 currentGitTag(原直接读 window._currentGitTag)。
  * 知识包视图选版本 → setCurrentGitTag 写 store,这里读出来作为 fileSource 请求的 gitTag 参数,
  * 实现"按版本看源码"。
@@ -1147,14 +1163,7 @@ export function saveFileSource(file: string, content: string) {
 export function seeFileSource(data: TreeNodeData) {
     return function (_dispatch: Function, getState: Function) {
         const {currentGitTag} = readUiFilters(getState);
-        const params: Record<string, string> = {path: data.fullPath};
-        if (currentGitTag) {
-            params.gitTag = currentGitTag;
-        }
-        formPost("/frame/fileSource", params).then(function (result: { content: string }) {
-            event.eventEmitter.emit(event.OPEN_SOURCE_DIALOG, data.fullPath, result.content);
-        }).catch(function () {
-        });
+        openFileSourceDialog(data.fullPath, currentGitTag);
     };
 }
 

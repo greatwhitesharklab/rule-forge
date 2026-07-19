@@ -465,9 +465,14 @@ function FlowDesignerInner({file}: {file?: string}) {
 
     return (
         <Layout style={{height: '100vh'}}>
-            <Header style={{background: token.colorBgContainer, padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                <Text strong style={{fontSize: 16}}>RuleForge · V1 决策流设计器</Text>
-                <Space>
+            {/* 标签页(EditorTabs pane)内可用宽度比整页小:工具栏允许换行并自适应增高,
+                避免 antd Header 固定 64px + line-height 64px 时换行内容向上溢出被 pane 裁切;
+                整页(/demo 路由)下内容一行放得开,minHeight 64 保持原形态不变。 */}
+            <Header style={{background: token.colorBgContainer, height: 'auto', minHeight: 64, lineHeight: 'normal',
+                padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                flexWrap: 'wrap', rowGap: 8, columnGap: 16}}>
+                <Text strong style={{fontSize: 16, whiteSpace: 'nowrap'}}>RuleForge · V1 决策流设计器</Text>
+                <Space wrap>
                     <Text type='secondary' style={{fontSize: 12}}>Schema:</Text>
                     <Input size='small' value={schemaName} onChange={(e) => setSchemaName(e.target.value)} style={{width: 140}}/>
                     <AutoComplete
@@ -525,7 +530,11 @@ function FlowDesignerInner({file}: {file?: string}) {
                             const ruleRef = data.ruleRef;
                             if (ruleRef && ruleRef.trim() !== '' && (data.nodeType === 'RuleSet' || data.nodeType === 'DecisionTable' || data.nodeType === 'ScoreCard')) {
                                 const editorMap: Record<string, EditorType> = {RuleSet: 'v1ruleset', DecisionTable: 'v1decisiontable', ScoreCard: 'v1scorecard'};
-                                openEditorTab({editorType: editorMap[data.nodeType], file: ruleRef});
+                                const handled = openEditorTab({editorType: editorMap[data.nodeType], file: ruleRef});
+                                if (!handled) {
+                                    // 无 EditorTabs 宿主(免登录 demo 路由 /v1-flow):不静默 no-op,提示降级路径
+                                    message.info('演示模式暂不支持跳转规则编辑器,请在主界面打开');
+                                }
                             } else {
                                 setSelectedId(n.id);
                             }

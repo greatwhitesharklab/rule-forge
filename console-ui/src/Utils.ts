@@ -1,12 +1,4 @@
-declare const constantLibraries: string[];
-declare const actionLibraries: string[];
-declare const variableLibraries: string[];
-declare const parameterLibraries: string[];
-declare function refreshActionLibraries(): void;
-declare function refreshConstantLibraries(): void;
-declare function refreshVariableLibraries(): void;
-declare function refreshParameterLibraries(): void;
-declare function refreshFunctionLibraries(): void;
+import {alert} from '@/utils/modal';
 
 export function getParameter(name: string): string | null {
     var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
@@ -87,47 +79,3 @@ export function formatDate(date: Date | number | string, format: string): string
     return format;
 }
 
-interface Library {
-    type: string;
-    path: string;
-}
-
-export function loadLibraries(libraries: Library[]): void {
-    if (!libraries) return;
-    for (var i = 0; i < libraries.length; i++) {
-        var lib = libraries[i];
-        switch (lib.type) {
-            case 'Constant': constantLibraries.push(lib.path); break;
-            case 'Action': actionLibraries.push(lib.path); break;
-            case 'Variable': variableLibraries.push(lib.path); break;
-            case 'Parameter': parameterLibraries.push(lib.path); break;
-        }
-    }
-    refreshActionLibraries();
-    refreshConstantLibraries();
-    refreshVariableLibraries();
-    refreshParameterLibraries();
-    refreshFunctionLibraries();
-}
-
-interface EditorData {
-    libraries?: Library[];
-    [key: string]: unknown;
-}
-
-import { formPost } from './api/client.js';
-
-import {alert} from '@/utils/modal';
-export function loadEditorData(file: string, extraParams?: Record<string, string>): Promise<EditorData> {
-    var params: Record<string, string> = {files: file};
-    if (extraParams) {
-        Object.assign(params, extraParams);
-    }
-    return formPost<EditorData[]>('/common/loadXml', params).then(function (data) {
-        var editorData = data[0];
-        if (editorData.libraries) {
-            loadLibraries(editorData.libraries);
-        }
-        return editorData;
-    });
-}

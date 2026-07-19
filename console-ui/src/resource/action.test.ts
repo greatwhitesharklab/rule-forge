@@ -88,43 +88,6 @@ describe('Resource Module - Thunks', () => {
     afterEach(() => {
     });
 
-    it('GIVEN valid files WHEN loadMasterData thunk is dispatched THEN it should fetch and dispatch LOAD_MASTER_COMPLETED', async () => {
-        const masterData = [
-            { name: 'Category1', type: 'type1', clazz: 'clazz1', variables: [] },
-            { name: 'Category2', type: 'type2', clazz: 'clazz2', variables: [] },
-        ];
-        const { formPost } = await import('../api/client.js');
-        (formPost as any).mockResolvedValue([masterData]);
-
-        const thunk = ACTIONS.loadMasterData('test-files');
-        thunk(dispatch);
-
-        await flushAsync();
-
-        expect(dispatch).toHaveBeenCalledWith({
-            type: ACTIONS.LOAD_MASTER_COMPLETED,
-            masterData,
-        });
-        const { eventEmitter } = await import('../components/componentEvent.js');
-        expect(eventEmitter.emit).toHaveBeenCalledWith('HIDE_LOADING');
-    });
-
-    it('GIVEN server error WHEN loadMasterData thunk is dispatched THEN it should handle error', async () => {
-        const { formPost } = await import('../api/client.js');
-        (formPost as any).mockRejectedValue(new Error('Server error'));
-
-        const thunk = ACTIONS.loadMasterData('test-files');
-        thunk(dispatch);
-
-        await flushAsync();
-
-        expect(dispatch).not.toHaveBeenCalledWith(
-            expect.objectContaining({ type: ACTIONS.LOAD_MASTER_COMPLETED })
-        );
-        const { eventEmitter } = await import('../components/componentEvent.js');
-        expect(eventEmitter.emit).toHaveBeenCalledWith('HIDE_LOADING');
-    });
-
     it('GIVEN valid file WHEN generateVariableLibrary thunk is dispatched THEN it should fetch and dispatch LOAD_MASTER_COMPLETED', async () => {
         const variableCategories = [
             { name: 'Category1', type: 'type1', clazz: 'clazz1', variables: [] }

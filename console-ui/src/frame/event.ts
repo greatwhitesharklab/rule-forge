@@ -49,7 +49,10 @@ export const eventEmitter = new EventEmitter();
 /**
  * 打开(或激活)主框架内容区的编辑器标签。文件树 / 对话框 / 顶栏等任意位置均可调用,
  * 无需在 React 树内 —— 统一走本事件总线,由 EditorTabs 宿主完成标签管理(同 key 重复打开只激活)。
+ *
+ * @returns 是否有宿主(EditorTabs)在监听;无宿主(如免登录 demo 路由 /v1-flow)返回 false,
+ *          调用方可据此降级(提示用户),而不是静默 no-op
  */
-export function openEditorTab(payload: OpenEditorTabPayload): void {
-    eventEmitter.emit(OPEN_EDITOR_TAB, payload);
+export function openEditorTab(payload: OpenEditorTabPayload): boolean {
+    return eventEmitter.emit(OPEN_EDITOR_TAB, payload);
 }

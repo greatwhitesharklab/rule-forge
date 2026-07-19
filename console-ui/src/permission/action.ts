@@ -38,13 +38,13 @@ export interface UserPermission {
 
 export function loadMasterData() {
     return function (dispatch: Function) {
+        // silent:失败不弹全局 alert,只 dispatch 失败态,由 EditorRoute gate
+        // 渲染统一错误态(EditorLoadState)——避免 alert + 错误态双重提示。
         formPost<UserPermission[]>("/permission/loadResourceSecurityConfigs", {}, {
-            errorPrefix: '加载权限信息失败,',
+            silent: true,
         }).then(function (data: UserPermission[]) {
             dispatch({type: MASTER_LOADED, data});
         }).catch(function (err: unknown) {
-            // 全局 alert 已由 client 弹出;再 dispatch 失败态,让 EditorRoute gate
-            // 渲染统一错误态(EditorLoadState),不再白屏。
             dispatch({type: MASTER_LOAD_FAILED, error: err});
         });
     }
