@@ -10,9 +10,11 @@
 >   window.open 清零,FrameTab/ContentTabBar 拆除;真机冒烟通过(无新浏览器标签、标签保活)
 > - ✅ B7 代码健康(`da08bd1` + `df53d5c`):console.log 清零、dev-local.sh 加固、antd/ag-grid 警告、树重复 key 防御
 >
-> 已知余项(不阻塞):V1 画布工具栏在标签页内顶部几 px 裁切(原按整页设计);
-> demo 路由 /v1-flow 点规则节点 no-op;监控面板指标仍是占位值(实时 metrics 端点未接);
-> 老类型(.rs.xml)版本列表"打开"为 no-op(编辑器已删);ActionEditorController 等后端死 controller 未清。
+> 已知余项(2026-07-19 已处理,`18278f6` + `0039ad3`):V1 画布工具栏裁切(自适应换行修复)、
+> demo 路由规则节点(no-op → 明确提示)、老类型版本列表"打开"(降级只读源码,顺带修"源码"死按钮)、
+> 后端死 controller(ActionEditor/CrosstabEditor/generateFields,含两处反射执行面)已删、
+> permission/client 双重提示已消。
+> 唯一遗留:监控面板指标仍是占位值(实时 metrics 端点未接,需后端立项,不属于 UX 清单)。
 
 > 2026-07-18 全栈走查:console-app(8180)+ vite dev + MySQL,admin 登录,
 > Playwright 逐页截图 40+ 张(原始图在 `.ux-audit/`,走查笔记 `.ux-audit/notes.md`),
