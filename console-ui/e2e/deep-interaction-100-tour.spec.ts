@@ -20,6 +20,31 @@ async function shot(page, name) {
     catch (_) { /* ignore */ }
 }
 
+/**
+ * 稳健打开项目下拉。两个竞态(React 19 + 并行全量实测):
+ *  1. React 挂载/监听器就绪晚于固定 sleep,首次点击会丢;
+ *  2. 项目列表首轮加载完成时 RuleEditorPanel 会 _selectProject → dropdownOpen:false,
+ *     加载中点击会被响应到达时强行关掉 — 所以先等按钮出现项目名 + 网络空闲
+ *     (首轮加载全程结束),再点击。
+ */
+async function openProjectDropdown(page) {
+    const dd = page.locator('button.panel-project-btn').first();
+    await page.waitForFunction(() => {
+        const b = document.querySelector('button.panel-project-btn');
+        return b && b.textContent && b.textContent.trim().length > 0;
+    }, undefined, {timeout: 15000});
+    // 首轮 loadData 可能有多波(项目列表 + 树),任何一波到达都会关下拉。
+    // networkidle(500ms 无请求)代表加载全程结束;AlertBell 低频轮询间隔内会触发。
+    await page.waitForLoadState('networkidle', {timeout: 20000}).catch(() => {});
+    const items = page.locator('.panel-dropdown-item').first();
+    for (let attempt = 0; attempt < 3; attempt++) {
+        await dd.click({force: true});
+        const opened = await items.isVisible({timeout: 3000}).catch(() => false);
+        if (opened) return;
+    }
+    throw new Error('项目下拉 3 次点击后仍未展开');
+}
+
 async function dismissAnyModal(page, maxTries = 3) {
     for (let i = 0; i < maxTries; i++) {
         const okBtn = page.locator('.bootbox .btn-primary, .modal .btn-primary, .bootbox-accept, .ant-modal-close').first();
@@ -273,10 +298,8 @@ test.describe('V: 表单校验错误展示', () => {
         await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(1500);
-        // 点 "选择项目" 按钮(用 class 更稳)
-        const dd = page.locator('button.panel-project-btn').first();
-        await dd.click({force: true});
-        await page.waitForTimeout(500);
+        // 点 "选择项目" 按钮(挂载竞态见 openProjectDropdown 注释)
+        await openProjectDropdown(page);
         // dropdown 里有 "创建新项目" 选项
         const newProj = page.locator('.panel-dropdown-item:has-text("创建新项目"), .panel-dropdown-item:has-text("新建项目")').first();
         await newProj.click({force: true});
@@ -296,9 +319,7 @@ test.describe('V: 表单校验错误展示', () => {
         await page.goto('/app');
         await page.waitForSelector('.app-layout', {timeout: 10000});
         await page.waitForTimeout(1500);
-        const dd = page.locator('button.panel-project-btn').first();
-        await dd.click({force: true});
-        await page.waitForTimeout(500);
+        await openProjectDropdown(page);
         const newProj = page.locator('.panel-dropdown-item:has-text("创建新项目")').first();
         await newProj.click({force: true});
         await page.waitForTimeout(1500);
