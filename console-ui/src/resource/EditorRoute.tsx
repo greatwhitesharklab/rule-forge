@@ -1,7 +1,6 @@
 import {useEffect, useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
-import {applyMiddleware, createStore, Store} from 'redux';
-import thunk from 'redux-thunk';
+import {createEditorStore} from '../store/createEditorStore';
 import {connect, Provider} from 'react-redux';
 import reducer, {ResourceRootState} from './reducer';
 import ResourceEditor from './components/ResourceEditor';
@@ -39,8 +38,8 @@ function LoadGate({error, file, dispatch}: LoadGateProps) {
 const ConnectedLoadGate = connect((state: ResourceRootState) => ({error: state.master.error}))(LoadGate);
 
 /**
- * 公共资源 (resource) 编辑器本体:store 创建 + generateVariableLibrary 加载 +
- * EditorLoadState 门禁 + Provider 包裹 + Loading 覆盖层。
+ * 公共资源 (resource) 编辑器本体:store 创建(createEditorStore 统一工厂)+
+ * generateVariableLibrary 加载 + EditorLoadState 门禁 + Provider 包裹 + Loading 覆盖层。
  * 可被路由壳或应用内标签宿主渲染 — file 从 props 传入,不依赖 react-router。
  *
  * <p>(命名 ResourceEditorView 避开与同目录 components/ResourceEditor 组件重名;
@@ -48,7 +47,7 @@ const ConnectedLoadGate = connect((state: ResourceRootState) => ({error: state.m
  * {@code editor.html?type=resource}。)
  */
 export function ResourceEditorView({file}: {file: string}) {
-    const store: Store = useMemo(() => createStore(reducer, applyMiddleware(thunk)), []);
+    const store = useMemo(() => createEditorStore(reducer), []);
     useEffect(() => {
         if (!file || file.length < 1) {
             return;
@@ -74,14 +73,8 @@ export function ResourceEditorView({file}: {file: string}) {
  * 公共资源 (resource) React 编辑器的 SPA 路由入口。
  *
  * <p>URL: {@code /app/editor/resource?file=/xxx}。
- * 复现 {@code resource/index.tsx} 的挂载逻辑(store 创建 + generateVariableLibrary +
- * Provider 包裹 + Loading 覆盖层),只是去掉 {@code createRoot(#container)},
- * 直接 return JSX。替代原 iframe {@code editor.html?type=resource}。
- *
- * <p>V7 SPA 走查:无 file 参数 → 引导空态;加载失败 → 统一错误态(见 {@link LoadGate}),
- * 不再白屏。加载中的全屏 Spinner 仍由 Loading 覆盖层负责。
- *
- * <p>本壳只做 searchParams 取值,编辑器逻辑全部在 {@link ResourceEditorView}。
+ * 本壳只做 searchParams 取值,编辑器逻辑全部在 {@link ResourceEditorView}。
+ * 无 file 参数 → 引导空态;加载失败 → 统一错误态(见 {@link LoadGate})。
  */
 export default function EditorRoute() {
     const [params] = useSearchParams();

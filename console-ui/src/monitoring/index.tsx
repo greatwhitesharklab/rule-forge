@@ -1,8 +1,8 @@
 import {Component, ReactNode} from 'react';
 import {createRoot} from 'react-dom/client';
-import {applyMiddleware, createStore, Store} from 'redux';
+import {Store} from 'redux';
+import {createEditorStore} from '../store/createEditorStore';
 import {ThunkDispatch} from 'redux-thunk';
-import thunk from 'redux-thunk';
 import {Provider, connect} from 'react-redux';
 import reducer, {MonitoringState} from './reducer.js';
 import * as action from './action.js';
@@ -117,7 +117,7 @@ class MonitoringDashboard extends Component<MonitoringDashboardProps> {
 
 const ConnectedDashboard = connect((state: MonitoringState) => state)(MonitoringDashboard);
 
-const store: Store<MonitoringState, MonitoringAction> = createStore(reducer, applyMiddleware(thunk));
+const store: Store<MonitoringState, MonitoringAction> = createEditorStore(reducer);
 
 document.addEventListener('DOMContentLoaded', function () {
     const container = document.getElementById('container');

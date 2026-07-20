@@ -1,8 +1,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, act} from '@testing-library/react';
 import {Provider} from 'react-redux';
-import {createStore, applyMiddleware} from 'redux';
-import thunk from 'redux-thunk';
+import {createEditorStore} from '../../../store/createEditorStore';
 
 // V6.13.5i:展开闪回 bug 回归测试。jsdom 下 antd <Tree> 的折叠 DOM 行为不一致(节点移除/复用时机不可靠),
 // 改 mock antd <Tree> 直接捕获受控 expandedKeys prop —— 断言"传给 antd 的展开 key 集合",最贴近 root cause
@@ -25,13 +24,13 @@ import FileTree from './FileTree';
 /** 可变 store:SET_DATA 替换 data 引用(模拟 reducer LOAD_CHILDREN_END 的 Object.assign 新引用)。 */
 function makeStore(data: TreeNodeData) {
     let current = data;
-    return createStore((state: {data: TreeNodeData; publicResource: null} | undefined, action: {type: string; payload?: TreeNodeData}) => {
+    return createEditorStore((state: {data: TreeNodeData; publicResource: null} | undefined, action: {type: string; payload?: TreeNodeData}) => {
         if (action.type === 'SET_DATA' && action.payload) {
             current = action.payload;
             return {data: current, publicResource: null};
         }
         return state || {data: current, publicResource: null};
-    }, applyMiddleware(thunk));
+    });
 }
 
 describe('FileTree expandedKeys V6.13.5i (展开闪回)', () => {

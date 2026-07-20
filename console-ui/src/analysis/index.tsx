@@ -1,8 +1,7 @@
 import {Component} from 'react';
-import {createStore, applyMiddleware} from 'redux';
+import {createEditorStore} from '../store/createEditorStore';
 import type {Dispatch} from 'redux';
 import {Provider, connect} from 'react-redux';
-import thunk from 'redux-thunk';
 import {createRoot} from 'react-dom/client';
 import reducer from './reducer.js';
 import type {AnalysisState} from './reducer.js';
@@ -19,7 +18,7 @@ import {BarChartOutlined, CheckCircleOutlined, DatabaseOutlined, WarningOutlined
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const echarts: any = (window as any).echarts;
-const store = createStore(reducer, applyMiddleware(thunk));
+const store = createEditorStore(reducer);
 
 const TIME_RANGES = [
     {label: '1小时', value: '1h'},

@@ -1,5 +1,5 @@
 import {Component, ReactNode} from 'react';
-import * as echarts from 'echarts';
+import echarts from './echarts.js';
 
 import {MetricsData} from '../action.js';
 

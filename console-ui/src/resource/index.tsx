@@ -3,8 +3,7 @@ import '../css/tailwind-base.css';
 
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import {applyMiddleware, createStore, Store} from 'redux'
-import thunk from 'redux-thunk'
+import {createEditorStore} from '../store/createEditorStore'
 import {Provider} from 'react-redux'
 import reducer from './reducer.js'
 import ResourceEditor from './components/ResourceEditor.jsx'
@@ -13,7 +12,7 @@ import Loading from '../components/loading/component/Loading.tsx';
 
 import {alert} from '@/utils/modal';
 document.addEventListener('DOMContentLoaded', function () {
-    const store: Store = createStore(reducer, applyMiddleware(thunk))
+    const store = createEditorStore(reducer)
     const file = _getParameter('file')
     if (!file || file.length < 1) {
         alert('请先指定要加载的变量库文件.')

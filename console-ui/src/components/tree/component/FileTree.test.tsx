@@ -1,15 +1,14 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {render, fireEvent, screen, waitFor} from '@testing-library/react';
 import {Provider} from 'react-redux';
-import {createStore, applyMiddleware} from 'redux';
-import thunk from 'redux-thunk';
+import {createEditorStore} from '../../../store/createEditorStore';
 import FileTree from './FileTree';
 import {eventEmitter, OPEN_EDITOR_TAB} from '@/frame/event';
 
 /** 构造测试 store:reducer 直接返回固定 state(connect 的 mapStateToProps 读 state.data)。
  *  生产 FileTree 在 antd Tree mount 时会调 loadData 触发 dispatch(thunk),所以测试 store 加 thunk middleware。 */
 function makeStore(data: TreeNodeData | null) {
-    return createStore(() => ({data, publicResource: null}) as unknown, applyMiddleware(thunk));
+    return createEditorStore(() => ({data, publicResource: null}) as unknown);
 }
 
 /** 含项目 + 文件 + contextMenu 的样本树(projA _level=1 < expandLevel 3 → 初始展开,loan 可见)。

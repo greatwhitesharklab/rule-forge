@@ -1,6 +1,5 @@
-import { createStore, applyMiddleware } from 'redux';
-import thunk from 'redux-thunk';
+import { createEditorStore } from '../store/createEditorStore';
 
 export function createTestStore(rootReducer: any, initialState = {}) {
-    return createStore(rootReducer, initialState, applyMiddleware(thunk));
+    return createEditorStore(rootReducer, initialState);
 }
