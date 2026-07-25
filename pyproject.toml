@@ -1,0 +1,21 @@
+[project]
+name = "ruleforge-workspace"
+version = "1.21.0"
+description = "RuleForge monorepo root Python environment (neural-engine experiments, tooling)"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "torch",
+    "fastapi",
+    "uvicorn",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+
+[tool.uv]
+package = false
