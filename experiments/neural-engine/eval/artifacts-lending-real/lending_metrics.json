@@ -1,0 +1,120 @@
+{
+  "config": {
+    "eval_start": 4,
+    "lag": 1,
+    "window": 3,
+    "min_train": 200,
+    "max_train_rows": 120000,
+    "approve_rate": 0.7,
+    "seed": 20260726,
+    "trace": false,
+    "since": "2018-07",
+    "per_episode": 400,
+    "encoder": "real (Qwen3-Embedding-0.6B, ~532s est.)",
+    "n_rows": 2400,
+    "n_unique_canonical": 1596
+  },
+  "verdict": "FAIL",
+  "auc": {
+    "arm_A_mean": 0.6119562164654595,
+    "arm_B_mean": 0.6135696950802034,
+    "diff_mean": 0.001613478614744035,
+    "diff_ci95": [
+      -0.03464471726190477,
+      0.03787167449139284
+    ],
+    "n_episodes_paired": 2
+  },
+  "ks": {
+    "diff_mean": 0.012246045718757093,
+    "diff_ci95": [
+      -0.04092261904761896,
+      0.06541471048513314
+    ]
+  },
+  "profit": {
+    "arm_A_total": 0.0,
+    "arm_B_total": 0.0,
+    "diff_mean_per_episode": NaN,
+    "diff_ci95": [
+      NaN,
+      NaN
+    ]
+  },
+  "memory_stats": {
+    "n_slots": 641,
+    "embed_key_cache": 1596,
+    "embed_value_cache": 1858,
+    "prior_final": 0.19899999999999995
+  },
+  "importance_B_top20": {
+    "revol_util": 160.5,
+    "revol_bal": 140.5,
+    "installment": 128.0,
+    "credit_history_months": 123.0,
+    "dti": 121.5,
+    "installment_to_income": 112.5,
+    "annual_inc": 99.0,
+    "loan_to_income": 95.0,
+    "total_acc": 95.0,
+    "memory_max_w": 89.5,
+    "int_rate": 71.0,
+    "emp_length_years": 70.0,
+    "loan_amnt": 63.0,
+    "memory_bad_rate": 59.0,
+    "open_acc": 50.5,
+    "home_ownership_MORTGAGE": 20.0,
+    "inq_last_6mths": 18.5,
+    "purpose_debt_consolidation": 17.0,
+    "delinq_per_year": 14.5,
+    "verification_status_Not Verified": 14.0
+  },
+  "memory_feature_importance_rank": {
+    "memory_bad_rate": 14,
+    "memory_hit_count": 94,
+    "memory_max_w": 10
+  },
+  "records": [
+    {
+      "episode": "2018-07",
+      "n": 400,
+      "cold_start": true
+    },
+    {
+      "episode": "2018-08",
+      "n": 400,
+      "cold_start": true
+    },
+    {
+      "episode": "2018-09",
+      "n": 400,
+      "cold_start": true
+    },
+    {
+      "episode": "2018-10",
+      "n": 400,
+      "cold_start": true
+    },
+    {
+      "episode": "2018-11",
+      "n": 400,
+      "cold_start": false,
+      "n_train": 1200,
+      "auc_a": 0.6209077380952381,
+      "auc_b": 0.5862630208333334,
+      "ks_a": 0.23065476190476186,
+      "ks_b": 0.1897321428571429
+    },
+    {
+      "episode": "2018-12",
+      "n": 400,
+      "cold_start": false,
+      "n_train": 1200,
+      "auc_a": 0.6030046948356808,
+      "auc_b": 0.6408763693270736,
+      "ks_a": 0.21126760563380276,
+      "ks_b": 0.2766823161189359
+    }
+  ],
+  "runtime_seconds": 1391.7
+}
