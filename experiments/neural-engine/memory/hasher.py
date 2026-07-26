@@ -86,19 +86,47 @@ class MultiHeadHasher:
             patterns[h.name] = p
         return ids, patterns
 
+    def _token_column(self, feature: str, col: pd.Series) -> np.ndarray:
+        """Token array for a whole column (numeric values are binned)."""
+        if feature in self.bin_edges_:
+            idx = np.searchsorted(
+                self.bin_edges_[feature], col.to_numpy(dtype=float)
+            )
+            return np.char.add("bin", idx.astype(str))
+        return col.astype(str).to_numpy()
+
+    def address_head(self, head: HashHead, df: pd.DataFrame) -> np.ndarray:
+        """Slot ids [n] for one head over a batch (uses head.features only).
+
+        Public so probes (e.g. V2 context scrambling) can re-address a
+        single head from modified columns.
+        """
+        token_cols = [self._token_column(f, df[f]) for f in head.features]
+        pats = [
+            ";".join(f"{f}={tok}" for f, tok in zip(head.features, toks))
+            for toks in zip(*token_cols)
+        ]
+        return np.array([self.slot_id(head, p) for p in pats], dtype=np.int64)
+
     def address_batch(
         self, df: pd.DataFrame
     ) -> tuple[np.ndarray, list[dict[str, str]]]:
-        """Vectorized-ish batch addressing.
+        """Column-vectorized batch addressing (row-wise ``df.iloc`` avoided).
 
         Returns (slot_ids [n, K] int64 in head order, per-row pattern dicts).
+        Hashing itself stays per-pattern (blake2b has no vector form), but
+        token construction is done once per column instead of per row.
         """
         n = len(df)
         ids = np.zeros((n, len(self.heads)), dtype=np.int64)
-        patterns: list[dict[str, str]] = []
-        for i in range(n):
-            row = df.iloc[i]
-            row_ids, row_patterns = self.address_row(row)
-            ids[i] = [row_ids[h.name] for h in self.heads]
-            patterns.append(row_patterns)
+        patterns: list[dict[str, str]] = [{} for _ in range(n)]
+        for k, h in enumerate(self.heads):
+            token_cols = [self._token_column(f, df[f]) for f in h.features]
+            pats = [
+                ";".join(f"{f}={tok}" for f, tok in zip(h.features, toks))
+                for toks in zip(*token_cols)
+            ]
+            ids[:, k] = [self.slot_id(h, p) for p in pats]
+            for i, p in enumerate(pats):
+                patterns[i][h.name] = p
         return ids, patterns

@@ -82,3 +82,47 @@ def test_deterministic_forward():
         l1, _ = net(cat, num, sids)
         l2, _ = net(cat, num, sids)
     assert torch.allclose(l1, l2)
+
+
+def test_ablated_net_zeroes_memory_injection():
+    net, cat, num, sids = make_net()
+    ablated = NeuralCreditNet(
+        net.spec,
+        MemoryTable(net.head_names, [16, 16], 8),
+        hidden_dim=32, backbone_dim=16, ablate_memory=True,
+    )
+    logit, trace = ablated(cat, num, sids)
+    assert logit.shape == (3,)
+    # Even for slots that exist, gates are pinned to 0 and the miss flag is
+    # set for every sample: the decision is pure backbone.
+    assert float(trace.gates.sum()) == 0.0
+    assert not bool(trace.hits.any())
+    assert bool(trace.memory_miss.all())
+
+
+def test_zero_init_memory_branch_is_exact_noop():
+    """V1: with W_out zero-initialized, a fresh with-memory net must produce
+    logits identical to the ablated net at the same seed (< 1e-6)."""
+    net, cat, num, sids = make_net()
+    # Populate the table so the memory branch input is genuinely nonzero;
+    # zero W_out must still suppress it exactly.
+    rng = np.random.default_rng(0)
+    table = MemoryTable(net.head_names, [16, 16], net.proto_dim)
+    table.build(
+        np.array([[1, 2], [3, 2], [1, 4]], dtype=np.int64),
+        rng.standard_normal((3, 8)).astype(np.float32),
+        np.array([0, 1, 0]),
+        [{"h1": "a", "h2": "x"}, {"h1": "b", "h2": "x"}, {"h1": "a", "h2": "y"}],
+    )
+    torch.manual_seed(0)
+    net_mem = NeuralCreditNet(net.spec, table, hidden_dim=32,
+                              backbone_dim=16, ablate_memory=False)
+    torch.manual_seed(0)
+    net_abl = NeuralCreditNet(net.spec, table, hidden_dim=32,
+                              backbone_dim=16, ablate_memory=True)
+    net_mem.eval()
+    net_abl.eval()
+    with torch.no_grad():
+        logit_mem, _ = net_mem(cat, num, sids)
+        logit_abl, _ = net_abl(cat, num, sids)
+    assert float((logit_mem - logit_abl).abs().max()) < 1e-6

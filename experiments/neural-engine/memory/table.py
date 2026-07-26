@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pickle
 import time
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -73,7 +74,7 @@ class MemoryTable:
                 proto = emb / norm if norm > 0 else emb
                 descs = [patterns[i][head] for i in idxs]
                 # modal pattern approximates the slot's dominant cross (D2 audit)
-                pattern_desc = max(set(descs), key=descs.count)
+                pattern_desc = Counter(descs).most_common(1)[0][0]
                 slot = MemorySlot(
                     proto=proto.astype(np.float32),
                     n=len(idxs),

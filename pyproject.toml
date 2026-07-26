@@ -10,6 +10,7 @@ dependencies = [
     "torch",
     "fastapi",
     "uvicorn",
+    "matplotlib",
 ]
 
 [dependency-groups]

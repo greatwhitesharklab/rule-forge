@@ -1,16 +1,22 @@
 """Phase 1 offline training pipeline (ARCHITECTURE D6).
 
-Load credit-g -> preprocess -> stratified 60/20/20 split -> build memory
-table from the train split only -> freeze memory -> train backbone + read
-gates (BCE, Adam, early stop on valid AUC) -> evaluate (AUC / KS / Brier,
-isotonic-calibrated Brier, memory hit/miss rates) -> save artifacts ->
-print human-readable MemoryTrace decision reasons (D7).
+Load dataset (--dataset, see training/datasets.py) -> preprocess (train-set
+median imputation + winsorized standardization) -> stratified 60/20/20 split
+-> build memory table from the train split only -> freeze memory -> train
+backbone + read gates (BCE with pos_weight, Adam, early stop on valid AUC)
+-> evaluate (AUC / KS / Brier, isotonic-calibrated Brier, memory hit/miss
+rates, gate distribution) -> repeat with the memory injection ablated (pure
+MLP backbone, same split/seed) -> save artifacts -> print human-readable
+MemoryTrace decision reasons (D7).
 
-Run from experiments/neural-engine:  uv run python -m training.train
+Run from experiments/neural-engine:
+    uv run python -m training.train --dataset credit-g
+    uv run python -m training.train --dataset give-me-some-credit
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import time
 from pathlib import Path
@@ -24,75 +30,55 @@ from sklearn.metrics import brier_score_loss, roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-from memory.hasher import HashHead, MultiHeadHasher
+from memory.hasher import MultiHeadHasher
 from memory.table import MemoryTable
 from model.net import FeatureSpec, MemoryTrace, NeuralCreditNet
+from training import verify
+from training.datasets import DATASET_NAMES, DatasetSpec, resolve
+from training.verify import format_trace
 
 SEED = 42
 ARTIFACT_DIR = Path(__file__).resolve().parent.parent / "artifacts"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# K=4 heads (D1): single-feature heads + second-order crosses.
-HEADS = [
-    HashHead("checking", ("checking_status",), bits=10),
-    HashHead("history", ("credit_history",), bits=10),
-    HashHead("loan", ("credit_amount", "duration"), bits=12),
-    HashHead("profile", ("personal_status", "purpose"), bits=12),
-]
 PROTO_DIM = 32
-
-NUMERIC_FEATURES = [
-    "duration", "credit_amount", "installment_commitment",
-    "residence_since", "age", "existing_credits", "num_dependents",
-]
 
 
 # ---------------------------------------------------------------------- data
 
-def load_credit_data() -> tuple[pd.DataFrame, np.ndarray, str]:
-    """German Credit (bad=1 positive). Falls back to data_id=31, then to
-    synthetic data (the fallback is reported in metrics.json)."""
-    try:
-        ds = __import__("sklearn.datasets", fromlist=["fetch_openml"]).fetch_openml(
-            "credit-g", version=1, as_frame=True, parser="auto"
-        )
-        source = "openml:credit-g(v1)"
-    except Exception as e1:  # noqa: BLE001 - network/parser failures both fall through
-        try:
-            ds = __import__("sklearn.datasets", fromlist=["fetch_openml"]).fetch_openml(
-                data_id=31, as_frame=True, parser="auto"
-            )
-            source = "openml:data_id=31"
-        except Exception as e2:  # noqa: BLE001
-            print(f"openml failed ({e1!r}; {e2!r}); using synthetic fallback")
-            from sklearn.datasets import make_classification
-
-            x, y = make_classification(
-                n_samples=1000, n_features=20, n_informative=8,
-                weights=[0.7, 0.3], random_state=SEED,
-            )
-            df = pd.DataFrame(x, columns=[f"f{i}" for i in range(20)])
-            return df, y.astype(int), "synthetic:make_classification"
-    df = ds.frame.copy()
-    y = (df.pop("class").astype(str) == "bad").astype(int).to_numpy()
-    return df, y, source
-
-
 class Preprocessor:
-    """Ordinal-encode categoricals (0 = unseen), standardize numerics."""
+    """Median-impute + winsorize + standardize numerics; ordinal-encode
+    categoricals (0 = unseen). All statistics are fit on the train split
+    only, so valid/test cannot leak into the transforms."""
 
     def __init__(self, num_cols: list[str]) -> None:
         self.num_cols = num_cols
         self.cat_cols: list[str] = []
         self.vocab: dict[str, dict[str, int]] = {}
+        self.medians: np.ndarray | None = None
+        self.clip_lo: np.ndarray | None = None
+        self.clip_hi: np.ndarray | None = None
         self.scaler = StandardScaler()
+
+    def fillna(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Fill numeric NaNs with the train medians (identity before fit)."""
+        if self.medians is None or not self.num_cols:
+            return df
+        fill = dict(zip(self.num_cols, self.medians.tolist()))
+        return df.fillna(fill)
 
     def fit(self, df: pd.DataFrame) -> "Preprocessor":
         self.cat_cols = [c for c in df.columns if c not in self.num_cols]
         for c in self.cat_cols:
             cats = sorted(df[c].astype(str).unique())
             self.vocab[c] = {v: i + 1 for i, v in enumerate(cats)}
-        self.scaler.fit(df[self.num_cols].to_numpy(dtype=float))
+        num = df[self.num_cols].to_numpy(dtype=float)
+        self.medians = np.nanmedian(num, axis=0)
+        num = np.where(np.isnan(num), self.medians, num)
+        # Winsorize at 0.5%/99.5%: GMSC has extreme outliers (utilization up
+        # to 50708) that would otherwise crush the standardized features.
+        self.clip_lo = np.quantile(num, 0.005, axis=0)
+        self.clip_hi = np.quantile(num, 0.995, axis=0)
+        self.scaler.fit(np.clip(num, self.clip_lo, self.clip_hi))
         return self
 
     def transform(self, df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
@@ -100,7 +86,10 @@ class Preprocessor:
         for j, c in enumerate(self.cat_cols):
             m = self.vocab[c]
             cat[:, j] = [m.get(str(v), 0) for v in df[c]]
-        num = self.scaler.transform(df[self.num_cols].to_numpy(dtype=float))
+        num = df[self.num_cols].to_numpy(dtype=float)
+        num = np.where(np.isnan(num), self.medians, num)
+        num = np.clip(num, self.clip_lo, self.clip_hi)
+        num = self.scaler.transform(num)
         return cat, num.astype(np.float32)
 
     def spec(self, embed_dim: int = 8) -> FeatureSpec:
@@ -141,18 +130,22 @@ def batch_tensors(cat, num, sids, y=None):
     return [x.to(DEVICE) for x in t]
 
 
-def train_model(net, data, epochs=200, patience=15, lr=1e-3, batch=64):
+def train_model(net, data, epochs=200, patience=15, lr=1e-3, batch=None):
     cat_tr, num_tr, sid_tr, y_tr = batch_tensors(*data["train"])
     cat_va, num_va, sid_va, y_va = batch_tensors(*data["valid"])
+    if batch is None:
+        batch = 64 if len(y_tr) <= 20_000 else 1024
     opt = torch.optim.Adam(net.parameters(), lr=lr)
     n_bad, n_good = int(y_tr.sum().item()), int((y_tr == 0).sum().item())
     loss_fn = nn.BCEWithLogitsLoss(
         pos_weight=torch.tensor(n_good / max(n_bad, 1), device=DEVICE)
     )
-    best_auc, best_state, wait = -1.0, None, 0
+    best_auc, best_state, wait, epoch = -1.0, None, 0, -1
+    history: dict[str, list[float]] = {"train_loss": [], "valid_loss": []}
     for epoch in range(epochs):
         net.train()
         perm = torch.randperm(len(y_tr), device=DEVICE)
+        epoch_loss, seen = 0.0, 0
         for i in range(0, len(y_tr), batch):
             idx = perm[i : i + batch]
             logit, _ = net(cat_tr[idx], num_tr[idx], sid_tr[idx])
@@ -160,18 +153,26 @@ def train_model(net, data, epochs=200, patience=15, lr=1e-3, batch=64):
             opt.zero_grad()
             loss.backward()
             opt.step()
+            epoch_loss += float(loss.item()) * len(idx)
+            seen += len(idx)
         net.eval()
         with torch.no_grad():
             logit_va, _ = net(cat_va, num_va, sid_va)
-            auc = roc_auc_score(y_va.cpu(), torch.sigmoid(logit_va).cpu())
+            p_va = torch.sigmoid(logit_va)
+            auc = roc_auc_score(y_va.cpu(), p_va.cpu())
+            val_loss = float(loss_fn(logit_va, y_va).item())
+        history["train_loss"].append(epoch_loss / max(seen, 1))
+        history["valid_loss"].append(val_loss)
         if auc > best_auc:
-            best_auc, best_state, wait = auc, net.state_dict().copy(), 0
+            best_auc, wait = auc, 0
+            # Clone tensors: state_dict() aliases live parameters.
+            best_state = {k: v.clone() for k, v in net.state_dict().items()}
         else:
             wait += 1
             if wait >= patience:
                 break
     net.load_state_dict(best_state)  # type: ignore[arg-type]
-    return best_auc, epoch + 1
+    return best_auc, epoch + 1, history
 
 
 # ------------------------------------------------------------------ metrics
@@ -184,39 +185,57 @@ def ks_statistic(scores: np.ndarray, y: np.ndarray) -> float:
     return float(np.max(np.abs(cum_bad - cum_good)))
 
 
-def format_trace(
-    trace: MemoryTrace, i: int, table: MemoryTable, prob_cal: float
-) -> str:
-    """D7 decision-reason template, one sample."""
-    lines = [
-        f"sample #{i}: P(bad) raw={trace.prob[i]:.3f} calibrated={prob_cal:.3f} "
-        f"memory_miss={bool(trace.memory_miss[i])}"
-    ]
-    for k, head in enumerate(table.head_names):
-        sid = int(trace.slot_ids[i, k])
-        gate = float(trace.gates[i, k])
-        if not bool(trace.hits[i, k]):
-            lines.append(f"  [{head}] slot {sid}: MISS (gate {gate:.2f})")
-            continue
-        slot = table.get_slot(k, sid)
-        desc = slot.pattern_desc if slot else "?"
-        lines.append(
-            f"  [{head}] slot {sid}: pattern『{desc}』"
-            f"(n={int(trace.ns[i, k])}, bad_rate={slot.bad_rate:.2f}, "
-            f"confidence={float(trace.confidences[i, k]):.2f}), gate={gate:.2f}"
-        )
-    return "\n".join(lines)
-
-
 # ---------------------------------------------------------------------- main
 
+def train_and_evaluate(
+    net: NeuralCreditNet,
+    data: dict[str, tuple],
+    y: np.ndarray,
+    splits: dict[str, np.ndarray],
+) -> tuple[dict, dict[str, list[float]], MemoryTrace, np.ndarray]:
+    """Train one arm and evaluate on valid/test. Returns (metrics, loss
+    history, test trace, calibrated test probabilities)."""
+    best_va_auc, n_epochs, history = train_model(net, data)
+
+    net.eval()
+    with torch.no_grad():
+        logit_va, _ = net(*batch_tensors(*data["valid"])[:3])
+        logit_te, trace_te = net(*batch_tensors(*data["test"])[:3])
+    p_va = torch.sigmoid(logit_va).cpu().numpy()
+    p_te = torch.sigmoid(logit_te).cpu().numpy()
+    y_va, y_te = y[splits["valid"]], y[splits["test"]]
+    # Isotonic calibrator fit on the valid split only (D5).
+    iso = IsotonicRegression(out_of_bounds="clip").fit(p_va, y_va)
+    p_te_cal = iso.predict(p_te)
+
+    metrics = {
+        "valid_auc": round(best_va_auc, 4),
+        "test_auc": round(float(roc_auc_score(y_te, p_te)), 4),
+        "test_auc_calibrated": round(float(roc_auc_score(y_te, p_te_cal)), 4),
+        "test_ks": round(ks_statistic(p_te, y_te), 4),
+        "test_brier_raw": round(float(brier_score_loss(y_te, p_te)), 4),
+        "test_brier_calibrated": round(
+            float(brier_score_loss(y_te, p_te_cal)), 4
+        ),
+        "epochs": n_epochs,
+    }
+    return metrics, history, trace_te, p_te_cal
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dataset", choices=DATASET_NAMES, default="credit-g")
+    args = parser.parse_args()
+
     torch.manual_seed(SEED)
     np.random.seed(SEED)
     t0 = time.time()
 
-    df, y, source = load_credit_data()
-    print(f"data: {source}, n={len(df)}, bad_rate={y.mean():.3f}, device={DEVICE}")
+    dspec: DatasetSpec
+    dspec, df, y, source = resolve(args.dataset, SEED)
+    print(
+        f"data: {source}, n={len(df)}, bad_rate={y.mean():.3f}, device={DEVICE}"
+    )
 
     idx = np.arange(len(df))
     idx_tr, idx_tmp = train_test_split(
@@ -227,9 +246,12 @@ def main() -> None:
     )
     splits = {"train": idx_tr, "valid": idx_va, "test": idx_te}
 
-    num_cols = [c for c in NUMERIC_FEATURES if c in df.columns]
+    num_cols = [c for c in dspec.numeric_features if c in df.columns]
     prep = Preprocessor(num_cols).fit(df.iloc[idx_tr])
-    hasher = MultiHeadHasher(HEADS).fit(df.iloc[idx_tr], num_cols)
+    df = prep.fillna(df)  # train medians; hasher must not see NaN
+    hasher = MultiHeadHasher(list(dspec.heads), n_bins=dspec.n_bins).fit(
+        df.iloc[idx_tr], num_cols
+    )
     spec = prep.spec()
 
     encoded, addressed = {}, {}
@@ -241,39 +263,45 @@ def main() -> None:
 
     # Build memory from the train split only, then freeze (D6).
     emb_tr = proto_embeddings(encoded["train"][0], spec, encoded["train"][1])
-    table = MemoryTable([h.name for h in HEADS], [h.num_slots for h in HEADS], PROTO_DIM)
+    heads = list(dspec.heads)
+    table = MemoryTable([h.name for h in heads], [h.num_slots for h in heads], PROTO_DIM)
     table.build(addressed["train"][0], emb_tr, y[idx_tr], addressed["train"][1])
     print(f"memory built: {table.occupancy()}")
 
-    net = NeuralCreditNet(spec, table).to(DEVICE)
     data = {
         name: (*encoded[name], addressed[name][0], y[ids])
         for name, ids in splits.items()
     }
-    best_va_auc, n_epochs = train_model(net, data)
-    print(f"trained {n_epochs} epochs, best valid AUC={best_va_auc:.4f}")
 
-    # Evaluate raw + isotonic-calibrated (calibrator fit on valid only, D5).
-    net.eval()
-    with torch.no_grad():
-        logit_va, _ = net(*batch_tensors(*data["valid"])[:3])
-        logit_te, trace_te = net(*batch_tensors(*data["test"])[:3])
-    p_va = torch.sigmoid(logit_va).cpu().numpy()
-    p_te = torch.sigmoid(logit_te).cpu().numpy()
-    y_va, y_te = y[idx_va], y[idx_te]
-    iso = IsotonicRegression(out_of_bounds="clip").fit(p_va, y_va)
-    p_te_cal = iso.predict(p_te)
+    # Two arms, same data/split/seed: full model vs no-memory backbone.
+    torch.manual_seed(SEED)
+    net = NeuralCreditNet(spec, table).to(DEVICE)
+    torch.manual_seed(SEED)
+    net_abl = NeuralCreditNet(spec, table, ablate_memory=True).to(DEVICE)
+
+    # V1: with W_out zero-initialized the memory branch is an exact no-op.
+    cat_te, num_te, sid_te = batch_tensors(*data["test"])[:3]
+    v1_diff = verify.zero_init_max_diff(net, net_abl, cat_te, num_te, sid_te)
+    print(f"V1 zero-init max |dlogit| = {v1_diff:.2e}")
+
+    m_mem, hist_mem, trace_te, p_te_cal = train_and_evaluate(
+        net, data, y, splits
+    )
+    print(f"[with_memory] trained {m_mem['epochs']} epochs, "
+          f"valid AUC={m_mem['valid_auc']:.4f}, test AUC={m_mem['test_auc']:.4f}")
+    m_abl, hist_abl, _, _ = train_and_evaluate(net_abl, data, y, splits)
+    print(f"[ablated]     trained {m_abl['epochs']} epochs, "
+          f"valid AUC={m_abl['valid_auc']:.4f}, test AUC={m_abl['test_auc']:.4f}")
 
     hits_np = trace_te.hits.numpy()
+    gates_np = trace_te.gates.numpy()
     metrics = {
+        "dataset": dspec.name,
         "data_source": source,
+        "loss": "BCEWithLogitsLoss(pos_weight=n_good/n_bad); AUC/KS are "
+                "ranking metrics, Brier uses isotonic calibration on valid",
         "n_train": len(idx_tr), "n_valid": len(idx_va), "n_test": len(idx_te),
-        "valid_auc": round(best_va_auc, 4),
-        "test_auc": round(float(roc_auc_score(y_te, p_te)), 4),
-        "test_auc_calibrated": round(float(roc_auc_score(y_te, p_te_cal)), 4),
-        "test_ks": round(ks_statistic(p_te, y_te), 4),
-        "test_brier_raw": round(float(brier_score_loss(y_te, p_te)), 4),
-        "test_brier_calibrated": round(float(brier_score_loss(y_te, p_te_cal)), 4),
+        **m_mem,
         "memory_hit_rate": round(float(hits_np.any(axis=1).mean()), 4),
         "memory_miss_rate": round(float(trace_te.memory_miss.numpy().mean()), 4),
         "head_hit_rates": {
@@ -281,7 +309,27 @@ def main() -> None:
             for k, h in enumerate(table.head_names)
         },
         "memory_occupancy": table.occupancy(),
-        "epochs": n_epochs,
+        "gate_stats": {
+            "mean": round(float(gates_np.mean()), 4),
+            "p10": round(float(np.quantile(gates_np, 0.1)), 4),
+            "p50": round(float(np.quantile(gates_np, 0.5)), 4),
+            "p90": round(float(np.quantile(gates_np, 0.9)), 4),
+        },
+        "head_gate_means": {
+            h: round(float(gates_np[:, k].mean()), 4)
+            for k, h in enumerate(table.head_names)
+        },
+        "ablation": {
+            "without_memory": m_abl,
+            "memory_gain": {
+                "test_auc": round(m_mem["test_auc"] - m_abl["test_auc"], 4),
+                "test_ks": round(m_mem["test_ks"] - m_abl["test_ks"], 4),
+                "test_brier_calibrated": round(
+                    m_abl["test_brier_calibrated"]
+                    - m_mem["test_brier_calibrated"], 4
+                ),
+            },
+        },
         "device": str(DEVICE),
         "elapsed_sec": round(time.time() - t0, 1),
     }
@@ -289,12 +337,58 @@ def main() -> None:
     ARTIFACT_DIR.mkdir(exist_ok=True)
     torch.save(
         {"state_dict": net.state_dict(), "spec": spec.__dict__,
-         "heads": [h.__dict__ for h in HEADS], "proto_dim": PROTO_DIM},
+         "heads": [h.__dict__ for h in heads], "proto_dim": PROTO_DIM},
         ARTIFACT_DIR / "model.pt",
     )
     table.save(ARTIFACT_DIR / "memory_table.pkl")
     (ARTIFACT_DIR / "metrics.json").write_text(json.dumps(metrics, indent=2))
     print(json.dumps(metrics, indent=2))
+
+    # ------------------------------------------------------ verifications
+    # V2: gate context probe — same backbone context, scrambled addressing.
+    sid_scr = verify.scrambled_slot_ids(hasher, df.iloc[idx_te], SEED)
+    net.eval()
+    with torch.no_grad():
+        _, trace_scr = net(cat_te, num_te, torch.as_tensor(sid_scr).to(DEVICE))
+    gates_scr = trace_scr.gates.numpy()
+    verify.plot_gate_probe(
+        gates_np, gates_scr, table.head_names,
+        str(ARTIFACT_DIR / "v2_gate_context_probe.png"),
+    )
+
+    # V3: slot hit-count concentration (Zipf check) on the train split.
+    zipf = verify.slot_concentration(addressed["train"][0], table)
+    verify.plot_rank_frequency(
+        addressed["train"][0], table,
+        str(ARTIFACT_DIR / "v3_slot_rank_frequency.png"),
+    )
+
+    # V4: loss curves of both arms on one figure.
+    verify.plot_loss_curves(
+        hist_mem, hist_abl, str(ARTIFACT_DIR / "v4_ablation_loss_curves.png")
+    )
+
+    verification = {
+        "v1_zero_init_max_abs_diff": v1_diff,
+        "v2_gate_probe": {
+            "real": verify.gate_stats(gates_np, table.head_names),
+            "scrambled": verify.gate_stats(gates_scr, table.head_names),
+        },
+        "v3_slot_concentration": zipf,
+        "v4_final_loss": {
+            "with_memory": {k: round(v[-1], 5) for k, v in hist_mem.items()},
+            "without_memory": {k: round(v[-1], 5) for k, v in hist_abl.items()},
+        },
+        "figures": [
+            "v2_gate_context_probe.png",
+            "v3_slot_rank_frequency.png",
+            "v4_ablation_loss_curves.png",
+        ],
+    }
+    (ARTIFACT_DIR / "verification.json").write_text(
+        json.dumps(verification, indent=2)
+    )
+    print(json.dumps(verification, indent=2))
 
     print("\n--- MemoryTrace samples (D7) ---")
     for i in (0, 1, 2):

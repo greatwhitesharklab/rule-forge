@@ -4,6 +4,11 @@ The frozen memory table is materialized into dense per-head buffers
 (proto / confidence / n / hit) so lookup is pure indexing: frozen by
 construction, moves with ``.to(device)``, and snapshots into state_dict.
 
+Injection is RESIDUAL (Engram-style): the trunk produces h, the memory
+branch produces m = W_out(weighted gated protos) and the head reads
+h' = h + m. W_out is zero-initialized, so at init the memory branch is an
+exact no-op and the net equals the no-memory ablation baseline (V1).
+
 Read gate per head (D3):
     gate_k = σ(w · [confidence, log1p(n)/log1p(N_REF), freshness, cos(q, proto_k)]) · hit_k
 Missing slots have all-zero stats and freshness, and the explicit hit mask
@@ -63,11 +68,15 @@ class NeuralCreditNet(nn.Module):
         table: MemoryTable,
         hidden_dim: int = 128,
         backbone_dim: int = 64,
+        ablate_memory: bool = False,
     ) -> None:
         super().__init__()
         self.spec = spec
         self.head_names = list(table.head_names)
         self.proto_dim = table.proto_dim
+        # Ablation switch: zero the memory injection so the net degenerates
+        # to the pure MLP backbone (same parameter shapes, same init seed).
+        self.ablate_memory = ablate_memory
         k = len(self.head_names)
 
         # Feature encoder: categorical embeddings + standardized numerics.
@@ -79,17 +88,25 @@ class NeuralCreditNet(nn.Module):
         # Read gate: shared weight vector across heads, per-head scale on protos.
         self.query_proj = nn.Linear(backbone_dim, table.proto_dim)
         self.gate_weight = nn.Linear(GATE_FEATURE_DIM, 1)
-        self.mem_proj = nn.Linear(k * table.proto_dim, backbone_dim)
+        self.mem_proj = nn.Linear(k * table.proto_dim, hidden_dim)
 
-        # Backbone: deliberately small MLP (D5), hidden ≤ 256.
-        self.backbone = nn.Sequential(
-            nn.Linear(backbone_dim * 2, hidden_dim),
+        # Residual injection (Engram-style): h' = h + W_out(mem). W_out is
+        # ZERO-INITIALIZED so the memory branch contributes exactly 0 at init
+        # and the net starts as the precise no-memory baseline (V1 check).
+        self.mem_out = nn.Linear(hidden_dim, hidden_dim)
+        nn.init.zeros_(self.mem_out.weight)
+        nn.init.zeros_(self.mem_out.bias)
+
+        # Backbone trunk produces h; the output head reads h' = h + m.
+        # Deliberately small MLP (D5), hidden ≤ 256.
+        self.trunk = nn.Sequential(
+            nn.Linear(backbone_dim, hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, 1),
         )
+        self.head = nn.Linear(hidden_dim, 1)
 
         # Frozen memory as dense buffers (indexing = addressing).
         for ki, head in enumerate(self.head_names):
@@ -126,6 +143,27 @@ class NeuralCreditNet(nn.Module):
         slot_ids: torch.Tensor,  # [B, K] long
     ) -> tuple[torch.Tensor, MemoryTrace]:
         f = self.encode_features(cat_codes, num_vals)  # [B, backbone_dim]
+        h = self.trunk(f)  # [B, hidden_dim]
+        batch = f.shape[0]
+        k = len(self.head_names)
+
+        if self.ablate_memory:
+            # Memory ablation: injection skipped entirely (m ≡ 0), gates
+            # pinned to 0 and every sample flagged memory_miss — what
+            # remains is the pure MLP backbone.
+            logit = self.head(h).squeeze(-1)
+            zeros = torch.zeros(batch, k, device=f.device)
+            trace = MemoryTrace(
+                slot_ids=slot_ids.detach().cpu(),
+                gates=zeros,
+                confidences=zeros,
+                ns=zeros,
+                hits=torch.zeros(batch, k, dtype=torch.bool),
+                memory_miss=torch.ones(batch, dtype=torch.bool),
+                prob=torch.sigmoid(logit).detach().cpu(),
+            )
+            return logit, trace
+
         q = self.query_proj(f)  # [B, proto_dim]
 
         gates, confs, ns_list, hits = [], [], [], []
@@ -150,8 +188,8 @@ class NeuralCreditNet(nn.Module):
             gated_protos.append(gate.unsqueeze(-1) * proto)
 
         gates_t = torch.stack(gates, dim=-1)  # [B, K]
-        mem = self.mem_proj(torch.cat(gated_protos, dim=-1))  # [B, backbone_dim]
-        logit = self.backbone(torch.cat([f, mem], dim=-1)).squeeze(-1)  # [B]
+        mem = self.mem_proj(torch.cat(gated_protos, dim=-1))  # [B, hidden_dim]
+        logit = self.head(h + self.mem_out(mem)).squeeze(-1)  # residual h + m
 
         memory_miss = (gates_t.max(dim=-1).values < MISS_THRESHOLD) | (
             torch.stack(hits, dim=-1).sum(dim=-1) == 0
