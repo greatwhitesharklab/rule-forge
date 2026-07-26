@@ -79,6 +79,13 @@ class P2Config:
     # memory: the only way the gate gets an explicit "close for irrelevant
     # context" gradient — related-only training just closes it everywhere.
     mismatch_fraction: float = 0.25
+    # Fraction staged with ANOTHER case's high-cos hits (content wrong,
+    # amplitude same as related). Without these, Σw is a perfect shortcut:
+    # "close ∝ amplitude" beats semantic gating, because the broadcast
+    # injection's cost scales with |mem| regardless of content. Balanced
+    # high-Σw evidence (useful half the time, harmful half) neutralizes the
+    # amplitude prior and leaves content/alignment as the only learnable axis.
+    shuffle_fraction: float = 0.25
     # Phase 1: train the injection path alone (LoRA lr held at 0). With the
     # LM channel frozen, memory is the ONLY way to fit the completion, so
     # mem_out must extract the outcome signal and the gate must open for
@@ -86,6 +93,11 @@ class P2Config:
     # the task and teaches the gate to close PROPORTIONALLY to memory
     # pressure (the P2 smoke run's inverted-alpha failure).
     freeze_lora_steps: int = 60
+    # P2.1: bind a retrieved "依据:{经验陈述}" tail into case completions so
+    # memory becomes a necessary information source (P2 root-cause fix).
+    completion_rationale: bool = True
+    rationale_top_n: int = 2
+    rationale_max_chars: int = 64
     lora_r: int = 16
     lora_alpha: int = 32
     lora_dropout: float = 0.05
@@ -372,3 +384,42 @@ def build_p2_metrics(
 
 def write_metrics(metrics: dict[str, Any], path: Path | str) -> None:
     Path(path).write_text(json.dumps(metrics, ensure_ascii=False, indent=2))
+
+
+# ------------------------------------------------------- rationale binding (P2.1)
+
+
+def build_rationales(
+    service: Any,
+    embedder: Any,
+    case_records: Sequence[Any],
+    top_n: int = 2,
+    max_chars: int = 64,
+) -> dict[str, str]:
+    """Bind each case's completion rationale from the slot library.
+
+    Retrieval goes through the PRODUCTION read path (SlotService.retrieve —
+    theta gate + attribution log), never a hand-rolled FAISS call; the
+    rationale is the top-N hit slots' value_texts. A slot text that merely
+    restates the case's own summary is stripped of that prefix, so the
+    rationale carries only what the prompt does NOT already state (the
+    outcome tail and other cases' experience) — otherwise the "依据" would
+    be prompt-solvable and memory would stay unnecessary (the P2 failure).
+
+    Empty result ("" -> distill's fixed 无既往经验 phrase) when nothing
+    passed the retrieval gate. Attribution rows are logged under
+    "distill-<case_id>" so they never collide with outcome credit accounting.
+    """
+    out: dict[str, str] = {}
+    for rec in case_records:
+        key = embedder.embed_keys([rec.summary])[0]
+        hits = service.retrieve(key, case_id=f"distill-{rec.case_id}")
+        parts: list[str] = []
+        for slot, _w in hits[:top_n]:
+            text = slot.value_text
+            if text.startswith(rec.summary):
+                text = text[len(rec.summary):].lstrip(";")
+            if text:
+                parts.append(text)
+        out[rec.case_id] = ";".join(parts)[:max_chars]
+    return out

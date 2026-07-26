@@ -133,3 +133,38 @@ def test_plot_gate_hist_writes_png(tmp_path):
         pre_unrelated=[0.5] * 24,
     )
     assert out.exists() and out.stat().st_size > 1000
+
+
+def test_build_rationales_uses_production_read_path(tmp_path):
+    """Rationales come from SlotService.retrieve (theta gate + attribution
+    log), stripped of the prompt-redundant summary prefix."""
+    from eval.p2_common import build_rationales
+    from lora import CaseRecord
+
+    mem = _memory(tmp_path)
+    records = [
+        CaseRecord(case_id="x1", summary=CASE_TEXTS[0], outcome="bad"),
+        CaseRecord(case_id="x2", summary="完全无关的天气话题文本", outcome="good"),
+    ]
+    rationales = build_rationales(mem.service, mem.embedder, records,
+                                  top_n=2, max_chars=64)
+
+    # Matching case: hit slots' value_text, summary prefix stripped — only
+    # the outcome tail (memory-exclusive content) survives.
+    assert rationales["x1"] == "结局:违约"
+    # Off-domain case: nothing passes the theta gate -> empty (distill maps
+    # it to the fixed 无既往经验 phrase downstream).
+    assert rationales["x2"] == ""
+    # The production read path logged attributions under the distill prefix.
+    assert mem.service.store.attributions_for("distill-x1")
+
+
+def test_build_rationales_truncates_and_joins(tmp_path):
+    from eval.p2_common import build_rationales
+    from lora import CaseRecord
+
+    mem = _memory(tmp_path)
+    records = [CaseRecord(case_id="x1", summary=CASE_TEXTS[0], outcome="bad")]
+    rationales = build_rationales(mem.service, mem.embedder, records,
+                                  top_n=2, max_chars=5)
+    assert len(rationales["x1"]) <= 5

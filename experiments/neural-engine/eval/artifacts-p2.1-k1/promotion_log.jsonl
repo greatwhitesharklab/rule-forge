@@ -1,0 +1,1 @@
+{"promoted": true, "reason": "promoted: replay +85.98%, old -84.92%", "champion": null, "challenger": "eval/artifacts-p2.1-k1/adapters/20260726", "replay_champion_nll": 1.1272171071589363, "replay_challenger_nll": 0.15801406214534808, "old_champion_nll": 1.2590547276003925, "old_challenger_nll": 0.18987918015263508, "ts": "2026-07-26T13:17:55.184094+00:00", "verdict": "promoted"}

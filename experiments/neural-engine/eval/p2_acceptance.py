@@ -1,4 +1,10 @@
-"""P2 acceptance runner (design doc §5): welded Engram gate α + LoRA promotion.
+"""P2/P2.1 acceptance runner (design doc §5): gate α + LoRA promotion.
+
+P2.1 change: case completions carry a retrieved "依据:{经验陈述}" tail
+(lora.distill rationales), making memory a necessary information source
+— the P2 run's inverted-gate root cause was that verdicts were
+prompt-solvable. Default output dir is eval/artifacts-p2.1/; --no-rationale
+reproduces the P2 baseline template.
 
 Usage (cwd = experiments/neural-engine):
 
@@ -46,6 +52,7 @@ from eval.p2_common import (
     build_joint_optimizer,
     build_p2_metrics,
     build_probe_sets,
+    build_rationales,
     collate_uniform,
     gate_verdict,
     hits_for_key,
@@ -147,16 +154,32 @@ def run(cfg: P2Config, out_dir: Path) -> dict:
     replay_idx = np.where(cb.episode == last_ep)[0]
     old_idx = np.where(cb.episode == 0)[0]
     distill_cases = _case_records(world, distill_idx)
+    replay_records = _case_records(world, replay_idx)
+    old_records = _case_records(world, old_idx)
+    # P2.1: bind "依据:{经验陈述}" tails retrieved from the slot library via
+    # the production read path. One binding serves train + replay + old-probe
+    # pairs so the completion template is consistent everywhere.
+    rationales = None
+    n_no_experience = 0
+    if cfg.completion_rationale:
+        rationales = build_rationales(
+            service, embedder, distill_cases + replay_records + old_records,
+            top_n=cfg.rationale_top_n, max_chars=cfg.rationale_max_chars,
+        )
+        n_no_experience = sum(1 for v in rationales.values() if not v)
     pairs = build_distill_set(
         store.all_slots(), distill_cases,
         config=DistillConfig(max_pairs=cfg.distill_max_pairs),
+        rationales=rationales, rationale_max_chars=cfg.rationale_max_chars,
     )
-    replay_pairs = build_distill_set([], _case_records(world, replay_idx))[
-        : cfg.replay_pairs
-    ]
-    old_pairs = build_distill_set([], _case_records(world, old_idx))[
-        : cfg.old_probe_pairs
-    ]
+    replay_pairs = build_distill_set(
+        [], replay_records, rationales=rationales,
+        rationale_max_chars=cfg.rationale_max_chars,
+    )[: cfg.replay_pairs]
+    old_pairs = build_distill_set(
+        [], old_records, rationales=rationales,
+        rationale_max_chars=cfg.rationale_max_chars,
+    )[: cfg.old_probe_pairs]
     n_case_pairs = sum(1 for p in pairs if p.source == "case")
     print(f"[distill] {len(pairs)} pairs ({n_case_pairs} case / "
           f"{len(pairs) - n_case_pairs} slot); replay {len(replay_pairs)}, "
@@ -234,17 +257,29 @@ def run(cfg: P2Config, out_dir: Path) -> dict:
         for text in OFF_DOMAIN_TEXTS
     ]
     mismatch_every = round(1.0 / cfg.mismatch_fraction) if cfg.mismatch_fraction else 0
+    shuffle_every = round(1.0 / cfg.shuffle_fraction) if cfg.shuffle_fraction else 0
     examples = []
     n_mismatched = 0
+    n_shuffled = 0
+    case_j = 0
     for j, pair in enumerate(pairs):
         enc = encode_pair(tokenizer, pair.prompt, pair.completion, cfg.max_len)
         staged = None
         if pair.source == "case":
-            if mismatch_every and j % mismatch_every == mismatch_every - 1:
-                staged = off_hits[j % len(off_hits)]  # contrastive: close me
+            if mismatch_every and case_j % mismatch_every == mismatch_every - 1:
+                staged = off_hits[j % len(off_hits)]  # low-Σw noise: close me
                 n_mismatched += 1
+            elif shuffle_every and case_j % shuffle_every == shuffle_every - 2:
+                # another case's high-Σw hits: right amplitude, wrong content
+                other = case_prompts[(case_j + 7) % len(case_prompts)]
+                if other != pair.prompt:
+                    staged = staged_cache[other]
+                    n_shuffled += 1
+                else:
+                    staged = staged_cache[pair.prompt]
             else:
                 staged = staged_cache[pair.prompt]
+            case_j += 1
         examples.append({**enc, "staged": staged})
 
     rng = np.random.default_rng(cfg.seed)
@@ -374,7 +409,10 @@ def run(cfg: P2Config, out_dir: Path) -> dict:
         "n_pairs": len(pairs),
         "n_case_pairs": n_case_pairs,
         "n_mismatched": n_mismatched,
+        "n_shuffled": n_shuffled,
         "freeze_lora_steps": cfg.freeze_lora_steps,
+        "completion_rationale": cfg.completion_rationale,
+        "n_no_experience": n_no_experience,
         "slots": n_slots,
         "gate_weight_abs_sum": gate_w,
         "mem_out_weight_abs_sum": mem_w,
@@ -401,24 +439,31 @@ def run(cfg: P2Config, out_dir: Path) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="P2 acceptance experiment")
-    parser.add_argument("--out", type=Path, default=Path("eval/artifacts-p2"))
+    parser.add_argument("--out", type=Path, default=Path("eval/artifacts-p2.1"))
     parser.add_argument("--seed", type=int, default=P2Config.seed)
     parser.add_argument("--steps", type=int, default=P2Config.max_steps)
     parser.add_argument("--max-len", type=int, default=P2Config.max_len)
     parser.add_argument("--batch-size", type=int, default=P2Config.batch_size)
     parser.add_argument("--lora-lr", type=float, default=P2Config.lora_lr)
     parser.add_argument("--injection-lr", type=float, default=P2Config.injection_lr)
+    parser.add_argument("--top-k", type=int, default=P2Config.top_k,
+                        help="retrieval width for staging and the injection")
+    parser.add_argument("--no-rationale", action="store_true",
+                        help="pre-P2.1 completion template (verdict only)")
     parser.add_argument("--quick", action="store_true",
                         help="tiny smoke run (12 steps, 60 pairs, 8 probe samples)")
     args = parser.parse_args(argv)
 
     cfg = P2Config(seed=args.seed, max_steps=args.steps, max_len=args.max_len,
                    batch_size=args.batch_size, lora_lr=args.lora_lr,
-                   injection_lr=args.injection_lr)
+                   injection_lr=args.injection_lr, top_k=args.top_k,
+                   completion_rationale=not args.no_rationale)
     if args.quick:
         cfg = P2Config(seed=args.seed, max_steps=args.steps,
                        lora_lr=args.lora_lr, injection_lr=args.injection_lr,
                        max_len=args.max_len, batch_size=args.batch_size,
+                       top_k=args.top_k,
+                       completion_rationale=not args.no_rationale,
                        distill_max_pairs=60, freeze_lora_steps=4,
                        probe_samples=8, replay_pairs=16, old_probe_pairs=8,
                        warmup_episodes=3, warmup_per_episode=40)

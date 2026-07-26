@@ -108,3 +108,50 @@ class TestDedupAndCap:
         slots = [slot(0.75, "mid"), slot(0.95, "top"), slot(0.8, "high")]
         pairs = build_distill_set(slots)
         assert [p.completion for p in pairs] == ["top", "high", "mid"]
+
+
+class TestRationaleTemplate:
+    """P2.1: completion carries "依据:{经验陈述}" so memory is a necessary
+    information source (P2 root-cause fix). Default stays template-exact."""
+
+    def test_default_template_has_no_rationale(self) -> None:
+        cases = [CaseRecord(case_id="c1", summary="s", outcome="good")]
+        (p,) = build_distill_set([], cases)
+        assert "依据" not in p.completion
+
+    def test_rationale_is_appended_after_verdict(self) -> None:
+        cases = [CaseRecord(case_id="c1", summary="s", outcome="bad")]
+        (p,) = build_distill_set([], cases, rationales={"c1": "多头借贷者违约率高"})
+        assert p.completion == "拒绝。依据:多头借贷者违约率高"
+
+    def test_reason_kept_before_rationale(self) -> None:
+        cases = [CaseRecord(case_id="c1", summary="s", outcome="bad", reason="r")]
+        (p,) = build_distill_set([], cases, rationales={"c1": "经验X"})
+        assert p.completion == "拒绝。r依据:经验X"
+
+    def test_missing_case_id_uses_fixed_no_experience_phrase(self) -> None:
+        cases = [CaseRecord(case_id="c1", summary="s", outcome="good")]
+        (p,) = build_distill_set([], cases, rationales={})
+        assert p.completion == "批准放款。依据:无既往经验"
+
+    def test_empty_rationale_uses_fixed_phrase(self) -> None:
+        cases = [CaseRecord(case_id="c1", summary="s", outcome="good")]
+        (p,) = build_distill_set([], cases, rationales={"c1": "   "})
+        assert p.completion.endswith("依据:无既往经验")
+
+    def test_rationale_is_truncated(self) -> None:
+        cases = [CaseRecord(case_id="c1", summary="s", outcome="good")]
+        (p,) = build_distill_set(
+            [], cases, rationales={"c1": "长" * 100}, rationale_max_chars=10
+        )
+        assert p.completion == "批准放款。依据:" + "长" * 10
+
+    def test_rationale_pairs_dedup_on_full_completion(self) -> None:
+        cases = [
+            CaseRecord(case_id="c1", summary="s", outcome="good"),
+            CaseRecord(case_id="c2", summary="s", outcome="good"),
+        ]
+        pairs = build_distill_set(
+            [], cases, rationales={"c1": "经验", "c2": "经验"}
+        )
+        assert len(pairs) == 1  # identical (prompt, completion) after binding
