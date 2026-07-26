@@ -38,7 +38,9 @@ def test_allocate_prior_status_and_provenance(svc):
     op, slot = svc.write_slot(make_key(1), make_value(1), "rule one", "good", "case-1")
     assert op == "allocate"
     assert slot.status == "candidate"
-    assert slot.beta_a == 1.0 and slot.beta_b == 1.0  # Beta(1,1) prior
+    # P1.1: Beta(λ(1-p), λp) prior, default λ=4, p=0.1 -> (3.6, 0.4).
+    assert slot.beta_a == pytest.approx(3.6)
+    assert slot.beta_b == pytest.approx(0.4)
     assert slot.provenance == ["case-1"]
     assert slot.key_vec.shape == (256,)
     assert slot.key_vec.dtype == np.float32
@@ -46,6 +48,16 @@ def test_allocate_prior_status_and_provenance(svc):
     assert slot.use_count == 0
     # key_vec is stored L2-normalized
     assert float(np.linalg.norm(slot.key_vec)) == pytest.approx(1.0, rel=1e-5)
+
+
+def test_allocate_prior_injection(svc):
+    """set_outcome_prior re-centers the new-slot prior (Bayesian shrinkage)."""
+    svc.set_outcome_prior(0.25)
+    _, slot = svc.write_slot(make_key(2), make_value(2), "r", "good", "case-1")
+    assert slot.beta_a == pytest.approx(4.0 * 0.75)
+    assert slot.beta_b == pytest.approx(4.0 * 0.25)
+    with pytest.raises(ValueError):
+        svc.set_outcome_prior(1.5)
 
 
 def test_dissimilar_case_allocates_new_slot(svc):
@@ -80,7 +92,8 @@ def test_reinforce_does_not_change_reputation_or_status(svc):
     _, slot = svc.write_slot(key, make_value(12), "r1", "good", "case-1")
     svc.write_slot(similar(key, 98), make_value(13), "r1b", "bad", "case-2")
     after = svc.store.get_slot(slot.slot_id)
-    assert after.beta_a == 1.0 and after.beta_b == 1.0  # reputation only via credit
+    assert after.beta_a == pytest.approx(3.6)  # reputation only via credit
+    assert after.beta_b == pytest.approx(0.4)
     assert after.status == "candidate"
 
 
@@ -99,7 +112,8 @@ def test_compete_triggers_on_outcome_conflict(svc):
     assert comp.slot_id != slot.slot_id
     assert len(svc.store.all_slots()) == 2  # competing slots coexist
     assert comp.status == "candidate"
-    assert comp.beta_a == 1.0 and comp.beta_b == 1.0
+    assert comp.beta_a == pytest.approx(3.6)  # competing slot starts at prior
+    assert comp.beta_b == pytest.approx(0.4)
     assert comp.provenance == ["case-2"]
 
 
@@ -112,11 +126,21 @@ def test_compete_triggers_for_good_leaning_slot_with_bad_outcome(svc):
     assert op == "compete"
 
 
-def test_no_compete_when_reputation_neutral(svc):
+def test_fresh_slot_prior_lean_conflicts_with_bad_outcome(svc):
     key = make_key(24)
     _, slot = svc.write_slot(key, make_value(24), "r1", "good", "case-1")
-    # Fresh slot: rep = 0.5, inside the neutral band -> reinforce, not compete.
-    op, slot2 = svc.write_slot(similar(key, 95), make_value(25), "r1b", "bad", "case-2")
+    # P1.1: fresh slot rep = 1 - p = 0.9 -> leans GOOD under the 0.5-centered
+    # rep_gap rule, so a first bad outcome contradicts it -> compete.
+    op, comp = svc.write_slot(similar(key, 95), make_value(25), "r1b", "bad", "case-2")
+    assert op == "compete"
+    assert comp.slot_id != slot.slot_id
+
+
+def test_fresh_slot_reinforces_when_outcome_agrees(svc):
+    key = make_key(25)
+    _, slot = svc.write_slot(key, make_value(25), "r1", "good", "case-1")
+    # Fresh slot leans good (prior); a good outcome agrees -> reinforce.
+    op, slot2 = svc.write_slot(similar(key, 94), make_value(26), "r1b", "good", "case-2")
     assert op == "reinforce"
     assert slot2.slot_id == slot.slot_id
 

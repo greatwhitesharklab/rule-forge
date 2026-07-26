@@ -39,23 +39,24 @@ def test_credit_good_increments_beta_a(svc):
     slot, alpha = _attributed_slot(svc, 1, "case-g")
     svc.credit_assignment("case-g", "good", amount_weight=100.0)
     after = svc.store.get_slot(slot.slot_id)
-    assert after.beta_a == pytest.approx(1.0 + 100.0 * alpha)
-    assert after.beta_b == pytest.approx(1.0)
+    # P1.1 prior base is (3.6, 0.4); credit adds amount_weight * attribution weight.
+    assert after.beta_a == pytest.approx(3.6 + 100.0 * alpha)
+    assert after.beta_b == pytest.approx(0.4)
 
 
 def test_credit_bad_increments_beta_b(svc):
     slot, alpha = _attributed_slot(svc, 2, "case-b")
     svc.credit_assignment("case-b", "bad", amount_weight=50.0)
     after = svc.store.get_slot(slot.slot_id)
-    assert after.beta_a == pytest.approx(1.0)
-    assert after.beta_b == pytest.approx(1.0 + 50.0 * alpha)
+    assert after.beta_a == pytest.approx(3.6)
+    assert after.beta_b == pytest.approx(0.4 + 50.0 * alpha)
 
 
 def test_credit_default_amount_weight_is_one(svc):
     slot, alpha = _attributed_slot(svc, 3, "case-d")
     svc.credit_assignment("case-d", "good")
     after = svc.store.get_slot(slot.slot_id)
-    assert after.beta_a == pytest.approx(1.0 + alpha)
+    assert after.beta_a == pytest.approx(3.6 + alpha)
 
 
 def test_credit_distributes_across_multiple_attributed_slots(svc):
@@ -72,7 +73,7 @@ def test_credit_distributes_across_multiple_attributed_slots(svc):
 
     for sid, alpha in rows.items():
         after = svc.store.get_slot(sid)
-        assert after.beta_a == pytest.approx(1.0 + 10.0 * alpha)
+        assert after.beta_a == pytest.approx(3.6 + 10.0 * alpha)
 
 
 def test_credit_appends_outcome_events_for_a_tmp(svc):
@@ -88,3 +89,19 @@ def test_credit_appends_outcome_events_for_a_tmp(svc):
 def test_credit_ignores_cases_without_attribution(svc):
     svc.credit_assignment("no-such-case", "good", amount_weight=100.0)  # no-op
     assert svc.store.all_slots() == []
+
+
+def test_credit_weight_is_reputation_free(svc):
+    """P1.1: a bad-reputation slot is blamed at FULL attribution weight —
+    the old alpha damped blame by a_rep, a divergence conspiracy."""
+    key = make_key(8)
+    _, slot = svc.write_slot(key, make_value(8), "r", "good", "case-rf")
+    svc.store.update_betas(slot.slot_id, 1.0, 9.0)  # a_rep = 0.1
+    svc.retrieve(key, case_id="case-rf")
+    alpha = svc.store.attributions_for("case-rf")[0]["alpha"]
+    assert alpha == pytest.approx(1.0 * 0.5)  # a_sem * a_tmp, no a_rep factor
+
+    svc.credit_assignment("case-rf", "bad", amount_weight=10.0)
+
+    after = svc.store.get_slot(slot.slot_id)
+    assert after.beta_b == pytest.approx(9.0 + 10.0 * alpha)

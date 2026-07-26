@@ -43,3 +43,6 @@ data/
 
 # UX 走查脚本(一次性工具)
 console-ui/scripts/ux-audit*.mjs
+
+# neural-engine 验收实验运行产物(槽位库 work 文件,每次实验重建)
+experiments/neural-engine/eval/artifacts*/work/

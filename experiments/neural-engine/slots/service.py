@@ -1,13 +1,17 @@
 """Engram slot-table service: online retrieval + nightly write path (§1.2).
 
-Online (read-only w.r.t. experience): retrieve() scores FAISS candidates by
-``alpha = a_sem * a_rep**BETA * a_tmp**GAMMA`` and logs an attribution record
-per accepted slot — the attribution log is what credit_assignment() reads when
-outcomes flow back.
+Online (read-only w.r.t. experience): retrieve() gates FAISS candidates by
+the reputation-free weight ``w = a_sem * a_tmp**GAMMA > THETA`` (P1.1 —
+reputation was decoupled from the gate after the P1 acceptance FAIL showed
+bad-reputation slots going permanently silent) and logs an attribution
+record per accepted slot — the attribution log is what credit_assignment()
+reads when outcomes flow back, so blame lands at the same full weight.
 
 Nightly consolidation: allocate / reinforce / compete write slots (no
 overwrite-style updates — reinforce only EMA-blends value_vec and appends
 provenance), credit_assignment() folds matured outcomes into Beta reputation.
+New slots start at Beta(lambda*(1-p), lambda*p) (P1.1 prior shrinkage;
+``p`` injectable at runtime via set_outcome_prior).
 
 Every mutation goes through a ``_apply_*`` method and is WAL-appended, so
 SlotService.rebuild() can replay the WAL onto an empty database and reproduce
@@ -42,6 +46,28 @@ class SlotService:
         self.cfg = config or SlotConfig()
         self.store = SlotStore(Path(db_path), self.cfg.key_dim)
         self.wal = WalWriter(str(db_path) + ".wal.jsonl")
+        # Observed global bad rate for the new-slot prior (P1.1). None means
+        # "use cfg.prior_bad_rate". Set nightly via set_outcome_prior(); the
+        # value used for each allocate/compete is written into the WAL record,
+        # so replay stays exact even though this attribute itself is not WALed.
+        self._outcome_prior: float | None = None
+
+    def set_outcome_prior(self, bad_rate: float) -> None:
+        """Inject the currently observed global bad rate (rolling estimate).
+
+        New slots allocated after this call start at
+        Beta(lambda*(1-p), lambda*p) — Bayesian shrinkage to the world rate.
+        """
+        if not 0.0 < bad_rate < 1.0:
+            raise ValueError(f"bad_rate must be in (0,1), got {bad_rate}")
+        self._outcome_prior = float(bad_rate)
+
+    def _prior_betas(self) -> tuple[float, float]:
+        p = self._outcome_prior if self._outcome_prior is not None else (
+            self.cfg.prior_bad_rate
+        )
+        lam = self.cfg.prior_strength
+        return lam * (1.0 - p), lam * p
 
     @classmethod
     def rebuild(
@@ -65,26 +91,32 @@ class SlotService:
         case_id: str,
         k: int | None = None,
     ) -> list[tuple[Slot, float]]:
-        """Score candidates by alpha and log attribution for accepted slots."""
+        """Score candidates by the reputation-free weight and log attribution.
+
+        P1.1: the gate and weight are ``w = a_sem * a_tmp**GAMMA`` — semantic
+        alignment and temporal consistency decide WHETHER a slot speaks;
+        its reputation only shapes WHAT it says (consumers read beta_a/beta_b
+        from the returned slots). Bad-reputation slots are no longer
+        silenced, and credit_assignment blames them at full weight.
+        """
         out: list[tuple[Slot, float]] = []
         ts = _now()
         for slot_id, a_sem in self.store.search(case_embedding, k or self.cfg.retrieve_k):
             slot = self.store.get_slot(slot_id)
             if slot is None:
                 continue
-            a_rep = slot.reputation
             a_tmp = self._a_tmp(slot_id)
-            alpha = a_sem * a_rep**self.cfg.beta_exp * a_tmp**self.cfg.gamma_exp
-            if alpha > self.cfg.theta:
-                out.append((slot, alpha))
+            weight = a_sem * a_tmp**self.cfg.gamma_exp
+            if weight > self.cfg.theta:
+                out.append((slot, weight))
                 rec = {
                     "op": "attribution",
                     "ts": ts,
                     "case_id": case_id,
                     "slot_id": slot_id,
-                    "alpha": alpha,
+                    "alpha": weight,  # reputation-free credit weight (P1.1)
                     "a_sem": a_sem,
-                    "a_rep": a_rep,
+                    "a_rep": slot.reputation,  # audit only, not used in the gate
                     "a_tmp": a_tmp,
                 }
                 self._apply_attribution(rec)
@@ -116,19 +148,21 @@ class SlotService:
                 key_vec, value_vec, value_text, case_id, regime_tag
             )
         slot = self.store.get_slot(hits[0][0])
-        if outcome is not None and self._conflicts(slot, outcome):
+        if outcome is not None and self.conflicts(slot, outcome):
             return "compete", self.compete(
                 slot.slot_id, key_vec, value_vec, value_text, case_id, regime_tag
             )
         return "reinforce", self.reinforce(slot.slot_id, value_vec, case_id)
 
-    def _conflicts(self, slot: Slot, outcome: Outcome) -> bool:
+    def conflicts(self, slot: Slot, outcome: Outcome) -> bool:
         """Outcome-conflict rule (compete trigger):
         rep = beta_a/(beta_a+beta_b); a slot 'leans good' when
         rep >= 0.5 + rep_gap and 'leans bad' when rep <= 0.5 - rep_gap.
         Conflict iff the slot leans one way and the new case's outcome is the
         opposite. Neutral slots (|rep - 0.5| < rep_gap) never conflict and
-        absorb the case via reinforce."""
+        absorb the case via reinforce. Note (P1.1): with the bad-rate prior
+        a FRESH slot has rep = 1 - p ~= 0.9, i.e. it leans good, so a first
+        conflicting bad outcome spawns a competing slot by design."""
         rep = slot.reputation
         gap = self.cfg.rep_gap
         return (rep >= 0.5 + gap and outcome == "bad") or (
@@ -143,6 +177,7 @@ class SlotService:
         case_id: str,
         regime_tag: str = "",
     ) -> Slot:
+        beta_a, beta_b = self._prior_betas()
         rec = {
             "op": "allocate",
             "ts": _now(),
@@ -151,6 +186,8 @@ class SlotService:
             "value_text": value_text,
             "case_id": case_id,
             "regime_tag": regime_tag,
+            "beta_a": beta_a,
+            "beta_b": beta_b,
         }
         slot_id = self._apply_allocate(rec)
         self.wal.append(rec)
@@ -182,6 +219,7 @@ class SlotService:
     ) -> Slot:
         """Create a competing slot coexisting with the similar rival; the Beta
         reputation system arbitrates between them over time."""
+        beta_a, beta_b = self._prior_betas()
         rec = {
             "op": "compete",
             "ts": _now(),
@@ -191,6 +229,8 @@ class SlotService:
             "value_text": value_text,
             "case_id": case_id,
             "regime_tag": regime_tag,
+            "beta_a": beta_a,
+            "beta_b": beta_b,
         }
         slot_id = self._apply_compete(rec)
         self.wal.append(rec)
@@ -254,6 +294,10 @@ class SlotService:
             regime_tag=rec["regime_tag"],
             created_at=rec["ts"],
             provenance=[rec["case_id"]],
+            # P1.1: records written before the prior redesign carry no betas;
+            # they replay onto the historical Beta(1,1).
+            beta_a=float(rec.get("beta_a", 1.0)),
+            beta_b=float(rec.get("beta_b", 1.0)),
         )
 
     def _apply_allocate(self, rec: dict[str, Any]) -> int:

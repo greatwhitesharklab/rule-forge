@@ -145,14 +145,19 @@ class SlotStore:
         regime_tag: str,
         created_at: str,
         provenance: list[str],
+        beta_a: float = 1.0,
+        beta_b: float = 1.0,
     ) -> int:
         cur = self.conn.execute(
-            "INSERT INTO slots (key_vec, value_text, value_vec, status,"
-            " regime_tag, created_at, provenance) VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO slots (key_vec, value_text, value_vec, beta_a, beta_b,"
+            " status, regime_tag, created_at, provenance)"
+            " VALUES (?,?,?,?,?,?,?,?,?)",
             (
                 to_blob(key_vec),
                 value_text,
                 to_blob(value_vec),
+                beta_a,
+                beta_b,
                 status,
                 regime_tag,
                 created_at,

@@ -11,6 +11,11 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "matplotlib",
+    "faiss-cpu",
+    "openai",
+    "tenacity",
+    "sentence-transformers",
+    "lightgbm",
 ]
 
 [dependency-groups]
