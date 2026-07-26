@@ -1,0 +1,25 @@
+{
+  "created_at": "2026-07-26T12:24:54.681742+00:00",
+  "n_examples": 200,
+  "steps": 100,
+  "first_loss": 5.632575988769531,
+  "final_loss": 0.0032469825819134712,
+  "median_step_sec": 1.3794678999111056,
+  "lora_lr": 0.0005,
+  "injection_lr": 0.01,
+  "joint": true,
+  "peft": {
+    "r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ]
+  }
+}

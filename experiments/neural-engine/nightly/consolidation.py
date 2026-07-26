@@ -36,6 +36,7 @@ from embed.canonicalize import canonicalize, experience_text
 from nightly.feature_lib import FeatureLibrary, FeatureRecord
 from prompts import make_prompt
 from scoring import RollingResult
+from scribe import Scribe, ScribeCase, write_experiences
 from slots.service import Outcome
 from synth.world import WorldData
 from verify import PASS, backtest_frame, verify_feature
@@ -56,6 +57,11 @@ class NightlyConfig:
     # matured outcome contradicts an attributed slot's lean (scribe writes
     # carry no outcome, so write-path compete can never fire otherwise).
     credit_compete: bool = True
+    # P2: step-2 write path switch. "canonical" (default) reproduces the P1
+    # per-case template write verbatim; "scribe" routes the inlier cases
+    # through write_experiences(mode="scribe") — the local LLM induces
+    # rule statements and those become the slot value_texts.
+    scribe_mode: str = "canonical"
 
 
 @dataclass(frozen=True)
@@ -133,9 +139,19 @@ def _reflow_outcomes(
 
 
 def _scribe(
-    world: WorldData, memory: SemanticMemory, episode: int, cfg: NightlyConfig
+    world: WorldData,
+    memory: SemanticMemory,
+    episode: int,
+    cfg: NightlyConfig,
+    scribe: Scribe | None = None,
 ) -> tuple[tuple[str, ...], dict[str, int], int]:
-    """Step 2: anomaly-screen today's cases, write the inliers as experience."""
+    """Step 2: anomaly-screen today's cases, write the inliers as experience.
+
+    canonical mode: one template write per inlier case (P1 verbatim).
+    scribe mode: the inliers go through write_experiences(mode="scribe") —
+    the LLM induces statements; write_ops then count DRAFT writes while
+    scribed_case_ids still accounts for every inlier case consumed.
+    """
     cb = world.casebook
     idx = np.where(cb.episode == episode)[0]
     obs = cb.observables[idx]
@@ -148,6 +164,22 @@ def _scribe(
         inlier = iso.fit_predict(obs) == 1
     else:
         inlier = np.ones(len(idx), dtype=bool)
+
+    if cfg.scribe_mode == "scribe":
+        cases = [
+            ScribeCase(
+                case_id=str(int(cb.case_ids[i])),
+                row=case_row_from_casebook(cb, int(i)),
+                outcome=None,  # outcome not yet matured on decision day
+                regime_tag=str(cb.regime_tag[i]),
+            )
+            for i, keep in zip(idx, inlier)
+            if keep
+        ]
+        report = write_experiences(cases, memory, mode="scribe", scribe=scribe)
+        scribed = tuple(c.case_id for c in cases)
+        return scribed, dict(report.write_ops), int((~inlier).sum())
+
     write_ops = {"allocate": 0, "reinforce": 0, "compete": 0}
     scribed: list[str] = []
     for i, keep in zip(idx, inlier):
@@ -247,8 +279,13 @@ def run_nightly(
     *,
     config: NightlyConfig | None = None,
     feature_lib: FeatureLibrary | None = None,
+    scribe: Scribe | None = None,
 ) -> NightlyReport:
-    """Run one night of P1 consolidation; returns the auditable report."""
+    """Run one night of P1 consolidation; returns the auditable report.
+
+    `scribe` is only consulted when config.scribe_mode == "scribe" (P2);
+    the default canonical path never touches it.
+    """
     cfg = config or NightlyConfig()
     lib = feature_lib if feature_lib is not None else FeatureLibrary()
 
@@ -258,7 +295,7 @@ def run_nightly(
         memory.service.set_outcome_prior(float(world.ledger.outcome[matured].mean()))
 
     credited, updates, competes = _reflow_outcomes(world, memory, episode, cfg)
-    scribed, write_ops, anomalies = _scribe(world, memory, episode, cfg)
+    scribed, write_ops, anomalies = _scribe(world, memory, episode, cfg, scribe)
     hard_n, proposed, passed, records, provenance = _feature_loop(
         world, scorer, cloud, episode, cfg, lib
     )

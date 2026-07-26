@@ -16,6 +16,7 @@ dependencies = [
     "tenacity",
     "sentence-transformers",
     "lightgbm",
+    "peft",
 ]
 
 [dependency-groups]
