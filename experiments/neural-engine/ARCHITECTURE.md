@@ -1,5 +1,12 @@
-# neural-engine 架构设计
+# neural-engine 架构设计(Phase 1 历史档案)
 
+> **归档说明(2026-07)**:本文档描述的是 Phase 1「Engram 式神经网络决策引擎」
+> (memory/model/training 目录)的设计。该方向经 LendingClub 与 CLAB 实验证伪
+> (连续数值特征上静态记忆无增益、记忆辅助决策三轮 FAIL),系统定位已修正为
+> **自学习审批系统**(见 README.md 与 `自学习审批系统实现设计.md`)。
+> 本文档保留作为历史档案与反面教材,其中 V1-V4 验证方法论(零初始化/门探针/Zipf/消融)
+> 仍被后续实验沿用。
+>
 > 参照 `experiments/server-rust/ARCHITECTURE.md` 惯例:以设计决策点为主线。
 > 前置阅读:`README.md`(定位与 Engram 概念映射)。
 

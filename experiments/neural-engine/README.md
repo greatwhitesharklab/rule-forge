@@ -1,106 +1,110 @@
-# neural-engine — RuleForge 神经网络决策引擎(实验)
+# neural-engine — 自学习信贷审批系统(实验)
 
-> 状态:规划阶段(Phase 0)。本目录遵循 `experiments/README.md` 惯例:与主项目平行,
-> 不进 `server/pom.xml`、不进 CI、不进生产流量;成熟后 `git mv experiments/neural-engine ./neural-engine` 升格。
+> 状态:P2 完成,机制一/机制二验证完成(2026-07)。本目录遵循 `experiments/README.md` 惯例:
+> 不进 `server/pom.xml`、不进 CI、不进生产流量;成熟后 `git mv` 升格。
+>
+> **文档变更说明**:本目录早期是「Engram 式神经网络决策引擎」实验(memory/model/training,
+> 见 `ARCHITECTURE.md`,已标记为历史档案)。经多轮实验证伪与定位修正,当前形态为
+> **自学习审批系统**,总设计文档:`自学习审批系统实现设计.md`(v1.1 + 实验回写)。
 
 ## 一句话定位
 
-把决策引擎从「人写规则」(RETE / 决策表 / 评分卡,知识由人手工编码)转为
-「经验记忆 + 神经推理」:历史信贷经验存进可寻址、**可写**的记忆表,决策时 O(1) 检索
-注入一个小型推理网络。参考 DeepSeek Engram 的**条件记忆(Conditional Memory)**轴,
-用可写记忆门替代 MoE,面向小额信贷场景。
+推理用 GBDT,记忆用于训练阶段:**GBDT 管决策,记忆管迭代,云端管构造,验证器管把关**。
+本地出题 → 云端大模型写特征代码 → 本地验证 → 晋升入库 → GBDT 重训,
+记忆(可写槽位表)记录策略知识:什么特征在什么 regime 有用、什么方向试过已死。
 
-## 为什么:现有引擎的天花板
-
-RuleForge 现有引擎(见 `server/lib/ruleforge-core`)是「规则纬度」设计:
-
-- 知识形态 = 人写的规则 / 决策表 / 评分卡,每条规则都要业务专家手工维护;
-- ML 只能以「数据源连接器」形态(`PklModelConnector` → model-service)注入单个变量,
-  模型输出进 fact 后仍由确定性规则裁决 —— AI 是外挂,不是引擎;
-- 规则覆盖不到的客群/模式,引擎没有「经验」可言,只有命中与不命中。
-
-Engram 给了一个不同的分工:**静态模式知识放记忆表(O(1) 检索、可点名审计),
-动态组合推理交给网络**。这正好对应信贷决策的两类知识:
-
-| 知识类型 | 例子 | 现状 | 新引擎 |
-|---|---|---|---|
-| 静态模式 | 「该类客群(年龄段×收入段×地区)历史违约率 18%」 | 散落在评分卡分箱/人经验里 | 记忆槽,O(1) 检索 |
-| 动态推理 | 「该申请人收入负债比偏高但流水稳定,综合给多少额度」 | 人写 CEL 条件组合 | 小型推理网络 |
-
-## Engram 概念映射
-
-Engram([arXiv:2601.07372](https://arxiv.org/abs/2601.07372),DeepSeek,2026-01)在 LLM 中
-把 token N-gram 经多头哈希映射到记忆槽,查表后经门控注入 Transformer 层。
-映射到信贷决策引擎:
-
-| Engram (LLM) | neural-engine (小额信贷) |
-|---|---|
-| token 序列 | 一笔贷款申请的特征向量(几十~几百维) |
-| 多粒度 N-gram | 多粒度特征交叉(单特征 / 二阶交叉 / 业务定义的模式片段) |
-| 多头哈希寻址 | 特征模式 → 记忆槽 ID 的确定性哈希(支持 prefetch,天然适合实时决策) |
-| 记忆槽 embedding | 槽内原型向量 + 统计量(样本数、违约率 EWMA、最近更新时间) |
-| 门控注入(gate) | **可写记忆门**:读门控制记忆对推理的注入强度;写门控制经验回流 |
-| Transformer backbone | 小型推理网络(MLP 级,小额信贷不需要深网络) |
-| 训练期固化、推理只读 | **推理期可写**:贷后表现回流在线更新记忆(本项目的核心差异点) |
-
-## 为什么不用 MoE
-
-- 小额信贷特征空间有限、单任务(通过/拒绝/额度),不需要专家路由的容量;
-- MoE 路由在小数据上训练不稳定,且路由决策难以向监管/风控解释;
-- 记忆槽本身就是「软专家」:稀疏激活、可点名审计(每次决策能说出命中了哪些历史模式)。
-  Engram 论文本身也把记忆定位为 MoE 之外的另一条稀疏轴。
-
-## 可写记忆门:核心设计点
-
-Engram 的记忆是预训练固化的只读参数。信贷场景必须可写:
-
-1. **决策即检索**:申请进来 → 特征交叉 → 哈希寻址 → 读出命中槽的原型与统计 →
-   gate 加权注入推理网络 → 输出决策 + 命中明细(审计)。
-2. **贷后即写入**:还款表现(正常/逾期/违约)回流 → 写门更新对应槽的统计量与原型 →
-   下一笔相似申请立即感知。形成「决策 → 结果 → 经验 → 更好决策」的闭环。
-3. **写门不是裸写**:要有准入(标签置信度)、衰减(时间敏感)、冲突处理(哈希碰撞、
-   概念漂移时的槽分裂/合并)。详见 `ARCHITECTURE.md`。
-
-## 可解释性与审计(金融硬要求)
-
-记忆检索天然比黑箱网络更可解释:每次决策可输出「命中模式 P123:相似历史申请 230 例,
-违约率 18%,gate 0.72」。规划要求所有决策保留命中明细,延续 `rfa_decision_flow_log`
-的审计传统;记忆未命中/低置信时必须可回退到现有规则引擎或人工审批。
-
-## 路线图
-
-- **Phase 0(当前)**:架构规划,确定记忆表 schema、寻址方案、写门策略、训练数据来源。
-- **Phase 1**:Python(FastAPI + PyTorch)独立服务,照 `model-service` 先例;
-  用历史/生成数据离线建记忆表,跑通「检索 + 推理 + 审计」全链路(纯离线)。
-- **Phase 2**:影子模式接入 —— 新增一个 `DataSourceConnector`(照 `PklModelConnector` 形态)
-  把记忆引擎输出(相似客群违约率、记忆置信度)作为变量注入 V1 决策流,与现有规则并行比对。
-- **Phase 3**:在线写门开启(贷后标签回流),评估在线学习收益;成熟后讨论升格与
-  V1 原生节点(`MemoryNode`)形态。
-
-## 数据前提(已知缺口)
-
-训练闭环需要「输入特征 + 决策结果 + 贷后标签」三元组。现状(2026-07 调研):
-
-- 决策日志 writer 已随 `ruleforge-decision` 模块删除,`V1FlowRunner` 出口不落库;
-- fact 在节点间演化但没有特征快照持久化;批测 `nd_batch_test_row` 存了输入/输出 JSON;
-- `data-generator/` 可生成演示数据,可作 Phase 1 的冷启动来源。
-
-Phase 1 会先用生成数据 + 批测存量数据,同时建议恢复决策事实快照落库(见 ARCHITECTURE.md)。
-
-## 目录规划
+## 架构
 
 ```
-experiments/neural-engine/
-  README.md          本文件
-  ARCHITECTURE.md    架构设计:寻址 / 记忆槽 / 读写门 / 推理 backbone / 集成点
-  app/               (Phase 1) FastAPI 服务
-  memory/            (Phase 1) 哈希寻址、记忆表、读写门
-  model/             (Phase 1) 特征编码器 + 推理网络
-  training/          (Phase 1) 离线建表 + 在线更新
+                        ┌───────────── 推理面(在线,毫秒级)─────────────┐
+                        │                                              │
+   贷款申请 ──────────▶ │  结构化特征 ──▶ GBDT ──▶ approve/reject      │
+                        │  (白名单字段      ▲        (纯结构化,记忆    │
+                        │   + L2衍生特征)   │         不在场)          │
+                        └───────────────────┼──────────────────────────┘
+                                            │ 现役特征库
+   ┌───────────── 学习面(夜间/迭代)─────────┼──────────────────────────┐
+   │                                        │                          │
+   │   贷后结局回流                          │                          │
+   │        ▼                               │                          │
+   │   GBDT 指路 ──▶ 出题(G1模板) ──▶ 云端大模型                        │
+   │   (疑难坏账      (聚合画像+       │  写特征表达式代码               │
+   │    残余信号)      死路清单+       │  AgentBridge 文件桥             │
+   │        ▲          regime经验)     ▼                               │
+   │   ┌────┴─────────┐          验证器(免疫系统)                      │
+   │   │ 策略记忆      │          沙箱/IV/泄漏/相关性                   │
+   │   │ (可写槽位表)  │      过 ──▶ 入库 ──▶ GBDT 重训 ──────────────┤
+   │   │ ·特征×regime │      灭 ──▶ 死路档案(下轮不再试)              │
+   │   │ ·死路档案    │                                                │
+   │   │ ·Beta声誉    │                                                │
+   │   └──────────────┘                                                │
+   └───────────────────────────────────────────────────────────────────┘
 ```
+
+## 验证结论(2026-07,全部有实验产物)
+
+| 假设 | 结果 | 证据 |
+|---|---|---|
+| 推理面用记忆(P1 分数混合 / L3 特征 / P2 焊入层) | ✗ 三轮证伪,已放弃 | `eval/artifacts*/`(P1)、`artifacts-lending/`、`artifacts-p2.1/` |
+| 免疫系统:验证器拦 LLM 幻觉 | ✓ 6/6 拦截 | LendingClub r01/r02 iteration_log |
+| 发现力:闭环发现未知规律 | ✓ CLAB 重新发现保留池 6/10 | `eval/artifacts-clab/` |
+| 记忆组件:死路档案 | ✓ 重复提案 0 vs 16.7%,发现提速 +0.38 轮(CI 不含 0) | `eval/artifacts-clab-ab/` |
+| 记忆组件:声誉退役 | ✓ 期末库假阳性 −23.8 | 同上 |
+| 记忆组件:regime 经验 | ➖ 考场太小不可测(候选池 212 方向被盲枚举扫穿) | 同上 |
+| 已知盲区:验证门槛只测 bad 富集,保护性规则结构性失明 | 待修(对称判据) | 机制一未发现的 HLD-02/10 |
+
+关键判读:机制二按「累计假阳性更低」判据记 FAIL,但该口径与「发现更快」结构性此消彼长;
+按期末库口径(含退役)两臂判据均过。发现的规则是可解释资产,非预测增益(GBDT 已吃满信号时 AUC 无增量)。
+
+## 组件地图
+
+| 包 | 职责 | 状态 |
+|---|---|---|
+| `slots/` | 可写槽位表(SQLite+FAISS,三操作写路径,Beta 声誉,双向门,WAL) | 现役 |
+| `synth/` | CLAB-lite 合成信贷世界(8因子6概念,20+10规则池,regime Geo(0.1),结局延迟) | 现役 |
+| `cloud/` | 云端适配层(脱敏焊死出站、任务包契约、成本账本、AgentBridge 文件桥) | 现役 |
+| `verify/` | 验证器×3(特征沙箱+回测+泄漏、案例分析、解释文本) | 现役 |
+| `prompts/` | G1 提示词模板(经验+死路注入) | 现役 |
+| `scoring/` | GBDT RollingScorer + 特征注册表 + 三段决策 | 现役 |
+| `embed/` | Qwen3-Embedding-0.6B(CPU,MRL 256)封装 + canonical 文本化 | 现役 |
+| `nightly/` | 夜间巩固(结局回流+compete、Scribe 写槽、特征假设循环) | 现役 |
+| `selflearn/` | 自学习闭环(指路+残余信号、策略记忆、replay)+ CLAB 适配 | 现役 |
+| `llm/` `lora/` `scribe/` | 本地 LLM 封装/LoRA 巩固+晋升门/LLM 经验归纳 | 备用(P2 资产) |
+| `lending/` | LendingClub 预处理(时间红线白名单,episode 切分) | 现役 |
+| `eval/` | 验收实验(p1/p2/selflearn/lending/clab/clab-ab)+ 判卷器 | 现役 |
+| `memory/` `model/` `training/` | Phase 1 Engram 神经网络引擎 | **历史档案**,见 ARCHITECTURE.md |
+
+## 运行
+
+```bash
+# 测试(根目录 uv;slow_model 为真模型用例,需本地 HF 缓存)
+uv run pytest experiments/neural-engine -q -m "not slow_model"   # 603 passed
+
+# 验收实验(cwd 必须在 experiments/neural-engine)
+cd experiments/neural-engine
+uv run python -m eval.clab_discovery      # 机制一:发现力(CLAB,~2min)
+uv run python -m eval.clab_memory_ab      # 机制二:记忆双臂(~7min)
+uv run python -m eval.selflearn_acceptance --cloud agent --rounds 1   # 真实云端在环
+uv run python -m lending.prepare          # LendingClub 预处理(~20s)
+```
+
+## 数据集分层
+
+- **CLAB-lite**(合成,`synth/`):有标准答案的考场——机制验证(发现力/记忆/假阳性率)
+- **LendingClub**(真实,`data/lendingclub/`,kaggle `wordsforthewise/lending-club`):
+  无标准答案的战场——免疫系统压力测试;特征集已被业界挖掘 10 年,增量枯竭
+- **GiveMeSomeCredit**(openml):消融实验证明连续数值特征上静态记忆无增益,已完成使命
+- **终考**:真实业务数据(带贷后闭环),未启动
+
+## 遗留清单(按优先级)
+
+1. 验证器对称判据(保护性规则盲区——机制一 HLD-02/10 的教训)
+2. CLAB-full:加类别/文本模态 + 随机因果结构(规则对设计者也盲)——LLM 云端与 regime 经验的真考场
+3. 工程债:AgentBridge task_id 跨运行冲突;脱敏误伤 p_value 类小数([BANK_CARD] 误判);slots WAL value_vec 体积(12GB 教训)
+4. shadow→active 晋升门、月度体检/退役的完整生命周期(部分组件已验证)
 
 ## 参考
 
-- Engram 论文:[Conditional Memory via Scalable Lookup (arXiv:2601.07372)](https://arxiv.org/abs/2601.07372)
-- Engram 代码:https://github.com/deepseek-ai/Engram
-- 本仓引擎调研结论:见 `ARCHITECTURE.md` 附录
+- 总设计:`自学习审批系统实现设计.md`(v1.1 + v1.2 实验回写)
+- Engram 论文:[arXiv:2601.07372](https://arxiv.org/abs/2601.07372)(条件记忆轴,思想来源)
+- 历史架构:`ARCHITECTURE.md`(Phase 1 Engram 引擎,已标记归档)
