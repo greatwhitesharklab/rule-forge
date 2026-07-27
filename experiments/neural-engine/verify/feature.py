@@ -3,17 +3,22 @@
 Pipeline: AST whitelist + forked sandbox (§3.2) -> backtest metrics on
 historical (or injected) data -> leak detection -> gate.
 
-Gate (§8.4): IV > 0.1 OR lift > 1.3, AND coverage > 5%. A feature whose
-direction-free AUC exceeds ``leak_auc`` is not rejected outright — it is
-quarantined for human review, since near-perfect single-feature prediction
-almost always means outcome leakage (时间穿越, §8.3).
+Gate (§8.4, amended §9.4): IV > 0.1 OR lift_bad > 1.3 OR lift_good > 1.3,
+AND coverage > 5%. lift_bad measures bad-enrichment; lift_good is the
+symmetric protective criterion (overall bad rate / lowest bin bad rate) —
+without it the gate is structurally blind to protective (good-enriched)
+rules. A feature whose direction-free AUC exceeds ``leak_auc`` is not
+rejected outright — it is quarantined for human review, since near-perfect
+single-feature prediction almost always means outcome leakage
+(时间穿越, §8.3).
 
 Quality score Q (for the cloud reputation ledger):
   pass        -> 0.5 + 0.5 * strength
   fail (ran)  -> 0.2 * strength
   fail (sandbox/timeout/crash) -> 0.0
   quarantine  -> 0.0 until the review clears it
-where strength scales IV against 0.3 ("strong") and lift against 1.6.
+where strength scales IV against 0.3 ("strong") and the best of
+lift_bad/lift_good against 1.6.
 """
 
 from __future__ import annotations
@@ -25,7 +30,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from .metrics import coverage, direction_free_auc, information_value, lift
+from .metrics import coverage, direction_free_auc, information_value, lift, lift_good
 from .sandbox import run_expression
 from .verdict import FAIL, PASS, QUARANTINE, Verdict
 
@@ -38,7 +43,10 @@ _REFERENCE_LIFT_STRONG = 1.6
 
 @dataclass(frozen=True)
 class FeatureThresholds:
-    """§8.4 admission thresholds; all comparisons are strict ('>')."""
+    """§8.4 admission thresholds; all comparisons are strict ('>').
+
+    ``lift_min`` applies symmetrically to lift_bad and lift_good (§9.4).
+    """
 
     iv_min: float = 0.1
     lift_min: float = 1.3
@@ -48,14 +56,14 @@ class FeatureThresholds:
     memory_mb: int = 512
 
 
-def _strength(iv: float, lf: float) -> float:
-    """How far past 'weak' the feature is, in [0,1]; NaN-safe."""
+def _strength(iv: float, lift_bad: float, lift_good_: float) -> float:
+    """How far past 'weak' the feature is, in [0,1]; NaN-safe, both directions."""
     iv_term = min(max(iv, 0.0) / _REFERENCE_IV_STRONG, 1.0) if math.isfinite(iv) else 0.0
-    lift_term = (
-        min(max(lf - 1.0, 0.0) / (_REFERENCE_LIFT_STRONG - 1.0), 1.0)
-        if math.isfinite(lf)
-        else 0.0
+    best_lift = max(
+        lift_bad if math.isfinite(lift_bad) else 0.0,
+        lift_good_ if math.isfinite(lift_good_) else 0.0,
     )
+    lift_term = min(max(best_lift - 1.0, 0.0) / (_REFERENCE_LIFT_STRONG - 1.0), 1.0)
     return max(iv_term, lift_term)
 
 
@@ -76,10 +84,18 @@ def verify_feature(
     assert values is not None
     cov = coverage(values)
     iv = information_value(values, labels)
-    lf = lift(values, labels)
+    lf_bad = lift(values, labels)
+    lf_good = lift_good(values, labels)
     auc = direction_free_auc(values, labels)
-    metrics = {"iv": iv, "lift": lf, "coverage": cov, "auc": auc}
-    strength = _strength(iv, lf)
+    metrics = {
+        "iv": iv,
+        "lift_bad": lf_bad,
+        "lift_good": lf_good,
+        "lift": lf_bad,  # legacy alias: pre-§9.4 key, bad direction
+        "coverage": cov,
+        "auc": auc,
+    }
+    strength = _strength(iv, lf_bad, lf_good)
 
     if math.isfinite(auc) and auc > th.leak_auc:
         return Verdict(
@@ -94,14 +110,26 @@ def verify_feature(
             FAIL, 0.2 * strength,
             (f"coverage {cov:.4f} <= {th.coverage_min}",), metrics,
         )
-    if iv > th.iv_min or lf > th.lift_min:
+
+    admitted_by = []
+    if iv > th.iv_min:
+        admitted_by.append("iv")
+    if math.isfinite(lf_bad) and lf_bad > th.lift_min:
+        admitted_by.append("lift_bad")
+    if math.isfinite(lf_good) and lf_good > th.lift_min:
+        admitted_by.append("lift_good")
+    if admitted_by:
         return Verdict(
             PASS, 0.5 + 0.5 * strength,
-            (f"admitted: iv={iv:.4f} lift={lf:.4f} coverage={cov:.4f}",), metrics,
+            (f"admitted via {'/'.join(admitted_by)}: "
+             f"iv={iv:.4f} lift_bad={lf_bad:.4f} lift_good={lf_good:.4f} coverage={cov:.4f}",),
+            metrics,
         )
     return Verdict(
         FAIL, 0.2 * strength,
-        (f"below gate: iv {iv:.4f} <= {th.iv_min} and lift {lf:.4f} <= {th.lift_min}",),
+        (f"below gate: iv {iv:.4f} <= {th.iv_min} and "
+         f"lift_bad {lf_bad:.4f} <= {th.lift_min} and "
+         f"lift_good {lf_good:.4f} <= {th.lift_min}",),
         metrics,
     )
 

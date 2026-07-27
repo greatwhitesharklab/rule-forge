@@ -102,3 +102,22 @@ class TestReplayProvider:
         provider = ReplayProvider({}, source="replay.json")
         with pytest.raises(ReplayFormatError):
             provider.execute(_FakeTask("garbage-id"))
+
+    def test_run_id_suffix_aligns_by_round_prefix(self, tmp_path) -> None:
+        # New task_id format selflearn-rNN-<run_id>: replay aligns on the
+        # round prefix; the replay file format itself is unchanged.
+        provider = ReplayProvider(load_replay(_write(tmp_path, GOOD)),
+                                  source="replay.json")
+        result = provider.execute(_FakeTask("selflearn-r01-20260727-a1b2c3"))
+        assert [f["name"] for f in result.content["features"]] == ["dti_x_amnt"]
+
+    def test_run_id_suffix_missing_round_returns_empty(self, tmp_path) -> None:
+        provider = ReplayProvider(load_replay(_write(tmp_path, GOOD)),
+                                  source="replay.json")
+        result = provider.execute(_FakeTask("selflearn-r07-x1"))
+        assert result.content == {"features": []}
+
+    def test_malformed_suffix_rejected(self, tmp_path) -> None:
+        provider = ReplayProvider({}, source="replay.json")
+        with pytest.raises(ReplayFormatError):
+            provider.execute(_FakeTask("selflearn-r01 extra words"))

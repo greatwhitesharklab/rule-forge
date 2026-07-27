@@ -67,7 +67,7 @@ class _StubCloud:
     def execute(self, task) -> TaskResult:
         self.seen_task_ids.append(task.task_id)
         self.seen_contexts.append(task.context)
-        m = re.fullmatch(r"selflearn-r(\d+)", task.task_id)
+        m = re.fullmatch(r"selflearn-r(\d+)(?:-.+)?", task.task_id)
         assert m, f"unexpected task_id {task.task_id!r}"
         feats = self._by_round.get(int(m.group(1)), [])
         return TaskResult(
@@ -95,11 +95,11 @@ def _cfg(**kw) -> LoopConfig:
     return LoopConfig(**base)
 
 
-def _loop(tmp_path, df, cloud, **kw) -> SelfLearnLoop:
+def _loop(tmp_path, df, cloud, run_id: str = "test-run", **kw) -> SelfLearnLoop:
     mem = StrategyMemory(SlotService(tmp_path / "slots.db", SlotConfig()))
     return SelfLearnLoop(
         df, config=_cfg(**kw), base_features=_tiny_base_features,
-        cloud=cloud, memory=mem,
+        cloud=cloud, memory=mem, run_id=run_id,
     )
 
 
@@ -157,8 +157,10 @@ class TestEndToEnd:
         assert statuses.count("retired") == 1
         dead = loop.memory.dead_end_list()
         assert any("const_junk" in d for d in dead)
-        # 出题走了 G1 合约(task_id 轮次编码)
-        assert cloud.seen_task_ids == ["selflearn-r01", "selflearn-r02"]
+        # 出题走了 G1 合约(task_id 轮次编码 + 运行后缀,跨运行不冲突)
+        assert cloud.seen_task_ids == [
+            "selflearn-r01-test-run", "selflearn-r02-test-run",
+        ]
 
     def test_context_carries_residual_signals_no_row_level(self, tmp_path) -> None:
         cloud = _StubCloud({1: []})
@@ -196,3 +198,28 @@ class TestEndToEnd:
         assert r1.accepted == []
         assert r1.proposals[0].verdict == "fail"
         assert "重名" in r1.proposals[0].reasons[0] or "duplicate" in r1.proposals[0].reasons[0].lower()
+
+
+class TestRunIdIsolation:
+    """task_id carries a run suffix: same-day reruns must not collide."""
+
+    def test_auto_run_ids_differ_across_runs(self, tmp_path) -> None:
+        df = _tiny_dev_df()
+        c1, c2 = _StubCloud({1: []}), _StubCloud({1: []})
+        (tmp_path / "a").mkdir()
+        (tmp_path / "b").mkdir()
+        loop1 = _loop(tmp_path / "a", df, c1, run_id=None)  # auto-generate
+        loop2 = _loop(tmp_path / "b", df, c2, run_id=None)
+        (r1,) = loop1.run(1)
+        (r2,) = loop2.run(1)
+        assert r1.task_id != r2.task_id
+        for rec in (r1, r2):
+            assert rec.task_id.startswith("selflearn-r01-")
+            # replay-style round prefix stays extractable from the new format
+            assert re.fullmatch(r"selflearn-r(\d+)-[0-9A-Za-z-]+", rec.task_id)
+
+    def test_injected_run_id_is_deterministic(self, tmp_path) -> None:
+        cloud = _StubCloud({1: []})
+        loop = _loop(tmp_path, _tiny_dev_df(), cloud, run_id="fixed")
+        (r1,) = loop.run(1)
+        assert r1.task_id == "selflearn-r01-fixed"

@@ -12,7 +12,7 @@ from .feature import (
     backtest_frame_from_data,
     verify_feature,
 )
-from .metrics import coverage, direction_free_auc, information_value, lift
+from .metrics import coverage, direction_free_auc, information_value, lift, lift_good
 from .sandbox import SandboxResult, check_expression_ast, run_expression
 from .verdict import FAIL, PASS, QUARANTINE, Verdict
 

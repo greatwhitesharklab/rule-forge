@@ -20,7 +20,9 @@ from __future__ import annotations
 
 import math
 import re
+import uuid
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Callable
 
 import numpy as np
@@ -112,6 +114,7 @@ class SelfLearnLoop:
         cloud: Any,  # CloudLLM 同构:execute(TaskPackage) -> TaskResult
         memory: StrategyMemory,
         registry: FeatureRegistry | None = None,
+        run_id: str | None = None,
     ) -> None:
         cfg = config
         if "episode" not in dev_df.columns or "outcome" not in dev_df.columns:
@@ -135,6 +138,13 @@ class SelfLearnLoop:
         self.cloud = cloud
         self.memory = memory
         self.registry = registry or FeatureRegistry()
+        # Run-scoped task_id suffix: same-day reruns must not collide on
+        # bridge outbox/inbox file names (paired by task_id). Replay aligns
+        # on the selflearn-rNN round prefix, so the suffix is replay-safe.
+        self.run_id = run_id or (
+            datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+            + "-" + uuid.uuid4().hex[:6]
+        )
 
         df = dev_df.copy()
         df["episode"] = episodes
@@ -189,7 +199,7 @@ class SelfLearnLoop:
 
     def run_round(self, round_no: int) -> RoundRecord:
         cfg = self.cfg
-        task_id = f"selflearn-r{round_no:02d}"
+        task_id = f"selflearn-r{round_no:02d}-{self.run_id}"
 
         # ① GBDT 指路(dev 留出集样本外)
         _, proba, auc_before, imp_top = self._train_and_score()

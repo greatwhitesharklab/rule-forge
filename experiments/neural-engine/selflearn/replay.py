@@ -15,9 +15,11 @@ replay_features.json 格式:
 }
 ```
 
-round 编号从 1 开始,与闭环 task_id(``selflearn-rNN``)一一对应;
-缺轮 = 该轮空提案(no-op)。格式错误一律 fail-fast(ReplayFormatError),
-绝不静默吞掉 —— replay 文件的读者包括未来的回归测试。
+round 编号从 1 开始,与闭环 task_id 的轮次前缀(``selflearn-rNN``)一一对应;
+task_id 可带运行后缀(``selflearn-rNN-<run_id>``,跨运行防冲突),对齐只看
+轮次前缀,replay 文件格式不变;缺轮 = 该轮空提案(no-op)。格式错误一律
+fail-fast(ReplayFormatError),绝不静默吞掉 —— replay 文件的读者包括
+未来的回归测试。
 """
 
 from __future__ import annotations
@@ -31,7 +33,9 @@ from pathlib import Path
 from cloud.contracts import Provenance, TaskPackage, TaskResult, validate_result
 
 _NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-_TASK_ID_RE = re.compile(r"^selflearn-r(\d+)$")
+# Accept both the legacy "selflearn-rNN" and the run-scoped
+# "selflearn-rNN-<run_id>" format; only the round number drives alignment.
+_TASK_ID_RE = re.compile(r"^selflearn-r(\d+)(?:-[0-9A-Za-z-]+)?$")
 
 
 class ReplayFormatError(ValueError):
@@ -112,7 +116,8 @@ class ReplayProvider:
         m = _TASK_ID_RE.match(task.task_id)
         if m is None:
             raise ReplayFormatError(
-                f"replay provider expects task_id 'selflearn-rNN', got {task.task_id!r}"
+                "replay provider expects task_id 'selflearn-rNN[-<run_id>]', "
+                f"got {task.task_id!r}"
             )
         feats = self._rounds.get(int(m.group(1)), [])
         content = {

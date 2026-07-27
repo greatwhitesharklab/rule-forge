@@ -8,9 +8,37 @@ state can be rebuilt from an empty database by replaying the WAL (design doc
 
 from __future__ import annotations
 
+import base64
 import json
 from pathlib import Path
 from typing import Any, Iterator
+
+import numpy as np
+
+# WAL vector format version. v1 (legacy): vectors are JSON float arrays
+# (~19 bytes/dimension — the 12GB LendingClub WAL). v2: float16 bytes,
+# base64-encoded (~2.7 bytes/dimension, ~7x smaller). Precision trade-off:
+# float16 round-trip error is <= half ulp (~1e-3 absolute for the value
+# ranges we store: unit-norm keys, standard-normal-ish value_vecs), far
+# below the 0.85 similarity gate and any retrieval-scoring sensitivity, so
+# replayed state is numerically equivalent for every downstream decision.
+# v1 records are auto-detected on decode (list vs str) and still replay.
+FORMAT_VERSION = 2
+
+
+def encode_vector(vec: np.ndarray) -> str:
+    """Encode a vector as base64(float16 bytes) — WAL format v2."""
+    arr = np.asarray(vec, dtype=np.float32).astype(np.float16)
+    return base64.b64encode(arr.tobytes()).decode("ascii")
+
+
+def decode_vector(value: Any) -> np.ndarray:
+    """Decode a WAL vector field, auto-sniffing the format:
+    str -> v2 base64 float16; list -> v1 JSON float array (lossless)."""
+    if isinstance(value, str):
+        raw = base64.b64decode(value)
+        return np.frombuffer(raw, dtype=np.float16).astype(np.float32)
+    return np.asarray(value, dtype=np.float32)
 
 
 class WalWriter:

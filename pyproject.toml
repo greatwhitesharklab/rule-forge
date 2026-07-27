@@ -17,6 +17,8 @@ dependencies = [
     "sentence-transformers",
     "lightgbm",
     "peft",
+    "kaggle",
+    "pyarrow",
 ]
 
 [dependency-groups]

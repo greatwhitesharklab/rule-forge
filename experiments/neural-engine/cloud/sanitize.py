@@ -34,10 +34,17 @@ class PiiHit:
 # --- PII patterns -----------------------------------------------------------
 # Order matters: ID cards (18 digits) must be redacted before bank cards
 # (16-19 digits), or the bank-card rule would partially eat an ID number.
+# Boundary guards: a digit run flanked by '.', letters, '_' or '%' is a
+# decimal/exponent/identifier fragment (p_value, correlation, hash slice,
+# percentage), never a card/ID — real card numbers in business text follow
+# Chinese labels or punctuation and stand alone. Guarding on context (instead
+# of requiring a 卡号/card keyword) keeps standalone card numbers redacted.
+_NUMERIC_CTX = r"\d.%A-Za-z_"
 _ID_CARD = re.compile(
-    r"(?<!\d)\d{6}(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx](?!\d)"
+    rf"(?<![{_NUMERIC_CTX}])\d{{6}}(?:19|20)\d{{2}}(?:0[1-9]|1[0-2])"
+    rf"(?:0[1-9]|[12]\d|3[01])\d{{3}}[\dXx](?![{_NUMERIC_CTX}])"
 )
-_BANK_CARD = re.compile(r"(?<!\d)\d{16,19}(?!\d)")
+_BANK_CARD = re.compile(rf"(?<![{_NUMERIC_CTX}])\d{{16,19}}(?![{_NUMERIC_CTX}])")
 _PHONE = re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)")
 # Labeled names only ("姓名：张伟" / "申请人为李娜"); a mandatory separator
 # keeps "客户经理" / "申请人要求…" from being misread as names.

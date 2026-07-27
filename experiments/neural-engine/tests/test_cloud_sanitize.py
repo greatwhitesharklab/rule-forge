@@ -141,6 +141,49 @@ class TestStructurePreservation:
         assert sanitize_text(text) == text
 
 
+class TestNumericFalsePositives:
+    """Long digit runs in numeric/identifier contexts are NOT card numbers."""
+
+    def test_long_decimal_p_value_untouched(self) -> None:
+        text = '"p_value": 0.0000000000000001'
+        assert sanitize_text(text) == text
+
+    def test_decimal_looking_like_card_untouched(self) -> None:
+        text = '"correlation": 0.6222021234567890'
+        assert sanitize_text(text) == text
+
+    def test_decimal_looking_like_id_untouched(self) -> None:
+        text = '"rho": 0.110101199003070077'
+        assert sanitize_text(text) == text
+
+    def test_exponent_context_untouched(self) -> None:
+        text = "thr=2.0000000000000001e-05"
+        assert sanitize_text(text) == text
+
+    def test_identifier_context_untouched(self) -> None:
+        text = "hash=ab1234567890123456cd"
+        assert sanitize_text(text) == text
+
+    def test_percent_context_untouched(self) -> None:
+        text = "ratio=1234567890123456%"
+        assert sanitize_text(text) == text
+
+    def test_json_kv_context_safe(self) -> None:
+        text = '{"p_value": 0.0000000000000001, "rho": 0.6222021234567890}'
+        assert sanitize_text(text) == text
+
+    def test_standalone_card_still_redacted(self) -> None:
+        out = sanitize_text("6222021234567890123")
+        assert out == "[BANK_CARD]"
+
+    def test_card_after_chinese_label_still_redacted(self) -> None:
+        out = sanitize_text("还款卡号6222021234567890123")
+        assert "[BANK_CARD]" in out
+
+    def test_standalone_id_still_redacted(self) -> None:
+        assert sanitize_text("110101199003070077") == "[ID_CARD]"
+
+
 class TestOutboundVerification:
     """Residual PII after sanitization must block the outbound payload."""
 

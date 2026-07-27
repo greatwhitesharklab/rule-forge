@@ -4,7 +4,12 @@ Label convention follows the synth OutcomeLedger: 1 = bad (default), 0 = good.
 
 - IV (information value): quantile-binned WOE sum; zero cells get a +0.5
   smoothing so IV stays finite, untouched otherwise.
-- lift: the highest per-bin bad rate divided by the overall bad rate.
+- lift (bad direction): the highest per-bin bad rate divided by the overall
+  bad rate.
+- lift_good (protective direction, §9.4): the overall bad rate divided by the
+  LOWEST per-bin bad rate — a segment with markedly fewer bads than the
+  population scores > 1. Jeffreys smoothing ((bad+0.5)/(count+1)) keeps
+  zero-bad (perfectly protective) bins finite instead of diverging.
 - coverage: fraction of finite (non-NaN, non-inf) feature values.
 - direction-free AUC: max(auc, 1-auc) so a reversed oracle is still flagged.
 """
@@ -70,6 +75,29 @@ def lift(values: np.ndarray, labels: np.ndarray, *, max_bins: int = 10) -> float
     grouped = pd.DataFrame({"b": _bins(v, max_bins), "y": y}).groupby("b", observed=True)["y"]
     bin_rates = grouped.sum() / grouped.count()
     return float((bin_rates / y.mean()).max())
+
+
+def lift_good(
+    values: np.ndarray, labels: np.ndarray, *, max_bins: int = 10, alpha: float = 0.5
+) -> float:
+    """Protective-direction lift (§9.4): overall bad rate / LOWEST bin bad rate.
+
+    Symmetric counterpart of ``lift``: a segment whose bad rate sits far
+    BELOW the population scores > 1. Bin rates and the overall rate use
+    Jeffreys smoothing ((bad + alpha) / (count + 2*alpha)) so a zero-bad
+    (perfectly protective) bin yields a large but finite value instead of
+    dividing by zero. NaN when the sample has no bads (like ``lift``);
+    a single bin yields exactly 1.0 (no segment deviation to reward).
+    """
+    v, y = _prepare(values, labels)
+    if v.size == 0 or y.sum() == 0:
+        return float("nan")
+    grouped = pd.DataFrame({"b": _bins(v, max_bins), "y": y}).groupby("b", observed=True)["y"]
+    bad = grouped.sum().astype(float)
+    count = grouped.count().astype(float)
+    bin_rates = (bad + alpha) / (count + 2.0 * alpha)
+    overall = (bad.sum() + alpha) / (count.sum() + 2.0 * alpha)
+    return float((overall / bin_rates).max())  # == overall / min bin rate
 
 
 def direction_free_auc(values: np.ndarray, labels: np.ndarray) -> float:

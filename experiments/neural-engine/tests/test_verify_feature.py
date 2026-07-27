@@ -9,7 +9,7 @@ import pytest
 from synth.config import default_config
 from synth.world import SyntheticWorld
 from verify.feature import FeatureThresholds, backtest_frame, verify_feature
-from verify.metrics import coverage, direction_free_auc, information_value, lift
+from verify.metrics import coverage, direction_free_auc, information_value, lift, lift_good
 
 # 20-row known distribution: x=0 -> 8 good / 2 bad; x=1 -> 2 good / 8 bad.
 KNOWN_VALUES = [0.0] * 10 + [1.0] * 10
@@ -44,6 +44,32 @@ class TestMetricMath:
 
     def test_auc_single_class_is_nan(self) -> None:
         assert math.isnan(direction_free_auc([1.0, 2.0], [1, 1]))
+
+
+class TestLiftGood:
+    """Symmetric (protective-direction) lift, design doc §9.4 fix."""
+
+    def test_lift_good_exact_known_distribution(self) -> None:
+        # Jeffreys-smoothed: rates (2.5/11, 8.5/11), overall 10.5/21 = 0.5
+        # lift_good = 0.5 / (2.5/11) = 2.2
+        assert lift_good(KNOWN_VALUES, KNOWN_LABELS) == pytest.approx(2.2)
+
+    def test_zero_bad_bin_stays_finite_via_smoothing(self) -> None:
+        # Segment 0 is perfectly protective (0/50 bad); without smoothing the
+        # min bin rate would be exactly 0 and lift_good would diverge.
+        values = [0.0] * 50 + [1.0] * 50
+        labels = [0] * 50 + [1] * 20 + [0] * 30
+        # (20.5/101) / (0.5/51) = 20.70297...
+        lg = lift_good(values, labels)
+        assert math.isfinite(lg)
+        assert lg == pytest.approx(1045.5 / 50.5)
+
+    def test_single_bin_is_neutral(self) -> None:
+        # One bin only: min rate == overall rate -> exactly 1.0.
+        assert lift_good([1.0] * 10, [0, 1] * 5) == pytest.approx(1.0)
+
+    def test_no_bads_is_nan(self) -> None:
+        assert math.isnan(lift_good([1.0, 2.0], [0, 0]))
 
 
 def _noisy_frame(n: int = 3000, seed: int = 11) -> tuple[pd.DataFrame, np.ndarray]:
@@ -120,6 +146,33 @@ class TestVerifyFeature:
         strict = FeatureThresholds(iv_min=99.0, lift_min=99.0)
         v = verify_feature("df.z", df, y, thresholds=strict)
         assert v.status == "fail"
+
+    def test_protective_feature_passes_via_lift_good(self) -> None:
+        # Small perfectly-protective segment (20/1000 cases, 0 bads):
+        # IV ~ 0.054 < 0.1, lift_bad ~ 1.05 < 1.3 — the old gate was blind to
+        # this (design doc §9.4); lift_good ~ 8.4 must admit it.
+        flag = [1.0] * 20 + [0.0] * 980
+        labels = [0] * 20 + [1] * 200 + [0] * 780
+        df = pd.DataFrame({"flag": flag})
+        v = verify_feature("df.flag", df, np.array(labels, dtype=np.int8))
+        assert v.metrics["iv"] < 0.1
+        assert v.metrics["lift_bad"] < 1.3
+        assert v.metrics["lift_good"] > 1.3
+        assert v.status == "pass"
+        assert any("lift_good" in r for r in v.reasons)
+        # Legacy "lift" key remains as the bad-direction alias.
+        assert v.metrics["lift"] == v.metrics["lift_bad"]
+
+    def test_weak_both_directions_fails_and_names_new_criterion(self) -> None:
+        rng = np.random.default_rng(3)
+        n = 2000
+        df = pd.DataFrame({"noise": rng.normal(size=n)})
+        y = (rng.random(n) < 0.2).astype(np.int8)
+        v = verify_feature("df.noise", df, y)
+        assert v.status == "fail"
+        assert v.metrics["lift_bad"] <= 1.3
+        assert v.metrics["lift_good"] <= 1.3
+        assert any("lift_good" in r and "below gate" in r for r in v.reasons)
 
 
 class TestSynthWorldBacktest:

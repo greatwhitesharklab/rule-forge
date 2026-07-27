@@ -41,6 +41,13 @@ class SlotConfig:
     # Temporal consistency: size of the recent-outcome sliding window.
     a_tmp_window: int = 20
 
+    # WAL: store (compressed) vectors in write-op records. False strips them —
+    # much smaller WAL, but rebuild() from an empty database then fails on the
+    # first stripped record: replay requires a SQLite snapshot taken before it
+    # (no external encoder to re-derive vectors in P0/P1 scope). Default True
+    # keeps the from-empty replay guarantee.
+    wal_store_vectors: bool = True
+
     # New-slot Beta prior (P1.1): Beta(lambda*(1-p), lambda*p).
     prior_bad_rate: float = 0.1  # p: fallback global bad-rate prior
     prior_strength: float = 4.0  # lambda: pseudo-count mass of the prior
