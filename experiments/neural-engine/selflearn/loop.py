@@ -38,6 +38,7 @@ from .gbdt import (
     predict_bad_proba,
     profile_unexplained,
     regime_stats,
+    residual_signal_analysis,
     train_gbdt,
     unexplained_bads,
 )
@@ -192,8 +193,21 @@ class SelfLearnLoop:
 
         # ① GBDT 指路(dev 留出集样本外)
         _, proba, auc_before, imp_top = self._train_and_score()
-        idx = unexplained_bads(self.labels, proba, cfg.top_k)
-        profile = profile_unexplained(self.verify_df.assign(outcome=self.labels), idx)
+        hold_idx = np.nonzero(self._holdout_mask)[0]
+        hold_df = self.verify_df.iloc[hold_idx]
+        hold_labels = self.labels[hold_idx]
+        hold_proba = proba[hold_idx]
+        # Missed bads are searched on the holdout only: training rows are
+        # explained by construction, their "misses" carry no residual signal.
+        idx = unexplained_bads(hold_labels, hold_proba, cfg.top_k)
+        profile = profile_unexplained(hold_df.assign(outcome=hold_labels), idx)
+        residual = residual_signal_analysis(
+            hold_df, hold_labels, hold_proba, cfg.top_k,
+            n_bins=cfg.residual_bins,
+            top_numeric=cfg.residual_top_numeric,
+            top_categorical=cfg.residual_top_categorical,
+            top_tokens=cfg.residual_top_tokens,
+        )
 
         # ② 记忆查询:相关经验 + 死路清单
         query = (
@@ -215,6 +229,19 @@ class SelfLearnLoop:
                     pd.DataFrame({"episode": self._episodes, "outcome": self.labels})
                 ),
                 "importance_top": imp_top,
+                # Quantitative map: same-proba-bin comparison, so differences
+                # are residual signal the current GBDT does NOT exploit.
+                "residual_signals": residual,
+                "residual_signals_guide": (
+                    "Missed bads vs goods scored in the SAME proba bin: every "
+                    "difference here is residual signal the current GBDT does "
+                    "not exploit — prioritize features over these fields. "
+                    "numeric: sorted by |cohens_d| (missed vs control mean gap "
+                    "in full-frame std units), with distribution stats and KS; "
+                    "categorical: missed_share minus control_share per value; "
+                    "emp_title_tokens: token frequency gaps, direction hints "
+                    "for text-derived features."
+                ),
             },
             "constraints": {
                 "max_features": cfg.max_features_per_round,

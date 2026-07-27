@@ -42,6 +42,10 @@ class LoopConfig:
     top_k: int = 20  # GBDT 指路:每轮挑多少个"解释不了的坏账"
     max_features_per_round: int = 3  # 出题预算(探索耗材限流)
     importance_top: int = 10  # 出题 context 携带的特征重要性 top 数
+    residual_bins: int = 10  # 残余信号:holdout proba 分箱数
+    residual_top_numeric: int = 8  # 残余信号:数值字段 top-N
+    residual_top_categorical: int = 5  # 残余信号:类别差异 top-N
+    residual_top_tokens: int = 10  # 残余信号:emp_title 词频差 top-N
     corr_max: float = 0.9  # §8.4 增量价值:与现有特征相关性上限(含)
     corr_sample: int = 100_000  # 相关性计算的等距子采样行数上限
     max_train_rows: int = 200_000  # dev 窗 GBDT 单次训练行数上限(取最近)

@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 
 import numpy as np
@@ -61,9 +62,11 @@ class _StubCloud:
     def __init__(self, by_round: dict[int, list[dict]]) -> None:
         self._by_round = by_round
         self.seen_task_ids: list[str] = []
+        self.seen_contexts: list[dict] = []
 
     def execute(self, task) -> TaskResult:
         self.seen_task_ids.append(task.task_id)
+        self.seen_contexts.append(task.context)
         m = re.fullmatch(r"selflearn-r(\d+)", task.task_id)
         assert m, f"unexpected task_id {task.task_id!r}"
         feats = self._by_round.get(int(m.group(1)), [])
@@ -156,6 +159,30 @@ class TestEndToEnd:
         assert any("const_junk" in d for d in dead)
         # 出题走了 G1 合约(task_id 轮次编码)
         assert cloud.seen_task_ids == ["selflearn-r01", "selflearn-r02"]
+
+    def test_context_carries_residual_signals_no_row_level(self, tmp_path) -> None:
+        cloud = _StubCloud({1: []})
+        loop = _loop(tmp_path, _tiny_dev_df(), cloud)
+        loop.run(1)
+        ctx = cloud.seen_contexts[0]
+        # 残余信号字段 + 阅读指引进 context
+        assert "residual_signals" in ctx
+        assert "residual_signals_guide" in ctx
+        assert "SAME proba bin" in ctx["residual_signals_guide"]
+        rs = ctx["residual_signals"]
+        assert rs["n_missed"] == 10  # top_k=10(holdout 局部计数)
+        assert rs["n_controls"] > 0
+        assert rs["numeric"] and rs["numeric"][0]["feature"] == "hidden_risk"
+        # hidden_risk 是 GBDT 看不见的字段:残余效应必须显著
+        assert abs(rs["numeric"][0]["cohens_d"]) > 0.5
+        # 画像保留,两者并存
+        assert ctx["case_profiles"][0]["n"] == 10
+        # 全 context JSON 可序列化且无逐行数据(只有聚合标量/小列表)
+        blob = json.dumps(ctx, ensure_ascii=False)
+        assert len(blob) < 20000
+        for entry in rs["numeric"]:
+            for v in entry["missed"].values():
+                assert isinstance(v, float)
 
     def test_duplicate_proposal_name_rejected_and_recorded(self, tmp_path) -> None:
         cloud = _StubCloud({

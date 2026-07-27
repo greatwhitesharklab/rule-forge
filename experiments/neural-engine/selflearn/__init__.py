@@ -12,6 +12,7 @@ from .gbdt import (
     predict_bad_proba,
     profile_unexplained,
     regime_stats,
+    residual_signal_analysis,
     train_gbdt,
     unexplained_bads,
 )
