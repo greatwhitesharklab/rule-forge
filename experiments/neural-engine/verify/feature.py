@@ -116,3 +116,38 @@ def backtest_frame(world: WorldData, episode: int) -> tuple[pd.DataFrame, np.nda
     obs, labels = world.matured_view(episode)
     df = pd.DataFrame(obs, columns=list(world.casebook.observable_names))
     return df, labels
+
+
+# 贷后/决策时刻不可得字段(prepare.py 黑名单的核心成员):注入帧里出现即拒绝,
+# 特征表达式一旦引用就是特征穿越(§8.3 铁律二),不能留给 AUC 检测兜底。
+_POST_DECISION_COLS = frozenset({
+    "total_pymnt", "total_pymnt_inv", "total_rec_prncp", "total_rec_int",
+    "total_rec_late_fee", "recoveries", "collection_recovery_fee",
+    "last_pymnt_d", "last_pymnt_amnt", "funded_amnt", "funded_amnt_inv",
+})
+
+
+def backtest_frame_from_data(
+    frame: pd.DataFrame,
+    *,
+    label_col: str = "outcome",
+    drop: tuple[str, ...] = ("episode",),
+) -> tuple[pd.DataFrame, np.ndarray]:
+    """Inject an arbitrary matured frame (e.g. a LendingClub dev window) as a
+    backtest frame — the non-synth counterpart of ``backtest_frame``.
+
+    Splits off ``label_col`` as labels and drops bookkeeping columns (episode),
+    so the expression sandbox never sees the label or the time key. Any
+    post-decision column (贷后字段) aborts the injection outright.
+    """
+    if label_col not in frame.columns:
+        raise ValueError(f"injected frame lacks label column {label_col!r}")
+    leaked = sorted(_POST_DECISION_COLS & set(frame.columns))
+    if leaked:
+        raise ValueError(
+            f"injected frame carries post-decision columns {leaked} — "
+            "backtesting against them would be label leakage (§8.3)"
+        )
+    labels = frame[label_col].to_numpy().astype(np.int8)
+    df = frame.drop(columns=[label_col, *drop], errors="ignore")
+    return df, labels
