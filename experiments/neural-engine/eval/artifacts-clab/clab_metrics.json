@@ -1,0 +1,2260 @@
+{
+  "config": {
+    "episodes": 100,
+    "per_episode": 1000,
+    "seed": 20260726,
+    "dev_episodes": 60,
+    "rounds": 15,
+    "top_m": 20,
+    "top_k": 20,
+    "lag": 3,
+    "n_candidates": 482,
+    "cloud": "clab-auto (brute-force enumerator)"
+  },
+  "calibration": {
+    "tau": 0.364105,
+    "hit_min": 0.561931,
+    "hit_median": 0.669539,
+    "null_p99": 0.364105,
+    "null_max": 0.390125,
+    "n_hit": 20,
+    "n_null": 100,
+    "hit_gate_pass": 14
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.7835673191432262,
+      "auc_dev_after": 0.7852983109411429,
+      "accepted": [
+        {
+          "name": "pr_f1_f6",
+          "expression": "df.debt_to_income_obs * df.requested_loan_to_income",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.692234,
+          "note": "matched EXP-04 corr=0.6922",
+          "iv": 0.516042,
+          "round": 1
+        },
+        {
+          "name": "pr_f0_f1",
+          "expression": "df.income_volatility_obs * df.debt_to_income_obs",
+          "category": "known",
+          "best_rule_id": "EXP-09",
+          "corr": 0.501259,
+          "note": "matched EXP-09 corr=0.5013",
+          "iv": 0.418626,
+          "round": 1
+        },
+        {
+          "name": "pr_f1_f7",
+          "expression": "df.debt_to_income_obs * df.platform_loans_disclosed",
+          "category": "known",
+          "best_rule_id": "EXP-05",
+          "corr": 0.638502,
+          "note": "matched EXP-05 corr=0.6385",
+          "iv": 0.401143,
+          "round": 1
+        },
+        {
+          "name": "rt_f2_f1",
+          "expression": "df.credit_history_years_reported / (df.debt_to_income_obs + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.380176,
+          "round": 1
+        },
+        {
+          "name": "rt_f1_f2",
+          "expression": "df.debt_to_income_obs / (df.credit_history_years_reported + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.380186,
+          "round": 1
+        },
+        {
+          "name": "cj_f1_ll_f6_8080",
+          "expression": "((df.debt_to_income_obs < 0.599999) & (df.requested_loan_to_income < 0.755187))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": -0.545338,
+          "note": "matched EXP-04 corr=-0.5453",
+          "iv": 0.389508,
+          "round": 1
+        },
+        {
+          "name": "cj_f1_ll_f6_7080",
+          "expression": "((df.debt_to_income_obs < 0.486626) & (df.requested_loan_to_income < 0.755187))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": -0.473296,
+          "note": "matched EXP-04 corr=-0.4733",
+          "iv": 0.356266,
+          "round": 1
+        },
+        {
+          "name": "rt_f1_f4",
+          "expression": "df.debt_to_income_obs / (df.months_employed + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.347483,
+          "round": 1
+        },
+        {
+          "name": "rt_f4_f1",
+          "expression": "df.months_employed / (df.debt_to_income_obs + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.347473,
+          "round": 1
+        },
+        {
+          "name": "cj_f1_ll_f6_8070",
+          "expression": "((df.debt_to_income_obs < 0.599999) & (df.requested_loan_to_income < 0.609777))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": -0.471211,
+          "note": "matched EXP-04 corr=-0.4712",
+          "iv": 0.354668,
+          "round": 1
+        },
+        {
+          "name": "pr_f0_f6",
+          "expression": "df.income_volatility_obs * df.requested_loan_to_income",
+          "category": "known",
+          "best_rule_id": "EXP-09",
+          "corr": 0.456619,
+          "note": "matched EXP-09 corr=0.4566",
+          "iv": 0.331472,
+          "round": 1
+        },
+        {
+          "name": "cj_f1_ll_f6_7070",
+          "expression": "((df.debt_to_income_obs < 0.486626) & (df.requested_loan_to_income < 0.609777))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": -0.412469,
+          "note": "matched EXP-04 corr=-0.4125",
+          "iv": 0.329424,
+          "round": 1
+        },
+        {
+          "name": "rt_f1_f3",
+          "expression": "df.debt_to_income_obs / (df.delinquencies_reported + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.293906,
+          "round": 1
+        },
+        {
+          "name": "rt_f1_f5",
+          "expression": "df.debt_to_income_obs / (df.savings_months_obs + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.30066,
+          "round": 1
+        },
+        {
+          "name": "rt_f2_f6",
+          "expression": "df.credit_history_years_reported / (df.requested_loan_to_income + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.287055,
+          "round": 1
+        },
+        {
+          "name": "rt_f6_f2",
+          "expression": "df.requested_loan_to_income / (df.credit_history_years_reported + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.287061,
+          "round": 1
+        },
+        {
+          "name": "rt_f2_f7",
+          "expression": "df.credit_history_years_reported / (df.platform_loans_disclosed + 1e-06)",
+          "category": "known",
+          "best_rule_id": "EXP-17",
+          "corr": 0.373185,
+          "note": "matched EXP-17 corr=0.3732",
+          "iv": 0.269706,
+          "round": 1
+        },
+        {
+          "name": "cj_f1_gl_f2_8080",
+          "expression": "((df.debt_to_income_obs > 0.599999) & (df.credit_history_years_reported < 7.349679))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.407217,
+          "note": "matched EXP-04 corr=0.4072",
+          "iv": 0.249584,
+          "round": 1
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.7852983109411429,
+      "auc_dev_after": 0.7829785806538185,
+      "accepted": [
+        {
+          "name": "cj_f1_ll_f7_8070",
+          "expression": "((df.debt_to_income_obs < 0.599999) & (df.platform_loans_disclosed < 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-20",
+          "corr": 0.377723,
+          "note": "matched EXP-20 corr=0.3777",
+          "iv": 0.253307,
+          "round": 2
+        },
+        {
+          "name": "cj_f1_ll_f7_7070",
+          "expression": "((df.debt_to_income_obs < 0.486626) & (df.platform_loans_disclosed < 2.000000))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.253214,
+          "round": 2
+        },
+        {
+          "name": "cj_f1_gl_f5_8080",
+          "expression": "((df.debt_to_income_obs > 0.599999) & (df.savings_months_obs < 2.585902))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.472272,
+          "note": "matched EXP-04 corr=0.4723",
+          "iv": 0.247431,
+          "round": 2
+        },
+        {
+          "name": "cj_f1_gl_f4_8080",
+          "expression": "((df.debt_to_income_obs > 0.599999) & (df.months_employed < 53.955455))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.406506,
+          "note": "matched EXP-04 corr=0.4065",
+          "iv": 0.253491,
+          "round": 2
+        },
+        {
+          "name": "cj_f1_gl_f2_7080",
+          "expression": "((df.debt_to_income_obs > 0.486626) & (df.credit_history_years_reported < 7.349679))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.249582,
+          "round": 2
+        },
+        {
+          "name": "rt_f2_f0",
+          "expression": "df.credit_history_years_reported / (df.income_volatility_obs + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.254274,
+          "round": 2
+        },
+        {
+          "name": "rt_f0_f2",
+          "expression": "df.income_volatility_obs / (df.credit_history_years_reported + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.254411,
+          "round": 2
+        },
+        {
+          "name": "cj_f0_ll_f1_7080",
+          "expression": "((df.income_volatility_obs < 0.369164) & (df.debt_to_income_obs < 0.599999))",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": -0.456946,
+          "note": "matched EXP-12 corr=-0.4569",
+          "iv": 0.243594,
+          "round": 2
+        },
+        {
+          "name": "cj_f0_ll_f1_8080",
+          "expression": "((df.income_volatility_obs < 0.436571) & (df.debt_to_income_obs < 0.599999))",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": -0.373173,
+          "note": "matched EXP-12 corr=-0.3732",
+          "iv": 0.244377,
+          "round": 2
+        },
+        {
+          "name": "cj_f1_gl_f4_7080",
+          "expression": "((df.debt_to_income_obs > 0.486626) & (df.months_employed < 53.955455))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.252621,
+          "round": 2
+        },
+        {
+          "name": "cj_f1_gl_f5_7080",
+          "expression": "((df.debt_to_income_obs > 0.486626) & (df.savings_months_obs < 2.585902))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.432837,
+          "note": "matched EXP-04 corr=0.4328",
+          "iv": 0.242319,
+          "round": 2
+        },
+        {
+          "name": "pr_f0_f7",
+          "expression": "df.income_volatility_obs * df.platform_loans_disclosed",
+          "category": "rediscovery",
+          "best_rule_id": "HLD-08",
+          "corr": 0.431774,
+          "note": "matched HLD-08 corr=0.4318",
+          "iv": 0.247049,
+          "round": 2
+        },
+        {
+          "name": "sg_f1_gt80",
+          "expression": "(df.debt_to_income_obs > 0.599999)",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.468397,
+          "note": "matched EXP-04 corr=0.4684",
+          "iv": 0.238131,
+          "round": 2
+        },
+        {
+          "name": "cj_f0_ll_f1_8070",
+          "expression": "((df.income_volatility_obs < 0.436571) & (df.debt_to_income_obs < 0.486626))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.241466,
+          "round": 2
+        },
+        {
+          "name": "cj_f0_ll_f1_7070",
+          "expression": "((df.income_volatility_obs < 0.369164) & (df.debt_to_income_obs < 0.486626))",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": -0.394325,
+          "note": "matched EXP-12 corr=-0.3943",
+          "iv": 0.241974,
+          "round": 2
+        },
+        {
+          "name": "rt_f4_f6",
+          "expression": "df.months_employed / (df.requested_loan_to_income + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.264474,
+          "round": 2
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.7829785806538185,
+      "auc_dev_after": 0.786566363072175,
+      "accepted": [
+        {
+          "name": "rt_f6_f4",
+          "expression": "df.requested_loan_to_income / (df.months_employed + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.264446,
+          "round": 3
+        },
+        {
+          "name": "rt_f7_f2",
+          "expression": "df.platform_loans_disclosed / (df.credit_history_years_reported + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.229273,
+          "round": 3
+        },
+        {
+          "name": "rt_f4_f7",
+          "expression": "df.months_employed / (df.platform_loans_disclosed + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.243037,
+          "round": 3
+        },
+        {
+          "name": "sg_f1_gt70",
+          "expression": "(df.debt_to_income_obs > 0.486626)",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.424097,
+          "note": "matched EXP-04 corr=0.4241",
+          "iv": 0.226885,
+          "round": 3
+        },
+        {
+          "name": "rt_f4_f0",
+          "expression": "df.months_employed / (df.income_volatility_obs + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.235696,
+          "round": 3
+        },
+        {
+          "name": "rt_f6_f5",
+          "expression": "df.requested_loan_to_income / (df.savings_months_obs + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.233734,
+          "round": 3
+        },
+        {
+          "name": "rt_f5_f6",
+          "expression": "df.savings_months_obs / (df.requested_loan_to_income + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.233726,
+          "round": 3
+        },
+        {
+          "name": "cj_f1_ll_f3_7070",
+          "expression": "((df.debt_to_income_obs < 0.486626) & (df.delinquencies_reported < 1.000000))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.218412,
+          "round": 3
+        },
+        {
+          "name": "rt_f6_f3",
+          "expression": "df.requested_loan_to_income / (df.delinquencies_reported + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.216722,
+          "round": 3
+        },
+        {
+          "name": "cj_f1_ll_f3_8070",
+          "expression": "((df.debt_to_income_obs < 0.599999) & (df.delinquencies_reported < 1.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-02",
+          "corr": -0.382423,
+          "note": "matched EXP-02 corr=-0.3824",
+          "iv": 0.216001,
+          "round": 3
+        },
+        {
+          "name": "pr_f2_f4",
+          "expression": "df.credit_history_years_reported * df.months_employed",
+          "category": "known",
+          "best_rule_id": "EXP-14",
+          "corr": 0.573725,
+          "note": "matched EXP-14 corr=0.5737",
+          "iv": 0.226376,
+          "round": 3
+        },
+        {
+          "name": "sg_f1_gt90",
+          "expression": "(df.debt_to_income_obs > 0.782829)",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.504001,
+          "note": "matched EXP-04 corr=0.5040",
+          "iv": 0.212248,
+          "round": 3
+        },
+        {
+          "name": "rt_f5_f0",
+          "expression": "df.savings_months_obs / (df.income_volatility_obs + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.206579,
+          "round": 3
+        },
+        {
+          "name": "rt_f0_f5",
+          "expression": "df.income_volatility_obs / (df.savings_months_obs + 1e-06)",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": 0.404616,
+          "note": "matched EXP-12 corr=0.4046",
+          "iv": 0.206588,
+          "round": 3
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.786566363072175,
+      "auc_dev_after": 0.7834130059209313,
+      "accepted": [
+        {
+          "name": "sg_f1_gt60",
+          "expression": "(df.debt_to_income_obs > 0.403522)",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.371723,
+          "note": "matched EXP-04 corr=0.3717",
+          "iv": 0.197142,
+          "round": 4
+        },
+        {
+          "name": "cj_f6_ll_f7_8070",
+          "expression": "((df.requested_loan_to_income < 0.755187) & (df.platform_loans_disclosed < 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-20",
+          "corr": 0.667284,
+          "note": "matched EXP-20 corr=0.6673",
+          "iv": 0.206777,
+          "round": 4
+        },
+        {
+          "name": "rt_f2_f3",
+          "expression": "df.credit_history_years_reported / (df.delinquencies_reported + 1e-06)",
+          "category": "known",
+          "best_rule_id": "EXP-08",
+          "corr": 0.601855,
+          "note": "matched EXP-08 corr=0.6019",
+          "iv": 0.206585,
+          "round": 4
+        },
+        {
+          "name": "rt_f5_f7",
+          "expression": "df.savings_months_obs / (df.platform_loans_disclosed + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.204879,
+          "round": 4
+        },
+        {
+          "name": "rt_f7_f4",
+          "expression": "df.platform_loans_disclosed / (df.months_employed + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.206862,
+          "round": 4
+        },
+        {
+          "name": "cj_f0_ll_f6_7080",
+          "expression": "((df.income_volatility_obs < 0.369164) & (df.requested_loan_to_income < 0.755187))",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": -0.454957,
+          "note": "matched EXP-12 corr=-0.4550",
+          "iv": 0.195554,
+          "round": 4
+        },
+        {
+          "name": "pr_f1_f3",
+          "expression": "df.debt_to_income_obs * df.delinquencies_reported",
+          "category": "known",
+          "best_rule_id": "EXP-02",
+          "corr": 0.392512,
+          "note": "matched EXP-02 corr=0.3925",
+          "iv": 0.184816,
+          "round": 4
+        },
+        {
+          "name": "pr_f2_f5",
+          "expression": "df.credit_history_years_reported * df.savings_months_obs",
+          "category": "known",
+          "best_rule_id": "EXP-03",
+          "corr": 0.382762,
+          "note": "matched EXP-03 corr=0.3828",
+          "iv": 0.188934,
+          "round": 4
+        },
+        {
+          "name": "cj_f6_ll_f7_7070",
+          "expression": "((df.requested_loan_to_income < 0.609777) & (df.platform_loans_disclosed < 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-20",
+          "corr": 0.695905,
+          "note": "matched EXP-20 corr=0.6959",
+          "iv": 0.193718,
+          "round": 4
+        },
+        {
+          "name": "cj_f1_gg_f6_7070",
+          "expression": "((df.debt_to_income_obs > 0.486626) & (df.requested_loan_to_income > 0.609777))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.533835,
+          "note": "matched EXP-04 corr=0.5338",
+          "iv": 0.185352,
+          "round": 4
+        },
+        {
+          "name": "cj_f2_lg_f6_7070",
+          "expression": "((df.credit_history_years_reported < 6.092974) & (df.requested_loan_to_income > 0.609777))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.195801,
+          "round": 4
+        },
+        {
+          "name": "pr_f4_f5",
+          "expression": "df.months_employed * df.savings_months_obs",
+          "category": "known",
+          "best_rule_id": "EXP-03",
+          "corr": 0.506208,
+          "note": "matched EXP-03 corr=0.5062",
+          "iv": 0.185379,
+          "round": 4
+        },
+        {
+          "name": "cj_f0_ll_f6_8080",
+          "expression": "((df.income_volatility_obs < 0.436571) & (df.requested_loan_to_income < 0.755187))",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": -0.371031,
+          "note": "matched EXP-12 corr=-0.3710",
+          "iv": 0.189282,
+          "round": 4
+        },
+        {
+          "name": "cj_f0_ll_f6_7070",
+          "expression": "((df.income_volatility_obs < 0.369164) & (df.requested_loan_to_income < 0.609777))",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": -0.395004,
+          "note": "matched EXP-12 corr=-0.3950",
+          "iv": 0.195509,
+          "round": 4
+        },
+        {
+          "name": "cj_f2_lg_f6_8080",
+          "expression": "((df.credit_history_years_reported < 7.349679) & (df.requested_loan_to_income > 0.755187))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.187173,
+          "round": 4
+        },
+        {
+          "name": "rt_f7_f5",
+          "expression": "df.platform_loans_disclosed / (df.savings_months_obs + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.17971,
+          "round": 4
+        },
+        {
+          "name": "rt_f4_f3",
+          "expression": "df.months_employed / (df.delinquencies_reported + 1e-06)",
+          "category": "known",
+          "best_rule_id": "EXP-02",
+          "corr": -0.398014,
+          "note": "matched EXP-02 corr=-0.3980",
+          "iv": 0.185732,
+          "round": 4
+        },
+        {
+          "name": "cj_f4_lg_f6_8080",
+          "expression": "((df.months_employed < 53.955455) & (df.requested_loan_to_income > 0.755187))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.185821,
+          "round": 4
+        }
+      ]
+    },
+    {
+      "round": 5,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.7834130059209313,
+      "auc_dev_after": 0.7844881665240946,
+      "accepted": [
+        {
+          "name": "cj_f5_lg_f6_8070",
+          "expression": "((df.savings_months_obs < 2.585902) & (df.requested_loan_to_income > 0.609777))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.373538,
+          "note": "matched EXP-04 corr=0.3735",
+          "iv": 0.184178,
+          "round": 5
+        },
+        {
+          "name": "cj_f0_ll_f6_8070",
+          "expression": "((df.income_volatility_obs < 0.436571) & (df.requested_loan_to_income < 0.609777))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.188993,
+          "round": 5
+        },
+        {
+          "name": "cj_f4_lg_f6_8070",
+          "expression": "((df.months_employed < 53.955455) & (df.requested_loan_to_income > 0.609777))",
+          "category": "known",
+          "best_rule_id": "EXP-20",
+          "corr": -0.365307,
+          "note": "matched EXP-20 corr=-0.3653",
+          "iv": 0.188974,
+          "round": 5
+        },
+        {
+          "name": "cj_f0_ll_f7_7070",
+          "expression": "((df.income_volatility_obs < 0.369164) & (df.platform_loans_disclosed < 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": -0.376296,
+          "note": "matched EXP-12 corr=-0.3763",
+          "iv": 0.16697,
+          "round": 5
+        },
+        {
+          "name": "cj_f5_lg_f6_8080",
+          "expression": "((df.savings_months_obs < 2.585902) & (df.requested_loan_to_income > 0.755187))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.406524,
+          "note": "matched EXP-04 corr=0.4065",
+          "iv": 0.17698,
+          "round": 5
+        },
+        {
+          "name": "cj_f0_gg_f1_7070",
+          "expression": "((df.income_volatility_obs > 0.369164) & (df.debt_to_income_obs > 0.486626))",
+          "category": "known",
+          "best_rule_id": "EXP-09",
+          "corr": 0.389263,
+          "note": "matched EXP-09 corr=0.3893",
+          "iv": 0.16543,
+          "round": 5
+        },
+        {
+          "name": "cj_f3_ll_f6_7080",
+          "expression": "((df.delinquencies_reported < 1.000000) & (df.requested_loan_to_income < 0.755187))",
+          "category": "known",
+          "best_rule_id": "EXP-02",
+          "corr": -0.383969,
+          "note": "matched EXP-02 corr=-0.3840",
+          "iv": 0.16983,
+          "round": 5
+        },
+        {
+          "name": "cj_f0_gg_f1_7080",
+          "expression": "((df.income_volatility_obs > 0.369164) & (df.debt_to_income_obs > 0.599999))",
+          "category": "known",
+          "best_rule_id": "EXP-09",
+          "corr": 0.393028,
+          "note": "matched EXP-09 corr=0.3930",
+          "iv": 0.160057,
+          "round": 5
+        },
+        {
+          "name": "cj_f3_ll_f6_7070",
+          "expression": "((df.delinquencies_reported < 1.000000) & (df.requested_loan_to_income < 0.609777))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.17476,
+          "round": 5
+        },
+        {
+          "name": "cj_f1_lg_f2_8070",
+          "expression": "((df.debt_to_income_obs < 0.599999) & (df.credit_history_years_reported > 6.092974))",
+          "category": "known",
+          "best_rule_id": "EXP-08",
+          "corr": 0.440154,
+          "note": "matched EXP-08 corr=0.4402",
+          "iv": 0.167136,
+          "round": 5
+        },
+        {
+          "name": "rt_f1_f7",
+          "expression": "df.debt_to_income_obs / (df.platform_loans_disclosed + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.164397,
+          "round": 5
+        },
+        {
+          "name": "rt_f5_f3",
+          "expression": "df.savings_months_obs / (df.delinquencies_reported + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.160442,
+          "round": 5
+        },
+        {
+          "name": "cj_f1_gg_f6_8070",
+          "expression": "((df.debt_to_income_obs > 0.599999) & (df.requested_loan_to_income > 0.609777))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.500536,
+          "note": "matched EXP-04 corr=0.5005",
+          "iv": 0.1538,
+          "round": 5
+        },
+        {
+          "name": "cj_f0_ll_f7_8070",
+          "expression": "((df.income_volatility_obs < 0.436571) & (df.platform_loans_disclosed < 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-20",
+          "corr": 0.382356,
+          "note": "matched EXP-20 corr=0.3824",
+          "iv": 0.154825,
+          "round": 5
+        }
+      ]
+    },
+    {
+      "round": 6,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.7844881665240946,
+      "auc_dev_after": 0.7834599708146733,
+      "accepted": [
+        {
+          "name": "sg_f6_gt80",
+          "expression": "(df.requested_loan_to_income > 0.755187)",
+          "category": "known",
+          "best_rule_id": "EXP-07",
+          "corr": 0.404688,
+          "note": "matched EXP-07 corr=0.4047",
+          "iv": 0.160812,
+          "round": 6
+        },
+        {
+          "name": "pr_f3_f6",
+          "expression": "df.delinquencies_reported * df.requested_loan_to_income",
+          "category": "known",
+          "best_rule_id": "EXP-02",
+          "corr": 0.394448,
+          "note": "matched EXP-02 corr=0.3944",
+          "iv": 0.159488,
+          "round": 6
+        },
+        {
+          "name": "cj_f3_ll_f7_7070",
+          "expression": "((df.delinquencies_reported < 1.000000) & (df.platform_loans_disclosed < 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-17",
+          "corr": 0.387358,
+          "note": "matched EXP-17 corr=0.3874",
+          "iv": 0.148383,
+          "round": 6
+        },
+        {
+          "name": "rt_f0_f3",
+          "expression": "df.income_volatility_obs / (df.delinquencies_reported + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "direction mismatch vs EXP-12",
+          "iv": 0.164999,
+          "round": 6
+        },
+        {
+          "name": "cj_f1_gg_f6_7080",
+          "expression": "((df.debt_to_income_obs > 0.486626) & (df.requested_loan_to_income > 0.755187))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.494167,
+          "note": "matched EXP-04 corr=0.4942",
+          "iv": 0.146682,
+          "round": 6
+        },
+        {
+          "name": "sg_f6_gt70",
+          "expression": "(df.requested_loan_to_income > 0.609777)",
+          "category": "known",
+          "best_rule_id": "EXP-20",
+          "corr": -0.424252,
+          "note": "matched EXP-20 corr=-0.4243",
+          "iv": 0.159104,
+          "round": 6
+        },
+        {
+          "name": "cj_f4_lg_f7_8070",
+          "expression": "((df.months_employed < 53.955455) & (df.platform_loans_disclosed > 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-11",
+          "corr": 0.53135,
+          "note": "matched EXP-11 corr=0.5314",
+          "iv": 0.153078,
+          "round": 6
+        },
+        {
+          "name": "cj_f2_ll_f4_8080",
+          "expression": "((df.credit_history_years_reported < 7.349679) & (df.months_employed < 53.955455))",
+          "category": "known",
+          "best_rule_id": "EXP-08",
+          "corr": -0.484414,
+          "note": "matched EXP-08 corr=-0.4844",
+          "iv": 0.151326,
+          "round": 6
+        },
+        {
+          "name": "cj_f2_lg_f7_8070",
+          "expression": "((df.credit_history_years_reported < 7.349679) & (df.platform_loans_disclosed > 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-11",
+          "corr": 0.53055,
+          "note": "matched EXP-11 corr=0.5305",
+          "iv": 0.147985,
+          "round": 6
+        },
+        {
+          "name": "cj_f2_ll_f4_7080",
+          "expression": "((df.credit_history_years_reported < 6.092974) & (df.months_employed < 53.955455))",
+          "category": "known",
+          "best_rule_id": "EXP-08",
+          "corr": -0.488271,
+          "note": "matched EXP-08 corr=-0.4883",
+          "iv": 0.148338,
+          "round": 6
+        },
+        {
+          "name": "cj_f0_gg_f6_7070",
+          "expression": "((df.income_volatility_obs > 0.369164) & (df.requested_loan_to_income > 0.609777))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.135268,
+          "round": 6
+        },
+        {
+          "name": "cj_f2_ll_f5_7080",
+          "expression": "((df.credit_history_years_reported < 6.092974) & (df.savings_months_obs < 2.585902))",
+          "category": "known",
+          "best_rule_id": "EXP-08",
+          "corr": -0.380389,
+          "note": "matched EXP-08 corr=-0.3804",
+          "iv": 0.143117,
+          "round": 6
+        },
+        {
+          "name": "cj_f1_lg_f2_8080",
+          "expression": "((df.debt_to_income_obs < 0.599999) & (df.credit_history_years_reported > 7.349679))",
+          "category": "known",
+          "best_rule_id": "EXP-08",
+          "corr": 0.450389,
+          "note": "matched EXP-08 corr=0.4504",
+          "iv": 0.142471,
+          "round": 6
+        },
+        {
+          "name": "cj_f2_ll_f5_8080",
+          "expression": "((df.credit_history_years_reported < 7.349679) & (df.savings_months_obs < 2.585902))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.140757,
+          "round": 6
+        },
+        {
+          "name": "cj_f5_lg_f7_8070",
+          "expression": "((df.savings_months_obs < 2.585902) & (df.platform_loans_disclosed > 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-11",
+          "corr": 0.528262,
+          "note": "matched EXP-11 corr=0.5283",
+          "iv": 0.143833,
+          "round": 6
+        },
+        {
+          "name": "cj_f2_ll_f4_8070",
+          "expression": "((df.credit_history_years_reported < 7.349679) & (df.months_employed < 43.966567))",
+          "category": "known",
+          "best_rule_id": "EXP-08",
+          "corr": -0.43976,
+          "note": "matched EXP-08 corr=-0.4398",
+          "iv": 0.144784,
+          "round": 6
+        }
+      ]
+    },
+    {
+      "round": 7,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.7834599708146733,
+      "auc_dev_after": 0.7865076569549976,
+      "accepted": [
+        {
+          "name": "cj_f1_gg_f7_7070",
+          "expression": "((df.debt_to_income_obs > 0.486626) & (df.platform_loans_disclosed > 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-05",
+          "corr": 0.490548,
+          "note": "matched EXP-05 corr=0.4905",
+          "iv": 0.140648,
+          "round": 7
+        },
+        {
+          "name": "cj_f1_lg_f4_8070",
+          "expression": "((df.debt_to_income_obs < 0.599999) & (df.months_employed > 43.966567))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.142941,
+          "round": 7
+        },
+        {
+          "name": "cj_f2_ll_f4_7070",
+          "expression": "((df.credit_history_years_reported < 6.092974) & (df.months_employed < 43.966567))",
+          "category": "known",
+          "best_rule_id": "EXP-08",
+          "corr": -0.442849,
+          "note": "matched EXP-08 corr=-0.4428",
+          "iv": 0.143777,
+          "round": 7
+        },
+        {
+          "name": "cj_f0_ll_f3_7070",
+          "expression": "((df.income_volatility_obs < 0.369164) & (df.delinquencies_reported < 1.000000))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.135713,
+          "round": 7
+        },
+        {
+          "name": "pr_f3_f7",
+          "expression": "df.delinquencies_reported * df.platform_loans_disclosed",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.132938,
+          "round": 7
+        },
+        {
+          "name": "cj_f2_gl_f7_7070",
+          "expression": "((df.credit_history_years_reported > 6.092974) & (df.platform_loans_disclosed < 2.000000))",
+          "category": "rediscovery",
+          "best_rule_id": "HLD-07",
+          "corr": 0.40204,
+          "note": "matched HLD-07 corr=0.4020",
+          "iv": 0.133072,
+          "round": 7
+        },
+        {
+          "name": "sg_f7_gt70",
+          "expression": "(df.platform_loans_disclosed > 2.000000)",
+          "category": "known",
+          "best_rule_id": "EXP-11",
+          "corr": 0.597337,
+          "note": "matched EXP-11 corr=0.5973",
+          "iv": 0.140845,
+          "round": 7
+        },
+        {
+          "name": "pr_f0_f3",
+          "expression": "df.income_volatility_obs * df.delinquencies_reported",
+          "category": "known",
+          "best_rule_id": "EXP-02",
+          "corr": 0.416632,
+          "note": "matched EXP-02 corr=0.4166",
+          "iv": 0.133505,
+          "round": 7
+        },
+        {
+          "name": "cj_f0_gg_f6_7080",
+          "expression": "((df.income_volatility_obs > 0.369164) & (df.requested_loan_to_income > 0.755187))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.128003,
+          "round": 7
+        },
+        {
+          "name": "sg_f6_gt60",
+          "expression": "(df.requested_loan_to_income > 0.504485)",
+          "category": "known",
+          "best_rule_id": "EXP-20",
+          "corr": -0.451232,
+          "note": "matched EXP-20 corr=-0.4512",
+          "iv": 0.139124,
+          "round": 7
+        },
+        {
+          "name": "rt_f3_f2",
+          "expression": "df.delinquencies_reported / (df.credit_history_years_reported + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.131004,
+          "round": 7
+        },
+        {
+          "name": "cj_f1_gg_f7_8070",
+          "expression": "((df.debt_to_income_obs > 0.599999) & (df.platform_loans_disclosed > 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-05",
+          "corr": 0.473113,
+          "note": "matched EXP-05 corr=0.4731",
+          "iv": 0.126336,
+          "round": 7
+        },
+        {
+          "name": "cj_f2_gl_f6_7080",
+          "expression": "((df.credit_history_years_reported > 6.092974) & (df.requested_loan_to_income < 0.755187))",
+          "category": "known",
+          "best_rule_id": "EXP-08",
+          "corr": 0.438834,
+          "note": "matched EXP-08 corr=0.4388",
+          "iv": 0.130104,
+          "round": 7
+        },
+        {
+          "name": "cj_f0_lg_f2_7070",
+          "expression": "((df.income_volatility_obs < 0.369164) & (df.credit_history_years_reported > 6.092974))",
+          "category": "known",
+          "best_rule_id": "EXP-08",
+          "corr": 0.399777,
+          "note": "matched EXP-08 corr=0.3998",
+          "iv": 0.128736,
+          "round": 7
+        },
+        {
+          "name": "cj_f0_gg_f1_8070",
+          "expression": "((df.income_volatility_obs > 0.436571) & (df.debt_to_income_obs > 0.486626))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.119568,
+          "round": 7
+        }
+      ]
+    },
+    {
+      "round": 8,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.7865076569549976,
+      "auc_dev_after": 0.7835438366963552,
+      "accepted": [
+        {
+          "name": "cj_f0_gg_f1_8080",
+          "expression": "((df.income_volatility_obs > 0.436571) & (df.debt_to_income_obs > 0.599999))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.115118,
+          "round": 8
+        },
+        {
+          "name": "sg_f6_gt90",
+          "expression": "(df.requested_loan_to_income > 0.977828)",
+          "category": "known",
+          "best_rule_id": "EXP-07",
+          "corr": 0.439585,
+          "note": "matched EXP-07 corr=0.4396",
+          "iv": 0.138601,
+          "round": 8
+        },
+        {
+          "name": "cj_f0_gl_f2_7080",
+          "expression": "((df.income_volatility_obs > 0.369164) & (df.credit_history_years_reported < 7.349679))",
+          "category": "rediscovery",
+          "best_rule_id": "HLD-09",
+          "corr": 0.560413,
+          "note": "matched HLD-09 corr=0.5604",
+          "iv": 0.118174,
+          "round": 8
+        },
+        {
+          "name": "cj_f2_ll_f5_7070",
+          "expression": "((df.credit_history_years_reported < 6.092974) & (df.savings_months_obs < 1.930526))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.126908,
+          "round": 8
+        },
+        {
+          "name": "cj_f1_gl_f6_8080",
+          "expression": "((df.debt_to_income_obs > 0.599999) & (df.requested_loan_to_income < 0.755187))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.121216,
+          "round": 8
+        },
+        {
+          "name": "sg_f7_gt60",
+          "expression": "(df.platform_loans_disclosed > 1.000000)",
+          "category": "known",
+          "best_rule_id": "EXP-20",
+          "corr": -0.506578,
+          "note": "matched EXP-20 corr=-0.5066",
+          "iv": 0.116682,
+          "round": 8
+        },
+        {
+          "name": "cj_f2_ll_f5_8070",
+          "expression": "((df.credit_history_years_reported < 7.349679) & (df.savings_months_obs < 1.930526))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.122581,
+          "round": 8
+        },
+        {
+          "name": "rt_f3_f4",
+          "expression": "df.delinquencies_reported / (df.months_employed + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.125223,
+          "round": 8
+        },
+        {
+          "name": "cj_f4_ll_f5_8080",
+          "expression": "((df.months_employed < 53.955455) & (df.savings_months_obs < 2.585902))",
+          "category": "known",
+          "best_rule_id": "EXP-03",
+          "corr": -0.385837,
+          "note": "matched EXP-03 corr=-0.3858",
+          "iv": 0.127824,
+          "round": 8
+        },
+        {
+          "name": "cj_f0_ll_f3_8070",
+          "expression": "((df.income_volatility_obs < 0.436571) & (df.delinquencies_reported < 1.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-02",
+          "corr": -0.386685,
+          "note": "matched EXP-02 corr=-0.3867",
+          "iv": 0.118473,
+          "round": 8
+        },
+        {
+          "name": "cj_f1_gg_f6_8080",
+          "expression": "((df.debt_to_income_obs > 0.599999) & (df.requested_loan_to_income > 0.755187))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.432829,
+          "note": "matched EXP-04 corr=0.4328",
+          "iv": 0.112323,
+          "round": 8
+        },
+        {
+          "name": "cj_f4_gl_f7_7070",
+          "expression": "((df.months_employed > 43.966567) & (df.platform_loans_disclosed < 2.000000))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.117551,
+          "round": 8
+        },
+        {
+          "name": "cj_f0_lg_f1_8080",
+          "expression": "((df.income_volatility_obs < 0.436571) & (df.debt_to_income_obs > 0.599999))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.406504,
+          "note": "matched EXP-04 corr=0.4065",
+          "iv": 0.118093,
+          "round": 8
+        },
+        {
+          "name": "cj_f2_gl_f7_8070",
+          "expression": "((df.credit_history_years_reported > 7.349679) & (df.platform_loans_disclosed < 2.000000))",
+          "category": "rediscovery",
+          "best_rule_id": "HLD-07",
+          "corr": 0.435859,
+          "note": "matched HLD-07 corr=0.4359",
+          "iv": 0.119065,
+          "round": 8
+        },
+        {
+          "name": "cj_f0_lg_f4_7070",
+          "expression": "((df.income_volatility_obs < 0.369164) & (df.months_employed > 43.966567))",
+          "category": "known",
+          "best_rule_id": "EXP-14",
+          "corr": 0.464983,
+          "note": "matched EXP-14 corr=0.4650",
+          "iv": 0.128659,
+          "round": 8
+        }
+      ]
+    },
+    {
+      "round": 9,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.7835438366963552,
+      "auc_dev_after": 0.785898790653986,
+      "accepted": [
+        {
+          "name": "cj_f1_lg_f4_8080",
+          "expression": "((df.debt_to_income_obs < 0.599999) & (df.months_employed > 53.955455))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.119015,
+          "round": 9
+        },
+        {
+          "name": "cj_f0_gl_f5_7080",
+          "expression": "((df.income_volatility_obs > 0.369164) & (df.savings_months_obs < 2.585902))",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": 0.631975,
+          "note": "matched EXP-12 corr=0.6320",
+          "iv": 0.111211,
+          "round": 9
+        },
+        {
+          "name": "cj_f2_gl_f6_8080",
+          "expression": "((df.credit_history_years_reported > 7.349679) & (df.requested_loan_to_income < 0.755187))",
+          "category": "known",
+          "best_rule_id": "EXP-08",
+          "corr": 0.447955,
+          "note": "matched EXP-08 corr=0.4480",
+          "iv": 0.113484,
+          "round": 9
+        },
+        {
+          "name": "cj_f4_ll_f5_7080",
+          "expression": "((df.months_employed < 43.966567) & (df.savings_months_obs < 2.585902))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.125568,
+          "round": 9
+        },
+        {
+          "name": "cj_f1_lg_f5_7070",
+          "expression": "((df.debt_to_income_obs < 0.486626) & (df.savings_months_obs > 1.930526))",
+          "category": "rediscovery",
+          "best_rule_id": "HLD-05",
+          "corr": 0.41531,
+          "note": "matched HLD-05 corr=0.4153",
+          "iv": 0.11368,
+          "round": 9
+        },
+        {
+          "name": "cj_f0_lg_f4_7080",
+          "expression": "((df.income_volatility_obs < 0.369164) & (df.months_employed > 53.955455))",
+          "category": "known",
+          "best_rule_id": "EXP-14",
+          "corr": 0.482752,
+          "note": "matched EXP-14 corr=0.4828",
+          "iv": 0.115017,
+          "round": 9
+        },
+        {
+          "name": "cj_f0_lg_f2_8080",
+          "expression": "((df.income_volatility_obs < 0.436571) & (df.credit_history_years_reported > 7.349679))",
+          "category": "known",
+          "best_rule_id": "EXP-08",
+          "corr": 0.447008,
+          "note": "matched EXP-08 corr=0.4470",
+          "iv": 0.110947,
+          "round": 9
+        },
+        {
+          "name": "rt_f3_f5",
+          "expression": "df.delinquencies_reported / (df.savings_months_obs + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.107193,
+          "round": 9
+        },
+        {
+          "name": "cj_f6_gg_f7_7070",
+          "expression": "((df.requested_loan_to_income > 0.609777) & (df.platform_loans_disclosed > 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-07",
+          "corr": 0.476686,
+          "note": "matched EXP-07 corr=0.4767",
+          "iv": 0.117716,
+          "round": 9
+        },
+        {
+          "name": "cj_f4_gl_f6_7070",
+          "expression": "((df.months_employed > 43.966567) & (df.requested_loan_to_income < 0.609777))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.116761,
+          "round": 9
+        },
+        {
+          "name": "sg_f0_gt60",
+          "expression": "(df.income_volatility_obs > 0.315732)",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": 0.618662,
+          "note": "matched EXP-12 corr=0.6187",
+          "iv": 0.103683,
+          "round": 9
+        },
+        {
+          "name": "rt_f6_f7",
+          "expression": "df.requested_loan_to_income / (df.platform_loans_disclosed + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.112767,
+          "round": 9
+        },
+        {
+          "name": "cj_f1_lg_f5_7080",
+          "expression": "((df.debt_to_income_obs < 0.486626) & (df.savings_months_obs > 2.585902))",
+          "category": "rediscovery",
+          "best_rule_id": "HLD-05",
+          "corr": 0.418995,
+          "note": "matched HLD-05 corr=0.4190",
+          "iv": 0.107269,
+          "round": 9
+        }
+      ]
+    },
+    {
+      "round": 10,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.785898790653986,
+      "auc_dev_after": 0.7836646035659773,
+      "accepted": [
+        {
+          "name": "cj_f0_gg_f6_8070",
+          "expression": "((df.income_volatility_obs > 0.436571) & (df.requested_loan_to_income > 0.609777))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.096573,
+          "round": 10
+        },
+        {
+          "name": "cj_f4_ll_f5_8070",
+          "expression": "((df.months_employed < 53.955455) & (df.savings_months_obs < 1.930526))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.109997,
+          "round": 10
+        },
+        {
+          "name": "cj_f0_gl_f4_7080",
+          "expression": "((df.income_volatility_obs > 0.369164) & (df.months_employed < 53.955455))",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": 0.591929,
+          "note": "matched EXP-12 corr=0.5919",
+          "iv": 0.103853,
+          "round": 10
+        },
+        {
+          "name": "cj_f2_gl_f3_7070",
+          "expression": "((df.credit_history_years_reported > 6.092974) & (df.delinquencies_reported < 1.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-08",
+          "corr": 0.61742,
+          "note": "matched EXP-08 corr=0.6174",
+          "iv": 0.10403,
+          "round": 10
+        },
+        {
+          "name": "cj_f4_ll_f5_7070",
+          "expression": "((df.months_employed < 43.966567) & (df.savings_months_obs < 1.930526))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.110669,
+          "round": 10
+        },
+        {
+          "name": "cj_f0_gg_f6_8080",
+          "expression": "((df.income_volatility_obs > 0.436571) & (df.requested_loan_to_income > 0.755187))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.091177,
+          "round": 10
+        },
+        {
+          "name": "sg_f7_gt90",
+          "expression": "(df.platform_loans_disclosed > 3.000000)",
+          "category": "known",
+          "best_rule_id": "EXP-11",
+          "corr": 0.527956,
+          "note": "matched EXP-11 corr=0.5280",
+          "iv": 0.092883,
+          "round": 10
+        },
+        {
+          "name": "sg_f0_gt70",
+          "expression": "(df.income_volatility_obs > 0.369164)",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": 0.619209,
+          "note": "matched EXP-12 corr=0.6192",
+          "iv": 0.093079,
+          "round": 10
+        },
+        {
+          "name": "cj_f0_lg_f1_8070",
+          "expression": "((df.income_volatility_obs < 0.436571) & (df.debt_to_income_obs > 0.486626))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.093627,
+          "round": 10
+        }
+      ]
+    },
+    {
+      "round": 11,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.7836646035659773,
+      "auc_dev_after": 0.7852966336235093,
+      "accepted": [
+        {
+          "name": "cj_f0_gg_f7_7070",
+          "expression": "((df.income_volatility_obs > 0.369164) & (df.platform_loans_disclosed > 2.000000))",
+          "category": "rediscovery",
+          "best_rule_id": "HLD-06",
+          "corr": 0.365245,
+          "note": "matched HLD-06 corr=0.3652",
+          "iv": 0.100189,
+          "round": 11
+        },
+        {
+          "name": "rt_f7_f3",
+          "expression": "df.platform_loans_disclosed / (df.delinquencies_reported + 1e-06)",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.088846,
+          "round": 11
+        },
+        {
+          "name": "cj_f0_gl_f2_8080",
+          "expression": "((df.income_volatility_obs > 0.436571) & (df.credit_history_years_reported < 7.349679))",
+          "category": "rediscovery",
+          "best_rule_id": "HLD-09",
+          "corr": 0.531614,
+          "note": "matched HLD-09 corr=0.5316",
+          "iv": 0.082504,
+          "round": 11
+        }
+      ]
+    },
+    {
+      "round": 12,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.7852966336235093,
+      "auc_dev_after": 0.7863919220382765,
+      "accepted": [
+        {
+          "name": "cj_f6_gg_f7_8070",
+          "expression": "((df.requested_loan_to_income > 0.755187) & (df.platform_loans_disclosed > 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-07",
+          "corr": 0.40126,
+          "note": "matched EXP-07 corr=0.4013",
+          "iv": 0.090175,
+          "round": 12
+        },
+        {
+          "name": "cj_f0_gl_f5_8080",
+          "expression": "((df.income_volatility_obs > 0.436571) & (df.savings_months_obs < 2.585902))",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": 0.558179,
+          "note": "matched EXP-12 corr=0.5582",
+          "iv": 0.078049,
+          "round": 12
+        },
+        {
+          "name": "cj_f1_gl_f6_7080",
+          "expression": "((df.debt_to_income_obs > 0.486626) & (df.requested_loan_to_income < 0.755187))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.080654,
+          "round": 12
+        },
+        {
+          "name": "cj_f1_gl_f3_8070",
+          "expression": "((df.debt_to_income_obs > 0.599999) & (df.delinquencies_reported < 1.000000))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.072935,
+          "round": 12
+        },
+        {
+          "name": "cj_f0_gl_f4_8080",
+          "expression": "((df.income_volatility_obs > 0.436571) & (df.months_employed < 53.955455))",
+          "category": "rediscovery",
+          "best_rule_id": "HLD-09",
+          "corr": 0.550223,
+          "note": "matched HLD-09 corr=0.5502",
+          "iv": 0.072684,
+          "round": 12
+        }
+      ]
+    },
+    {
+      "round": 13,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.7863919220382765,
+      "auc_dev_after": 0.7849259464264748,
+      "accepted": [
+        {
+          "name": "sg_f0_gt80",
+          "expression": "(df.income_volatility_obs > 0.436571)",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": 0.558868,
+          "note": "matched EXP-12 corr=0.5589",
+          "iv": 0.067646,
+          "round": 13
+        },
+        {
+          "name": "cj_f0_gg_f7_8070",
+          "expression": "((df.income_volatility_obs > 0.436571) & (df.platform_loans_disclosed > 2.000000))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.073271,
+          "round": 13
+        },
+        {
+          "name": "cj_f0_lg_f7_8070",
+          "expression": "((df.income_volatility_obs < 0.436571) & (df.platform_loans_disclosed > 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-11",
+          "corr": 0.525238,
+          "note": "matched EXP-11 corr=0.5252",
+          "iv": 0.073428,
+          "round": 13
+        },
+        {
+          "name": "cj_f0_lg_f6_8080",
+          "expression": "((df.income_volatility_obs < 0.436571) & (df.requested_loan_to_income > 0.755187))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.073369,
+          "round": 13
+        },
+        {
+          "name": "cj_f6_lg_f7_8070",
+          "expression": "((df.requested_loan_to_income < 0.755187) & (df.platform_loans_disclosed > 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-11",
+          "corr": 0.480965,
+          "note": "matched EXP-11 corr=0.4810",
+          "iv": 0.065607,
+          "round": 13
+        }
+      ]
+    },
+    {
+      "round": 14,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.7849259464264748,
+      "auc_dev_after": 0.7840151629514082,
+      "accepted": [
+        {
+          "name": "cj_f1_lg_f6_8080",
+          "expression": "((df.debt_to_income_obs < 0.599999) & (df.requested_loan_to_income > 0.755187))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.064482,
+          "round": 14
+        },
+        {
+          "name": "cj_f1_gg_f3_7070",
+          "expression": "((df.debt_to_income_obs > 0.486626) & (df.delinquencies_reported > 1.000000))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.050376,
+          "round": 14
+        },
+        {
+          "name": "cj_f1_gg_f3_8070",
+          "expression": "((df.debt_to_income_obs > 0.599999) & (df.delinquencies_reported > 1.000000))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.046936,
+          "round": 14
+        },
+        {
+          "name": "cj_f1_gl_f7_8070",
+          "expression": "((df.debt_to_income_obs > 0.599999) & (df.platform_loans_disclosed < 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-04",
+          "corr": 0.364307,
+          "note": "matched EXP-04 corr=0.3643",
+          "iv": 0.055681,
+          "round": 14
+        },
+        {
+          "name": "sg_f0_gt90",
+          "expression": "(df.income_volatility_obs > 0.530711)",
+          "category": "known",
+          "best_rule_id": "EXP-12",
+          "corr": 0.424458,
+          "note": "matched EXP-12 corr=0.4245",
+          "iv": 0.042048,
+          "round": 14
+        },
+        {
+          "name": "cj_f1_gl_f3_7070",
+          "expression": "((df.debt_to_income_obs > 0.486626) & (df.delinquencies_reported < 1.000000))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.049553,
+          "round": 14
+        }
+      ]
+    },
+    {
+      "round": 15,
+      "n_unexplained": 20,
+      "auc_dev_before": 0.7840151629514082,
+      "auc_dev_after": 0.7856421610560391,
+      "accepted": [
+        {
+          "name": "cj_f0_lg_f6_8070",
+          "expression": "((df.income_volatility_obs < 0.436571) & (df.requested_loan_to_income > 0.609777))",
+          "category": "false_positive",
+          "best_rule_id": null,
+          "corr": 0.0,
+          "note": "below threshold",
+          "iv": 0.059923,
+          "round": 15
+        },
+        {
+          "name": "cj_f2_lg_f3_8070",
+          "expression": "((df.credit_history_years_reported < 7.349679) & (df.delinquencies_reported > 1.000000))",
+          "category": "rediscovery",
+          "best_rule_id": "HLD-04",
+          "corr": 0.451098,
+          "note": "matched HLD-04 corr=0.4511",
+          "iv": 0.043252,
+          "round": 15
+        },
+        {
+          "name": "cj_f1_lg_f7_8070",
+          "expression": "((df.debt_to_income_obs < 0.599999) & (df.platform_loans_disclosed > 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-11",
+          "corr": 0.494973,
+          "note": "matched EXP-11 corr=0.4950",
+          "iv": 0.05182,
+          "round": 15
+        },
+        {
+          "name": "cj_f3_gl_f5_7080",
+          "expression": "((df.delinquencies_reported > 1.000000) & (df.savings_months_obs < 2.585902))",
+          "category": "rediscovery",
+          "best_rule_id": "HLD-04",
+          "corr": 0.376396,
+          "note": "matched HLD-04 corr=0.3764",
+          "iv": 0.044282,
+          "round": 15
+        },
+        {
+          "name": "cj_f3_lg_f7_7070",
+          "expression": "((df.delinquencies_reported < 1.000000) & (df.platform_loans_disclosed > 2.000000))",
+          "category": "known",
+          "best_rule_id": "EXP-11",
+          "corr": 0.449777,
+          "note": "matched EXP-11 corr=0.4498",
+          "iv": 0.045323,
+          "round": 15
+        }
+      ]
+    }
+  ],
+  "heldout_discovery": [
+    {
+      "rule_id": "HLD-01",
+      "pool": "rediscovery",
+      "found_round": null,
+      "feature": null,
+      "corr": null,
+      "iv": null
+    },
+    {
+      "rule_id": "HLD-02",
+      "pool": "rediscovery",
+      "found_round": null,
+      "feature": null,
+      "corr": null,
+      "iv": null
+    },
+    {
+      "rule_id": "HLD-03",
+      "pool": "rediscovery",
+      "found_round": null,
+      "feature": null,
+      "corr": null,
+      "iv": null
+    },
+    {
+      "rule_id": "HLD-04",
+      "pool": "rediscovery",
+      "found_round": 15,
+      "feature": "cj_f2_lg_f3_8070",
+      "corr": 0.451098,
+      "iv": 0.043252
+    },
+    {
+      "rule_id": "HLD-05",
+      "pool": "rediscovery",
+      "found_round": 9,
+      "feature": "cj_f1_lg_f5_7070",
+      "corr": 0.41531,
+      "iv": 0.11368
+    },
+    {
+      "rule_id": "HLD-06",
+      "pool": "rediscovery",
+      "found_round": 11,
+      "feature": "cj_f0_gg_f7_7070",
+      "corr": 0.365245,
+      "iv": 0.100189
+    },
+    {
+      "rule_id": "HLD-07",
+      "pool": "rediscovery",
+      "found_round": 7,
+      "feature": "cj_f2_gl_f7_7070",
+      "corr": 0.40204,
+      "iv": 0.133072
+    },
+    {
+      "rule_id": "HLD-08",
+      "pool": "rediscovery",
+      "found_round": 2,
+      "feature": "pr_f0_f7",
+      "corr": 0.431774,
+      "iv": 0.247049
+    },
+    {
+      "rule_id": "HLD-09",
+      "pool": "rediscovery",
+      "found_round": 8,
+      "feature": "cj_f0_gl_f2_7080",
+      "corr": 0.560413,
+      "iv": 0.118174
+    },
+    {
+      "rule_id": "HLD-10",
+      "pool": "rediscovery",
+      "found_round": null,
+      "feature": null,
+      "corr": null,
+      "iv": null
+    }
+  ],
+  "known_discovery": [
+    {
+      "rule_id": "EXP-02",
+      "pool": "known",
+      "found_round": 3,
+      "feature": "cj_f1_ll_f3_8070",
+      "corr": -0.382423,
+      "iv": 0.216001
+    },
+    {
+      "rule_id": "EXP-03",
+      "pool": "known",
+      "found_round": 4,
+      "feature": "pr_f2_f5",
+      "corr": 0.382762,
+      "iv": 0.188934
+    },
+    {
+      "rule_id": "EXP-04",
+      "pool": "known",
+      "found_round": 1,
+      "feature": "pr_f1_f6",
+      "corr": 0.692234,
+      "iv": 0.516042
+    },
+    {
+      "rule_id": "EXP-05",
+      "pool": "known",
+      "found_round": 1,
+      "feature": "pr_f1_f7",
+      "corr": 0.638502,
+      "iv": 0.401143
+    },
+    {
+      "rule_id": "EXP-07",
+      "pool": "known",
+      "found_round": 6,
+      "feature": "sg_f6_gt80",
+      "corr": 0.404688,
+      "iv": 0.160812
+    },
+    {
+      "rule_id": "EXP-08",
+      "pool": "known",
+      "found_round": 4,
+      "feature": "rt_f2_f3",
+      "corr": 0.601855,
+      "iv": 0.206585
+    },
+    {
+      "rule_id": "EXP-09",
+      "pool": "known",
+      "found_round": 1,
+      "feature": "pr_f0_f1",
+      "corr": 0.501259,
+      "iv": 0.418626
+    },
+    {
+      "rule_id": "EXP-11",
+      "pool": "known",
+      "found_round": 6,
+      "feature": "cj_f4_lg_f7_8070",
+      "corr": 0.53135,
+      "iv": 0.153078
+    },
+    {
+      "rule_id": "EXP-12",
+      "pool": "known",
+      "found_round": 2,
+      "feature": "cj_f0_ll_f1_7080",
+      "corr": -0.456946,
+      "iv": 0.243594
+    },
+    {
+      "rule_id": "EXP-14",
+      "pool": "known",
+      "found_round": 3,
+      "feature": "pr_f2_f4",
+      "corr": 0.573725,
+      "iv": 0.226376
+    },
+    {
+      "rule_id": "EXP-17",
+      "pool": "known",
+      "found_round": 1,
+      "feature": "rt_f2_f7",
+      "corr": 0.373185,
+      "iv": 0.269706
+    },
+    {
+      "rule_id": "EXP-20",
+      "pool": "known",
+      "found_round": 2,
+      "feature": "cj_f1_ll_f7_8070",
+      "corr": 0.377723,
+      "iv": 0.253307
+    }
+  ],
+  "heldout_found": 6,
+  "known_found": 12,
+  "false_positive_count": 69,
+  "false_positive_rate": 0.401163,
+  "accepted_total": 172,
+  "eval_auc": {
+    "records": [
+      {
+        "episode": 60,
+        "auc_base": 0.7965784859735974,
+        "auc_final": 0.7967138510726072
+      },
+      {
+        "episode": 61,
+        "auc_base": 0.8271273712737127,
+        "auc_final": 0.8245460704607046
+      },
+      {
+        "episode": 62,
+        "auc_base": 0.7991984637221341,
+        "auc_final": 0.8012092621969887
+      },
+      {
+        "episode": 63,
+        "auc_base": 0.8020396624007061,
+        "auc_final": 0.8053908318623124
+      },
+      {
+        "episode": 64,
+        "auc_base": 0.7960205604377384,
+        "auc_final": 0.7931951583485326
+      },
+      {
+        "episode": 65,
+        "auc_base": 0.8070549809471965,
+        "auc_final": 0.8078533841408093
+      },
+      {
+        "episode": 66,
+        "auc_base": 0.7975715812891855,
+        "auc_final": 0.7918219641154546
+      },
+      {
+        "episode": 67,
+        "auc_base": 0.7848462753676024,
+        "auc_final": 0.7888564831692795
+      },
+      {
+        "episode": 68,
+        "auc_base": 0.7731078802756791,
+        "auc_final": 0.7753652325425545
+      },
+      {
+        "episode": 69,
+        "auc_base": 0.8010675796712028,
+        "auc_final": 0.8016887694663547
+      },
+      {
+        "episode": 70,
+        "auc_base": 0.7990669321620865,
+        "auc_final": 0.8029990439289487
+      },
+      {
+        "episode": 71,
+        "auc_base": 0.7627058823529411,
+        "auc_final": 0.764635294117647
+      },
+      {
+        "episode": 72,
+        "auc_base": 0.748038229045392,
+        "auc_final": 0.7465319572981827
+      },
+      {
+        "episode": 73,
+        "auc_base": 0.7888196470137602,
+        "auc_final": 0.7873316833141812
+      },
+      {
+        "episode": 74,
+        "auc_base": 0.7869412723696708,
+        "auc_final": 0.7853483798113955
+      },
+      {
+        "episode": 75,
+        "auc_base": 0.7764256907409607,
+        "auc_final": 0.7784666354467363
+      },
+      {
+        "episode": 76,
+        "auc_base": 0.7760021589450344,
+        "auc_final": 0.7786206091725991
+      },
+      {
+        "episode": 77,
+        "auc_base": 0.7833013640238704,
+        "auc_final": 0.7837809036658141
+      },
+      {
+        "episode": 78,
+        "auc_base": 0.7661634407573111,
+        "auc_final": 0.7634200221706502
+      },
+      {
+        "episode": 79,
+        "auc_base": 0.7371788071904758,
+        "auc_final": 0.7473133634160471
+      },
+      {
+        "episode": 80,
+        "auc_base": 0.7473945621922501,
+        "auc_final": 0.7496381931064011
+      },
+      {
+        "episode": 81,
+        "auc_base": 0.690666887612314,
+        "auc_final": 0.6864413021063483
+      },
+      {
+        "episode": 82,
+        "auc_base": 0.7523117863277531,
+        "auc_final": 0.7479329648715278
+      },
+      {
+        "episode": 83,
+        "auc_base": 0.7464050105851245,
+        "auc_final": 0.7401857008582298
+      },
+      {
+        "episode": 84,
+        "auc_base": 0.7256315363087347,
+        "auc_final": 0.725410590661364
+      },
+      {
+        "episode": 85,
+        "auc_base": 0.7276486191293494,
+        "auc_final": 0.7283410048369481
+      },
+      {
+        "episode": 86,
+        "auc_base": 0.7580277241621337,
+        "auc_final": 0.7508000568186566
+      },
+      {
+        "episode": 87,
+        "auc_base": 0.7386037844036697,
+        "auc_final": 0.7354411553899082
+      },
+      {
+        "episode": 88,
+        "auc_base": 0.7416177754567488,
+        "auc_final": 0.7428172760728187
+      },
+      {
+        "episode": 89,
+        "auc_base": 0.7438830477673937,
+        "auc_final": 0.7444265965732088
+      },
+      {
+        "episode": 90,
+        "auc_base": 0.7616792847169828,
+        "auc_final": 0.7586787036796141
+      },
+      {
+        "episode": 91,
+        "auc_base": 0.7292655367231639,
+        "auc_final": 0.730307049864898
+      },
+      {
+        "episode": 92,
+        "auc_base": 0.7633696780893042,
+        "auc_final": 0.7603030893042575
+      },
+      {
+        "episode": 93,
+        "auc_base": 0.7666111839671811,
+        "auc_final": 0.7651736776623288
+      },
+      {
+        "episode": 94,
+        "auc_base": 0.6965530131097643,
+        "auc_final": 0.6997036285477799
+      },
+      {
+        "episode": 95,
+        "auc_base": 0.7428036664744858,
+        "auc_final": 0.7461375847057546
+      },
+      {
+        "episode": 96,
+        "auc_base": 0.6957735280933088,
+        "auc_final": 0.6868503184444013
+      },
+      {
+        "episode": 97,
+        "auc_base": 0.7284065872512042,
+        "auc_final": 0.7272489637402443
+      },
+      {
+        "episode": 98,
+        "auc_base": 0.7313699473597488,
+        "auc_final": 0.7350989931576345
+      },
+      {
+        "episode": 99,
+        "auc_base": 0.7668435013262599,
+        "auc_final": 0.7721662245800177
+      }
+    ],
+    "auc_base_mean": 0.7616030731754284,
+    "auc_final_mean": 0.7614547993675036,
+    "diff_mean": -0.0001482738079247814,
+    "n_episodes": 40
+  },
+  "runtime_seconds": 130.3
+}
