@@ -31,6 +31,27 @@ from verify.metrics import information_value
 
 from .features import compile_l2_expression
 
+
+def direction_key(kind: str, parts: tuple[tuple[str, str], ...]) -> str:
+    """候选「方向」归一化键(机制二死路档案用)。
+
+    同一方向的结构变体归为一键:乘积/合取满足交换律(换序同键),分位数
+    阈值不计入(同字段同比较方向的不同分位是同方向的变体);比值有序
+    (分子/分母不可交换)。parts = ((字段, 比较/运算符), ...)。
+    """
+    if kind == "single":
+        f, op = parts[0]
+        return f"single:{f}:{op}"
+    if kind == "product":
+        fields = sorted(p[0] for p in parts)
+        return "product:" + "|".join(fields)
+    if kind == "ratio":
+        return f"ratio:{parts[0][0]}/{parts[1][0]}"
+    if kind == "conjunction":
+        terms = sorted(parts)
+        return "conj:" + "|".join(f"{f}{op}" for f, op in terms)
+    raise ValueError(f"unknown candidate kind: {kind!r}")
+
 # 决策时刻可观测的 8 个字段(CaseBook 白名单,与 synth 因子一一对应)。
 CLAB_FIELDS: tuple[str, ...] = tuple(f.observable for f in FACTORS)
 
@@ -150,12 +171,14 @@ class ClabAutoCloud:
         out: list[dict[str, str]] = []
         seen: set[str] = set()
 
-        def emit(kind: str, name: str, expression: str, rationale: str) -> None:
+        def emit(kind: str, name: str, expression: str, rationale: str,
+                 parts: tuple[tuple[str, str], ...]) -> None:
             if expression in seen:
                 return  # 低基数字段分位数撞阈值会产生重复式,去重
             seen.add(expression)
             out.append({"kind": kind, "name": name,
-                        "expression": expression, "rationale": rationale})
+                        "expression": expression, "rationale": rationale,
+                        "direction": direction_key(kind, parts)})
 
         for f in fields:
             a = alias[f]
@@ -163,19 +186,24 @@ class ClabAutoCloud:
                 t = f"{qv[f][q]:.6f}"
                 pct = int(round(q * 100))
                 emit("single", f"sg_{a}_gt{pct}", f"(df.{f} > {t})",
-                     f"{f} 处于高尾(P{pct} 分位 {t} 以上)的申请人风险有差异")
+                     f"{f} 处于高尾(P{pct} 分位 {t} 以上)的申请人风险有差异",
+                     ((f, ">"),))
                 emit("single", f"sg_{a}_lt{pct}", f"(df.{f} < {t})",
-                     f"{f} 处于低尾(P{pct} 分位 {t} 以下)的申请人风险有差异")
+                     f"{f} 处于低尾(P{pct} 分位 {t} 以下)的申请人风险有差异",
+                     ((f, "<"),))
 
         for i, fa in enumerate(fields):
             for fb in fields[i + 1:]:
                 aa, ab = alias[fa], alias[fb]
                 emit("product", f"pr_{aa}_{ab}", f"df.{fa} * df.{fb}",
-                     f"{fa} 与 {fb} 的乘积交互:两者叠加放大风险")
+                     f"{fa} 与 {fb} 的乘积交互:两者叠加放大风险",
+                     ((fa, "*"), (fb, "*")))
                 emit("ratio", f"rt_{aa}_{ab}", f"df.{fa} / (df.{fb} + 1e-06)",
-                     f"{fa} 相对 {fb} 的比值:相对水平比绝对量更刻画风险")
+                     f"{fa} 相对 {fb} 的比值:相对水平比绝对量更刻画风险",
+                     ((fa, "/"), (fb, "/")))
                 emit("ratio", f"rt_{ab}_{aa}", f"df.{fb} / (df.{fa} + 1e-06)",
-                     f"{fb} 相对 {fa} 的比值:相对水平比绝对量更刻画风险")
+                     f"{fb} 相对 {fa} 的比值:相对水平比绝对量更刻画风险",
+                     ((fb, "/"), (fa, "/")))
 
         cqv = {f: {q: float(df[f].quantile(q)) for q in conj_quantiles}
                for f in fields}
@@ -197,6 +225,7 @@ class ClabAutoCloud:
                                 f"((df.{fa} {op_a} {ta}) & (df.{fb} {op_b} {tb}))",
                                 f"{fa} {op_a} P{pa} 且 {fb} {op_b} P{pb} "
                                 "的合取人群:双尾叠加是典型风险/优质segment",
+                                ((fa, op_a), (fb, op_b)),
                             )
         return out
 
