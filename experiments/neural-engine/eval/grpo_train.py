@@ -131,16 +131,15 @@ def train_grpo(steps: int = 10, out_dir: str = "eval/artifacts-orchestrator/grpo
         per_device_train_batch_size=4,
         learning_rate=1e-5,          # 小 lr,0.6B 上稳
         max_steps=steps,
-        temperature=0.9,             # 提高(0.7->0.9),鼓励探索防模式坍塌
+        temperature=0.7,             # v1 收敛值(0.9 破坏收敛,回退)
         beta=0.01,                   # KL 惩罚(小,让策略能动)
         logging_steps=1,
         save_steps=steps,            # 最后存一次
         report_to="none",            # 不接 wandb
         use_cpu=True,                # GPU OOM(3.6GiB),强制 CPU
-        # 2026-07 修根因 1(模式坍塌):开自适应 entropy 鼓励探索
-        use_adaptive_entropy=True,
-        entropy_coef_max=0.05,       # 小 bonus,不让探索压过价值信号
-        entropy_target=0.5,          # 目标熵(比默认 0.2 高,更鼓励多样)
+        # entropy bonus 2026-07 实验证伪:0.6B base 容量太小,entropy bonus
+        # 让它退回随机采样产乱码。多样性靠 reward 引导(novelty_bonus),
+        # 不靠 entropy 强制。use_adaptive_entropy 保持默认 False。
     )
 
     trainer = GRPOTrainer(
