@@ -99,6 +99,65 @@ def _build_loop(seed: int, out_dir: Path, model_path: str, cloud_llm) -> SelfLea
     return loop, feature_df, labels
 
 
+def _grpo_update(
+    model_path: str,
+    exp_buffer: list[dict],
+    table,
+    out_path: str,
+) -> str:
+    """用经验池做 1 步 GRPO 更新,存模型,返回新路径。
+
+    exp_buffer: [{"prompt": str, "reward": float}, ...]
+    用 reward 代理(DirectionValueTable)作为 reward_func,不用 exp_buffer 里的
+    reward(那个是闭环实际 avg_iv,GRPO 需要 completion 级 reward)。
+    """
+    from datasets import Dataset
+    from trl import GRPOConfig, GRPOTrainer
+    from selflearn.action import parse_simple_action
+    from selflearn.reward_proxy import proxy_reward
+
+    # 构建 dataset(每条 prompt 重复,凑够 GRPO group)
+    prompts = [e["prompt"] for e in exp_buffer]
+    # 补齐到 8 条(GRPO group_size 4 × batch 2)
+    while len(prompts) < 8:
+        prompts.append(prompts[-1])
+    dataset = Dataset.from_dict({"prompt": prompts[:8]})
+
+    # reward_func:解析 completion -> 查价值表
+    def reward_func(prompts, completions, **kwargs):
+        rewards = []
+        for comp in completions:
+            action = parse_simple_action(comp)
+            r = proxy_reward(action, table)
+            rewards.append(float(r))
+        return rewards
+
+    config = GRPOConfig(
+        output_dir=out_path,
+        num_generations=4,
+        max_completion_length=32,
+        per_device_train_batch_size=4,
+        learning_rate=1e-5,
+        max_steps=1,              # 只训 1 步
+        temperature=0.7,
+        beta=0.01,
+        logging_steps=1,
+        save_steps=1,
+        report_to="none",
+        use_cpu=True,
+    )
+
+    trainer = GRPOTrainer(
+        model=model_path,
+        reward_funcs=reward_func,
+        args=config,
+        train_dataset=dataset,
+    )
+    trainer.train()
+    trainer.save_model(out_path)
+    return out_path
+
+
 def run_continuous_learning(
     rounds: int,
     seed: int,
@@ -131,6 +190,9 @@ def run_continuous_learning(
     # 当前模型路径(每轮可能更新)
     current_model = init_model
     results: list[RoundResult] = []
+    fields_str = " ".join(CLAB_FIELDS)
+    # 经验缓冲区:累积 prompt + reward,攒够 batch 再训
+    exp_buffer: list[dict] = []
 
     for r in range(1, rounds + 1):
         print(f"\n>>> round {r}/{rounds} (model={current_model})")
@@ -146,13 +208,21 @@ def run_continuous_learning(
                if p.verdict == "pass" and isinstance(p.metrics.get("iv", 0), (int, float))]
         n_strong = sum(1 for iv in ivs if iv > 0.3)
         avg_iv = float(np.mean(ivs)) if ivs else 0.0
-
-        # ③ 编排器动作的 reward 代理(用 OrchestratorCloud 的 brief)
-        # 简化:用这一轮 pass 特征的平均 IV 作为 reward 代理
         reward = avg_iv
 
+        # ③ 收集经验(用于 GRPO 更新)
+        # 编排器产出的 brief 作为"动作",avg_iv 作为 reward 代理
+        exp_buffer.append({
+            "prompt": (
+                f"信贷审批编排。可用字段:{fields_str}。\n"
+                f"工具:GBDT/CART。\n"
+                f"输出一个动作(工具名 + 探索字段,空格分隔,只一行):"
+            ),
+            "reward": reward,
+        })
+
         # ④ 是否触发 GRPO 更新
-        trained = (r % accumulate_rounds == 0)
+        trained = (r % accumulate_rounds == 0 and len(exp_buffer) >= 4)
 
         result = RoundResult(
             round_no=r,
@@ -169,11 +239,15 @@ def run_continuous_learning(
               f"strong={result.n_strong} avg_iv={result.avg_iv:.4f} "
               f"reward={result.reward:.4f} trained={result.trained}")
 
-        # ⑤ GRPO 更新(每 accumulate_rounds 轮)
+        # ⑤ GRPO 更新(每 accumulate_rounds 轮,攒够经验)
         if trained:
-            # TODO: 用收集的数据做 GRPO 更新
-            # 阶段 2 先跑闭环看趋势,GRPO 更新作为下一步
-            print(f"    [GRPO 更新占位] 阶段 2 先验证闭环趋势")
+            print(f"    [GRPO 更新] {len(exp_buffer)} 条经验 -> 1 步训练")
+            new_model_path = str(out_dir / f"model-round-{r}")
+            current_model = _grpo_update(
+                current_model, exp_buffer, table, new_model_path
+            )
+            # 清空经验池(下个 accumulate 周期重新累积)
+            exp_buffer.clear()
 
     return results
 
