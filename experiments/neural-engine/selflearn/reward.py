@@ -23,22 +23,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from selflearn.loop import RoundRecord
+from selflearn.types import RoundExtras
 
 # PASS 提案的质量分阈值:低于此不算"有效发现"(弱特征混进 reward 会虚高)。
 # 默认 0.3 对应 verify.feature._strength 的"弱→中"分界(iv_term/lift_term 起步点)。
 DEFAULT_MIN_Q = 0.3
-
-
-@dataclass(frozen=True)
-class RoundExtras:
-    """baseline RoundRecord 缺的、reward 计算需要的额外数据。
-
-    由编排器执行层(未来的 loop 扩展 / orchestrator runner)在跑完一轮后填充,
-    跟 RoundRecord 一起喂给 reward 计算。保持 RoundRecord 不动 = baseline 纯净。
-    """
-
-    cloud_calls: int
-    dead_end_repeats: int
 
 
 @dataclass(frozen=True)

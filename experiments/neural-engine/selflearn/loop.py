@@ -53,6 +53,7 @@ from .memory import (
     CAUSE_SANDBOX,
     StrategyMemory,
 )
+from .types import RoundExtras
 
 _NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -91,15 +92,22 @@ class RoundRecord:
     auc_after: float | None
     proposals: list[ProposalOutcome]
     accepted: list[str]
+    # 阶段 1.2 instrumentation:reward 计算需要的额外数据。
+    # 默认 None 保持向后兼容(老调用方/验收脚本不感知);baseline runner 填充它。
+    extras: "RoundExtras | None" = None
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        d = {
             "round": self.round_no, "task_id": self.task_id,
             "n_unexplained": self.n_unexplained,
             "auc_dev_before": self.auc_before, "auc_dev_after": self.auc_after,
             "accepted": self.accepted,
             "proposals": [p.as_dict() for p in self.proposals],
         }
+        if self.extras is not None:
+            d["extras"] = {"cloud_calls": self.extras.cloud_calls,
+                           "dead_end_repeats": self.extras.dead_end_repeats}
+        return d
 
 
 class SelfLearnLoop:
@@ -271,10 +279,26 @@ class SelfLearnLoop:
         proposals = result.content.get("features", [])[: cfg.max_features_per_round]
 
         # ④ 验证 + ⑤ 入库/死路
+        # 阶段 1.2 instrumentation:采本死路档案的 name 集合(判重复用)。
+        # 死路槽的 value_text 格式见 memory.add_dead_end:"死路:{name} — {statement};死因:{cause}"
+        # 提取 name = "死路:" 后到 " — " 前的子串。
+        dead_end_names: set[str] = set()
+        for s in self.memory.service.store.all_slots():
+            if s.status != "retired" or not s.value_text.startswith("死路:"):
+                continue
+            # "死路:{name} — ..." → name
+            rest = s.value_text[len("死路:"):]
+            dead_end_names.add(rest.split(" — ", 1)[0])
+
         outcomes: list[ProposalOutcome] = []
         accepted: list[str] = []
         batch_names: set[str] = set()
+        dead_end_repeats = 0
         for prop in proposals:
+            name = str(prop.get("name", ""))
+            # 计数:提案 name 已在死路档案 = 重复探索(reward B 的信号)
+            if name and name in dead_end_names:
+                dead_end_repeats += 1
             outcome = self._judge(prop, existing, batch_names, author)
             batch_names.add(prop.get("name", ""))
             outcomes.append(outcome)
@@ -286,10 +310,13 @@ class SelfLearnLoop:
         if accepted:
             _, _, auc_after, _ = self._train_and_score()
 
+        # 阶段 1.2:产 RoundExtras(reward 计算用)。
+        # cloud_calls=1:run_round 现在一次只调一次云端(line 276);留字段为编排器扩展。
+        extras = RoundExtras(cloud_calls=1, dead_end_repeats=dead_end_repeats)
         return RoundRecord(
             round_no=round_no, task_id=task_id, n_unexplained=int(len(idx)),
             auc_before=auc_before, auc_after=auc_after,
-            proposals=outcomes, accepted=accepted,
+            proposals=outcomes, accepted=accepted, extras=extras,
         )
 
     def run(self, rounds: int) -> list[RoundRecord]:
