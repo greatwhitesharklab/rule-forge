@@ -1,6 +1,7 @@
 # CLAUDE.md
 
-本文件给 Claude Code(claude.ai/code)提供本仓库的工作指南。
+本文件给 Claude Code(claude.ai/code)提供本仓库的工作指南。与 `AGENTS.md` 同源(规则/约定/红线一致),
+本文件偏架构 + 命令速查,`AGENTS.md` 偏仓库布局 + 多端测试命令。修改时两份同步检查。
 
 ## 构建命令
 
@@ -35,6 +36,11 @@ docker compose logs -f console-app # 看 console 日志
 
 > **V7.21 架构重构** (2026-07):彻底删除老 BPMN 决策流(ruleforge-decision 模块),
 > V1 决策流成为唯一决策路径。共享层(数据源/变量定义)拆成独立 ruleforge-datasource 模块。
+> **V7.23** (2026-07):删老测试链路死控制器(TestController/V2/ReteDiagram/executor TestController)+
+> 新增 V1 批测执行内核(`V1BatchTestSubject`,逐行跑 V1FlowRunner)。
+> **V7.25** (2026-07):React 18 → 19.2 升级。**V7.26** (2026-07):console-ui UX 审美统一 + 交互重构。
+> 规则引擎 + V1 决策流是当前唯一决策路径,retro 保留的 `.xml`/`.ul`/老 4 库编辑器是迁移过渡,
+> 不是待删债。
 
 ```
 parent                  Maven parent POM,Spring Boot BOM,Java 17
@@ -56,7 +62,7 @@ core ← console-app / executor-app  (app 直接依赖 core)
 - **ruleforge-core** (`com.ruleforge.*`):RETE 规则引擎核心 + V1 决策流。**引擎逻辑不依赖 Spring**(仅 `config/` 提供 Spring auto-config 做装配)。`model/`(规则/RETE 结构) + `runtime/`(知识会话/执行/缓存) + `parse/`(老 XML/DSL 解析,ANTLR4) + `ir/`(新标准 IR:DMN/DRL/PMML) + `v1/`(V1 决策流:AST/执行器/CEL/发布 bundle)。
 - **ruleforge-datasource** (`com.ruleforge.datasource.*`):V7.21 从 ruleforge-decision 拆出的通用基础设施。数据源管理(entity/mapper/repository/service)+ 7 个连接器(REST/JDBC/AI-Java/AdvanceAI/PKL)+ Java 源码编译器(jcompiler)+ 规则变量定义 + Spring auto-config。
 - **ruleforge-console** (`com.ruleforge.console.*`):Web 编辑器后端。`controller/`(REST) + `service/` + `storage/`(项目存储) + `mapper/`(MyBatis-Plus) + `repository/`(模型类) + `config/`(MybatisPlus/Flyway)。V1 决策流控制器在 `controller/v1/`、发布管线在 `app/v1/`。
-- **ruleforge-executor** (`com.ruleforge.executor.*`):规则执行。`controller/TestController`(`/test/do`、`/test/knowledge`) + `service/`(RuleForgeService、KnowledgePackageServiceImpl) + `service/impl/ExecResourceProvider`(从 console HTTP 拉资源)。V1 生产执行在 `executor/v1/`(`POST /v1/exec`)。
+- **ruleforge-executor** (`com.ruleforge.executor.*`):规则执行。`service/`(RuleForgeService、KnowledgePackageServiceImpl) + `service/impl/ExecResourceProvider`(从 console HTTP 拉资源)。V1 生产执行在 `executor/v1/`(`POST /v1/exec`)。批测 DATASOURCE 模式的数据源拉取在 `controller/DatasourceFetchController`(`POST /test/datasource/fetch`,V7.23 从已删的 TestController 拆出保留)。
 - **ruleforge-console-app** (`com.ruleforge.console.app.*`):可部署编辑器,含数据源配置、环境 provider、V1 发布(V1PublishService)、决策分析。
 - **ruleforge-executor-app** (`com.ruleforge.executor.app.*`):可部署执行器,RestTemplate 配置用于和 console 通信;数据源懒加载层(`com.ruleforge.decision.lazy`,app-local)。
 
@@ -66,7 +72,7 @@ core ← console-app / executor-app  (app 直接依赖 core)
 - MyBatis-Plus 3.5.9、MySQL、Flyway
 - ANTLR4、Jackson、fastjson2、HikariCP
 - V1 决策流:极简 6 节点(Start/RuleSet/DecisionTable/ScoreCard/Decision/Gateway)+ CEL 条件,线性 + 排他网关图遍历(`V1FlowRunner`,在 ruleforge-core)
-- 前端:TypeScript、React、Vite 8、Ant Design 5、react-flow(V1 决策流画布)
+- 前端:TypeScript、React 19.2(V7.25 升级)、Vite 8、antd 6、@xyflow/react(V1 决策流画布)、Monaco 编辑器(V7.24 统一)
 - 前端 HTTP:集中式 `src/api/client.ts`(formPost/jsonPost/jsonPut/httpGet/httpDelete/save/saveNewVersion)
 - 前端测试:Vitest 单测、Playwright E2E
 

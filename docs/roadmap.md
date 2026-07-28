@@ -35,7 +35,7 @@ Phase 8 / 9 / 12 完成后,版本号按改动量决定是 patch bump 还是 mino
 ## 实施顺序
 
 ```
-Phase 1-12 ✅ 已完成 → V5.25-V5.47 路线 B 收口 + 删老路径 ✅ 已完成 → V7.0-V7.20 V1 决策流 ✅ 已完成 → V7.21 删 BPMN ✅ 已完成 → V7.22+ 候选方向
+Phase 1-12 ✅ 已完成 → V5.25-V5.47 路线 B 收口 + 删老路径 ✅ 已完成 → V7.0-V7.20 V1 决策流 ✅ 已完成 → V7.21 删 BPMN ✅ 已完成 → V7.23-V7.26 老测试链清理 + React 19 + UX 重构 ✅ 已完成 → V7.23b Simulation 接 V1(进行中)→ Phase 19 neural-engine 接入(远景)
 ```
 
 ```
@@ -43,8 +43,12 @@ Phase 9   数据源批量测试                 P1  ── 收尾中(后端 60%,
 V5.40-V5.47 路线 B + 删老路径            P0  ── 已完成(冻结历史)
 V7.0-V7.20 V1 决策流(6 节点画布+执行+发布+四库+UX) P0 ── 已完成
 V7.21      彻底删除 BPMN 决策流,V1 单一决策路径  P0  ── 已完成
+V7.23      删老测试链路死代码 + V1 批测执行内核  P0  ── 已完成
+V7.24-V7.26 console-ui 依赖清理 + React 19 + UX 重构  P0 ── 已完成
+V7.23b     Simulation 改造接 V1          P0  ── 进行中
 V7.22+     DRL grammar 扩展 + 编辑器     P0  ── 候选
 V7.22+     Rust alpha index + Drools 7.31 实测  P2  ── 候选
+Phase 19   neural-engine 接入(自学习信贷审批)  P1 ── 远景(前置:真实数据终考)
 ```
 
 ### V7.21 — 彻底删除 BPMN 决策流(2026-07)
@@ -517,6 +521,48 @@ MockRuleEngine;BoundaryEvent / SubProcess executor 补齐 BPMN 2.0
 - 工作量:2-3 周
 - 风险:此 PR 早开工早收口(已挂在 P1 半年)
 
+### Phase 19:neural-engine 接入(自学习信贷审批) — P1 远景
+
+**战略定位**:`experiments/neural-engine/`(P2 完成 2026-07,603 测试)是从数据飞轮里
+自学习信贷审批策略的实验项目。远景是**作为 RuleForge 决策引擎的"智能大脑"接入**,但
+**接入 ≠ 替代规则引擎**。下面的边界是经过多轮实验证伪 + 设计讨论后定下的,改前必读
+`experiments/neural-engine/README.md` 的"验证结论"表。
+
+**核心边界(三层分工,不可混淆)**:
+
+```
+RuleSet 节点 A — 政策硬规则(人工写,确定性,不可被概率覆盖)
+  法律/合规红线:age<18、黑名单、地区限制、反洗钱
+  ↓ 通过才进入评估
+RuleSet 节点 B — AI 发现的软规则(neural-engine 产,带置信度/声誉)
+  CART 抽取的 if-then + LLM scribe 归纳的业务规则(带晋升门)
+  ↓
+ScoreCard/GBDT 节点 — AI 训练的软评分(neural-engine 产)
+  LightGBM 集成吃连续特征,输出 P(bad)
+  ↓
+Decision 节点 — 综合判定(硬规则 reject 优先,否则看软分)
+```
+
+**为什么是"接入"不是"替代"**(neural-engine 自己的实验结论):
+- 推理面用记忆/LLM 三轮证伪(P1 分数混合/L3 特征/P2 焊入层全失败),GBDT 是冠军
+- "发现的规则是可解释资产,非预测增益"(GBDT 已吃满信号时 AUC 无增量)
+- 规则引擎(政策硬规则)管的是**先验约束**,GBDT 管的是**数据归纳**;认识论不同源,
+  GBDT 表达不了"无论数据怎样都必须执行的法律约束"
+- 监管要的是业务语言解释(年龄/黑名单),GBDT 给的是特征贡献(SHAP),后者验收难过
+
+**接入产出的三类资产**:
+1. LightGBM 集成 → ScoreCard 节点(或新加 GBDT 节点)
+2. CART 单树 / RuleFit 抽取的规则 → RuleSet 节点 B(标注 AI 来源 + 置信度)
+3. LLM scribe 归纳的业务规则 → RuleSet 节点 B(过晋升门后)
+
+**前置条件(未满足不启动接入)**:
+- neural-engine 在**真实业务数据**上跑通"终考"(README 遗留清单:未启动)
+- 云端 LLM 依赖的可用性/成本/延迟评估完成(金融决策不能强依赖第三方 API 在线)
+- V1 流加 GBDT 节点类型(扩展 `V1FlowRunner` + 复用 `ScoreCardExecutor` 闭包加载机制)
+
+**工作量**:待真实数据终考结果后评估,初步估 4-6 周(接入 + 验证 + 监管对齐)
+**风险**:AI 产的所有规则都是"建议"不是"护栏",混进政策硬规则层会破坏合规可审计性
+
 ### 路线图总览(V5.48+ 候选)
 
 | 方向 | 候选 Phase | 优先级 | 状态 |
@@ -527,5 +573,7 @@ MockRuleEngine;BoundaryEvent / SubProcess executor 补齐 BPMN 2.0
 | Drools 7.31 真 baseline | Phase 16 | P2 | 📋 候选(1-2 周) |
 | DRL-only perf 回归 | Phase 17 | P1 | 📋 候选(1 周) |
 | 数据源批量测试收口 | Phase 18 | P1 | 📋 收口(2-3 周) |
+| **neural-engine 接入** | **Phase 19** | **P1 远景** | 📋 候选(4-6 周,**前置:真实数据终考**) |
 | Rust 升格 production | — | — | ❌ **不做**(V5.46 已定调 0 收益) |
 | Java alpha index 优化 | — | — | ❌ **不做**(0.1ms 节省不抵 1 周改 + 回归) |
+| **用 AI 替代规则引擎** | — | — | ❌ **不做**(neural-engine 实验证伪;政策硬规则的认识论跟数据归纳不同源,GBDT 120 棵加权树表达不了"无论数据怎样都执行"的法律约束) |

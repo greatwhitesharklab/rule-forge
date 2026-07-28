@@ -11,7 +11,7 @@ RuleForge 是面向金融场景(信贷审批 / 反欺诈 / 评分卡 / 决策流
 ## 仓库布局(monorepo)
 
 ```
-server/              Java 后端 Maven 多模块(主代码库,版本 1.21.0)
+server/              Java 后端 Maven 多模块(主代码库,revision 属性 5.47.0,当前里程碑 V7.26)
   parent/            Maven parent POM,Spring Boot BOM,Java 17
   lib/ruleforge-core        RETE 规则引擎 + V1 决策流(com.ruleforge.*)
   lib/ruleforge-datasource  数据源管理 + 规则变量定义(com.ruleforge.datasource.*)
@@ -21,6 +21,10 @@ console-ui/          React + Vite 前端(Web 编辑器 / 决策流画布)
 cli/                 Agent CLI(双实现:TypeScript commander `ruleforge` + Python typer `rf`)
 model-service/       Python FastAPI ML 推理服务(PKL 模型),端口 8501
 experiments/server-rust/  Rust 实验引擎(cargo workspace,6 crates),alpha,不进生产流量
+experiments/neural-engine/  自学习信贷审批实验(P2 完成 2026-07)。本地 GBDT(LightGBM)
+                     管决策 + Qwen3-0.6B/Embedding + 云端 deepseek-reasoner 管学习,74 test
+                     文件,603 测试全绿。见 `自学习审批系统实现设计.md`/`README.md`/`ARCHITECTURE.md`。
+                     不进 server/pom.xml/CI/生产流量,成熟后 git mv 升格。
 docs-site/           VitePress 文档站
 docs/                架构审计、技术债、路线图等内部文档
 docker/              init-sql、staging 配置、entrypoint
@@ -49,10 +53,11 @@ core ← datasource ← executor-app
 ## 技术栈
 
 - 后端:Java 17、Spring Boot 4.0.6(Spring Framework 7)、MyBatis-Plus、MySQL 8、Flyway、ANTLR4、Jackson、fastjson2、HikariCP;分析存储 ClickHouse(决策日志双写)
-- 前端:TypeScript、React 18、Vite 8、antd 6、@xyflow/react(react-flow)、Monaco/CodeMirror 编辑器、ag-grid、echarts、Tailwind
+- 前端:TypeScript、React 19.2(V7.25 从 18 升级,redux 5 / react-redux 9.3)、Vite 8、antd 6、@xyflow/react(react-flow)、Monaco 编辑器(V7.24 统一,CodeMirror 5 已下线)、ag-grid、echarts、Tailwind
 - CLI:TypeScript(commander,经 `npx tsx` 运行,bin 名 `ruleforge`)和 Python(typer + httpx + rich,script 名 `rf`,Python ≥ 3.12)两套并存
 - Model Service:Python ≥ 3.11、FastAPI、uvicorn、scikit-learn/pandas/numpy、uv 管理依赖
 - Rust 实验引擎:Rust 1.85+、Tokio、Axum、sqlx(Postgres)、rhai、criterion
+- neural-engine:Python ≥ 3.11、uv、LightGBM(推理)+ Qwen3-0.6B/Embedding + LoRA(本地)+ deepseek-reasoner(云端,OpenAI 兼容)、SQLite+FAISS(槽位表)
 - 测试:JUnit 5(Java)、Vitest(前端/CLI)、Playwright(E2E)、pytest(model-service)、cargo test/bench(Rust)
 - 部署:Docker + Docker Compose;数据库迁移 Flyway
 
@@ -102,6 +107,15 @@ cargo test
 cargo bench
 ```
 
+### neural-engine(`experiments/neural-engine/`)
+
+```bash
+uv run pytest experiments/neural-engine -q -m "not slow_model"   # 603 passed
+# 验收实验(cwd 必须在 experiments/neural-engine;真模型用例需本地 HF 缓存)
+uv run python -m eval.clab_discovery      # 机制一:发现力,~2min
+uv run python -m eval.clab_memory_ab      # 机制二:记忆双臂,~7min
+```
+
 ### 文档站(`docs-site/`)
 
 ```bash
@@ -119,6 +133,10 @@ npm run build
 ```
 
 不用 Docker 跑 Java 时用 `./scripts/dev-local.sh console|executor|all`(MySQL 等仍走 Docker,日志在 `.dev-logs/`,PID 在 `.dev-pids/`)。
+
+**dev-local.sh 两个坑**:
+- 它会自动 `docker compose up mysql model-service console-ui`(除非宿主 3306 已被监听)。要纯本地 jar(连 LAN 上别的 mysql)需自己起 `java -jar`,绕过它。
+- `.env` 里的 JDBC URL 含未加引号的 `&`/`?`,**不能直接 `source .env`**(会被 bash 当命令分隔符截断),必须像脚本里那样逐行 awk 解析后 export,否则 jar 会因 `Could not resolve placeholder 'APP_DB_URL'` 启动失败。
 
 端口速查:Console App 8180(`/actuator/health`)、Executor App 8280、Model Service 8501(`/health`)、MySQL 3306、ClickHouse 8123、Console UI(docker nginx)80、Vite dev 3000、Rust flow 8281、Rust Postgres 5433。
 
@@ -140,7 +158,7 @@ npm run build
 - 先写测试 → 写实现 → 跑全量回归 → commit;绝不先写实现再补测试
 - Java 测试用 Gherkin 行为注解(Given/When/Then 写在 `@DisplayName`/`@Nested`)
 - 引擎核心测试(`ruleforge-core`)纯内存跑,无 DB/端口依赖,应作为改引擎代码的回归基线
-- 前端:Vitest 单测 + Playwright E2E(E2E 需全栈环境,60s timeout,chromium/firefox/webkit 三浏览器)
+- 前端:Vitest 单测 + Playwright E2E(E2E 需全栈环境;`retries=1` 吸收共享后端并行 flake;默认打 `vite preview` 构建产物而非 dev server;**webkit 项目在非 Debian 系如 Manjaro 上跑不了**(缺 install-deps),本地用 `--project=chromium --project=firefox`)
 
 ### 版本与迁移
 
@@ -173,4 +191,4 @@ npm run build
 - API:`docs-site/api/`(Console / Executor / Decision / Model Service API)
 - 部署:`docs-site/deployment/`(Docker Compose / 生产加固)
 - 代码结构与模块边界:`docs-site/development/code-structure.md`
-- 路线图:`docs/roadmap.md`;Rust 引擎架构:`experiments/server-rust/ARCHITECTURE.md`
+- 路线图:`docs/roadmap.md`;Rust 引擎架构:`experiments/server-rust/ARCHITECTURE.md`;neural-engine 设计:`experiments/neural-engine/自学习审批系统实现设计.md`(v1.2,实验回写)+ `experiments/neural-engine/ARCHITECTURE.md`(Phase 1 Engram 引擎,历史档案)

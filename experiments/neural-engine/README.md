@@ -98,10 +98,31 @@ uv run python -m lending.prepare          # LendingClub 预处理(~20s)
 
 ## 遗留清单(按优先级)
 
-1. 验证器对称判据(保护性规则盲区——机制一 HLD-02/10 的教训)
-2. CLAB-full:加类别/文本模态 + 随机因果结构(规则对设计者也盲)——LLM 云端与 regime 经验的真考场
-3. 工程债:AgentBridge task_id 跨运行冲突;脱敏误伤 p_value 类小数([BANK_CARD] 误判);slots WAL value_vec 体积(12GB 教训)
-4. shadow→active 晋升门、月度体检/退役的完整生命周期(部分组件已验证)
+1. **真实业务数据终考**(未启动)— 当前所有验证在 CLAB-lite(合成)+ LendingClub(已被业界挖透)上完成,真实贷后闭环数据上的发现力/假阳性率/免疫系统表现未验证。**这是接入 RuleForge 生产决策流的前置条件**。
+2. 验证器对称判据(保护性规则盲区——机制一 HLD-02/10 的教训)
+3. CLAB-full:加类别/文本模态 + 随机因果结构(规则对设计者也盲)——LLM 云端与 regime 经验的真考场
+4. 工程债:AgentBridge task_id 跨运行冲突;脱敏误伤 p_value 类小数([BANK_CARD] 误判);slots WAL value_vec 体积(12GB 教训)
+5. shadow→active 晋升门、月度体检/退役的完整生命周期(部分组件已验证)
+
+## 未来接入 RuleForge 的边界(战略决策,见 `docs/roadmap.md` Phase 19)
+
+**定位**:远景是作为 RuleForge 决策引擎的"智能大脑"接入,**不是替代规则引擎**。
+
+**三层分工(不可混淆)**:
+- RuleForge `RuleSet` 节点 A:**政策硬规则**(人工写,法律/合规红线,确定性,不可被概率覆盖)
+- RuleForge `RuleSet` 节点 B:**AI 发现的软规则**(本项目产,CART 抽取 + LLM scribe,带晋升门 + 置信度)
+- RuleForge `ScoreCard`/GBDT 节点:**AI 训练的软评分**(本项目 LightGBM 产物)
+
+**为什么是接入不是替代**(本项目自己的实验结论):
+- 推理面用记忆/LLM 三轮证伪,GBDT 是冠军 —— AI 层价值在训练/夜间巩固,不在在线推理
+- "发现的规则是可解释资产,非预测增益" —— 可解释规则沉淀进 RuleSet,不是塞进 GBDT 黑箱
+- 政策硬规则是**先验约束**(法律),GBDT 是**数据归纳**,认识论不同源 —— GBDT 的 120 棵加权树
+  表达不了"无论数据怎样都必须执行"的合规约束
+
+**接入前置条件**(未满足不启动):
+1. 本项目在真实业务数据上跑通终考(遗留清单第 1 条)
+2. 云端 LLM 依赖的可用性/成本/延迟评估(金融决策不能强依赖第三方 API 在线)
+3. RuleForge V1 流加 GBDT 节点类型(扩展 `V1FlowRunner`,复用 `ScoreCardExecutor` 闭包加载机制)
 
 ## 参考
 
