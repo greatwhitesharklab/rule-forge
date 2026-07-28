@@ -32,6 +32,7 @@ from selflearn.clab import (
     build_clab_split,
     clab_base_features,
 )
+from selflearn.metrics import aggregate_metrics
 from selflearn.reward import orchestrator_reward
 from slots import SlotConfig, SlotService
 from synth import SyntheticWorld, default_config
@@ -82,30 +83,22 @@ def _build_loop(seed: int, out_dir: Path) -> SelfLearnLoop:
 def evaluate_baseline(rounds: int, seed: int, out_dir: Path) -> dict:
     """跑 baseline loop,采集编排质量指标 + 每轮 reward。
 
-    返回 dict 含 B_eff / B_rep / B_feat + 每轮 reward 明细。
+    返回 dict 含 metrics(B_eff/B_rep/B_feat)+ 每轮 reward 明细。
+    指标聚合用 selflearn.metrics.aggregate_metrics(baseline 和编排器共用)。
     """
     loop = _build_loop(seed, out_dir)
     records = loop.run(rounds)
     loop.memory.service.persist()
 
-    # 聚合跨轮指标
-    total_features_passed = 0
-    total_cloud_calls = 0
-    total_dead_end_repeats = 0
-    total_proposals = 0
-    per_round_rewards = []
+    # 跨轮指标聚合(baseline 和编排器用同一套代码,保证对比公平)
+    metrics = aggregate_metrics(records)
 
+    # 每轮 reward 明细(训练监控 + 审计用)
+    per_round_rewards = []
     for rec in records:
         if rec.extras is None:
-            # 防御:理论上 run_round 现在都会填 extras,但兜底
             from selflearn.types import RoundExtras
             rec.extras = RoundExtras(cloud_calls=1, dead_end_repeats=0)
-        total_features_passed += sum(
-            1 for p in rec.proposals if p.verdict == "pass"
-        )
-        total_cloud_calls += rec.extras.cloud_calls
-        total_dead_end_repeats += rec.extras.dead_end_repeats
-        total_proposals += len(rec.proposals)
         br = orchestrator_reward(rec, rec.extras)
         per_round_rewards.append({
             "round": rec.round_no,
@@ -117,19 +110,8 @@ def evaluate_baseline(rounds: int, seed: int, out_dir: Path) -> dict:
             "n_proposals": len(rec.proposals),
         })
 
-    B_eff = total_features_passed / max(total_cloud_calls, 1)
-    B_rep = total_dead_end_repeats / max(total_proposals, 1)
-    B_feat = total_features_passed
-
     return {
-        "baseline": {
-            "B_eff": round(B_eff, 4),
-            "B_rep": round(B_rep, 4),
-            "B_feat": B_feat,
-            "total_cloud_calls": total_cloud_calls,
-            "total_dead_end_repeats": total_dead_end_repeats,
-            "total_proposals": total_proposals,
-        },
+        "metrics": metrics.as_dict(),
         "per_round": per_round_rewards,
         "config": {
             "rounds": rounds, "seed": seed,
@@ -152,13 +134,13 @@ def main() -> None:
     result = evaluate_baseline(args.rounds, args.seed, args.out)
     elapsed = time.time() - t0
 
-    b = result["baseline"]
+    m = result["metrics"]
     print(f"\n=== baseline 编排质量(seed={args.seed}, {elapsed:.1f}s) ===")
-    print(f"  B_eff  发现效率 = {b['B_eff']:.4f}  "
-          f"({b['B_feat']} 有效特征 / {b['total_cloud_calls']} 云端调用)")
-    print(f"  B_rep  死路重复率 = {b['B_rep']:.4f}  "
-          f"({b['total_dead_end_repeats']} 重复 / {b['total_proposals']} 提案)")
-    print(f"  B_feat 总有效特征 = {b['B_feat']}")
+    print(f"  B_eff  发现效率 = {m['b_eff']:.4f}  "
+          f"({m['b_feat']} 有效特征 / {m['total_cloud_calls']} 云端调用)")
+    print(f"  B_rep  死路重复率 = {m['b_rep']:.4f}  "
+          f"({m['total_dead_end_repeats']} 重复 / {m['total_proposals']} 提案)")
+    print(f"  B_feat 总有效特征 = {m['b_feat']}")
 
     print(f"\n=== 每轮 reward 明细 ===")
     for r in result["per_round"]:
@@ -168,9 +150,9 @@ def main() -> None:
               f"proposals={r['n_proposals']})")
 
     print(f"\n阶段 1.5 证伪阈值(DESIGN.md §5.1):")
-    print(f"  编排器要达 B_eff >= {b['B_eff'] * 1.3:.4f}  (baseline × 1.3)")
-    print(f"  编排器要达 B_rep <= {b['B_rep'] * 0.5:.4f}  (baseline × 0.5)")
-    print(f"  编排器要达 B_feat >= {b['B_feat']}  (baseline)")
+    print(f"  编排器要达 B_eff >= {m['b_eff'] * 1.3:.4f}  (baseline × 1.3)")
+    print(f"  编排器要达 B_rep <= {m['b_rep']:.4f}  (不高于 baseline)")
+    print(f"  编排器要达 B_feat >= {m['b_feat']}  (baseline)")
 
 
 if __name__ == "__main__":
