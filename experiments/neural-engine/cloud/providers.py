@@ -59,10 +59,12 @@ class ProviderConfig:
 
 
 # OpenAI-compatible endpoints; add vendors here, not in code.
+# deepseek-v4-flash(2026-07):MoE 284B/13B 激活,$0.14/$0.28 per 1M tokens,
+# 比 v3 便宜 35-100x,1M context。替代已下线的 deepseek-reasoner。
 PROVIDERS: dict[str, ProviderConfig] = {
     "deepseek": ProviderConfig(
         base_url="https://api.deepseek.com",
-        model="deepseek-reasoner",
+        model="deepseek-v4-flash",
         api_key_env="DEEPSEEK_API_KEY",
     ),
     "fallback": ProviderConfig(
@@ -248,7 +250,11 @@ class OpenAIProvider(SanitizedCloudExecutor):
         ]
 
         def _call() -> Any:
-            return self._client.chat.completions.create(model=self.model_name, messages=messages)
+            # v4-flash 是推理模型,reasoning 占 token;给够 max_tokens 让它
+            # reasoning 完成后还有余量产出 content(否则 content 为空)。
+            return self._client.chat.completions.create(
+                model=self.model_name, messages=messages, max_tokens=4096,
+            )
 
         resp = self._retrying(_call) if self._retrying is not None else _call()
         usage = getattr(resp, "usage", None)

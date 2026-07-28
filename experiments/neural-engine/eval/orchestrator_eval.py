@@ -1,15 +1,19 @@
-"""阶段 1.5:编排器闭环评估(完整执行 + 真 reward A+B)。
+"""阶段 1.5:编排器闭环评估(真云端 deepseek-v4-flash)。
 
-对比 baseline(写死策略 ClabAutoCloud)vs 编排器(0.6B 产策略调整候选顺序),
-跑完整闭环(GbdT 指路 + 云端出题 + 免疫系统验证 + 入库/死路),
-算真 B_eff/B_rep/B_feat,跟 baseline 对比。
+对比 baseline(写死策略 ClabAutoCloud 暴力枚举)vs 编排器(0.6B 产策略 ->
+cloud_brief -> 真云端写特征),跑完整闭环,算真 B_eff/B_rep/B_feat。
+
+关键改动(2026-07 阶段 1 证伪后修正):
+  旧版:编排器调整 ClabAutoCloud 候选顺序(反而干扰枚举效率 -> 证伪)
+  新版:编排器产 cloud_brief -> 真云端(deepseek-v4-flash)写特征表达式
+       -> 免疫系统验证。编排器真正决定"探索什么",不是调整确定性枚举器。
 
 证伪标准(DESIGN.md §5.1):
   B_eff  发现效率:编排器 >= baseline × 1.3
   B_rep  死路重复率:编排器 <= baseline
   B_feat 总有效特征:编排器 >= baseline
 
-运行(需 GRPO 训练后的模型):
+运行(需 GRPO 训练后的模型 + DEEPSEEK_API_KEY):
   cd experiments/neural-engine
   uv run python -m eval.orchestrator_eval --rounds 5
 """
@@ -46,33 +50,36 @@ from synth import SyntheticWorld, default_config
 MODEL_ID = "Qwen/Qwen3-0.6B"
 
 
-class OrchestratorSteeredCloud:
-    """编排器引导的云端:编排器产策略 -> 调整 ClabAutoCloud 的候选顺序。
+class OrchestratorCloud:
+    """编排器驱动的真云端:编排器产 cloud_brief -> 真云端写特征。
 
-    最小侵入接法:不重写 ClabAutoCloud,而是在它的候选列表里,
-    把编排器选的字段相关的候选排到前面(优先出题)。
+    新版(2026-07 证伪后修正):编排器不再调整枚举器顺序(旧版证伪),
+    而是生成 cloud_brief -> 真云端(deepseek-v4-flash)写特征表达式。
+    编排器真正决定"探索什么方向",云端负责"怎么写特征代码"。
 
-    如果编排器模型路径给定,用模型 generate;否则用固定策略(few-shot baseline)。
+    云端产出过免疫系统验证(sandbox + IV/lift + 泄漏检测),只有通过的
+    才算有效特征。
     """
 
-    provider_name = "orchestrator-steered"
+    provider_name = "orchestrator"
     model_name = "orchestrator-v0"
 
     def __init__(
         self,
-        base_cloud: ClabAutoCloud,
-        llm: LocalLLM | None = None,
-        fields_str: str = "",
+        llm: LocalLLM | None,
+        fields_str: str,
+        cloud_llm=None,  # OpenAIProvider 或 MockProvider
     ) -> None:
-        self.base_cloud = base_cloud
-        self.llm = llm
+        self.llm = llm                    # 本地 0.6B(编排器,产 cloud_brief)
         self.fields_str = fields_str
-        self._steered: bool = False
+        self.cloud_llm = cloud_llm        # 真云端(写特征表达式)
+        self._call_count = 0
 
-    def _orchestrator_prompt(self, importance_top: list[dict] | None = None,
-                             dead_ends: list[str] | None = None) -> str:
-        """简化版语境 prompt(跟 grpo_train.py 一致)。"""
-        return (
+    def _orchestrator_brief(self) -> str:
+        """编排器(0.6B)产 cloud_brief:探索方向摘要。"""
+        if self.llm is None:
+            return "找有区分度的新特征"  # 无编排器 = 泛化出题
+        prompt = (
             f"信贷审批编排。可用字段:{self.fields_str}。\n"
             f"残余信号:savings_months(d=0.35),months_employed(d=0.22)。\n"
             f"工具:GBDT(黑箱准)/CART(可解释)。\n"
@@ -80,33 +87,78 @@ class OrchestratorSteeredCloud:
             f"示例:GBDT income_volatility\n"
             f"输出一个动作(工具名 + 探索字段,空格分隔,只一行):"
         )
-
-    def _steer_candidates(self, action_keywords: tuple[str, ...]) -> None:
-        """根据编排器选的字段,调整候选顺序(选的字段相关的排前面)。"""
-        if not action_keywords:
-            return
-        # 把候选里含编排器字段的排前面
-        def relevance(cand: dict) -> int:
-            expr = cand.get("expression", "")
-            return sum(1 for kw in action_keywords if kw in expr)
-
-        self.base_cloud.candidates.sort(
-            key=lambda c: (-relevance(c), -c.get("prior_iv", 0))
-        )
-        self.base_cloud._cursor = 0  # 重置游标,从头吐
-        self._steered = True
+        raw = self.llm.generate(prompt, max_new_tokens=32, temperature=0.3, top_p=0.9)
+        from selflearn.action import parse_simple_action, action_to_cloud_brief
+        action = parse_simple_action(raw)
+        if action is None:
+            return "找有区分度的新特征"
+        return action_to_cloud_brief(action)
 
     def execute(self, task: Any) -> Any:
-        """编排器产策略 -> 调整候选顺序 -> 委托 ClabAutoCloud 出题。"""
-        # 编排器产策略(如果有 LLM)
-        if self.llm is not None:
-            prompt = self._orchestrator_prompt()
-            raw = self.llm.generate(prompt, max_new_tokens=32, temperature=0.3, top_p=0.9)
-            action = parse_simple_action(raw)
-            if action is not None:
-                self._steer_candidates(action.direction_keywords)
-        # 委托 ClabAutoCloud 出题(候选顺序可能已被编排器调整)
-        return self.base_cloud.execute(task)
+        """编排器产 brief -> 真云端写特征 -> 返 TaskResult。
+
+        task 是 SelfLearnLoop 构造的 feature_proposal TaskPackage,含 context
+        (case_profiles/existing_features/dead_ends/regime_stats/importance_top/
+        residual_signals)。我们把编排器的 brief 注入 context,让云端聚焦。
+        """
+        from cloud.contracts import Provenance, TaskResult
+        from datetime import datetime, timezone
+
+        self._call_count += 1
+
+        # 编排器产 brief
+        brief = self._orchestrator_brief()
+
+        if self.cloud_llm is not None:
+            # 真云端:注入 brief 到 task context,调真云端
+            # task.context 已有 case_profiles 等,我们追加 orchestrator_brief
+            if hasattr(task, "context") and isinstance(task.context, dict):
+                task.context["orchestrator_brief"] = brief
+            result = self.cloud_llm.execute(task)
+            return result
+
+        # 无云端(兜底):用 brief 生成简单特征(ClabAutoCloud 风格)
+        # 这个分支只在没配 API key 时走,不是主路径
+        from selflearn.clab import ClabAutoCloud
+        return self._fallback_enumerate(task, brief)
+
+    def _fallback_enumerate(self, task: Any, brief: str) -> Any:
+        """无真云端时的兜底:根据 brief 提到的字段枚举特征。"""
+        from cloud.contracts import Provenance, TaskResult
+        from datetime import datetime, timezone
+        from selflearn.clab import CLAB_FIELDS
+
+        # 从 brief 提取字段名
+        mentioned = [f for f in CLAB_FIELDS if f in brief or f.replace("_obs", "") in brief]
+        if not mentioned:
+            mentioned = list(CLAB_FIELDS)[:3]
+
+        # 生成简单特征(单字段分箱 + 乘积交互)
+        features = []
+        for f in mentioned[:2]:
+            features.append({
+                "name": f"orch_{f}_high",
+                "expression": f"(df.{f} > df.{f}.median())",
+                "rationale": f"{f} 高尾探索(编排器引导)",
+            })
+        if len(mentioned) >= 2:
+            a, b = mentioned[0], mentioned[1]
+            features.append({
+                "name": f"orch_{a}_{b}_prod",
+                "expression": f"df.{a} * df.{b}",
+                "rationale": f"{a} 与 {b} 乘积交互(编排器引导)",
+            })
+
+        return TaskResult(
+            task_id=task.task_id, task_type=task.task_type,
+            content={"features": features[:5]},
+            provenance=Provenance(
+                provider=self.provider_name, model=self.model_name,
+                model_version="fallback-v1",
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                prompt_hash="", cost_tokens=0,
+            ),
+        )
 
 
 def _build_loop(seed: int, out_dir: Path, cloud_factory) -> SelfLearnLoop:
@@ -146,18 +198,33 @@ def evaluate_orchestrator(
     seed: int,
     out_dir: Path,
     model_path: str | None = None,
+    use_real_cloud: bool = False,
 ) -> dict:
-    """跑编排器引导的闭环,采集真 B_eff/B_rep/B_feat。"""
+    """跑编排器驱动的闭环,采集真 B_eff/B_rep/B_feat。
+
+    use_real_cloud=True:编排器产 brief -> 真云端(deepseek-v4-flash)写特征
+    use_real_cloud=False:编排器产 brief -> 兜底枚举(无 API key 时)
+    """
     fields_str = " ".join(CLAB_FIELDS)
 
-    # 构建编排器引导的 cloud
+    # 构建真云端(如果要用)
+    cloud_llm = None
+    if use_real_cloud:
+        import os
+        from cloud.providers import OpenAIProvider
+        api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+        if not api_key:
+            print("⚠️  DEEPSEEK_API_KEY 未设,退回兜底枚举")
+        else:
+            cloud_llm = OpenAIProvider(provider="deepseek", api_key=api_key)
+            print(f">>> 真云端在环:deepseek-v4-flash")
+
     def cloud_factory(feature_df, labels):
-        base = ClabAutoCloud(feature_df, labels, seed=seed)
         llm = None
         if model_path:
             llm = LocalLLM(model_id=model_path, device="cpu")
             llm.load()
-        return OrchestratorSteeredCloud(base, llm=llm, fields_str=fields_str)
+        return OrchestratorCloud(llm=llm, fields_str=fields_str, cloud_llm=cloud_llm)
 
     loop = _build_loop(seed, out_dir, cloud_factory)
     records = loop.run(rounds)
@@ -173,13 +240,17 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20260728)
     parser.add_argument("--model", type=str, default=None,
                         help="GRPO 训练后的模型路径(不给则用 base 0.6B)")
+    parser.add_argument("--real-cloud", action="store_true",
+                        help="用真云端(deepseek-v4-flash),需 DEEPSEEK_API_KEY")
     parser.add_argument("--out", type=Path,
                         default=Path("eval/artifacts-orchestrator/orch_eval"))
     args = parser.parse_args()
 
     model_path = args.model or MODEL_ID
-    print(f">>> 编排器闭环评估(rounds={args.rounds}, model={model_path})")
-    result = evaluate_orchestrator(args.rounds, args.seed, args.out, model_path)
+    print(f">>> 编排器闭环评估(rounds={args.rounds}, model={model_path}, "
+          f"real_cloud={args.real_cloud})")
+    result = evaluate_orchestrator(args.rounds, args.seed, args.out,
+                                   model_path, use_real_cloud=args.real_cloud)
 
     m = result["metrics"]
     print(f"\n=== 编排器指标 ===")
