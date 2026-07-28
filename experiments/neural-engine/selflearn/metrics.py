@@ -46,6 +46,9 @@ class OrchestrationMetrics:
     iv_list: tuple[float, ...] = ()  # 各 pass 特征的 IV 明细(审计用)
 
     def as_dict(self) -> dict:
+        # 派生指标:信号发现效率(2026-07 新定义,论文核心)
+        strong_rate = self.b_strong / self.total_proposals if self.total_proposals else 0
+        strong_of_passed = self.b_strong / self.b_feat if self.b_feat else 0
         return {
             "b_eff": round(self.b_eff, 4),
             "b_rep": round(self.b_rep, 4),
@@ -57,41 +60,37 @@ class OrchestrationMetrics:
             "b_strong": self.b_strong,
             "b_quality": round(self.b_quality, 4),
             "iv_list": tuple(round(iv, 4) for iv in self.iv_list),
+            # 新指标:信号发现效率
+            "strong_rate": round(strong_rate, 4),       # 强特征/总提案
+            "strong_of_passed": round(strong_of_passed, 4),  # 强特征/通过特征
         }
 
     def beats(self, baseline: "OrchestrationMetrics", *,
               eff_factor: float = 1.3) -> "Verdict":
-        """判定本指标是否 beat baseline(证伪标准,2026-07 更新)。
+        """判定本指标是否 beat baseline(证伪标准,2026-07 最终定义)。
 
-        判定规则(任一组合通过即算 beat):
-          路径 1(效率):b_eff >= baseline.b_eff * eff_factor  AND  b_rep <= baseline.b_rep
-          路径 2(质量):b_strong >= baseline.b_strong  AND  b_quality >= baseline.b_quality
-          路径 3(综合):b_strong_per_call >= baseline 的强特征/调用比
+        核心指标:信号发现效率(strong_rate = 强特征/总提案)。
+        编排器的价值不是"产更多"(暴力枚举永远赢),是"产得更精准"
+        (每个提案是强特征的概率更高)。
 
-        两条路径任一通过 = passed=True。这是"少而精 OR 多而快"的公平判定。
+        判定规则:
+          strong_rate >= baseline.strong_rate  AND  b_quality >= baseline.b_quality
+          AND  b_rep <= baseline.b_rep
+        三项全过 = 编排器在"精准度"上 beat baseline。
         """
-        # 路径 1:效率(b_eff + b_rep,适合"多而快"的 baseline)
-        eff_ok = (self.b_eff >= baseline.b_eff * eff_factor
-                  and self.b_rep <= baseline.b_rep)
-        # 路径 2:质量(b_strong + b_quality,适合"少而精"的编排器)
-        qual_ok = (self.b_strong >= baseline.b_strong
-                   and self.b_quality >= baseline.b_quality)
+        my_strong_rate = self.b_strong / self.total_proposals if self.total_proposals else 0
+        base_strong_rate = baseline.b_strong / baseline.total_proposals if baseline.total_proposals else 0
 
         failed: dict[str, str] = {}
-        if not eff_ok and not qual_ok:
-            # 两条路都没过,记录差距
-            if self.b_eff < baseline.b_eff * eff_factor:
-                failed["b_eff"] = (
-                    f"{self.b_eff:.4f} < {baseline.b_eff * eff_factor:.4f}")
-            if self.b_rep > baseline.b_rep:
-                failed["b_rep"] = f"{self.b_rep:.4f} > {baseline.b_rep:.4f}"
-            if self.b_strong < baseline.b_strong:
-                failed["b_strong"] = (
-                    f"{self.b_strong} < {baseline.b_strong}")
-            if self.b_quality < baseline.b_quality:
-                failed["b_quality"] = (
-                    f"{self.b_quality:.4f} < {baseline.b_quality:.4f}")
-        return Verdict(passed=(eff_ok or qual_ok), failed=failed)
+        if my_strong_rate < base_strong_rate:
+            failed["strong_rate"] = (
+                f"{my_strong_rate:.4f} < {base_strong_rate:.4f}")
+        if self.b_quality < baseline.b_quality:
+            failed["b_quality"] = (
+                f"{self.b_quality:.4f} < {baseline.b_quality:.4f}")
+        if self.b_rep > baseline.b_rep:
+            failed["b_rep"] = f"{self.b_rep:.4f} > {baseline.b_rep:.4f}"
+        return Verdict(passed=not failed, failed=failed)
 
 
 @dataclass(frozen=True)

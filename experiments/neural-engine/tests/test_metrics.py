@@ -122,94 +122,78 @@ class TestAggregateMetrics:
 # ---------------------------------------------------------------------------
 
 class TestOrchestrationMetrics:
-    """OrchestrationMetrics 数据类:可序列化 + 可比较(证伪判定用)。"""
+    """OrchestrationMetrics 数据类:可序列化 + 可比较(证伪判定用)。
+
+    2026-07 最终定义:核心指标是 strong_rate(强特征率 = 强特征/总提案)。
+    """
 
     def test_as_dict_可落_jsonl(self):
         # Given
         m = OrchestrationMetrics(b_eff=1.5, b_rep=0.2, b_feat=6,
                                  total_cloud_calls=4, total_proposals=30,
-                                 total_dead_end_repeats=6, n_rounds=3)
+                                 total_dead_end_repeats=6, n_rounds=3,
+                                 b_strong=3, b_quality=0.25)
         # When
         d = m.as_dict()
-        # Then
+        # Then: 含核心 + 派生指标
         assert d["b_eff"] == 1.5
-        assert d["b_rep"] == 0.2
-        assert d["b_feat"] == 6
-        assert d["n_rounds"] == 3
+        assert d["b_strong"] == 3
+        assert d["strong_rate"] == round(3/30, 4)  # 0.1
+        assert d["strong_of_passed"] == round(3/6, 4)  # 0.5
 
-    def test_beats_判定编排器是否超过_baseline(self):
-        # Given: baseline
+    def test_beats_精准度超越_baseline_判通过(self):
+        """编排器 strong_rate + b_quality 都超 baseline -> passed。"""
+        # Given: baseline(强特征率 0.22, 质量 0.263)
         baseline = OrchestrationMetrics(
             b_eff=16.6, b_rep=0.0, b_feat=83,
             total_cloud_calls=5, total_proposals=100,
             total_dead_end_repeats=0, n_rounds=5,
+            b_strong=22, b_quality=0.263,
         )
-        # When: 编排器结果
+        # When: 编排器(强特征率 0.52=13/25, 质量 0.313)
         orch = OrchestrationMetrics(
-            b_eff=22.0, b_rep=0.0, b_feat=90,
-            total_cloud_calls=5, total_proposals=100,
-            total_dead_end_repeats=0, n_rounds=5,
-        )
-        # Then: 按 DESIGN.md §5.1 判定(b_eff × 1.3, b_rep ≤, b_feat ≥)
-        verdict = orch.beats(baseline, eff_factor=1.3)
-        assert verdict.passed is True
-        assert "b_eff" not in verdict.failed  # 22.0 >= 16.6*1.3=21.58
-
-    def test_beats_任一不达标_判失败(self):
-        # Given: baseline(效率+质量都有值)
-        baseline = OrchestrationMetrics(
-            b_eff=16.6, b_rep=0.0, b_feat=83,
-            total_cloud_calls=5, total_proposals=100,
-            total_dead_end_repeats=0, n_rounds=5,
-            b_strong=10, b_quality=0.3,
-        )
-        # When: 编排器效率不够(20<21.58)+ 质量也不够(strong=8<10)
-        orch = OrchestrationMetrics(
-            b_eff=20.0, b_rep=0.0, b_feat=90,
-            total_cloud_calls=5, total_proposals=100,
-            total_dead_end_repeats=0, n_rounds=5,
-            b_strong=8, b_quality=0.25,
-        )
-        # Then: 两条路都没过
-        verdict = orch.beats(baseline, eff_factor=1.3)
-        assert verdict.passed is False
-        assert "b_eff" in verdict.failed
-
-    def test_beats_b_rep_超过_baseline_判失败(self):
-        # Given: baseline
-        baseline = OrchestrationMetrics(
-            b_eff=16.6, b_rep=0.0, b_feat=83,
-            total_cloud_calls=5, total_proposals=100,
-            total_dead_end_repeats=0, n_rounds=5,
-            b_strong=10, b_quality=0.3,
-        )
-        # When: 编排器 b_rep=0.1(效率路径挂)+ 质量也不够
-        orch = OrchestrationMetrics(
-            b_eff=22.0, b_rep=0.1, b_feat=90,
-            total_cloud_calls=5, total_proposals=100,
-            total_dead_end_repeats=10, n_rounds=5,
-            b_strong=8, b_quality=0.25,
-        )
-        # Then: 两条路都没过(效率路径 b_rep 挂,质量路径也不够)
-        verdict = orch.beats(baseline, eff_factor=1.3)
-        assert verdict.passed is False
-
-    def test_beats_质量路径通过_即使效率路径挂(self):
-        """新标准 C:编排器'少而精'也能 beat baseline。"""
-        # Given: baseline 效率高但质量一般
-        baseline = OrchestrationMetrics(
-            b_eff=16.6, b_rep=0.0, b_feat=83,
-            total_cloud_calls=5, total_proposals=100,
-            total_dead_end_repeats=0, n_rounds=5,
-            b_strong=5, b_quality=0.25,
-        )
-        # When: 编排器效率低(3.6<<21.58)但质量高(strong=10>5, quality=0.4>0.25)
-        orch = OrchestrationMetrics(
-            b_eff=3.6, b_rep=0.0, b_feat=18,
+            b_eff=4.4, b_rep=0.0, b_feat=22,
             total_cloud_calls=5, total_proposals=25,
             total_dead_end_repeats=0, n_rounds=5,
-            b_strong=10, b_quality=0.4,
+            b_strong=13, b_quality=0.313,
         )
-        # Then: 质量路径通过 -> passed=True
-        verdict = orch.beats(baseline, eff_factor=1.3)
+        # Then: strong_rate 0.52 > 0.22 + quality 0.313 > 0.263 -> passed
+        verdict = orch.beats(baseline)
         assert verdict.passed is True
+
+    def test_beats_strong_rate_不够_判失败(self):
+        """编排器强特征率低于 baseline -> failed。"""
+        baseline = OrchestrationMetrics(
+            b_eff=16.6, b_rep=0.0, b_feat=83,
+            total_cloud_calls=5, total_proposals=100,
+            total_dead_end_repeats=0, n_rounds=5,
+            b_strong=22, b_quality=0.263,
+        )
+        orch = OrchestrationMetrics(
+            b_eff=4.4, b_rep=0.0, b_feat=24,
+            total_cloud_calls=5, total_proposals=25,
+            total_dead_end_repeats=0, n_rounds=5,
+            b_strong=7, b_quality=0.201,  # strong_rate=0.28 > 0.22 但 quality 低
+        )
+        verdict = orch.beats(baseline)
+        # strong_rate 0.28 > 0.22 通过,但 b_quality 0.201 < 0.263 不通过
+        assert verdict.passed is False
+        assert "b_quality" in verdict.failed
+
+    def test_beats_b_rep_超过_判失败(self):
+        """编排器死路重复率高于 baseline -> failed。"""
+        baseline = OrchestrationMetrics(
+            b_eff=16.6, b_rep=0.0, b_feat=83,
+            total_cloud_calls=5, total_proposals=100,
+            total_dead_end_repeats=0, n_rounds=5,
+            b_strong=22, b_quality=0.263,
+        )
+        orch = OrchestrationMetrics(
+            b_eff=4.4, b_rep=0.1, b_feat=22,
+            total_cloud_calls=5, total_proposals=25,
+            total_dead_end_repeats=2, n_rounds=5,
+            b_strong=13, b_quality=0.313,
+        )
+        verdict = orch.beats(baseline)
+        assert verdict.passed is False
+        assert "b_rep" in verdict.failed
