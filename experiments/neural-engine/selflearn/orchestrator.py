@@ -122,13 +122,16 @@ def render_prompt(ctx: OrchestratorContext) -> str:
         lines.append(f"  {tool.value}: {desc}")
     lines.append("")
 
-    # 输出格式要求(确定性解析的前提)
-    lines.append("【输出要求】请输出一个 JSON 策略指令,包含以下字段:")
-    lines.append('  {"explore_direction": "探索方向简述",')
-    lines.append('   "rationale": "为什么选这个方向",')
-    lines.append('   "tool": "GBDT 或 CART 或 RULES",')
-    lines.append('   "cloud_brief": "给云端大模型的出题摘要"}')
-    lines.append("只输出 JSON,不要其他文字。")
+    # 输出格式要求:few-shot 示例(base 模型靠 pattern match 产出 JSON,
+    # zero-shot 指令会让 0.6B base 复读 prompt -- 实测 2026-07 阶段 1.4)
+    lines.append("【输出要求】请参考示例,输出一个 JSON 策略指令:")
+    lines.append("示例:")
+    lines.append('  语境:残余信号 savings_months(d=0.35),死路 debt_to_income 单字段。')
+    lines.append('  {"explore_direction": "savings_months 与 debt_to_income 的交互",')
+    lines.append('   "rationale": "savings_months 残余信号强且 debt_to_income 单字段已死,交互可能有效",')
+    lines.append('   "tool": "CART",')
+    lines.append('   "cloud_brief": "找低储蓄高负债的组合特征"}')
+    lines.append("现在请为上面的语境输出策略(只输出 JSON):")
 
     return "\n".join(lines)
 
