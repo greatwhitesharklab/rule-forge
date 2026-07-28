@@ -222,7 +222,9 @@ def run_continuous_learning(
         })
 
         # ④ 是否触发 GRPO 更新
-        trained = (r % accumulate_rounds == 0 and len(exp_buffer) >= 4)
+        # 每 accumulate_rounds 轮触发,但至少要有 2 条经验(GRPO group_size 4
+        # 需要够 data,不够就补齐到 8 条)
+        trained = (r % accumulate_rounds == 0 and len(exp_buffer) >= 2)
 
         result = RoundResult(
             round_no=r,
