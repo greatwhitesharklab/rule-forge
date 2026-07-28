@@ -111,11 +111,17 @@ def proxy_reward(
     *,
     w_a: float = 1.0,
     w_b: float = 1.0,
+    explored_fields: frozenset[str] | None = None,
+    novelty_bonus: float = 0.15,
 ) -> float:
-    """GRPO 训练用的轻量 reward 代理(方案 B)。
+    """GRPO 训练用的轻量 reward 代理(方案 B,2026-07 加探索多样性)。
 
-    = w_a * 方向价值(IV 代理) + w_b * (-死路惩罚)
+    = w_a * 方向价值(IV 代理) + w_b * (-死路惩罚) + 探索多样性 bonus
     不跑 GBDT/免疫系统,毫秒级,GRPO 训练友好。
+
+    探索多样性(2026-07 加,修根因 3):如果 action 选的字段里有没有探索过的
+    (不在 explored_fields 里),给 novelty_bonus 奖励。这防止编排器反复
+    聚焦同一方向(模式坍塌)。
 
     无法解析的动作(action is None)-> 返负 reward(鼓励产出可解析动作)。
     """
@@ -123,4 +129,14 @@ def proxy_reward(
         return -1.0  # 不可解析 = 最差
 
     value = table.lookup(action.direction_keywords)
-    return w_a * value + w_b * 0.0  # 死路惩罚已在 lookup 里算了
+
+    # 探索多样性 bonus:选了没探索过的字段给奖励
+    novelty = 0.0
+    if explored_fields is not None and action.direction_keywords:
+        new_fields = sum(
+            1 for kw in action.direction_keywords
+            if kw not in explored_fields
+        )
+        novelty = novelty_bonus * (new_fields / len(action.direction_keywords))
+
+    return w_a * value + w_b * 0.0 + novelty  # 死路惩罚已在 lookup 里算了

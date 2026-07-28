@@ -76,15 +76,25 @@ def _make_reward_func(table):
     trl 调用签名:reward_func(prompts: list[str], completions: list[str], **kwargs)
     -> list[float]
     每个 completion 是 LLM 生成的动作文本,解析后查价值表算 reward。
+
+    2026-07 加探索多样性:跟踪 explored_fields,选新字段给 bonus
+    (修根因 3:编排器反复聚焦 platform_loans 的模式坍塌)。
     """
+
+    # 跨 step 跟踪已探索字段(GRPO 多步训练累积)
+    explored_fields: set[str] = set()
 
     def reward_func(prompts, completions, **kwargs) -> list[float]:
         rewards = []
         for i, comp in enumerate(completions):
             action = parse_simple_action(comp)
-            r = proxy_reward(action, table)
+            r = proxy_reward(action, table,
+                             explored_fields=frozenset(explored_fields))
             rewards.append(float(r))
-            # 阶段 1.5 调试:打印前 3 个 completion 的原始内容(看 trl 生成啥)
+            # 累积探索字段(用这一批里 reward 最高的动作)
+            if action is not None and r > 0:
+                explored_fields.update(action.direction_keywords)
+            # 调试:打印前 3 个
             if i < 3:
                 short = repr(comp[:80]) if comp else "(empty)"
                 print(f"  [reward_func] comp[{i}]: {short} -> action={action} r={r:.4f}")
@@ -121,12 +131,16 @@ def train_grpo(steps: int = 10, out_dir: str = "eval/artifacts-orchestrator/grpo
         per_device_train_batch_size=4,
         learning_rate=1e-5,          # 小 lr,0.6B 上稳
         max_steps=steps,
-        temperature=0.7,             # 探索(0.0 greedy 会卡复读)
+        temperature=0.9,             # 提高(0.7->0.9),鼓励探索防模式坍塌
         beta=0.01,                   # KL 惩罚(小,让策略能动)
         logging_steps=1,
         save_steps=steps,            # 最后存一次
         report_to="none",            # 不接 wandb
         use_cpu=True,                # GPU OOM(3.6GiB),强制 CPU
+        # 2026-07 修根因 1(模式坍塌):开自适应 entropy 鼓励探索
+        use_adaptive_entropy=True,
+        entropy_coef_max=0.05,       # 小 bonus,不让探索压过价值信号
+        entropy_target=0.5,          # 目标熵(比默认 0.2 高,更鼓励多样)
     )
 
     trainer = GRPOTrainer(
