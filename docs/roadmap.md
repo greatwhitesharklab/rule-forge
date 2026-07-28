@@ -526,7 +526,7 @@ MockRuleEngine;BoundaryEvent / SubProcess executor 补齐 BPMN 2.0
 **战略定位**:`experiments/neural-engine/`(P2 完成 2026-07,603 测试)是从数据飞轮里
 自学习信贷审批策略的实验项目。远景是**作为 RuleForge 决策引擎的"智能大脑"接入**,但
 **接入 ≠ 替代规则引擎**。下面的边界是经过多轮实验证伪 + 设计讨论后定下的,改前必读
-`experiments/neural-engine/README.md` 的"验证结论"表。
+`experiments/neural-engine/DESIGN.md` 的 §2.3"验证结论"表。
 
 **核心边界(三层分工,不可混淆)**:
 

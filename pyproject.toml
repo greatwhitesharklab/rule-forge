@@ -20,6 +20,7 @@ dependencies = [
     "kaggle",
     "pyarrow",
     "trl>=1.9.1",
+    "httpx[socks]>=0.28.1",
 ]
 
 [dependency-groups]

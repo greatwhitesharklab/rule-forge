@@ -29,6 +29,8 @@ model-service/data/
 
 # neural-engine 训练产物(模型/记忆表快照/指标,运行生成)
 experiments/neural-engine/artifacts/
+# neural-engine 编排器训练产物(GRPO 模型权重 16GB+,不入 git)
+experiments/neural-engine/eval/artifacts-orchestrator/
 
 # === Java class(root 误生成兜底)===
 *.class

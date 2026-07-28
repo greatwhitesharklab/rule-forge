@@ -191,4 +191,4 @@ npm run build
 - API:`docs-site/api/`(Console / Executor / Decision / Model Service API)
 - 部署:`docs-site/deployment/`(Docker Compose / 生产加固)
 - 代码结构与模块边界:`docs-site/development/code-structure.md`
-- 路线图:`docs/roadmap.md`;Rust 引擎架构:`experiments/server-rust/ARCHITECTURE.md`;neural-engine 设计:`experiments/neural-engine/自学习审批系统实现设计.md`(v1.2,实验回写)+ `experiments/neural-engine/ARCHITECTURE.md`(Phase 1 Engram 引擎,历史档案)
+- 路线图:`docs/roadmap.md`;Rust 引擎架构:`experiments/server-rust/ARCHITECTURE.md`;neural-engine 设计:`experiments/neural-engine/DESIGN.md`(唯一主线,2026-07 整合;历史档案在 `archive/`)
