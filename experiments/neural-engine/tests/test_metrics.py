@@ -156,37 +156,60 @@ class TestOrchestrationMetrics:
         assert "b_eff" not in verdict.failed  # 22.0 >= 16.6*1.3=21.58
 
     def test_beats_任一不达标_判失败(self):
-        # Given: baseline
+        # Given: baseline(效率+质量都有值)
         baseline = OrchestrationMetrics(
             b_eff=16.6, b_rep=0.0, b_feat=83,
             total_cloud_calls=5, total_proposals=100,
             total_dead_end_repeats=0, n_rounds=5,
+            b_strong=10, b_quality=0.3,
         )
-        # When: 编排器 b_eff 不够(只 20,没到 21.58)
+        # When: 编排器效率不够(20<21.58)+ 质量也不够(strong=8<10)
         orch = OrchestrationMetrics(
             b_eff=20.0, b_rep=0.0, b_feat=90,
             total_cloud_calls=5, total_proposals=100,
             total_dead_end_repeats=0, n_rounds=5,
+            b_strong=8, b_quality=0.25,
         )
-        # Then
+        # Then: 两条路都没过
         verdict = orch.beats(baseline, eff_factor=1.3)
         assert verdict.passed is False
         assert "b_eff" in verdict.failed
 
     def test_beats_b_rep_超过_baseline_判失败(self):
-        # Given: baseline b_rep=0
+        # Given: baseline
         baseline = OrchestrationMetrics(
             b_eff=16.6, b_rep=0.0, b_feat=83,
             total_cloud_calls=5, total_proposals=100,
             total_dead_end_repeats=0, n_rounds=5,
+            b_strong=10, b_quality=0.3,
         )
-        # When: 编排器 b_rep=0.1(比 baseline 高 = 记忆无效)
+        # When: 编排器 b_rep=0.1(效率路径挂)+ 质量也不够
         orch = OrchestrationMetrics(
             b_eff=22.0, b_rep=0.1, b_feat=90,
             total_cloud_calls=5, total_proposals=100,
             total_dead_end_repeats=10, n_rounds=5,
+            b_strong=8, b_quality=0.25,
         )
-        # Then
+        # Then: 两条路都没过(效率路径 b_rep 挂,质量路径也不够)
         verdict = orch.beats(baseline, eff_factor=1.3)
         assert verdict.passed is False
-        assert "b_rep" in verdict.failed
+
+    def test_beats_质量路径通过_即使效率路径挂(self):
+        """新标准 C:编排器'少而精'也能 beat baseline。"""
+        # Given: baseline 效率高但质量一般
+        baseline = OrchestrationMetrics(
+            b_eff=16.6, b_rep=0.0, b_feat=83,
+            total_cloud_calls=5, total_proposals=100,
+            total_dead_end_repeats=0, n_rounds=5,
+            b_strong=5, b_quality=0.25,
+        )
+        # When: 编排器效率低(3.6<<21.58)但质量高(strong=10>5, quality=0.4>0.25)
+        orch = OrchestrationMetrics(
+            b_eff=3.6, b_rep=0.0, b_feat=18,
+            total_cloud_calls=5, total_proposals=25,
+            total_dead_end_repeats=0, n_rounds=5,
+            b_strong=10, b_quality=0.4,
+        )
+        # Then: 质量路径通过 -> passed=True
+        verdict = orch.beats(baseline, eff_factor=1.3)
+        assert verdict.passed is True
