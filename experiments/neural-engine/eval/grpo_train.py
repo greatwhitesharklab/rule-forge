@@ -80,10 +80,14 @@ def _make_reward_func(table):
 
     def reward_func(prompts, completions, **kwargs) -> list[float]:
         rewards = []
-        for comp in completions:
+        for i, comp in enumerate(completions):
             action = parse_simple_action(comp)
             r = proxy_reward(action, table)
             rewards.append(float(r))
+            # 阶段 1.5 调试:打印前 3 个 completion 的原始内容(看 trl 生成啥)
+            if i < 3:
+                short = repr(comp[:80]) if comp else "(empty)"
+                print(f"  [reward_func] comp[{i}]: {short} -> action={action} r={r:.4f}")
         return rewards
 
     return reward_func

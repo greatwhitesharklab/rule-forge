@@ -144,6 +144,42 @@ class TestParseSimpleAction:
         assert a.tool == "GBDT"
         assert "income_volatility" in a.direction_keywords
 
+    # ---- trl 生成下 0.6B 的实际输出格式(诊断 2026-07 阶段 1.5)----
+
+    def test_操作字段格式_解析(self):
+        """trl 下 0.6B 产出 '操作: CART\\n字段: savings_months, debt_to_income'。"""
+        raw = "操作: CART\n字段: savings_months, debt_to_income_obs"
+        a = parse_simple_action(raw)
+        assert a is not None
+        assert a.tool == "CART"
+        assert "savings_months" in a.direction_keywords
+        assert "debt_to_income_obs" in a.direction_keywords
+
+    def test_使用工具嵌入格式_解析(self):
+        """0.6B 把工具嵌入句子:'根据...使用工具:GBDT 探索字段:months_employed'。"""
+        raw = "根据上述条件,可以使用工具:GBDT  操作探索字段:months_employed, debt_to_income_obs, savings_months"
+        a = parse_simple_action(raw)
+        assert a is not None
+        assert a.tool == "GBDT"
+        assert "months_employed" in a.direction_keywords
+        assert "debt_to_income_obs" in a.direction_keywords
+
+    def test_废话前置_工具嵌入_无字段_返_None(self):
+        """0.6B 废话 + 工具嵌入句子但无字段名 -> None(无探索方向不是有效动作)。"""
+        raw = "现在需要根据给定的字段和残余信号,用GBDT和CART工具分别进行探索,输出两个动作"
+        a = parse_simple_action(raw)
+        # 有工具但无字段 -> 不是有效动作(策略 3 要求至少一个字段)
+        assert a is None
+
+    def test_trl_comp1_格式_精确解析(self):
+        """trl debug 输出的 comp[1] 精确复现。"""
+        raw = "操作: CART\n字段: savings_months, debt_to_income_obs\n操作: CART\n字段: income_volatilit"
+        a = parse_simple_action(raw)
+        assert a is not None
+        assert a.tool == "CART"
+        assert "savings_months" in a.direction_keywords
+        assert "debt_to_income_obs" in a.direction_keywords
+
 
 class TestActionToCloudBrief:
     """Given SimpleAction,When 转 cloud brief,Then 可读。"""

@@ -83,20 +83,51 @@ def parse_simple_action(raw: str) -> SimpleAction | None:
     """从 LLM 生成的动作文本解析简化动作。
 
     格式:"<TOOL> <keyword1> <keyword2> ..."
-    容错:
-    - 0.6B 常在动作前加废话("例如:"/"考虑..."/"根据..."),扫描所有行找第一个
-      以已知工具(GBDT/CART/RULES)开头的行
+    容错(0.6B 在 trl 生成下产出的多种格式):
+    - 标准格式:"CART savings_months debt_to_income"
+    - 操作/字段格式:"操作: CART\n字段: savings_months, debt_to_income"
+    - 嵌入格式:"根据...使用工具:GBDT 探索字段:months_employed"
+    - 废话前置:扫描所有行找工具行或"操作:"/"字段:"行
     - 过滤噪声关键词("动作:" / "```" / 工具名 / 非字段 token)
-    - 大小写不敏感 / 多余空白
-    返 None:完全无法解析(空串/无工具行)。
+    返 None:完全无法解析(空串/无工具/无有效关键词)。
     """
     if not raw or not raw.strip():
         return None
 
-    # 0.6B 常在动作前加废话,扫描所有行找第一个工具行
-    lines = raw.strip().split("\n")
-    action_line = None
-    for line in lines:
+    text = raw.strip()
+
+    # 策略 1:扫描"操作: <TOOL>" 或 "工具: <TOOL>" 格式(trl 下 0.6B 常产)
+    tool = None
+    keywords: list[str] = []
+    for line in text.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        # 找工具:"操作: CART" / "工具: GBDT" / "使用工具:GBDT"
+        if tool is None:
+            for prefix in ("操作:", "工具:", "使用工具:", "工具类型:"):
+                if prefix in line:
+                    after = line.split(prefix, 1)[1].strip()
+                    for t in _KNOWN_TOOLS:
+                        if t in after:
+                            tool = t
+                            break
+                    if tool:
+                        break
+        # 找字段:"字段: savings_months, debt_to_income" / "探索字段: ..."
+        for prefix in ("字段:", "探索字段:", "操作探索字段:"):
+            if prefix in line:
+                after = line.split(prefix, 1)[1].strip()
+                parts = after.replace(",", " ").replace("、", " ").split()
+                keywords.extend(k for k in parts if _is_valid_keyword(k))
+                break
+
+    if tool:
+        return SimpleAction(tool=tool,
+                            direction_keywords=tuple(k for k in keywords if _is_valid_keyword(k)))
+
+    # 策略 2:扫描以已知工具开头的行(标准格式)
+    for line in text.split("\n"):
         line = line.strip()
         if not line:
             continue
@@ -104,30 +135,28 @@ def parse_simple_action(raw: str) -> SimpleAction | None:
         for prefix in ("动作:", "输出:", "答案:", "例如:", "示例:"):
             if line.startswith(prefix):
                 line = line[len(prefix):].strip()
-        # 第一段是不是已知工具?
         match = _ACTION_RE.match(line)
-        if match and match.group() in _KNOWN_TOOLS:
-            action_line = line
+        if match and (match.group() in _KNOWN_TOOLS
+                      or match.group().upper() in {"GBDT", "CART", "RULES"}):
+            tool = match.group()
+            rest = line[match.end():].strip()
+            raw_keywords = rest.split() if rest else []
+            keywords = [k for k in raw_keywords if _is_valid_keyword(k)]
+            return SimpleAction(tool=tool, direction_keywords=tuple(keywords))
+
+    # 策略 3:整文本里找已知工具 + 已知字段(最后兜底)
+    found_tool = None
+    for t in _KNOWN_TOOLS:
+        if t in text:
+            found_tool = t
             break
-        # 或者第一段是工具但大小写不同(已知工具的大小写变体)
-        if match and match.group().upper() in {"GBDT", "CART", "RULES"}:
-            action_line = line
-            break
+    if found_tool:
+        found_keywords = [k for k in _KNOWN_FIELD_KEYWORDS if k in text]
+        if found_keywords:
+            return SimpleAction(tool=found_tool,
+                                direction_keywords=tuple(found_keywords[:3]))
 
-    if action_line is None:
-        return None
-
-    # 第一段 = 工具
-    match = _ACTION_RE.match(action_line)
-    if match is None:
-        return None
-    tool = match.group()
-    # 其余 = 关键词(按空白分割,过滤噪声)
-    rest = action_line[match.end():].strip()
-    raw_keywords = rest.split() if rest else []
-    keywords = tuple(k for k in raw_keywords if _is_valid_keyword(k))
-
-    return SimpleAction(tool=tool, direction_keywords=keywords)
+    return None
 
 
 def action_to_cloud_brief(action: SimpleAction) -> str:
