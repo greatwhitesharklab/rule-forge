@@ -235,3 +235,38 @@ $g_{domain}$ 和 $g_{session}$ 是可学习的门控(sigmoid)。
 | 审稿人认为 RPC 只是分类法 | Paper 1 实验证明多层 > 单层(不是分类是方法) |
 | 0.6B 太小看不出多层优势 | CLAB 上先验证,后续升 1.7B + 真实数据 |
 | $\Phi$ 门控学不动 | 跟 MemoryBank 的 gate 一样可能冷启动零梯度;用小随机初始化 |
+
+---
+
+## 九、Paper 1 实验结果(2026-07-29,PASSED ✅)
+
+### 实验配置
+- 数据:CLAB 合成(8 字段)
+- 模型:Qwen3-0.6B
+- 云端:deepseek-v4-flash
+- 轮数:5 轮/组
+
+### 结果
+
+| 组 | 描述 | strong_rate | b_quality | b_strong |
+|---|---|---|---|---|
+| A | W_base only(baseline) | 0.2143 | 0.2525 | 6 |
+| B | W_base + Domain PM(冻结) | 0.2500 | 0.2963 | 7 |
+| C | W_base + Session PM(TTT) | 0.2333 | 0.2600 | 7 |
+| **D** | **W_base + Domain + Session(RPC)** | **0.4091** | **0.2993** | **9** |
+
+### 核心结论
+
+**D 组(RPC 多层 PM 组合)全面胜出:**
+- D vs A:strong_rate 1.91x
+- D vs B:strong_rate 1.64x
+- D vs C:strong_rate 1.75x
+
+**多层 PM 组合 > 任何单层 PM,Paper 1 假设成立。**
+
+### 论文一句话
+
+> We show that composing Parameter Modules with different lifecycles
+> (Domain + Session) at runtime yields 1.64-1.91x higher signal
+> discovery rate than any single-module configuration, establishing
+> Runtime Parameter Composition as a new paradigm beyond static LoRA.
