@@ -3,9 +3,10 @@
 > 自学习信贷审批系统实验。遵循 `experiments/README.md` 惯例:不进 `server/pom.xml`、
 > 不进 CI、不进生产流量,成熟后 `git mv` 升格。
 >
-> **本文档是唯一主线设计**(2026-07 整合)。历史档案在 `archive/`:
-> - `archive/P1-P2-自学习审批系统实现设计.md` —— P1-P2 已完成实现的设计依据
-> - `archive/ARCHITECTURE-P1-ENGRAM.md` —— P1 Engram 引擎(已证伪,反面教材)
+> **文档结构**(2026-07-29 更新):
+> - **`RPC.md`** —— **上层理论框架**:Runtime Parameter Composition(Paper 1 地基)
+> - **`DESIGN.md`**(本文件)—— **编排器实现细节**:阶段 1-2 实验记录 + Nova 终考
+> - `archive/` —— 历史档案(P1 Engram + P1-P2 实现设计)
 
 ---
 
