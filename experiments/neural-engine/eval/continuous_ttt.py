@@ -131,15 +131,14 @@ def run_ttt_continuous(
         print(f"    proposals={result.n_proposals} passed={result.n_passed} "
               f"strong={result.n_strong} avg_iv={result.avg_iv:.4f}")
 
-        # ③ TTT 更新(用这一轮的 avg_iv 作为 reward)
-        # prompt = 编排器用的 prompt
-        ttt_prompt = (
-            f"信贷审批编排。可用字段:{fields_str}。\n"
-            f"工具:GBDT/CART。\n"
-            f"输出一个动作(工具名 + 探索字段,空格分隔,只一行):"
-        )
-        # completion = 编排器实际产出的 brief(简化)
-        ttt_completion = f"GBDT {' '.join(CLAB_FIELDS[:2])}"
+        # ③ TTT 更新(用这一轮真实的 prompt-completion + avg_iv 作为 reward)
+        # 从 OrchestratorCloud 拿编排器实际看到的 prompt + 产出的 completion
+        ttt_prompt = cloud.last_prompt
+        ttt_completion = cloud.last_completion
+        if ttt_prompt is None or ttt_completion is None:
+            # 兜底:无编排器 llm 时(不该走到这,但防御)
+            print(f"    [TTT] 跳过(无 prompt/completion)")
+            continue
 
         metrics = ttt_step(
             model, tokenizer, optimizer,
@@ -149,7 +148,8 @@ def run_ttt_continuous(
             config=ttt_config,
         )
         print(f"    [TTT] sft_loss={metrics['sft_loss']:.4f} "
-              f"weighted={metrics['weighted_loss']:.4f}")
+              f"weighted={metrics['weighted_loss']:.4f} "
+              f"completion={ttt_completion[:40]!r}")
 
     # 存最终模型
     final_path = str(out_dir / "final")

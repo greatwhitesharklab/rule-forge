@@ -74,6 +74,9 @@ class OrchestratorCloud:
         self.fields_str = fields_str
         self.cloud_llm = cloud_llm        # 真云端(写特征表达式)
         self._call_count = 0
+        # 阶段 2:记录每轮真实的 (prompt, completion),供 TTT 更新用
+        self.last_prompt: str | None = None
+        self.last_completion: str | None = None
 
     def _orchestrator_brief(self) -> str:
         """编排器(0.6B)产 cloud_brief:探索方向摘要。"""
@@ -88,6 +91,9 @@ class OrchestratorCloud:
             f"输出一个动作(工具名 + 探索字段,空格分隔,只一行):"
         )
         raw = self.llm.generate(prompt, max_new_tokens=32, temperature=0.3, top_p=0.9)
+        # 阶段 2:记录真实的 prompt + completion(供 TTT 用)
+        self.last_prompt = prompt
+        self.last_completion = raw.strip().split("\n")[0] if raw else ""
         from selflearn.action import parse_simple_action, action_to_cloud_brief
         action = parse_simple_action(raw)
         if action is None:
