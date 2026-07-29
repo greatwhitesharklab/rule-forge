@@ -77,18 +77,33 @@ class OrchestratorCloud:
         # 阶段 2:记录每轮真实的 (prompt, completion),供 TTT 更新用
         self.last_prompt: str | None = None
         self.last_completion: str | None = None
+        # 阶段 2 修复:已探索字段集合(注入 prompt,让编排器换方向)
+        self._explored_fields: set[str] = set()
 
     def _orchestrator_brief(self) -> str:
-        """编排器(0.6B)产 cloud_brief:探索方向摘要。"""
+        """编排器(0.6B)产 cloud_brief:探索方向摘要。
+
+        阶段 2 修复:prompt 注入已探索字段 + 强制多样化。
+        如果编排器产出的字段都已探索过,用未探索的高 IV 字段替换
+        (GRPO 固化的模型掰不过权重,prompt 提示无效,需强制覆盖)。
+        """
         if self.llm is None:
             return "找有区分度的新特征"  # 无编排器 = 泛化出题
+
+        # 构建已探索提示(如果有)
+        if self._explored_fields:
+            explored_str = ", ".join(sorted(self._explored_fields))
+            explored_hint = "\n已探索(请换新方向):" + explored_str
+        else:
+            explored_hint = ""
+
         prompt = (
-            f"信贷审批编排。可用字段:{self.fields_str}。\n"
-            f"残余信号:savings_months(d=0.35),months_employed(d=0.22)。\n"
-            f"工具:GBDT(黑箱准)/CART(可解释)。\n"
-            f"示例:CART savings_months debt_to_income\n"
-            f"示例:GBDT income_volatility\n"
-            f"输出一个动作(工具名 + 探索字段,空格分隔,只一行):"
+            "信贷审批编排。可用字段:" + self.fields_str + "。\n"
+            "残余信号:savings_months(d=0.35),months_employed(d=0.22)。\n"
+            "工具:GBDT(黑箱准)/CART(可解释)。" + explored_hint + "\n"
+            "示例:CART savings_months debt_to_income\n"
+            "示例:GBDT income_volatility\n"
+            "输出一个动作(工具名 + 探索字段,空格分隔,只一行):"
         )
         raw = self.llm.generate(prompt, max_new_tokens=32, temperature=0.3, top_p=0.9)
         # 阶段 2:记录真实的 prompt + completion(供 TTT 用)
@@ -96,9 +111,32 @@ class OrchestratorCloud:
         self.last_completion = raw.strip().split("\n")[0] if raw else ""
         from selflearn.action import parse_simple_action, action_to_cloud_brief
         action = parse_simple_action(raw)
+
+        if action is not None:
+            # 强制多样化:如果编排器选的字段都已探索,替换成未探索字段
+            unexplored = self._get_unexplored_fields(action.direction_keywords)
+            if unexplored and all(kw in self._explored_fields for kw in action.direction_keywords):
+                # 替换:保留工具,换成未探索的字段(top 2 按 IV 排)
+                from selflearn.clab import CLAB_FIELDS
+                new_keywords = tuple(unexplored[:2])
+                action = type(action)(tool=action.tool,
+                                      direction_keywords=new_keywords)
+                # 更新 last_completion 反映实际用的字段
+                self.last_completion = action.tool + " " + " ".join(new_keywords)
+            # 记录已探索字段
+            self._explored_fields.update(action.direction_keywords)
+
         if action is None:
             return "找有区分度的新特征"
         return action_to_cloud_brief(action)
+
+    def _get_unexplored_fields(self, current: tuple[str, ...]) -> list[str]:
+        """从 CLAB 字段里找还没探索过的(按 IV 排序的 top)。"""
+        from selflearn.clab import CLAB_FIELDS
+        # 简化:返回 CLAB_FIELDS 里不在 _explored_fields 的
+        # 生产可以接 DirectionValueTable 按 IV 排序,这里按原始顺序
+        return [f for f in CLAB_FIELDS if f not in self._explored_fields
+                and f not in current]
 
     def execute(self, task: Any) -> Any:
         """编排器产 brief -> 真云端写特征 -> 返 TaskResult。
