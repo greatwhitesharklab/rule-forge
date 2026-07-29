@@ -79,26 +79,42 @@ class OrchestratorCloud:
         self.last_completion: str | None = None
         # 阶段 2 修复:已探索字段集合(注入 prompt,让编排器换方向)
         self._explored_fields: set[str] = set()
+        # Nova 终考:GBDT 特征重要性(注入 prompt,让编排器知道哪个字段有信号)
+        self._importance_top: list[dict] = []
+
+    def set_importance_top(self, imp_top: list[dict]) -> None:
+        """接收 GBDT 特征重要性(Nova 终考:loop.py 调)。"""
+        self._importance_top = imp_top
 
     def _orchestrator_brief(self) -> str:
         """编排器(0.6B)产 cloud_brief:探索方向摘要。
 
         阶段 2 修复:prompt 注入已探索字段 + 强制多样化。
-        Nova 终考:prompt 适配 Nova 字段(不再硬编码 CLAB 字段名)。
+        Nova 终考:prompt 注入 GBDT 重要性(让编排器知道哪个字段有信号)。
         """
         if self.llm is None:
-            return "找有区分度的新特征"  # 无编排器 = 泛化出题
+            return "找有区分度的新特征"
 
-        # 构建已探索提示(如果有)
+        # 构建已探索提示
         if self._explored_fields:
             explored_str = ", ".join(sorted(self._explored_fields))
             explored_hint = "\n已探索(请换新方向):" + explored_str
         else:
             explored_hint = ""
 
+        # 构建重要性提示(Nova 终考:让编排器知道哪个字段有信号)
+        # 用 top 8 而非 top 3(连续值字段 importance 偏高,类别字段如
+        # customer_segment 可能排第 8 但 IV 最强,要多给编排器看)
+        if self._importance_top:
+            top_n = ", ".join(f"{t['feature']}({t['importance']:.0f})"
+                              for t in self._importance_top[:8])
+            importance_hint = "\nGBDT 重要性 top:" + top_n
+        else:
+            importance_hint = ""
+
         prompt = (
             "信贷审批编排。可用字段:" + self.fields_str + "。\n"
-            "工具:GBDT(黑箱准)/CART(可解释)。" + explored_hint + "\n"
+            "工具:GBDT(黑箱准)/CART(可解释)。" + importance_hint + explored_hint + "\n"
             "示例:CART loan_amount outstanding_loan_count\n"
             "示例:GBDT age monthly_income\n"
             "输出一个动作(工具名 + 探索字段,空格分隔,只一行):"
@@ -153,11 +169,15 @@ class OrchestratorCloud:
 
         if self.cloud_llm is not None:
             # 真云端:注入 brief 到 task context,调真云端
-            # task.context 已有 case_profiles 等,我们追加 orchestrator_brief
             if hasattr(task, "context") and isinstance(task.context, dict):
                 task.context["orchestrator_brief"] = brief
-            result = self.cloud_llm.execute(task)
-            return result
+            try:
+                result = self.cloud_llm.execute(task)
+                return result
+            except Exception as e:
+                # v4-flash 偶发返回截断 JSON,兜底用枚举
+                print(f"    [cloud error] {e}, 用兜底枚举")
+                return self._fallback_enumerate(task, brief)
 
         # 无云端(兜底):用 brief 生成简单特征(ClabAutoCloud 风格)
         # 这个分支只在没配 API key 时走,不是主路径

@@ -274,6 +274,10 @@ class SelfLearnLoop:
             retriever=lambda _p: experience,
             dead_end_lookup=lambda _p: dead_ends,
         )
+        # Nova 终考:把 GBDT 重要性传给编排器 cloud(如果支持),
+        # 让编排器知道哪个字段有信号(不在 cloud 接口里强制,向后兼容)。
+        if hasattr(self.cloud, "set_importance_top"):
+            self.cloud.set_importance_top(imp_top)
         result = self.cloud.execute(g1.package)
         author = f"{result.provenance.provider}:{result.provenance.model}#{task_id}"
         proposals = result.content.get("features", [])[: cfg.max_features_per_round]
