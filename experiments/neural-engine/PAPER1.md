@@ -260,3 +260,21 @@ Code at `experiments/neural-engine/`:
 - `eval/grpo_train.py` — Domain PM (GRPO)
 - `eval/rpc_paper1.py` — A/B/C/D experiment
 - 841 tests, all passing
+
+---
+
+## Appendix B: Φ Ablation Results (2026-07-30)
+
+| Φ | Level | strong_rate | b_quality | b_strong | Trend |
+|---|---|---|---|---|---|
+| **Gated** | 1 | **0.2800** | 0.2572 | 7 | ↓ |
+| Additive | 0 | 0.2647 | 0.2733 | 9 | ↓ |
+| No-Session | — | 0.2593 | 0.2506 | 7 | ↓ |
+| MLP | 3 | 0.1458 | 0.2464 | 7 | ↑ |
+| Attention | 2 | 0.1163 | 0.2644 | 5 | ↓ |
+
+**Key findings:**
+1. Gated > Additive (6%): gating provides useful control over composition ratio.
+2. Attention/MLP underperform (-54% to -141%): extra parameters harm small models.
+3. Session PM contributes ~7%: marginal in 5-round CLAB, expected to grow with scale.
+4. MLP shows upward trend: nonlinear composition may benefit from longer training.
