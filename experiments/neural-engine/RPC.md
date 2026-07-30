@@ -1,13 +1,15 @@
 # Runtime Parameter Composition(RPC):设计文档
 
-> **Version**: v1.0(2026-07-29)。Paper 1 地基文档。
+> **Version**: v2.0(2026-07-30)。加 User PM + 层级门控 + Φ 比较框架。
 >
 > **核心问题**:Transformer 参数能否在运行时动态组合,
 > 而不是预训练后保持静态?
 >
-> **一句话定位**:Runtime Parameter Composition(RPC)是一种新的计算范式,
-> Transformer 参数在推理时从不同生命周期的模块化参数组件动态组合。
-> LoRA/Adapter/TTT 都是这个统一框架的特例。
+> **一句话定位**:提出一种 Runtime Parameter Composition(RPC)架构,
+> 将 Transformer 参数划分为 Base、Domain、User、Session 四种生命周期,
+> 并通过可学习的 Compose Function 在推理时动态组合。
+> LoRA 只是第一版 Patch 的实现形式,未来可替换成其他 Patch 类型,
+> 整个理论框架仍然成立。
 
 ---
 
@@ -92,21 +94,77 @@ $\Phi$ 的实现从简单到复杂:
 **LoRA 是 Level 0 的特例**(单个 PM,加法组合)。
 **本文(Paper 1)验证 Level 0 + Level 1,后续论文探索 Level 2/3。**
 
-### 定义 5:Lifecycle
+### 定义 5:Lifecycle(更新 v2.0:四层生命周期)
 
 $$L(M) = (\tau_{start}, \tau_{end}, \tau_{update})$$
 
 每个 PM 的生命周期三元组:
 - $\tau_{start}$:创建时间
-- $\tau_{end}$:过期时间(永久 / 天 / 小时 / 一次前向)
-- $\tau_{update}$:更新频率(从不 / 每天 / 每会话 / 每步)
+- $\tau_{end}$:过期时间(永久 / 月 / 周 / 小时 / 一次前向)
+- $\tau_{update}$:更新频率(从不 / 每周 / 每天 / 每会话 / 每步)
 
-| PM 类型 | $\tau_{end}$ | $\tau_{update}$ | 当前实现 |
+| PM 类型 | $\tau_{end}$ | $\tau_{update}$ | 知识类型 | 当前实现 |
+|---|---|---|---|---|
+| Base | 永久 | 从不 | 语言能力、通用推理 | Qwen3-0.6B 冻结 |
+| Domain | 月 | 周度批量 | 行业领域知识(信贷风控通用规则) | GRPO 训练的 LoRA |
+| User | 周 | 日度 | 研究员个性化偏好(Fred 偏 Device/SIM;另一人偏 Income/Cashflow) | SFT 或 GRPO 训练的 LoRA |
+| Session | 小时 | 每轮闭环 | 本次会话经验(死路档案、探索状态) | TTT 更新的 LoRA |
+| Token | 一次 | 每步 | 当前输入瞬时记忆 | (Paper 3) |
+
+### 定义 6(v2.0 新增):Parameter 重新分类
+
+传统 Transformer 只有 **Parameter**(一个概念)。RPC 重新定义:
+
+$$\text{Parameter} = \text{Persistent Parameter} + \text{Runtime Parameter}$$
+
+- **Persistent Parameter**:预训练 + 领域训练后的冻结参数(永久)
+- **Runtime Parameter**:推理时动态组合的参数(有生命周期)
+
+Runtime Parameter 进一步分层:
+
+$$P(t) = P_{base} + \sum_i \lambda_i(t) \cdot \Delta P_i$$
+
+其中 $\Delta P_i$ 的生命周期不同:
+- $\Delta P_{domain}$:TTL = months
+- $\Delta P_{user}$:TTL = weeks
+- $\Delta P_{session}$:TTL = minutes
+
+### 定义 7(v2.0 新增):门控不是标量
+
+**v1.0 的门控**:$g = \sigma(\alpha)$,全局标量(2 个 gate)。
+
+**v2.0 的门控**:层级门控(per-layer gate)。
+
+$$g_i^{(l)} = \sigma(\alpha_i^{(l)}), \quad l = 1, \ldots, L$$
+
+每个 PM 在每一层有独立的门控。理由:
+- 领域知识可能主要作用在最后几层(高层语义)
+- 基础语言能力在前面几层(低层语法)
+- 不同层需要不同的 Domain/User/Session 组合比例
+
+Paper 1 v2.0 实现层级门控(28 层)。未来可扩展到 head-level 和 token-level。
+
+### 定义 8(v2.0 新增):Φ 不固定为加法
+
+$\Phi$ 是论文最大的创新对象,不应该固定为加法。
+
+论文比较多种 $\Phi$:
+
+| $\Phi$ 实现 | 公式 | 复杂度 | Paper |
 |---|---|---|---|
-| Base | 永久 | 从不 | Qwen3-0.6B 冻结 |
-| Domain | 月 | 周度批量 | GRPO 训练的 LoRA |
-| Session | 小时 | 每轮闭环 | TTT 更新的 LoRA |
-| Token | 一次 | 每步 | (Paper 3) |
+| Add(Level 0) | $W + \sum \Delta W_i$ | 最低(baseline) | Paper 1 对照 |
+| Gate Add(Level 1) | $W + \sum g_i \cdot \Delta W_i$ | 低 | **Paper 1 主实验** |
+| Attention(Level 2) | $W + \text{Attn}(Q, K_i, V_i)$ | 中 | Paper 2 |
+| Tiny MLP(Level 3) | $W + \text{MLP}([\Delta W_1, \ldots])$ | 高 | Paper 2 |
+| HyperCompose(Level 4) | $W' = \text{HyperNet}(\{\Delta W_i\})$ | 最高 | Paper 4 |
+
+**Patch(PM)不一定是 LoRA**。未来 $\Delta P$ 可以是:
+- LoRA 低秩矩阵(v1.0 实现)
+- KV cache delta
+- Router delta
+- Hidden state delta
+
+论文统一叫 Patch(PM),LoRA 只是第一版的实现形式。
 
 ---
 
@@ -270,3 +328,48 @@ $g_{domain}$ 和 $g_{session}$ 是可学习的门控(sigmoid)。
 > (Domain + Session) at runtime yields 1.64-1.91x higher signal
 > discovery rate than any single-module configuration, establishing
 > Runtime Parameter Composition as a new paradigm beyond static LoRA.
+
+---
+
+## 十、终极愿景:Router 即 Patch(v2.0 新增)
+
+### 10.1 当前范式 vs RPC 范式
+
+**当前范式**(Prompt Engineering):
+```
+问题 → "你是一个风控专家..." → 模型 → 答案
+```
+专业能力靠 prompt 描述。模型不变,变的是 prompt。
+
+**RPC 范式**(Weight Engineering):
+```
+问题 → Patch Router → 加载: Fraud_PM + Mexico_PM + Device_PM
+     → Compose → Forward → 答案
+```
+专业能力靠**加载对应的 Runtime Weight**。不需要 prompt 描述角色,
+模型自己变成专家。
+
+### 10.2 Router 也是 Patch
+
+Router 本身不是固定架构,而是一个 Patch:
+- v1.0:Router 是固定门控(σ(α))
+- v2.0:Router 是层级门控(28 个 α per PM)
+- Paper 2:Router 是可学习的路由网络(model learns to select PMs)
+- Paper 4:Router 自主生成新 Patch
+
+### 10.3 为什么这比 Prompt 更强
+
+Prompt 描述"你应该做什么":
+> "你是一个信贷风控专家,关注设备指纹和多头借贷..."
+
+但模型实际并没有风控知识 —— 它在**模拟**风控专家的语言。
+
+RPC 加载"你实际是什么":
+> 加载 Domain_PM(信贷知识) + User_PM(Fred 的偏好) + Session_PM(本次探索)
+
+模型不是在**模拟**专家,而是**实际具备**专家的参数化知识。
+
+### 10.4 论文的核心价值(一句话)
+
+> 模型的"专业能力"不应该靠 prompt 描述,而应该靠运行时加载对应的参数模块。
+> 这就是 Runtime Parameter Composition。
