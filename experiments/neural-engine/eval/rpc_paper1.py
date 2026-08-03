@@ -44,6 +44,7 @@ class ExperimentResult:
     """一组实验的结果。"""
 
     group: str           # A/B/C/D
+    seed: int            # 数据/闭环种子
     b_strong: int
     strong_rate: float
     b_quality: float
@@ -126,7 +127,9 @@ def _run_group(
         print(f"  [{group}] round {r}: avg_iv={avg_iv:.4f}")
 
         # Session PM:TTT 更新(C/D 组)
-        if do_ttt and cloud_llm is not None and loop.cloud.last_prompt:
+        # 只要有真实 (prompt, completion) 对就更新,与云端实现无关;
+        # 否则 mock/兜底路径下 C≡A、D≡B,Session PM 消融失效。
+        if do_ttt and loop.cloud.last_prompt:
             from selflearn.ttt import ttt_step
             ttt_step(
                 llm._model, llm._tokenizer, optimizer,
@@ -154,6 +157,7 @@ def _run_group(
 
     return ExperimentResult(
         group=group,
+        seed=seed,
         b_strong=m["b_strong"],
         strong_rate=m["strong_rate"],
         b_quality=m["b_quality"],
