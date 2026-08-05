@@ -135,7 +135,7 @@ class TestSanitizeHardWiring:
         result = provider.execute(make_pkg("feature_proposal"))
         prov = result.provenance
         assert prov.provider == "deepseek"
-        assert prov.model == "deepseek-reasoner"
+        assert prov.model == "deepseek-v4-flash"
         assert prov.model_version == "fake-model-2026-01"
         assert prov.cost_tokens == 18  # 11 prompt + 7 completion
 

@@ -1,0 +1,87 @@
+{
+  "cloud_mode": "real_deepseek",
+  "disclaimer": "",
+  "rounds": 5,
+  "seeds": [
+    20260728
+  ],
+  "groups": [
+    "A",
+    "D"
+  ],
+  "partial": false,
+  "elapsed_seconds": 657.2,
+  "per_run": [
+    {
+      "group": "A",
+      "seed": 20260728,
+      "b_strong": 0,
+      "strong_rate": 0.0,
+      "b_quality": 0.0,
+      "b_feat": 0,
+      "total_proposals": 0,
+      "avg_iv_first_half": 0.0,
+      "avg_iv_second_half": 0.0,
+      "valid": false,
+      "fail_reason": "cloud failed after retries: cloud returned empty content (reasoning token budget?)"
+    },
+    {
+      "group": "D",
+      "seed": 20260728,
+      "b_strong": 0,
+      "strong_rate": 0.0,
+      "b_quality": 0.0,
+      "b_feat": 0,
+      "total_proposals": 0,
+      "avg_iv_first_half": 0.0,
+      "avg_iv_second_half": 0.0,
+      "valid": false,
+      "fail_reason": "cloud failed after retries: cloud returned empty content (reasoning token budget?)"
+    }
+  ],
+  "summary": {},
+  "d_vs_a_ratio": {
+    "strong_rate": {
+      "mean": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 0,
+      "values": [],
+      "per_seed_ratios": [],
+      "seeds": []
+    },
+    "b_quality": {
+      "mean": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 0,
+      "values": [],
+      "per_seed_ratios": [],
+      "seeds": []
+    },
+    "b_strong": {
+      "mean": null,
+      "ci_lo": null,
+      "ci_hi": null,
+      "n": 0,
+      "values": [],
+      "per_seed_ratios": [],
+      "seeds": []
+    }
+  },
+  "d_advantage_robust": false,
+  "n_valid": 0,
+  "n_invalid": 2,
+  "invalid_runs": [
+    {
+      "group": "A",
+      "seed": 20260728,
+      "fail_reason": "cloud failed after retries: cloud returned empty content (reasoning token budget?)"
+    },
+    {
+      "group": "D",
+      "seed": 20260728,
+      "fail_reason": "cloud failed after retries: cloud returned empty content (reasoning token budget?)"
+    }
+  ]
+}

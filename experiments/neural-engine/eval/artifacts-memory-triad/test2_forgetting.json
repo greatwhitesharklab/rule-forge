@@ -1,0 +1,51 @@
+{
+  "k_batches": 4,
+  "batch_size": 8,
+  "ttt": {
+    "steps": 3,
+    "lr": 0.0003,
+    "epochs": 3
+  },
+  "matrix_batch_x_timestep": [
+    [
+      1.0,
+      1.0,
+      0.375,
+      0.25
+    ],
+    [
+      null,
+      1.0,
+      1.0,
+      0.625
+    ],
+    [
+      null,
+      null,
+      1.0,
+      0.75
+    ],
+    [
+      null,
+      null,
+      null,
+      1.0
+    ]
+  ],
+  "base_recall_per_batch": [
+    0.25,
+    0.25,
+    0.25,
+    0.25
+  ],
+  "context_carry": {
+    "recall_per_batch": [
+      0.625,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "context_tokens": 662
+  },
+  "param_write_context_tokens": 0
+}

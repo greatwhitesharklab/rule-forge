@@ -50,6 +50,14 @@ from synth import SyntheticWorld, default_config
 MODEL_ID = "Qwen/Qwen3-0.6B"
 
 
+class CloudUnavailableError(RuntimeError):
+    """Real cloud failed after all retries; the run must be invalidated.
+
+    Raised instead of silently falling back to enumeration, which would
+    poison the group with mock-quality data (variance control, 2026-08).
+    """
+
+
 class OrchestratorCloud:
     """编排器驱动的真云端:编排器产 cloud_brief -> 真云端写特征。
 
@@ -69,10 +77,12 @@ class OrchestratorCloud:
         llm: LocalLLM | None,
         fields_str: str,
         cloud_llm=None,  # OpenAIProvider 或 MockProvider
+        allow_fallback: bool = True,  # False: real-cloud 模式禁止兜底污染
     ) -> None:
         self.llm = llm                    # 本地 0.6B(编排器,产 cloud_brief)
         self.fields_str = fields_str
         self.cloud_llm = cloud_llm        # 真云端(写特征表达式)
+        self.allow_fallback = allow_fallback
         self._call_count = 0
         # 阶段 2:记录每轮真实的 (prompt, completion),供 TTT 更新用
         self.last_prompt: str | None = None
@@ -85,6 +95,14 @@ class OrchestratorCloud:
     def set_importance_top(self, imp_top: list[dict]) -> None:
         """接收 GBDT 特征重要性(Nova 终考:loop.py 调)。"""
         self._importance_top = imp_top
+
+    def _extra_prompt_context(self) -> str:
+        """子类钩子:往编排器 prompt 注入额外上下文(默认空,prompt 不变)。
+
+        例如 eval/memory_triad.py 的检索记忆臂(臂 C)覆写它注入
+        「最近 W 期字段 IV」检索结果。
+        """
+        return ""
 
     def _orchestrator_brief(self) -> str:
         """编排器(0.6B)产 cloud_brief:探索方向摘要。
@@ -114,7 +132,8 @@ class OrchestratorCloud:
 
         prompt = (
             "信贷审批编排。可用字段:" + self.fields_str + "。\n"
-            "工具:GBDT(黑箱准)/CART(可解释)。" + importance_hint + explored_hint + "\n"
+            "工具:GBDT(黑箱准)/CART(可解释)。" + importance_hint + explored_hint
+            + self._extra_prompt_context() + "\n"
             "示例:CART loan_amount outstanding_loan_count\n"
             "示例:GBDT age monthly_income\n"
             "输出一个动作(工具名 + 探索字段,空格分隔,只一行):"
@@ -175,6 +194,11 @@ class OrchestratorCloud:
                 result = self.cloud_llm.execute(task)
                 return result
             except Exception as e:
+                if not self.allow_fallback:
+                    # real-cloud 模式:重试已耗尽,标记失败并中止本组本种子,
+                    # 不走兜底枚举(避免 mock 数据污染真云组统计)。
+                    raise CloudUnavailableError(
+                        f"cloud failed after retries: {e}") from e
                 # v4-flash 偶发返回截断 JSON,兜底用枚举
                 print(f"    [cloud error] {e}, 用兜底枚举")
                 return self._fallback_enumerate(task, brief)

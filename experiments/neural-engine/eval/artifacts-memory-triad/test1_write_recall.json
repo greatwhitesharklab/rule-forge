@@ -1,0 +1,74 @@
+{
+  "n_write": 8,
+  "n_distractor": 8,
+  "ttt": {
+    "steps": 3,
+    "lr": 0.0003,
+    "epochs": 3,
+    "final_sft_loss": 0.0709
+  },
+  "arms": {
+    "base": {
+      "written_recall": 0.25,
+      "distractor_recall": 0.25
+    },
+    "random_pm": {
+      "written_recall": 0.25,
+      "distractor_recall": 0.25
+    },
+    "written_pm": {
+      "written_recall": 1.0,
+      "distractor_recall": 0.25
+    }
+  },
+  "details_written_set": [
+    {
+      "pattern": "多头借贷≥3 且查询密集",
+      "gold": "违约倾向低",
+      "base_pick": "需人工复核",
+      "written_pm_pick": "违约倾向低"
+    },
+    {
+      "pattern": "近30天查询>6 且信用卡刷爆",
+      "gold": "资质中性待观察",
+      "base_pick": "需人工复核",
+      "written_pm_pick": "资质中性待观察"
+    },
+    {
+      "pattern": "共债平台≥5 且收入平稳",
+      "gold": "资质中性待观察",
+      "base_pick": "需人工复核",
+      "written_pm_pick": "资质中性待观察"
+    },
+    {
+      "pattern": "查询环比翻倍 且授信使用率>80%",
+      "gold": "违约倾向高",
+      "base_pick": "需人工复核",
+      "written_pm_pick": "违约倾向高"
+    },
+    {
+      "pattern": "网贷占比高 且近7天查询>3",
+      "gold": "违约倾向低",
+      "base_pick": "需人工复核",
+      "written_pm_pick": "违约倾向低"
+    },
+    {
+      "pattern": "首贷且共债平台=2",
+      "gold": "需人工复核",
+      "base_pick": "需人工复核",
+      "written_pm_pick": "需人工复核"
+    },
+    {
+      "pattern": "多头借贷=2 且查询稀疏",
+      "gold": "需人工复核",
+      "base_pick": "需人工复核",
+      "written_pm_pick": "需人工复核"
+    },
+    {
+      "pattern": "无共债 且近90天零查询",
+      "gold": "违约倾向高",
+      "base_pick": "需人工复核",
+      "written_pm_pick": "违约倾向高"
+    }
+  ]
+}

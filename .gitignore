@@ -53,3 +53,7 @@ experiments/neural-engine/eval/artifacts-clabfull/clabfull_comparison.json
 # RPC 实验运行产物(work/_work/bench 目录,每次实验重建)
 experiments/neural-engine/eval/artifacts*/*_work/
 experiments/neural-engine/eval/artifacts*/bench/
+
+# RPC/记忆实验深层 work 产物(任意深度)
+experiments/neural-engine/eval/artifacts*/**/work/
+experiments/neural-engine/eval/artifacts*/**/*_work/

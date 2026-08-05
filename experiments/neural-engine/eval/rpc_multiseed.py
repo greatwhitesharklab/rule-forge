@@ -64,10 +64,14 @@ MOCK_DISCLAIMER = (
 def ci95(values: Sequence[float]) -> dict:
     """Mean and 95% confidence interval (t-distribution, n-1 dof).
 
-    Returns {"mean", "ci_lo", "ci_hi", "n", "values"}.
+    Returns {"mean", "ci_lo", "ci_hi", "n", "values"}; empty input yields
+    None stats (all runs of a group may be cloud-invalidated).
     """
     vals = [float(v) for v in values]
     n = len(vals)
+    if n == 0:
+        return {"mean": None, "ci_lo": None, "ci_hi": None, "n": 0,
+                "values": []}
     mean = float(np.mean(vals))
     if n < 2:
         return {"mean": mean, "ci_lo": mean, "ci_hi": mean, "n": n,
@@ -86,16 +90,22 @@ def ci95(values: Sequence[float]) -> dict:
 
 
 def summarize_runs(results: list[ExperimentResult]) -> dict:
-    """Aggregate per-group metric stats and the D-vs-A advantage ratios."""
-    groups = sorted({r.group for r in results})
+    """Aggregate per-group metric stats and the D-vs-A advantage ratios.
+
+    Invalid runs (real-cloud failure, valid=False) are EXCLUDED from all
+    statistics and reported separately — never mixed into CIs.
+    """
+    valid = [r for r in results if r.valid]
+    invalid = [r for r in results if not r.valid]
+    groups = sorted({r.group for r in valid})
     summary: dict[str, dict] = {}
     for g in groups:
-        rs = [r for r in results if r.group == g]
+        rs = [r for r in valid if r.group == g]
         summary[g] = {m: ci95([getattr(r, m) for r in rs]) for m in METRICS}
 
     ratios: dict[str, dict] = {}
-    a_by_seed = {r.seed: r for r in results if r.group == "A"}
-    d_by_seed = {r.seed: r for r in results if r.group == "D"}
+    a_by_seed = {r.seed: r for r in valid if r.group == "A"}
+    d_by_seed = {r.seed: r for r in valid if r.group == "D"}
     common_seeds = sorted(set(a_by_seed) & set(d_by_seed))
     for m in METRICS:
         per_seed = []
@@ -108,10 +118,17 @@ def summarize_runs(results: list[ExperimentResult]) -> dict:
         ratios[m] = stat
 
     sr = ratios["strong_rate"]
+    robust = bool(sr["ci_lo"] is not None and sr["ci_lo"] > 1.0)
     return {
         "summary": summary,
         "d_vs_a_ratio": ratios,
-        "d_advantage_robust": bool(sr["ci_lo"] > 1.0),
+        "d_advantage_robust": robust,
+        "n_valid": len(valid),
+        "n_invalid": len(invalid),
+        "invalid_runs": [
+            {"group": r.group, "seed": r.seed, "fail_reason": r.fail_reason}
+            for r in invalid
+        ],
     }
 
 
@@ -145,6 +162,89 @@ def plot_multiseed(agg: dict, path: Path) -> None:
     plt.close(fig)
 
 
+def _write_outputs(results: list[ExperimentResult], args: argparse.Namespace,
+                   cloud_mode: str, use_real: bool, elapsed: float,
+                   partial: bool) -> dict:
+    """Aggregate current results and write multiseed.json + multiseed.png.
+
+    Called after every single run (partial=True) so progress survives
+    timeouts, and once at the end (partial=False).
+    """
+    agg = summarize_runs(results)
+    report = {
+        "cloud_mode": cloud_mode,
+        "disclaimer": "" if use_real else MOCK_DISCLAIMER,
+        "rounds": args.rounds,
+        "seeds": args.seeds,
+        "groups": list(args.groups),
+        "partial": partial,
+        "elapsed_seconds": round(elapsed, 1),
+        "per_run": [asdict(r) for r in results],
+        **agg,
+    }
+    args.out.mkdir(parents=True, exist_ok=True)
+    (args.out / "multiseed.json").write_text(
+        json.dumps(report, indent=2, ensure_ascii=False))
+    plot_multiseed(agg, args.out / "multiseed.png")
+    return report
+
+
+def _merge(part_dirs: list[Path], out: Path) -> None:
+    """Merge per-run results from several partial output directories."""
+    results: list[ExperimentResult] = []
+    rounds = 5
+    cloud_mode = "real_deepseek"
+    for d in part_dirs:
+        data = json.loads((d / "multiseed.json").read_text())
+        rounds = data.get("rounds", rounds)
+        cloud_mode = data.get("cloud_mode", cloud_mode)
+        for rd in data["per_run"]:
+            results.append(ExperimentResult(**rd))
+    args = argparse.Namespace(rounds=rounds,
+                              seeds=sorted({r.seed for r in results}),
+                              groups="".join(sorted({r.group for r in results})),
+                              out=out)
+    report = _write_outputs(results, args, cloud_mode,
+                            use_real=cloud_mode == "real_deepseek",
+                            elapsed=0.0, partial=False)
+    _print_summary(report)
+    print(f"merged {len(part_dirs)} partial dirs -> {out}")
+
+
+def _print_summary(report: dict) -> None:
+    """Terminal summary: per-group mean [95% CI] and the D/A verdict."""
+    agg = report["summary"]
+    print("\n=== Multi-seed summary (mean [95% CI]) ===")
+    for g, stats in agg.items():
+        sr = stats["strong_rate"]
+        bq = stats["b_quality"]
+        bs = stats["b_strong"]
+        if sr["mean"] is None:
+            print(f"  {g}: no valid runs")
+            continue
+        print(f"  {g}: strong_rate {sr['mean']:.4f} "
+              f"[{sr['ci_lo']:.4f}, {sr['ci_hi']:.4f}]  "
+              f"b_quality {bq['mean']:.4f} [{bq['ci_lo']:.4f}, {bq['ci_hi']:.4f}]  "
+              f"b_strong {bs['mean']:.1f} [{bs['ci_lo']:.1f}, {bs['ci_hi']:.1f}]")
+    ratio = report["d_vs_a_ratio"]["strong_rate"]
+    if ratio["mean"] is None:
+        print("\nD/A ratio: no common valid seeds")
+    else:
+        print(f"\nD/A strong_rate ratio: {ratio['mean']:.3f} "
+              f"[{ratio['ci_lo']:.3f}, {ratio['ci_hi']:.3f}] "
+              f"(per-seed: {[round(v, 3) for v in ratio['per_seed_ratios']]})")
+    print(f"D advantage robust (CI lower bound > 1.0): "
+          f"{report['d_advantage_robust']}")
+    n_inv = report.get("n_invalid", 0)
+    print(f"valid runs: {report.get('n_valid')}, "
+          f"cloud-invalidated runs: {n_inv}")
+    for inv in report.get("invalid_runs", []):
+        print(f"  INVALID {inv['group']}/seed={inv['seed']}: "
+              f"{inv['fail_reason'][:120]}")
+    if report.get("disclaimer"):
+        print(f"NOTE: {report['disclaimer']}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="RPC Exp1 multi-seed CI")
     parser.add_argument("--rounds", type=int, default=5)
@@ -152,8 +252,14 @@ def main() -> None:
                         default=[20260728, 20260729, 20260730])
     parser.add_argument("--groups", type=str, default="ABCD")
     parser.add_argument("--real-cloud", action="store_true")
+    parser.add_argument("--merge", type=Path, nargs="*", default=None,
+                        help="merge partial output dirs instead of running")
     parser.add_argument("--out", type=Path, default=Path("eval/artifacts-rpc"))
     args = parser.parse_args()
+
+    if args.merge is not None:
+        _merge(args.merge, args.out)
+        return
 
     use_real = args.real_cloud and bool(os.environ.get("DEEPSEEK_API_KEY"))
     cloud_mode = "real_deepseek" if use_real else "mock_fallback_enumerate"
@@ -173,44 +279,14 @@ def main() -> None:
             results.append(r)
             print(f">>> done seed={seed} group={group}: "
                   f"strong_rate={r.strong_rate:.4f}")
-    elapsed = time.time() - t0
-
-    agg = summarize_runs(results)
-    report = {
-        "cloud_mode": cloud_mode,
-        "disclaimer": "" if use_real else MOCK_DISCLAIMER,
-        "rounds": args.rounds,
-        "seeds": args.seeds,
-        "groups": list(args.groups),
-        "elapsed_seconds": round(elapsed, 1),
-        "per_run": [asdict(r) for r in results],
-        **agg,
-    }
-
-    args.out.mkdir(parents=True, exist_ok=True)
-    json_path = args.out / "multiseed.json"
-    png_path = args.out / "multiseed.png"
-    json_path.write_text(json.dumps(report, indent=2, ensure_ascii=False))
-    plot_multiseed(agg, png_path)
-
-    print("\n=== Multi-seed summary (mean [95% CI]) ===")
-    for g, stats in agg["summary"].items():
-        sr = stats["strong_rate"]
-        bq = stats["b_quality"]
-        bs = stats["b_strong"]
-        print(f"  {g}: strong_rate {sr['mean']:.4f} "
-              f"[{sr['ci_lo']:.4f}, {sr['ci_hi']:.4f}]  "
-              f"b_quality {bq['mean']:.4f} [{bq['ci_lo']:.4f}, {bq['ci_hi']:.4f}]  "
-              f"b_strong {bs['mean']:.1f} [{bs['ci_lo']:.1f}, {bs['ci_hi']:.1f}]")
-    ratio = agg["d_vs_a_ratio"]["strong_rate"]
-    print(f"\nD/A strong_rate ratio: {ratio['mean']:.3f} "
-          f"[{ratio['ci_lo']:.3f}, {ratio['ci_hi']:.3f}] "
-          f"(per-seed: {[round(v, 3) for v in ratio['per_seed_ratios']]})")
-    robust = agg["d_advantage_robust"]
-    print(f"D advantage robust (CI lower bound > 1.0): {robust}")
-    if not use_real:
-        print(f"NOTE: {MOCK_DISCLAIMER}")
-    print(f"artifacts: {json_path}, {png_path}")
+            # Persist progress after every run (timeout safety).
+            _write_outputs(results, args, cloud_mode, use_real,
+                           time.time() - t0, partial=True)
+    report = _write_outputs(results, args, cloud_mode, use_real,
+                            time.time() - t0, partial=False)
+    _print_summary(report)
+    print(f"artifacts: {args.out / 'multiseed.json'}, "
+          f"{args.out / 'multiseed.png'}")
 
 
 if __name__ == "__main__":

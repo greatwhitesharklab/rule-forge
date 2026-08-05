@@ -194,6 +194,8 @@ class OpenAIProvider(SanitizedCloudExecutor):
         client: Any | None = None,
         max_retries: int = 3,
         enable_retry: bool = True,
+        temperature: float = 0.3,
+        reasoning_effort: str | None = "low",
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -204,6 +206,15 @@ class OpenAIProvider(SanitizedCloudExecutor):
             )
         self.provider_name = provider
         self.model_name = model or cfg.model
+        # Variance control (measured 2026-08 on deepseek-v4-flash):
+        # - temperature=0 is FORBIDDEN: greedy decoding makes the reasoning
+        #   model loop (observed 125k reasoning chars, 16k-token truncation,
+        #   empty content). Default 0.3 keeps variance low without looping.
+        # - reasoning_effort='low' caps the reasoning token budget (large
+        #   feature_proposal prompts otherwise burn >8k tokens on reasoning
+        #   alone). Set to None for models that reject the parameter.
+        self._temperature = temperature
+        self._reasoning_effort = reasoning_effort
 
         if client is None:
             key = api_key or os.environ.get(cfg.api_key_env, "")
@@ -250,11 +261,25 @@ class OpenAIProvider(SanitizedCloudExecutor):
         ]
 
         def _call() -> Any:
-            # v4-flash 是推理模型,reasoning 占 token;给够 max_tokens 让它
-            # reasoning 完成后还有余量产出 content(否则 content 为空)。
-            return self._client.chat.completions.create(
-                model=self.model_name, messages=messages, max_tokens=4096,
+            # v4-flash 是推理模型,reasoning 占 token;实测大 context prompt
+            # (feature_proposal ~8KB)reasoning 可超 4000 token,max_tokens=4096
+            # 会全部耗尽导致 content 为空(finish_reason=length)。8192 才够。
+            kwargs: dict[str, Any] = {}
+            if self._reasoning_effort is not None:
+                kwargs["reasoning_effort"] = self._reasoning_effort
+            resp = self._client.chat.completions.create(
+                model=self.model_name, messages=messages, max_tokens=8192,
+                temperature=self._temperature, **kwargs,
             )
+            content = resp.choices[0].message.content or ""
+            # Validate INSIDE the retried call: empty content / non-JSON
+            # responses are retried (tenacity, up to max_retries) instead of
+            # leaking into the run as silent fallback pollution.
+            if not content.strip():
+                raise TaskResultError(
+                    "cloud returned empty content (reasoning token budget?)")
+            _parse_json_content(content)
+            return resp
 
         resp = self._retrying(_call) if self._retrying is not None else _call()
         usage = getattr(resp, "usage", None)

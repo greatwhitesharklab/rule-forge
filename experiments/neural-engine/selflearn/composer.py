@@ -15,6 +15,7 @@ Patch(PM)不一定是 LoRA。v1.0 用 LoRA 实现,v2.0 保持抽象:
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -22,6 +23,29 @@ from typing import Any
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+
+def compute_weight_deltas(
+    base_safetensors: str,
+    merged_safetensors: str,
+    targets: tuple[str, ...] = ("q_proj", "v_proj"),
+) -> dict[str, torch.Tensor]:
+    """Dense per-module weight deltas (merged - base) for target linears.
+
+    Used to reconstruct a merged PM (e.g. GRPO domain model) as an explicit
+    additive delta over the base, so per-layer gates can modulate it.
+    Keys are module names (e.g. "model.layers.3.self_attn.q_proj").
+    """
+    from safetensors import safe_open
+
+    deltas: dict[str, torch.Tensor] = {}
+    with safe_open(base_safetensors, framework="pt") as fb, \
+            safe_open(merged_safetensors, framework="pt") as fm:
+        for key in fb.keys():
+            if key.endswith(".weight") and any(t in key for t in targets):
+                name = key[: -len(".weight")]
+                deltas[name] = (fm.get_tensor(key) - fb.get_tensor(key)).float()
+    return deltas
 
 
 class PhiType(str, Enum):
@@ -78,6 +102,7 @@ class ParameterComposer(nn.Module):
         self._session_lora = nn.ParameterDict()
         self._session_layers: list[tuple[str, nn.Linear]] = []  # 记录哪层有 LoRA
         self._initialized = False
+        self._wire_handles: list[Any] = []  # forward hooks from wire()
 
         # 层级门控(Level 1):每层每 PM 一个 gate
         # 列 0=domain, 1=user, 2=session
@@ -230,6 +255,94 @@ class ParameterComposer(nn.Module):
     def get_gate_values(self) -> torch.Tensor:
         """返当前门控值 [n_layers × 3],sigmoid 后的。"""
         return torch.sigmoid(self.gates).detach()
+
+    # ------------------------------------------------------------------
+    # Wired per-layer composition (true gradient path for all gates)
+    # ------------------------------------------------------------------
+
+    def wire(
+        self,
+        domain_deltas: dict[str, torch.Tensor] | None = None,
+        user_deltas: dict[str, torch.Tensor] | None = None,
+    ) -> int:
+        """Attach per-layer gated composition to the base model internals.
+
+        For every LoRA target linear in transformer layer ``l`` the forward
+        output becomes::
+
+            y = linear(x) + g_D,l * (x @ Wd^T) + g_U,l * (x @ Wu^T)
+                          + g_S,l * ((x @ A^T) @ B^T)
+
+        with ``g = sigmoid(self.gates[l])`` (columns: domain / user /
+        session). Both q_proj and v_proj of the same layer share that
+        layer's gate row. Gates are zero-initialized (sigma(0) = 0.5), so
+        the wired model starts at the additive average; with zero-init
+        session LoRA (B = 0) and no domain/user deltas the wiring is
+        lossless (bit-identical output to the unwired base).
+
+        Unlike the standalone ``forward`` (logit-level bias, only
+        ``gates[-1, 2]`` active), the wired path puts every gate into the
+        computation graph: dense PM deltas give the domain/user columns
+        immediate gradient, and the session column receives gradient as
+        soon as the session LoRA B matrix leaves its zero init (after the
+        first optimizer step).
+
+        Returns the number of hooked modules.
+        """
+        if not self._initialized:
+            raise RuntimeError("call init_session_lora() before wire()")
+        self.unwire()
+        self._wired_delta_names: dict[str, str] = {}
+        domain_deltas = domain_deltas or {}
+        user_deltas = user_deltas or {}
+
+        n_hooked = 0
+        for name, module in self._session_layers:
+            m = re.search(r"layers\.(\d+)", name)
+            if m is None:
+                continue
+            layer_idx = int(m.group(1))
+            if layer_idx >= self.n_layers:
+                continue
+
+            domain = self._register_wired_delta("domain", name,
+                                                domain_deltas.get(name))
+            user = self._register_wired_delta("user", name,
+                                              user_deltas.get(name))
+            safe = name.replace(".", "_")
+            A = self._session_lora[safe + "_lora_A"]
+            B = self._session_lora[safe + "_lora_B"]
+
+            def hook(mod, inputs, output, li=layer_idx, d=domain, u=user,
+                     a=A, b=B):
+                x = inputs[0]
+                g = torch.sigmoid(self.gates[li])
+                y = output
+                if d is not None:
+                    y = y + g[0] * (x @ d.t())
+                if u is not None:
+                    y = y + g[1] * (x @ u.t())
+                return y + g[2] * ((x @ a.t()) @ b.t())
+
+            self._wire_handles.append(module.register_forward_hook(hook))
+            n_hooked += 1
+        return n_hooked
+
+    def _register_wired_delta(
+        self, pm: str, module_name: str, delta: torch.Tensor | None
+    ) -> torch.Tensor | None:
+        """Register a frozen dense PM delta as a buffer; None passthrough."""
+        if delta is None:
+            return None
+        buf_name = f"_wired_{pm}_{module_name.replace('.', '_')}"
+        self.register_buffer(buf_name, delta.detach().float())
+        return getattr(self, buf_name)
+
+    def unwire(self) -> None:
+        """Remove all wiring hooks, restoring the base model's forward."""
+        for h in getattr(self, "_wire_handles", []):
+            h.remove()
+        self._wire_handles: list[Any] = []
 
     def get_trainable_parameters(self) -> list[nn.Parameter]:
         """返所有可训练参数(Session LoRA + 门控 + Φ 参数)。"""

@@ -1,0 +1,348 @@
+{
+  "seed": 20260730,
+  "rounds": 10,
+  "dev_episodes": 40,
+  "switch_episodes": [
+    3,
+    12,
+    18,
+    25,
+    37
+  ],
+  "switch_rounds": [
+    1,
+    4,
+    5,
+    7,
+    10
+  ],
+  "arms": {
+    "A": {
+      "series": [
+        {
+          "round": 1,
+          "frontier": 4,
+          "regime": 0,
+          "avg_iv": 0.3458,
+          "n_passed": 3,
+          "completion": "GBDT age monthly_income"
+        },
+        {
+          "round": 2,
+          "frontier": 8,
+          "regime": 1,
+          "avg_iv": 0.1009,
+          "n_passed": 1,
+          "completion": "GBDT monthly_income"
+        },
+        {
+          "round": 3,
+          "frontier": 12,
+          "regime": 1,
+          "avg_iv": 0.2872,
+          "n_passed": 3,
+          "completion": "GBDT income_volatility_obs debt_to_income_obs"
+        },
+        {
+          "round": 4,
+          "frontier": 16,
+          "regime": 2,
+          "avg_iv": 0.2885,
+          "n_passed": 3,
+          "completion": "GBDT loan_amount outstanding_loan_count"
+        },
+        {
+          "round": 5,
+          "frontier": 20,
+          "regime": 3,
+          "avg_iv": 0.0625,
+          "n_passed": 2,
+          "completion": "GBDT delinquencies_reported months_employed"
+        },
+        {
+          "round": 6,
+          "frontier": 24,
+          "regime": 3,
+          "avg_iv": 0.1411,
+          "n_passed": 1,
+          "completion": "GBDT savings_months_obs requested_loan_to_income"
+        },
+        {
+          "round": 7,
+          "frontier": 28,
+          "regime": 4,
+          "avg_iv": 0.2089,
+          "n_passed": 1,
+          "completion": "GBDT platform_loans_disclosed"
+        },
+        {
+          "round": 8,
+          "frontier": 32,
+          "regime": 4,
+          "avg_iv": 0.172,
+          "n_passed": 2,
+          "completion": "GBDT platform_loans_disclosed requested_loan_to_income"
+        },
+        {
+          "round": 9,
+          "frontier": 36,
+          "regime": 4,
+          "avg_iv": 0.178,
+          "n_passed": 2,
+          "completion": "GBDT platform_loans_disclosed requested_loan_to_income"
+        },
+        {
+          "round": 10,
+          "frontier": 40,
+          "regime": 5,
+          "avg_iv": 0.1895,
+          "n_passed": 2,
+          "completion": "GBDT platform_loans_disclosed requested_loan_to_income"
+        }
+      ],
+      "avg_iv_overall": 0.1974,
+      "recovery": [
+        {
+          "switch_round": 4,
+          "pre_level": 0.1941,
+          "threshold": 0.1746,
+          "recovery_rounds": 1,
+          "recovered": true
+        },
+        {
+          "switch_round": 5,
+          "pre_level": 0.2878,
+          "threshold": 0.2591,
+          "recovery_rounds": 6,
+          "recovered": false
+        },
+        {
+          "switch_round": 7,
+          "pre_level": 0.1018,
+          "threshold": 0.0916,
+          "recovery_rounds": 1,
+          "recovered": true
+        }
+      ],
+      "mean_recovery_rounds": 2.667
+    },
+    "B": {
+      "series": [
+        {
+          "round": 1,
+          "frontier": 4,
+          "regime": 0,
+          "avg_iv": 0.3458,
+          "n_passed": 3,
+          "completion": "根据工具类型和字段重要性排序，输出一个动作。 "
+        },
+        {
+          "round": 2,
+          "frontier": 8,
+          "regime": 1,
+          "avg_iv": 0.2881,
+          "n_passed": 3,
+          "completion": "GBDT age monthly_income"
+        },
+        {
+          "round": 3,
+          "frontier": 12,
+          "regime": 1,
+          "avg_iv": 0.2872,
+          "n_passed": 3,
+          "completion": "GBDT income_volatility_obs debt_to_income_obs"
+        },
+        {
+          "round": 4,
+          "frontier": 16,
+          "regime": 2,
+          "avg_iv": 0.0286,
+          "n_passed": 1,
+          "completion": "CART credit_history_years_reported delinquencies_reported"
+        },
+        {
+          "round": 5,
+          "frontier": 20,
+          "regime": 3,
+          "avg_iv": 0.1717,
+          "n_passed": 2,
+          "completion": "GBDT months_employed savings_months_obs"
+        },
+        {
+          "round": 6,
+          "frontier": 24,
+          "regime": 3,
+          "avg_iv": 0.2285,
+          "n_passed": 3,
+          "completion": "根据以上信息，我需要为贷款申请人的信用历史、债务比率、收入波动性等关键指标进行建模，以评估其信用风险"
+        },
+        {
+          "round": 7,
+          "frontier": 28,
+          "regime": 4,
+          "avg_iv": 0.1785,
+          "n_passed": 2,
+          "completion": "GBDT requested_loan_to_income platform_loans_disclosed"
+        },
+        {
+          "round": 8,
+          "frontier": 32,
+          "regime": 4,
+          "avg_iv": 0.2057,
+          "n_passed": 3,
+          "completion": "例如:GBDT age monthly_income"
+        },
+        {
+          "round": 9,
+          "frontier": 36,
+          "regime": 4,
+          "avg_iv": 0.2341,
+          "n_passed": 1,
+          "completion": "\"GBDT credit_history_years_reported 187\""
+        },
+        {
+          "round": 10,
+          "frontier": 40,
+          "regime": 5,
+          "avg_iv": 0.199,
+          "n_passed": 3,
+          "completion": "根据以上信息，我需要为每个字段选择一个合适的工具，然后输出一个动作，例如：GBDT age monthly_income。"
+        }
+      ],
+      "avg_iv_overall": 0.2167,
+      "recovery": [
+        {
+          "switch_round": 4,
+          "pre_level": 0.2877,
+          "threshold": 0.2589,
+          "recovery_rounds": 7,
+          "recovered": false
+        },
+        {
+          "switch_round": 5,
+          "pre_level": 0.1579,
+          "threshold": 0.1421,
+          "recovery_rounds": 1,
+          "recovered": true
+        },
+        {
+          "switch_round": 7,
+          "pre_level": 0.2001,
+          "threshold": 0.1801,
+          "recovery_rounds": 2,
+          "recovered": true
+        }
+      ],
+      "mean_recovery_rounds": 3.333
+    },
+    "C": {
+      "series": [
+        {
+          "round": 1,
+          "frontier": 4,
+          "regime": 0,
+          "avg_iv": 0.1575,
+          "n_passed": 1,
+          "completion": "根据以上规则,生成一个动作,用于探索字段 'debt_to_income_obs'。"
+        },
+        {
+          "round": 2,
+          "frontier": 8,
+          "regime": 1,
+          "avg_iv": 0.1009,
+          "n_passed": 1,
+          "completion": "GBDT importance credit_history_years_reported"
+        },
+        {
+          "round": 3,
+          "frontier": 12,
+          "regime": 1,
+          "avg_iv": 0.1843,
+          "n_passed": 2,
+          "completion": "GBDT income_volatility_obs delinquencies_reported"
+        },
+        {
+          "round": 4,
+          "frontier": 16,
+          "regime": 2,
+          "avg_iv": 0.0,
+          "n_passed": 0,
+          "completion": "根据已探索的字段和工具，选择一个合适的字段进行下一步探索。"
+        },
+        {
+          "round": 5,
+          "frontier": 20,
+          "regime": 3,
+          "avg_iv": 0.2356,
+          "n_passed": 3,
+          "completion": "根据上述信息,选择一个工具和字段组合来探索\"delinquencies_reported\"字段的关联性。"
+        },
+        {
+          "round": 6,
+          "frontier": 24,
+          "regime": 3,
+          "avg_iv": 0.1411,
+          "n_passed": 1,
+          "completion": "GBDT savings_months_obs requested_loan_to_income"
+        },
+        {
+          "round": 7,
+          "frontier": 28,
+          "regime": 4,
+          "avg_iv": 0.118,
+          "n_passed": 1,
+          "completion": "根据上述信息，我需要为每个字段选择一个合适的工具，然后生成一个动作。例如，对于字段income_volatility_obs，使用GBDT"
+        },
+        {
+          "round": 8,
+          "frontier": 32,
+          "regime": 4,
+          "avg_iv": 0.2057,
+          "n_passed": 3,
+          "completion": "请帮我生成一个动作，用于探索字段 'delinquencies_reported' 的重要性，使用 CDT 作为工具。"
+        },
+        {
+          "round": 9,
+          "frontier": 36,
+          "regime": 4,
+          "avg_iv": 0.2043,
+          "n_passed": 1,
+          "completion": "GBDT platform_loans_disclosed"
+        },
+        {
+          "round": 10,
+          "frontier": 40,
+          "regime": 5,
+          "avg_iv": 0.199,
+          "n_passed": 3,
+          "completion": "GBDT age monthly_income"
+        }
+      ],
+      "avg_iv_overall": 0.1546,
+      "recovery": [
+        {
+          "switch_round": 4,
+          "pre_level": 0.1426,
+          "threshold": 0.1283,
+          "recovery_rounds": 2,
+          "recovered": true
+        },
+        {
+          "switch_round": 5,
+          "pre_level": 0.0921,
+          "threshold": 0.0829,
+          "recovery_rounds": 1,
+          "recovered": true
+        },
+        {
+          "switch_round": 7,
+          "pre_level": 0.1884,
+          "threshold": 0.1695,
+          "recovery_rounds": 2,
+          "recovered": true
+        }
+      ],
+      "mean_recovery_rounds": 1.667
+    }
+  }
+}

@@ -36,7 +36,7 @@ from slots import SlotConfig, SlotService
 from synth import SyntheticWorld, default_config
 
 from eval.continuous_learn import RoundResult
-from eval.orchestrator_eval import OrchestratorCloud
+from eval.orchestrator_eval import CloudUnavailableError, OrchestratorCloud
 
 
 @dataclass
@@ -52,9 +52,12 @@ class ExperimentResult:
     total_proposals: int
     avg_iv_first_half: float
     avg_iv_second_half: float
+    valid: bool = True       # False: 真云失败中止,不纳入统计
+    fail_reason: str = ""
 
 
-def _build_loop(seed: int, out_dir: Path, llm, cloud_llm=None) -> SelfLearnLoop:
+def _build_loop(seed: int, out_dir: Path, llm, cloud_llm=None,
+                allow_fallback: bool = True) -> SelfLearnLoop:
     """构建 CLAB 闭环(用指定的 llm 实例)。"""
     world = SyntheticWorld(default_config(seed=seed))
     data = world.run(60, 200)
@@ -71,7 +74,9 @@ def _build_loop(seed: int, out_dir: Path, llm, cloud_llm=None) -> SelfLearnLoop:
     memory.init_field_slots(CLAB_FIELD_STATEMENTS)
 
     fields_str = " ".join(CLAB_FIELDS)
-    cloud = OrchestratorCloud(llm=llm, fields_str=fields_str, cloud_llm=cloud_llm)
+    cloud = OrchestratorCloud(llm=llm, fields_str=fields_str,
+                              cloud_llm=cloud_llm,
+                              allow_fallback=allow_fallback)
 
     loop_cfg = LoopConfig(
         dev_start="000", dev_end="039",
@@ -107,46 +112,55 @@ def _run_group(
     llm = LocalLLM(model_id=model_path, device="cpu")
     llm.load()
 
-    # 跑闭环
-    loop = _build_loop(seed, out_dir / group, llm, cloud_llm)
+    # 跑闭环(真云模式禁止兜底:失败即中止,本组本种子标记 invalid)
+    allow_fallback = cloud_llm is None
+    try:
+        loop = _build_loop(seed, out_dir / group, llm, cloud_llm,
+                           allow_fallback=allow_fallback)
 
-    # Session PM 组(C/D)每轮做 TTT 更新
-    do_ttt = group in ("C", "D")
-    if do_ttt:
-        from selflearn.ttt import TTTConfig, setup_ttt_lora
-        ttt_config = TTTConfig(steps=3, lr=1e-4, lora_r=8)
-        optimizer = setup_ttt_lora(llm._model, ttt_config)
+        # Session PM 组(C/D)每轮做 TTT 更新
+        do_ttt = group in ("C", "D")
+        if do_ttt:
+            from selflearn.ttt import TTTConfig, setup_ttt_lora
+            ttt_config = TTTConfig(steps=3, lr=1e-4, lora_r=8)
+            optimizer = setup_ttt_lora(llm._model, ttt_config)
 
-    avg_ivs = []
-    for r in range(1, rounds + 1):
-        rec = loop.run_round(r)
-        ivs = [p.metrics.get("iv", 0) for p in rec.proposals
-               if p.verdict == "pass" and isinstance(p.metrics.get("iv", 0), (int, float))]
-        avg_iv = float(np.mean(ivs)) if ivs else 0.0
-        avg_ivs.append(avg_iv)
-        print(f"  [{group}] round {r}: avg_iv={avg_iv:.4f}")
+        avg_ivs = []
+        for r in range(1, rounds + 1):
+            rec = loop.run_round(r)
+            ivs = [p.metrics.get("iv", 0) for p in rec.proposals
+                   if p.verdict == "pass" and isinstance(p.metrics.get("iv", 0), (int, float))]
+            avg_iv = float(np.mean(ivs)) if ivs else 0.0
+            avg_ivs.append(avg_iv)
+            print(f"  [{group}] round {r}: avg_iv={avg_iv:.4f}")
 
-        # Session PM:TTT 更新(C/D 组)
-        # 只要有真实 (prompt, completion) 对就更新,与云端实现无关;
-        # 否则 mock/兜底路径下 C≡A、D≡B,Session PM 消融失效。
-        if do_ttt and loop.cloud.last_prompt:
-            from selflearn.ttt import ttt_step
-            ttt_step(
-                llm._model, llm._tokenizer, optimizer,
-                prompt=loop.cloud.last_prompt,
-                completion=loop.cloud.last_completion or "GBDT income_volatility",
-                reward=avg_iv,
-                config=ttt_config,
-            )
+            # Session PM:TTT 更新(C/D 组)
+            # 只要有真实 (prompt, completion) 对就更新,与云端实现无关;
+            # 否则 mock/兜底路径下 C≡A、D≡B,Session PM 消融失效。
+            if do_ttt and loop.cloud.last_prompt:
+                from selflearn.ttt import ttt_step
+                ttt_step(
+                    llm._model, llm._tokenizer, optimizer,
+                    prompt=loop.cloud.last_prompt,
+                    completion=loop.cloud.last_completion or "GBDT income_volatility",
+                    reward=avg_iv,
+                    config=ttt_config,
+                )
 
-    loop.memory.service.persist()
+        loop.memory.service.persist()
 
-    # 算聚合指标(重跑闭环收集 records)
-    # 简化:用最后 5 轮的闭环重跑收集 records(因为上面的 run 改了 memory 状态)
-    # 更准确的做法是把每轮的 rec 存起来。这里简化用 avg_ivs 算趋势。
-    records_all = []
-    loop2 = _build_loop(seed, out_dir / f"{group}_eval", llm, cloud_llm)
-    records_all = loop2.run(rounds)
+        # 算聚合指标(重跑闭环收集 records)
+        loop2 = _build_loop(seed, out_dir / f"{group}_eval", llm, cloud_llm,
+                            allow_fallback=allow_fallback)
+        records_all = loop2.run(rounds)
+    except CloudUnavailableError as e:
+        print(f"  [{group}] seed={seed} CLOUD FAILED, run invalidated: {e}")
+        return ExperimentResult(
+            group=group, seed=seed, b_strong=0, strong_rate=0.0,
+            b_quality=0.0, b_feat=0, total_proposals=0,
+            avg_iv_first_half=0.0, avg_iv_second_half=0.0,
+            valid=False, fail_reason=str(e)[:300],
+        )
 
     metrics = aggregate_metrics(records_all)
     m = metrics.as_dict()

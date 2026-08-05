@@ -122,6 +122,12 @@ def summarize_history(history: list[np.ndarray]) -> dict:
     flat = drift.reshape(drift.shape[0], -1)
     report["n_gates_moved_gt_0.01"] = int((flat > 0.01).sum())
     report["n_gates_total"] = int(flat.size)
+    # Drift-from-init per snapshot: shows WHEN gates start moving.
+    drift_series = [round(float(np.abs(h - history[0]).max()), 6)
+                    for h in history]
+    report["drift_series_per_snapshot"] = drift_series
+    moved = [i for i, d in enumerate(drift_series) if d > 0.01]
+    report["first_snapshot_drift_gt_0.01"] = moved[0] if moved else None
     return report
 
 
